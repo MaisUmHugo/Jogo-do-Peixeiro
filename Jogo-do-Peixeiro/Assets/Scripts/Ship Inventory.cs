@@ -4,10 +4,12 @@ using UnityEngine;
 public class ShipInventory : MonoBehaviour
 {
 
-    private List<FishData> OwnedFish = new List<FishData>();
+    [SerializeField] private List<FishData> OwnedFish = new List<FishData>();
     private float MaxFishCapacity = 100;
     private float CurrentFishWeight = 0;
     private bool FullCapacity;
+
+    public FishScriptableObject teste2;
 
     public void TryAddFish(FishData fish)
     {

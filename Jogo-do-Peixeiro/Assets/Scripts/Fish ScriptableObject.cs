@@ -5,8 +5,9 @@ using UnityEngine;
 public class FishScriptableObject : ScriptableObject
 {
     
-    public float MaxWeight;
-    public float MinWeight;
+    public int MinWeight;
+    public int MaxWeight;
+    [Range(1,3)] public int Rarity;
 
     public int PricePerWeght;   
 

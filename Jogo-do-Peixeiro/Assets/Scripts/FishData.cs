@@ -1,20 +1,22 @@
-using System;
 using UnityEngine;
 
-public class FishData : MonoBehaviour
+public class FishData
 {
     public FishScriptableObject TypeOfFish;
-    public float Weight {  get; private set; }
-
-    private void Awake()
-    {
-        Weight = (float)Math.Round(UnityEngine.Random.Range(TypeOfFish.MinWeight, TypeOfFish.MaxWeight), 1);
-    }
+    public int Weight {  get; private set; }
 
     public float CalculatePrice()
     {
 
         return Weight * TypeOfFish.PricePerWeght;
+
+    }
+
+    public FishData(FishScriptableObject typeOfFish)
+    {
+       
+       TypeOfFish = typeOfFish;
+       Weight = Random.Range(TypeOfFish.MinWeight, TypeOfFish.MaxWeight);        
 
     }
 
