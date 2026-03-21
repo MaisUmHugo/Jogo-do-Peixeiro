@@ -4,17 +4,15 @@ using UnityEngine;
 public class ShipInventory : MonoBehaviour
 {
 
-    [SerializeField] private List<FishData> OwnedFish = new List<FishData>();
-    private float MaxFishCapacity = 100;
-    private float CurrentFishWeight = 0;
-    private bool FullCapacity;
-
-    public FishScriptableObject teste2;
+    [SerializeField] private List<FishData> ownedFish = new List<FishData>();
+    private float maxFishCapacity = 100;
+    private float currentFishWeight = 0;
+    private bool fullCapacity;
 
     public void TryAddFish(FishData fish)
     {
 
-        if (FullCapacity) { return; }
+        if (fullCapacity) { return; }
 
         AddFish(fish);
 
@@ -23,31 +21,33 @@ public class ShipInventory : MonoBehaviour
     private void AddFish(FishData fish)
     {
 
-        OwnedFish.Add(fish);
-        CurrentFishWeight += fish.Weight;
+        ownedFish.Add(fish);
+        currentFishWeight += fish.weight;
 
-        if (CurrentFishWeight >= MaxFishCapacity) { FullCapacity = true; }
-
+        if (currentFishWeight >= maxFishCapacity) { fullCapacity = true; }
 
     }
 
     public void SellAllFish()
     {
 
-        foreach (FishData fish in OwnedFish)
+        foreach (FishData fish in ownedFish)
         {
 
             // add money by fish.CalculatePrice();
-            OwnedFish.Remove(fish);
 
         }
+        
+        ownedFish.Clear();
+        maxFishCapacity = 0;
     }
 
     public void SellFish(int i)
     {
 
         //add money by fish.CalculatePrice();
-        OwnedFish.RemoveAt(i);
+        currentFishWeight -= ownedFish[i].weight;
+        ownedFish.RemoveAt(i);
 
     }
 }
