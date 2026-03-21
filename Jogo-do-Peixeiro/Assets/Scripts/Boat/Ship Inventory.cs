@@ -9,45 +9,92 @@ public class ShipInventory : MonoBehaviour
     private float currentFishWeight = 0;
     private bool fullCapacity;
 
-    public void TryAddFish(FishData fish)
+    public bool TryAddFish(FishData fish)
     {
 
-        if (fullCapacity) { return; }
+        if (fullCapacity) { return false; }
 
         AddFish(fish);
+        return true;
 
     }
    
-    private void AddFish(FishData fish)
+    private void AddFish(FishData _fish)
     {
-
-        ownedFish.Add(fish);
-        currentFishWeight += fish.weight;
-
-        if (currentFishWeight >= maxFishCapacity) { fullCapacity = true; }
-
+        ownedFish.Add(_fish);
+        AttFishWeight();
     }
 
     public void SellAllFish()
     {
-
-        foreach (FishData fish in ownedFish)
+        int moneyToRecive = 0;
+        foreach (FishData _fish in ownedFish)
         {
 
-            // add money by fish.CalculatePrice();
+            moneyToRecive += _fish.CalculatePrice();
 
         }
         
         ownedFish.Clear();
-        maxFishCapacity = 0;
+        AttFishWeight();
     }
 
-    public void SellFish(int i)
+    public void SellFish(int _i)
     {
 
         //add money by fish.CalculatePrice();
-        currentFishWeight -= ownedFish[i].weight;
-        ownedFish.RemoveAt(i);
+        ownedFish.RemoveAt(_i);
+        AttFishWeight();
+
+    }
+
+    public bool TryPayFish(int _weightFishPayment)
+    {
+
+        int fishWeight = 0;
+        int fishIndex = -1;
+
+        foreach (FishData fish in ownedFish) { 
+
+            fishWeight += fish.weight;
+
+            if (fishWeight >= _weightFishPayment) { 
+            
+                fishIndex = ownedFish.IndexOf(fish);
+                break;
+
+            }
+
+        }
+
+        if (fishIndex != -1){
+
+            ownedFish.RemoveRange(0, fishIndex + 1);
+            AttFishWeight();
+            return true;
+
+        }
+
+        return false;
+
+    }
+
+    private void AttFishWeight()
+    {
+        fullCapacity = false;
+        currentFishWeight = 0;
+
+        foreach (FishData _fish in ownedFish) { 
+        
+            currentFishWeight += _fish.weight;
+        
+        }
+
+        if (currentFishWeight >= maxFishCapacity) { 
+        
+            fullCapacity = true;
+
+        }
 
     }
 }

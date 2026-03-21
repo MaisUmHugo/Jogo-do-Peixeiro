@@ -5,7 +5,7 @@ public class FishData
     public FishScriptableObject typeOfFish;
     public int weight {  get; private set; }
 
-    public float CalculatePrice()
+    public int CalculatePrice()
     {
 
         return weight * typeOfFish.pricePerWeight;
