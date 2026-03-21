@@ -46,7 +46,7 @@ public class ShipInventory : MonoBehaviour
     public void SellFish(int i)
     {
 
-        //add money bey fish.CalculatePrice();
+        //add money by fish.CalculatePrice();
         OwnedFish.RemoveAt(i);
 
     }

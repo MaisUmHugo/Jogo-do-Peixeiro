@@ -9,7 +9,7 @@ public class FishScriptableObject : ScriptableObject
     public int MaxWeight;
     [Range(1,3)] public int Rarity;
 
-    public int PricePerWeght;   
+    public int PricePerWeight;   
 
     public string Name;
     [TextArea] public string Description;
