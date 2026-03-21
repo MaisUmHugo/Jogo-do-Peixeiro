@@ -8,7 +8,7 @@ public class FishData
     public float CalculatePrice()
     {
 
-        return Weight * TypeOfFish.PricePerWeght;
+        return Weight * TypeOfFish.PricePerWeight;
 
     }
 
