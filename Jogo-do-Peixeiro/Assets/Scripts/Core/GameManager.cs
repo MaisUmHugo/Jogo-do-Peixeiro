@@ -28,7 +28,7 @@ public class GameManager : MonoBehaviour
 
     private void Start()
     {
-        currentState = GameState.OnBoat;
+        //currentState = GameState.OnFoot;
     }
 
     public void SetState(GameState _newState)
