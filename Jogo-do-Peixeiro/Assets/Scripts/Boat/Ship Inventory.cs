@@ -89,4 +89,6 @@ public class ShipInventory : MonoBehaviour
     {
         return maxFishCapacity;
     }
+
+    public bool IsFull => currentFishWeight >= maxFishCapacity;
 }
