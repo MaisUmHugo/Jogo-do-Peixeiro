@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -10,8 +11,9 @@ public class InputHandler : MonoBehaviour
     public Vector2 moveInput { get; private set; }
     public Vector2 lookInput { get; private set; }
 
-    public bool interactPressed { get; private set; }
     public bool pausePressed { get; private set; }
+
+    public Action onInteractPressed;
 
     private void Awake()
     {
@@ -39,8 +41,12 @@ public class InputHandler : MonoBehaviour
     {
         moveInput = inputActions.Player.Move.ReadValue<Vector2>();
         lookInput = inputActions.Player.Look.ReadValue<Vector2>();
-
-        interactPressed = inputActions.Player.Interact.WasPressedThisFrame();
         pausePressed = inputActions.Player.Pause.WasPressedThisFrame();
+
+        if (inputActions.Player.Interact.WasPressedThisFrame())
+        {
+            Debug.Log("E pressionado");
+            onInteractPressed?.Invoke();
+        }
     }
 }
