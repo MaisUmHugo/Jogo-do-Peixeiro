@@ -3,51 +3,90 @@ using UnityEngine;
 
 public class ShipInventory : MonoBehaviour
 {
+    [SerializeField] private List<FishData> ownedFish = new List<FishData>();
+    [SerializeField] private float maxFishCapacity;
+    private float currentFishWeight = 0;
 
-    [SerializeField] private List<FishData> OwnedFish = new List<FishData>();
-    private float MaxFishCapacity = 100;
-    private float CurrentFishWeight = 0;
-    private bool FullCapacity;
-
-    public FishScriptableObject teste2;
-
-    public void TryAddFish(FishData fish)
+    public bool TryAddFish(FishData fish)
     {
-
-        if (FullCapacity) { return; }
-
+        if (currentFishWeight + fish.weight > maxFishCapacity)
+        {
+            Debug.Log($"Inventário cheio. Peso atual: {currentFishWeight} / {maxFishCapacity}");
+            return false;
+        }
         AddFish(fish);
-
+        return true;
     }
-   
-    private void AddFish(FishData fish)
+
+    private void AddFish(FishData _fish)
     {
-
-        OwnedFish.Add(fish);
-        CurrentFishWeight += fish.Weight;
-
-        if (CurrentFishWeight >= MaxFishCapacity) { FullCapacity = true; }
-
-
+        ownedFish.Add(_fish);
+        AttFishWeight();
     }
 
     public void SellAllFish()
     {
+        int moneyToRecive = 0;
 
-        foreach (FishData fish in OwnedFish)
+        foreach (FishData _fish in ownedFish)
         {
+            moneyToRecive += _fish.CalculatePrice();
+        }
 
-            // add money by fish.CalculatePrice();
-            OwnedFish.Remove(fish);
+        ownedFish.Clear();
+        AttFishWeight();
+    }
 
+    public void SellFish(int _i)
+    {
+        //add money by fish.CalculatePrice();
+        ownedFish.RemoveAt(_i);
+        AttFishWeight();
+    }
+
+    public bool TryPayFish(int _weightFishPayment)
+    {
+        int fishWeight = 0;
+        int fishIndex = -1;
+
+        foreach (FishData fish in ownedFish)
+        {
+            fishWeight += fish.weight;
+
+            if (fishWeight >= _weightFishPayment)
+            {
+                fishIndex = ownedFish.IndexOf(fish);
+                break;
+            }
+        }
+
+        if (fishIndex != -1)
+        {
+            ownedFish.RemoveRange(0, fishIndex + 1);
+            AttFishWeight();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void AttFishWeight()
+    {
+        currentFishWeight = 0;
+
+        foreach (FishData _fish in ownedFish)
+        {
+            currentFishWeight += _fish.weight;
         }
     }
 
-    public void SellFish(int i)
+    public float GetCurrentWeight()
     {
+        return currentFishWeight;
+    }
 
-        //add money by fish.CalculatePrice();
-        OwnedFish.RemoveAt(i);
-
+    public float GetMaxCapacity()
+    {
+        return maxFishCapacity;
     }
 }
