@@ -11,7 +11,7 @@ public class FishScriptableObject : ScriptableObject
 
     public int pricePerWeight;   
 
-    public string name;
+    public string fishName;
     [TextArea] public string description;
 
 }
