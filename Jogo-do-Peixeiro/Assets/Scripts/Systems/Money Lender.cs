@@ -2,44 +2,46 @@ using UnityEngine;
 
 public class MoneyLender : MonoBehaviour
 {
-    private int currentPayment = 0;
-    private int initialPaid = 100;
-    private int paidIncremetion = 20;
-    private int timesPaid = 0;
+    private int currentFishWeightPayment;
+    private int initialFishWeightPaid = 100;
+    private int fishWeightPaidIncremetion = 20;
 
+
+
+    private int timesPaid = 0;
 
     [SerializeField] private ShipInventory shipInventory;
 
-    public void TryGetFishPayment(int _payment)
+    public void TryGetFishWeightPayment()
     {
-        if (shipInventory.TryPayFish(_payment))
+        if (shipInventory.TryPayFishWeight(currentFishWeightPayment))
         {
-            GetFishPayment();
+            GetFishWeightPayment();
         }
         else{
 
-            Debug.Log("não conseguiu pagar ainda, ta na dívida ");
+            Debug.Log("não tem peso de peixe o suficiente para pagar. Vamos ter que arrancar o dedo do seu filho.");
 
         }
     }
 
-    private void GetFishPayment()
+    private void GetFishWeightPayment()
     {
 
-        Debug.Log("foi pago, ta liberado pra comer puta");
+
+        CalculateNewPayment();
 
     }
 
-    private void NewPayment()
+    private void CalculateNewPayment()
     {
 
-        currentPayment = initialPaid + paidIncremetion * timesPaid;
+        currentFishWeightPayment = initialFishWeightPaid + fishWeightPaidIncremetion * timesPaid;
 
     }
 
     private void Awake()
     {
-        NewPayment();
-        TryGetFishPayment(currentPayment);
+        CalculateNewPayment();
     }
 }

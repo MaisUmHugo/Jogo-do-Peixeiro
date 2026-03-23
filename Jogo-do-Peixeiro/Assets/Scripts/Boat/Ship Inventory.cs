@@ -3,8 +3,8 @@ using UnityEngine;
 
 public class ShipInventory : MonoBehaviour
 {
-    [SerializeField] private List<FishData> ownedFish = new List<FishData>();
-    [SerializeField] private float maxFishCapacity;
+    private List<FishData> ownedFish = new List<FishData>();
+    private float maxFishCapacity;
     private float currentFishWeight = 0;
 
     public bool TryAddFish(FishData fish)
@@ -44,7 +44,7 @@ public class ShipInventory : MonoBehaviour
         AttFishWeight();
     }
 
-    public bool TryPayFish(int _weightFishPayment)
+    public bool TryPayFishWeight(int _weightFishPayment)
     {
         int fishWeight = 0;
         int fishIndex = -1;
@@ -62,7 +62,7 @@ public class ShipInventory : MonoBehaviour
 
         if (fishIndex != -1)
         {
-            ownedFish.RemoveRange(0, fishIndex + 1);
+            ownedFish.RemoveRange(0, fishIndex);
             AttFishWeight();
             return true;
         }
@@ -88,6 +88,18 @@ public class ShipInventory : MonoBehaviour
     public float GetMaxCapacity()
     {
         return maxFishCapacity;
+    }
+
+    private bool TryFindFish(FishScriptableObject _wantedFish)
+    {
+
+        foreach(FishData fish in ownedFish)
+        {
+            if (fish.typeOfFish == _wantedFish) { return true; }
+        }
+
+        return false;
+
     }
 
     public bool IsFull => currentFishWeight >= maxFishCapacity;
