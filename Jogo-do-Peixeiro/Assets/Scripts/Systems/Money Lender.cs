@@ -6,7 +6,8 @@ public class MoneyLender : MonoBehaviour
     private int initialFishWeightPaid = 100;
     private int fishWeightPaidIncremetion = 20;
 
-
+    private int qttSpecificFish;
+    private FishScriptableObject specificFish;
 
     private int timesPaid = 0;
 
@@ -37,6 +38,14 @@ public class MoneyLender : MonoBehaviour
     {
 
         currentFishWeightPayment = initialFishWeightPaid + fishWeightPaidIncremetion * timesPaid;
+
+    }
+
+    private void TryGetSpecificFishPayment()
+    {
+        if (specificFish == null) return;
+
+
 
     }
 

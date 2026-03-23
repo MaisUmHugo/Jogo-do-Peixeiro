@@ -101,6 +101,13 @@ public class ShipInventory : MonoBehaviour
         return false;
 
     }
+    
+    public bool TryPayFish(FishScriptableObject _wantedFish)
+    {
+
+
+        return false;
+    }
 
     public bool IsFull => currentFishWeight >= maxFishCapacity;
 }
