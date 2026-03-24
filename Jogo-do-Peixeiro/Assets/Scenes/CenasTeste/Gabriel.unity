@@ -119,53 +119,6 @@ NavMeshSettings:
     debug:
       m_Flags: 0
   m_NavMeshData: {fileID: 0}
---- !u!1 &61684718 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 4410049556211755480, guid: d132930364710f04cabe89571585f7d2, type: 3}
-  m_PrefabInstance: {fileID: 1476718648304889039}
-  m_PrefabAsset: {fileID: 0}
---- !u!114 &61684719
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 61684718}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5d30aaeeb6f5d44bbec35d1e763fa45, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  floatPoints:
-  - {fileID: 1421463823}
-  - {fileID: 1042415472}
-  - {fileID: 229017538}
-  - {fileID: 722254668}
-  floatStrength: 3
-  waterDrag: 5
-  waterAngularDrag: 4
-  heightOffset: 0.2
---- !u!65 &61684724
-BoxCollider:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 61684718}
-  m_Material: {fileID: 0}
-  m_IncludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_ExcludeLayers:
-    serializedVersion: 2
-    m_Bits: 0
-  m_LayerOverridePriority: 0
-  m_IsTrigger: 0
-  m_ProvidesContacts: 0
-  m_Enabled: 1
-  serializedVersion: 3
-  m_Size: {x: 13.853771, y: 5, z: 24.276707}
-  m_Center: {x: -0.20122313, y: 0, z: 15.183027}
 --- !u!1 &213911687
 GameObject:
   m_ObjectHideFlags: 0
@@ -324,11 +277,6 @@ MonoBehaviour:
   emergencyLift: 3
   heightOffset: 0
   outOfWaterWeight: 0.6
---- !u!4 &229017538 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 4062526235739680415, guid: d132930364710f04cabe89571585f7d2, type: 3}
-  m_PrefabInstance: {fileID: 1476718648304889039}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &438073286
 GameObject:
   m_ObjectHideFlags: 0
@@ -361,16 +309,6 @@ Transform:
   - {fileID: 1386602467}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!4 &722254668 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 6867431582908870011, guid: d132930364710f04cabe89571585f7d2, type: 3}
-  m_PrefabInstance: {fileID: 1476718648304889039}
-  m_PrefabAsset: {fileID: 0}
---- !u!4 &1042415472 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 3947144705379833139, guid: d132930364710f04cabe89571585f7d2, type: 3}
-  m_PrefabInstance: {fileID: 1476718648304889039}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1057698580
 GameObject:
   m_ObjectHideFlags: 0
@@ -592,7 +530,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7dbc55c534b57c458e3c82221d1bb26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  amplitude: 3
+  amplitude: 1
   length: 1
   speed: 2
   offset: 0
@@ -761,11 +699,6 @@ MonoBehaviour:
   velocidadeMovimento: 10
   velocidadeSubida: 8
   sensibilidadeMouse: 100
---- !u!4 &1421463823 stripped
-Transform:
-  m_CorrespondingSourceObject: {fileID: 5780599475151436130, guid: d132930364710f04cabe89571585f7d2, type: 3}
-  m_PrefabInstance: {fileID: 1476718648304889039}
-  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1476718648304889039
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -774,78 +707,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 475328000502811339, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 475328000502811339, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterDrag
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 475328000502811339, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: outOfWaterWeight
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 475328000502811339, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 475328000502811339, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: depthBeforeSubmerged
-      value: 0.25
-      objectReference: {fileID: 0}
-    - target: {fileID: 815590785756561853, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1564771001610840528, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 1614043984450894772, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2195625284161683878, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2195625284161683878, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterDrag
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 2195625284161683878, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: outOfWaterWeight
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 2195625284161683878, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 2195625284161683878, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: depthBeforeSubmerged
-      value: 0.25
-      objectReference: {fileID: 0}
-    - target: {fileID: 3504577152565179876, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3504577152565179876, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterDrag
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 3504577152565179876, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: outOfWaterWeight
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 3504577152565179876, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 3504577152565179876, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: depthBeforeSubmerged
-      value: 0.25
-      objectReference: {fileID: 0}
     - target: {fileID: 3925014722443653986, guid: d132930364710f04cabe89571585f7d2, type: 3}
       propertyPath: m_LocalPosition.x
       value: -4.77
@@ -890,49 +751,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: braco
       objectReference: {fileID: 0}
-    - target: {fileID: 5166821595822685571, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Mass
-      value: 20
-      objectReference: {fileID: 0}
-    - target: {fileID: 6624495967338947341, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8432771331784936446, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8432771331784936446, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterDrag
-      value: 5
-      objectReference: {fileID: 0}
-    - target: {fileID: 8432771331784936446, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: outOfWaterWeight
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 8432771331784936446, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 4
-      objectReference: {fileID: 0}
-    - target: {fileID: 8432771331784936446, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: depthBeforeSubmerged
-      value: 0.25
-      objectReference: {fileID: 0}
-    - target: {fileID: 8751418402140965307, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    m_RemovedComponents:
-    - {fileID: 8087592719373834573, guid: d132930364710f04cabe89571585f7d2, type: 3}
+    m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents:
-    - targetCorrespondingSourceObject: {fileID: 4410049556211755480, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 61684719}
-    - targetCorrespondingSourceObject: {fileID: 4410049556211755480, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 61684724}
+    m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: d132930364710f04cabe89571585f7d2, type: 3}
 --- !u!1001 &8705976090238754536
 PrefabInstance:

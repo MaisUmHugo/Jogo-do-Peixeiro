@@ -45,14 +45,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 5166821595822685571}
-  depthBeforeSubmerged: 0.45
+  depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
-  waterDrag: 1.2
-  waterAngularDrag: 2.2
+  waterDrag: 5
+  waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
   heightOffset: 0
-  outOfWaterWeight: 0.6
+  outOfWaterWeight: 3
 --- !u!1 &1564771001610840528
 GameObject:
   m_ObjectHideFlags: 0
@@ -98,14 +98,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 5166821595822685571}
-  depthBeforeSubmerged: 0.45
+  depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
-  waterDrag: 1.2
-  waterAngularDrag: 2.2
+  waterDrag: 5
+  waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
   heightOffset: 0
-  outOfWaterWeight: 0.6
+  outOfWaterWeight: 3
 --- !u!1 &2617819272185565381
 GameObject:
   m_ObjectHideFlags: 0
@@ -257,14 +257,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 5166821595822685571}
-  depthBeforeSubmerged: 0.45
+  depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
-  waterDrag: 1.2
-  waterAngularDrag: 2.2
+  waterDrag: 5
+  waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
   heightOffset: 0
-  outOfWaterWeight: 0.6
+  outOfWaterWeight: 3
 --- !u!1 &8751418402140965307
 GameObject:
   m_ObjectHideFlags: 0
@@ -310,14 +310,14 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 5166821595822685571}
-  depthBeforeSubmerged: 0.45
+  depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
-  waterDrag: 1.2
-  waterAngularDrag: 2.2
+  waterDrag: 5
+  waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
   heightOffset: 0
-  outOfWaterWeight: 0.6
+  outOfWaterWeight: 3
 --- !u!1001 &3599164887304230025
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -423,10 +423,19 @@ PrefabInstance:
       addedObject: {fileID: 5166821595822685571}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 8087592719373834573}
+      addedObject: {fileID: 1614043984450894772}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1614043984450894772}
+      addedObject: {fileID: 6083694497584935514}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8649050672369772335}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 7662120818427251027}
+    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1493486965418395496}
   m_SourcePrefab: {fileID: 100100000, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
 --- !u!4 &3925014722443653986 stripped
 Transform:
@@ -446,7 +455,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4410049556211755480}
   serializedVersion: 4
-  m_Mass: 1
+  m_Mass: 20
   m_Drag: 0.4
   m_AngularDrag: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -465,8 +474,43 @@ Rigidbody:
   m_Interpolate: 1
   m_Constraints: 0
   m_CollisionDetection: 1
---- !u!136 &8087592719373834573
-CapsuleCollider:
+--- !u!114 &1614043984450894772
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4410049556211755480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a61aa5bee31546145ad51faf23bef9a5, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rb: {fileID: 5166821595822685571}
+  offset: {x: 0, y: 0, z: 0}
+--- !u!114 &6083694497584935514
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4410049556211755480}
+  m_Enabled: 0
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a5d30aaeeb6f5d44bbec35d1e763fa45, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  floatPoints:
+  - {fileID: 5780599475151436130}
+  - {fileID: 3947144705379833139}
+  - {fileID: 4062526235739680415}
+  - {fileID: 6867431582908870011}
+  floatStrength: 3
+  waterDrag: 5
+  waterAngularDrag: 4
+  heightOffset: 0.2
+--- !u!65 &8649050672369772335
+BoxCollider:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
@@ -483,12 +527,10 @@ CapsuleCollider:
   m_IsTrigger: 0
   m_ProvidesContacts: 0
   m_Enabled: 1
-  serializedVersion: 2
-  m_Radius: 0.8
-  m_Height: 0.1
-  m_Direction: 1
-  m_Center: {x: 0, y: 0, z: 0.68}
---- !u!114 &1614043984450894772
+  serializedVersion: 3
+  m_Size: {x: 13.853771, y: 5, z: 24.276707}
+  m_Center: {x: -0.20122313, y: 0, z: 15.183027}
+--- !u!114 &7662120818427251027
 MonoBehaviour:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -497,7 +539,41 @@ MonoBehaviour:
   m_GameObject: {fileID: 4410049556211755480}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a61aa5bee31546145ad51faf23bef9a5, type: 3}
+  m_Script: {fileID: 11500000, guid: c4c87c578b8f1794383b07202754fa68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 5166821595822685571}
+  engineForce: 30
+  turnForce: 5
+  maxSpeed: 12
+  stabilization: 2
+  lateralDrag: 2
+--- !u!114 &1493486965418395496
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4410049556211755480}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 62899f850307741f2a39c98a8b639597, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  m_Actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
+  m_NotificationBehavior: 0
+  m_UIInputModule: {fileID: 0}
+  m_DeviceLostEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_DeviceRegainedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ControlsChangedEvent:
+    m_PersistentCalls:
+      m_Calls: []
+  m_ActionEvents: []
+  m_NeverAutoSwitchControlSchemes: 0
+  m_DefaultControlScheme: 
+  m_DefaultActionMap: 
+  m_SplitScreenIndex: -1
+  m_Camera: {fileID: 0}

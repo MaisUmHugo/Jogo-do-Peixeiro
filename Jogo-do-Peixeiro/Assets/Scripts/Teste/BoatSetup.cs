@@ -3,10 +3,11 @@ using UnityEngine;
 public class BoatSetup : MonoBehaviour
 {
     public Rigidbody rb;
+    public Vector3 offset;
 
     void Start()
     {
-        rb.centerOfMass = new Vector3(0, -2f, 0);
+        rb.centerOfMass = offset;
     }
 
     void OnDrawGizmos()
