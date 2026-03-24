@@ -10,11 +10,11 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52551ffbcafa88c428476a6d2f5c776b, type: 3}
-  m_Name: Fish
+  m_Name: Pacu
   m_EditorClassIdentifier: 
   minWeight: 1
-  maxWeight: 5
-  rarity: 1
-  pricePerWeight: 0
-  fishName: Pacu
+  maxWeight: 3
+  rarity: 2
+  pricePerWeight: 1
+  name: 
   description: 
