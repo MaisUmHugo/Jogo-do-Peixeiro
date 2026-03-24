@@ -3,11 +3,11 @@ using UnityEngine;
 public class MoneyLender : MonoBehaviour
 {
     private int currentFishWeightPayment;
-    private int initialFishWeightPaid = 100;
-    private int fishWeightPaidIncremetion = 20;
+    [SerializeField] private int initialFishWeightPaid = 100;
+    [SerializeField] private int fishWeightPaidIncremetion = 20;
 
-    private int qttSpecificFish;
-    private FishScriptableObject specificFish;
+    [SerializeField] private int qttSpecificFish;
+    [SerializeField] private FishScriptableObject specificFish;
 
     private int timesPaid = 0;
 
@@ -18,8 +18,10 @@ public class MoneyLender : MonoBehaviour
         if (shipInventory.TryPayFishWeight(currentFishWeightPayment))
         {
             GetFishWeightPayment();
+            Debug.Log("Pagou o peso de Peixe");
         }
-        else{
+        else
+        {
 
             Debug.Log("não tem peso de peixe o suficiente para pagar. Vamos ter que arrancar o dedo do seu filho.");
 
@@ -30,7 +32,7 @@ public class MoneyLender : MonoBehaviour
     {
 
 
-        CalculateNewPayment();
+
 
     }
 
@@ -41,9 +43,25 @@ public class MoneyLender : MonoBehaviour
 
     }
 
-    private void TryGetSpecificFishPayment()
+    public void TryGetSpecificFishPayment()
     {
-        if (specificFish == null) return;
+        if (shipInventory.TryPaySpecificFish(specificFish, qttSpecificFish))
+        {
+
+            GetSpecificFishPayment();
+            Debug.Log($"Pagou a {specificFish.fishName}");
+
+        }
+        else
+        {
+
+            Debug.Log($"Não tem a quantidade de {specificFish.fishName} o suficiente, vamos tirar um dente da sua esposa.");
+
+        }
+    }
+
+    private void GetSpecificFishPayment()
+    {
 
 
 

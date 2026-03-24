@@ -3,13 +3,16 @@ using UnityEngine;
 
 public class ShipInventory : MonoBehaviour
 {
-    private List<FishData> ownedFish = new List<FishData>();
-    private float maxFishCapacity;
+    public List<FishData> ownedFish = new List<FishData>();
+    [SerializeField] private float maxFishCapacity;
     private float currentFishWeight = 0;
+    public bool IsFull => currentFishWeight >= maxFishCapacity;
+
+    public DebugShipInventory debugShipInventory;
 
     public bool TryAddFish(FishData fish)
     {
-        if (currentFishWeight + fish.weight > maxFishCapacity)
+        if (IsFull)
         {
             Debug.Log($"Inventário cheio. Peso atual: {currentFishWeight} / {maxFishCapacity}");
             return false;
@@ -62,7 +65,7 @@ public class ShipInventory : MonoBehaviour
 
         if (fishIndex != -1)
         {
-            ownedFish.RemoveRange(0, fishIndex);
+            ownedFish.RemoveRange(0, fishIndex + 1);
             AttFishWeight();
             return true;
         }
@@ -78,6 +81,8 @@ public class ShipInventory : MonoBehaviour
         {
             currentFishWeight += _fish.weight;
         }
+
+        debugShipInventory.AttFishDebugText();
     }
 
     public float GetCurrentWeight()
@@ -90,24 +95,41 @@ public class ShipInventory : MonoBehaviour
         return maxFishCapacity;
     }
 
-    private bool TryFindFish(FishScriptableObject _wantedFish)
+    private bool TryFindFish(FishScriptableObject _wantedFish, int _wantedQtt = 1)
     {
-
-        foreach(FishData fish in ownedFish)
+        int currentQtt = 0;
+        foreach (FishData fish in ownedFish)
         {
-            if (fish.typeOfFish == _wantedFish) { return true; }
+            if (fish.typeOfFish == _wantedFish)
+            {
+
+                currentQtt++;
+
+                if (currentQtt == _wantedQtt) { return true; }
+
+            }
         }
 
         return false;
 
     }
-    
-    public bool TryPayFish(FishScriptableObject _wantedFish)
-    {
 
+    public bool TryPaySpecificFish(FishScriptableObject _wantedFish, int _wantedQtt)
+    {
+        if (TryFindFish(_wantedFish, _wantedQtt))
+        {
+
+            for (int i = 0; i < _wantedQtt; i++)
+            {
+                ownedFish.RemoveAt(ownedFish.FindIndex(i => i.typeOfFish == _wantedFish));
+            }
+            AttFishWeight();
+            return true;
+
+        }
 
         return false;
     }
 
-    public bool IsFull => currentFishWeight >= maxFishCapacity;
 }
+
