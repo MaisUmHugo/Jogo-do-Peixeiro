@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.LightTransport;
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
 public class WaterManager : MonoBehaviour
@@ -14,9 +15,39 @@ public class WaterManager : MonoBehaviour
 
             for (int i = 0; i < vertices.Length; i++)
             {
-                vertices[i].y = WaveManager.instance.GetWaveHeight(transform.position.x + vertices[i].x);
+                float worldX = transform.position.x + vertices[i].x;
+                float worldZ = transform.position.z + vertices[i].z;
+
+                vertices[i].y = WaveManager.instance.GetWaveHeight(worldX, worldZ);
+
             }
                 meshFilter.mesh.vertices = vertices;
                 meshFilter.mesh.RecalculateNormals();
         }
+    void OnDrawGizmos()
+    {
+        if (!Application.isPlaying || WaveManager.instance == null)
+            return;
+
+        Gizmos.color = Color.cyan;
+
+        float size = 20f;
+        float step = 1f;
+
+        for (float x = -size; x <= size; x += step)
+        {
+            for (float z = -size; z <= size; z += step)
+            {
+                float worldX = transform.position.x + x;
+                float worldZ = transform.position.z + z;
+
+                float y = WaveManager.instance.GetWaveHeight(worldX, worldZ);
+
+                Gizmos.DrawSphere(
+                    new Vector3(worldX, y, worldZ),
+                    0.05f
+                );
+            }
+        }
+    }
 }

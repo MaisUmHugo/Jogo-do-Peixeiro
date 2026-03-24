@@ -273,7 +273,10 @@ MonoBehaviour:
   displacementAmount: 3
   waterDrag: 0.99
   waterAngularDrag: 0.5
-  floaterCount: 1
+  maxSubmersionDepth: 1.5
+  emergencyLift: 3
+  heightOffset: 0
+  outOfWaterWeight: 0.6
 --- !u!1 &438073286
 GameObject:
   m_ObjectHideFlags: 0
@@ -527,7 +530,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7dbc55c534b57c458e3c82221d1bb26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  amplitude: 1.5
+  amplitude: 1
   length: 1
   speed: 2
   offset: 0
@@ -704,65 +707,13 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: 475328000502811339, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 475328000502811339, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 815590785756561853, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1564771001610840528, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2192992753635383459, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: floaterCount
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2192992753635383459, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 2195625284161683878, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 2195625284161683878, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 2555496995904045737, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: floaterCount
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 2555496995904045737, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 2617819272185565381, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3504577152565179876, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 3504577152565179876, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 10
-      objectReference: {fileID: 0}
     - target: {fileID: 3925014722443653986, guid: d132930364710f04cabe89571585f7d2, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -23.8
+      value: -4.77
       objectReference: {fileID: 0}
     - target: {fileID: 3925014722443653986, guid: d132930364710f04cabe89571585f7d2, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 11.1
+      value: 13.71
       objectReference: {fileID: 0}
     - target: {fileID: 3925014722443653986, guid: d132930364710f04cabe89571585f7d2, type: 3}
       propertyPath: m_LocalPosition.z
@@ -799,30 +750,6 @@ PrefabInstance:
     - target: {fileID: 4410049556211755480, guid: d132930364710f04cabe89571585f7d2, type: 3}
       propertyPath: m_Name
       value: braco
-      objectReference: {fileID: 0}
-    - target: {fileID: 5219465461531851687, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6624495967338947341, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 6790893708746595374, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Constraints
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 8432771331784936446, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_Enabled
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 8432771331784936446, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: waterAngularDrag
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 8751418402140965307, guid: d132930364710f04cabe89571585f7d2, type: 3}
-      propertyPath: m_IsActive
-      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
