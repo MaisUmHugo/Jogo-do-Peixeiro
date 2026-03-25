@@ -12,8 +12,8 @@ public class FishingSpot : MonoBehaviour
         if (InputHandler.instance != null)
             InputHandler.instance.onInteractPressed += TryStartFishing;
 
-        boatInRange = true;
-        currentShipInventory = Object.FindFirstObjectByType<ShipInventory>();
+        //boatInRange = true;
+        //currentShipInventory = Object.FindFirstObjectByType<ShipInventory>();
     }
 
     private void OnDestroy()

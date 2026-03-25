@@ -1,5 +1,4 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 [RequireComponent(typeof(Rigidbody))]
 public class BoatMotor : MonoBehaviour
@@ -19,9 +18,30 @@ public class BoatMotor : MonoBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
+    // lê input do InputHandler 
+    void Update()
+    {
+        if (GameManager.instance == null) return;
+        if (InputHandler.instance == null) return;
+
+        // só recebe input quando estiver no barco
+        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
+        {
+            input = Vector2.zero;
+            return;
+        }
+
+        input = InputHandler.instance.moveInput;
+    }
+
     void FixedUpdate()
     {
         if (WaveManager.instance == null) return;
+        if (GameManager.instance == null) return;
+
+        // só movimenta quando estiver no barco
+        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
+            return;
 
         Vector3 forward = transform.forward;
 
@@ -44,20 +64,18 @@ public class BoatMotor : MonoBehaviour
 
         // estabilização leve
         Vector3 flatForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
-        Quaternion targetRot = Quaternion.LookRotation(flatForward, Vector3.up);
 
-        rb.MoveRotation(
-            Quaternion.Slerp(
-                rb.rotation,
-                targetRot,
-                stabilization * Time.fixedDeltaTime
-            )
-        );
-    }
+        if (flatForward.sqrMagnitude > 0.001f)
+        {
+            Quaternion targetRot = Quaternion.LookRotation(flatForward, Vector3.up);
 
-    // recebe WASD ou analógico
-    public void OnMove(InputValue value)
-    {
-        input = value.Get<Vector2>();
+            rb.MoveRotation(
+                Quaternion.Slerp(
+                    rb.rotation,
+                    targetRot,
+                    stabilization * Time.fixedDeltaTime
+                )
+            );
+        }
     }
 }

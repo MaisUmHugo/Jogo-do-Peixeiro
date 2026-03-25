@@ -82,7 +82,8 @@ public class ShipInventory : MonoBehaviour
             currentFishWeight += _fish.weight;
         }
 
-        debugShipInventory.AttFishDebugText();
+        if (debugShipInventory != null)
+            debugShipInventory.AttFishDebugText();
     }
 
     public float GetCurrentWeight()

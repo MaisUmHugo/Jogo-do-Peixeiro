@@ -33,7 +33,7 @@ public class PlayerInteract : MonoBehaviour
         InteractablePromptPoint promptPointComponent = _other.GetComponent<InteractablePromptPoint>();
         currentPromptPoint = promptPointComponent != null ? promptPointComponent.PromptPoint : null;
 
-        if (interactionUI != null)
+        if (interactionUI != null && GameManager.instance.currentState == GameManager.GameState.OnFoot)
             interactionUI.Show(currentInteractableTransform, transform, currentPromptPoint);
     }
 
@@ -55,9 +55,6 @@ public class PlayerInteract : MonoBehaviour
     private void TryInteract()
     {
         if (GameManager.instance == null)
-            return;
-
-        if (GameManager.instance.currentState != GameManager.GameState.OnFoot)
             return;
 
         if (currentInteractable == null)

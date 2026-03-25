@@ -19,6 +19,13 @@ public class InteractionUI : MonoBehaviour
 
     private void Update()
     {
+        if (GameManager.instance != null &&
+            GameManager.instance.currentState != GameManager.GameState.OnFoot)
+        {
+            interactButton.gameObject.SetActive(false);
+            return;
+        }
+
         if (target == null || mainCamera == null || playerTransform == null)
             return;
 
