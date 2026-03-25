@@ -5,6 +5,8 @@ public class PlayerInteract : MonoBehaviour
     [SerializeField] private InteractionUI interactionUI;
 
     private IInteractable currentInteractable;
+    private Transform currentInteractableTransform;
+    private Transform currentPromptPoint;
 
     private void Start()
     {
@@ -20,10 +22,19 @@ public class PlayerInteract : MonoBehaviour
 
     private void OnTriggerEnter(Collider _other)
     {
-        currentInteractable = _other.GetComponent<IInteractable>();
+        IInteractable interactable = _other.GetComponent<IInteractable>();
 
-        if (currentInteractable != null && interactionUI != null)
-            interactionUI.Show();
+        if (interactable == null)
+            return;
+
+        currentInteractable = interactable;
+        currentInteractableTransform = _other.transform;
+
+        InteractablePromptPoint promptPointComponent = _other.GetComponent<InteractablePromptPoint>();
+        currentPromptPoint = promptPointComponent != null ? promptPointComponent.PromptPoint : null;
+
+        if (interactionUI != null)
+            interactionUI.Show(currentInteractableTransform, transform, currentPromptPoint);
     }
 
     private void OnTriggerExit(Collider _other)
@@ -33,6 +44,8 @@ public class PlayerInteract : MonoBehaviour
         if (interactable == currentInteractable)
         {
             currentInteractable = null;
+            currentInteractableTransform = null;
+            currentPromptPoint = null;
 
             if (interactionUI != null)
                 interactionUI.Hide();
