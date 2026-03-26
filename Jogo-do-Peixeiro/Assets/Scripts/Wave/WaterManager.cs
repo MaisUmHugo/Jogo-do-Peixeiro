@@ -1,53 +1,43 @@
 using UnityEngine;
-using UnityEngine.LightTransport;
+
 [RequireComponent(typeof(MeshFilter))]
-[RequireComponent(typeof(MeshRenderer))]
+[DefaultExecutionOrder(10)]
 public class WaterManager : MonoBehaviour
 {
-        private MeshFilter meshFilter;
-        private void Awake()
-        {
-            meshFilter = GetComponent<MeshFilter>();
-        }
-        private void Update()
-        {
-            Vector3[] vertices = meshFilter.mesh.vertices;
+    private MeshFilter meshFilter;
+    private Vector3[] baseVertices;
+    private Vector3[] vertices;
 
-            for (int i = 0; i < vertices.Length; i++)
-            {
-                float worldX = transform.position.x + vertices[i].x;
-                float worldZ = transform.position.z + vertices[i].z;
-
-                vertices[i].y = WaveManager.instance.GetWaveHeight(worldX, worldZ);
-
-            }
-                meshFilter.mesh.vertices = vertices;
-                meshFilter.mesh.RecalculateNormals();
-        }
-    void OnDrawGizmos()
+    void Awake()
     {
-        if (!Application.isPlaying || WaveManager.instance == null)
+        meshFilter = GetComponent<MeshFilter>();
+
+        meshFilter.mesh = Instantiate(meshFilter.mesh);
+
+        baseVertices = meshFilter.mesh.vertices;
+        vertices = new Vector3[baseVertices.Length];
+    }
+
+    void Update()
+    {
+        if (WaveManager.instance == null)
             return;
 
-        Gizmos.color = Color.cyan;
-
-        float size = 20f;
-        float step = 1f;
-
-        for (float x = -size; x <= size; x += step)
+        for (int i = 0; i < vertices.Length; i++)
         {
-            for (float z = -size; z <= size; z += step)
-            {
-                float worldX = transform.position.x + x;
-                float worldZ = transform.position.z + z;
+            Vector3 worldPos =
+                transform.TransformPoint(baseVertices[i]);
 
-                float y = WaveManager.instance.GetWaveHeight(worldX, worldZ);
+            vertices[i] = baseVertices[i];
 
-                Gizmos.DrawSphere(
-                    new Vector3(worldX, y, worldZ),
-                    0.05f
+            vertices[i].y =
+                WaveManager.instance.GetWaveHeight(
+                    worldPos.x,
+                    worldPos.z
                 );
-            }
         }
+
+        meshFilter.mesh.vertices = vertices;
+        meshFilter.mesh.RecalculateNormals();
     }
 }
