@@ -12,7 +12,8 @@ public class InputHandler : MonoBehaviour
     public Vector2 lookInput { get; private set; }
 
     public float zoomInput { get; private set; }
-    public bool pausePressed { get; private set; }
+        
+    public Action onPausePressed;
 
     public Action onInteractPressed;
 
@@ -50,6 +51,10 @@ public class InputHandler : MonoBehaviour
             onInteractPressed?.Invoke();
         }
 
-        pausePressed = inputActions.Player.Pause.WasPressedThisFrame();
+        if (inputActions.Player.Pause.WasPressedThisFrame())
+        {
+            Debug.Log("Pause pressionado");
+            onPausePressed?.Invoke();
+        }
     }
 }
