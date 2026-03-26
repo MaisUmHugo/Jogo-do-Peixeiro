@@ -22,7 +22,8 @@ public class InteractionUI : MonoBehaviour
         if (GameManager.instance != null &&
             GameManager.instance.currentState != GameManager.GameState.OnFoot)
         {
-            interactButton.gameObject.SetActive(false);
+            if (interactButton != null)
+                interactButton.gameObject.SetActive(false);
             return;
         }
 
@@ -56,7 +57,8 @@ public class InteractionUI : MonoBehaviour
         playerTransform = _playerTransform;
         promptPoint = _promptPoint;
 
-        interactButton.gameObject.SetActive(true);
+        if (interactButton != null)
+            interactButton.gameObject.SetActive(true);
     }
 
     public void Hide()

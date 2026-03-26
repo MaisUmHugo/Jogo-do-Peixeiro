@@ -12,6 +12,12 @@ public class BoatController : MonoBehaviour, IInteractable
 
     private bool isPlayerOnBoat;
     private Transform originalParent;
+    private Rigidbody rb;
+
+    private void Awake()
+    {
+        rb = GetComponent<Rigidbody>();
+    }
 
     public void Interact()
     {
@@ -19,16 +25,11 @@ public class BoatController : MonoBehaviour, IInteractable
             EnterBoat();
     }
 
-    //public void Interact()
-    //{
-    //    if (!isPlayerOnBoat)
-    //        EnterBoat();
-    //    else
-    //        ExitBoat();
-    //}
-
-    private void EnterBoat()
+    public void EnterBoat()
     {
+        if (isPlayerOnBoat)
+            return;
+
         Debug.Log("Entrou no barco");
 
         isPlayerOnBoat = true;
@@ -50,29 +51,24 @@ public class BoatController : MonoBehaviour, IInteractable
             boatCamera.SetActive(true);
     }
 
-    //public void ExitBoat()
-    //{
-    //    Debug.Log("Saiu do barco");
-
-    //    isPlayerOnBoat = false;
-    //    GameManager.instance.SetState(GameManager.GameState.OnFoot);
-
-    //    player.transform.SetParent(originalParent);
-    //    player.transform.position = transform.position + transform.right * 2f;
-
-    //    if (playerController != null)
-    //        playerController.enabled = true;
-
-    //    if (characterController != null)
-    //        characterController.enabled = true;
-
-    //    if (boatCamera != null)
-    //        boatCamera.SetActive(false);
-    //}
-
-    public void ExitBoat(Transform _exitPoint)
+    public void ParkBoatAndExit(Transform _parkPoint, Transform _exitPoint)
     {
-        Debug.Log("Saiu do barco");
+        if (!isPlayerOnBoat)
+            return;
+
+        Debug.Log("Barco estacionado e player saiu");
+
+        if (_parkPoint != null)
+        {
+            if (rb != null)
+            {
+                rb.linearVelocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
+            transform.position = _parkPoint.position;
+            transform.rotation = _parkPoint.rotation;
+        }
 
         isPlayerOnBoat = false;
         GameManager.instance.SetState(GameManager.GameState.OnFoot);
@@ -97,5 +93,10 @@ public class BoatController : MonoBehaviour, IInteractable
 
         if (boatCamera != null)
             boatCamera.SetActive(false);
+    }
+
+    public bool IsPlayerOnBoat()
+    {
+        return isPlayerOnBoat;
     }
 }

@@ -28,6 +28,12 @@ public class Floater : MonoBehaviour
     float submersion;
     float depth;
 
+    void Awake()
+    {
+        if (rb == null)
+            rb = GetComponentInParent<Rigidbody>();
+    }
+
     void OnEnable()
     {
         allFloaters.Add(this);
@@ -40,6 +46,9 @@ public class Floater : MonoBehaviour
 
     void FixedUpdate()
     {
+        if (rb == null) return;
+        if (WaveManager.instance == null) return;
+
         float waveHeight = WaveManager.instance.GetWaveHeight(
             transform.position.x,
             transform.position.z
