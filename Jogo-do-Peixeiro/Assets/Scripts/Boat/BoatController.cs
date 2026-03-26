@@ -17,9 +17,15 @@ public class BoatController : MonoBehaviour, IInteractable
     {
         if (!isPlayerOnBoat)
             EnterBoat();
-        else
-            ExitBoat();
     }
+
+    //public void Interact()
+    //{
+    //    if (!isPlayerOnBoat)
+    //        EnterBoat();
+    //    else
+    //        ExitBoat();
+    //}
 
     private void EnterBoat()
     {
@@ -44,27 +50,7 @@ public class BoatController : MonoBehaviour, IInteractable
             boatCamera.SetActive(true);
     }
 
-    public void ExitBoat()
-    {
-        Debug.Log("Saiu do barco");
-
-        isPlayerOnBoat = false;
-        GameManager.instance.SetState(GameManager.GameState.OnFoot);
-
-        player.transform.SetParent(originalParent);
-        player.transform.position = transform.position + transform.right * 2f;
-
-        if (playerController != null)
-            playerController.enabled = true;
-
-        if (characterController != null)
-            characterController.enabled = true;
-
-        if (boatCamera != null)
-            boatCamera.SetActive(false);
-    }
-
-    //public void ExitBoat(Transform _exitPoint)
+    //public void ExitBoat()
     //{
     //    Debug.Log("Saiu do barco");
 
@@ -72,16 +58,7 @@ public class BoatController : MonoBehaviour, IInteractable
     //    GameManager.instance.SetState(GameManager.GameState.OnFoot);
 
     //    player.transform.SetParent(originalParent);
-
-    //    if (_exitPoint != null)
-    //    {
-    //        player.transform.position = _exitPoint.position;
-    //        player.transform.rotation = _exitPoint.rotation;
-    //    }
-    //    else
-    //    {
-    //        player.transform.position = transform.position + transform.right * 2f;
-    //    }
+    //    player.transform.position = transform.position + transform.right * 2f;
 
     //    if (playerController != null)
     //        playerController.enabled = true;
@@ -92,4 +69,33 @@ public class BoatController : MonoBehaviour, IInteractable
     //    if (boatCamera != null)
     //        boatCamera.SetActive(false);
     //}
+
+    public void ExitBoat(Transform _exitPoint)
+    {
+        Debug.Log("Saiu do barco");
+
+        isPlayerOnBoat = false;
+        GameManager.instance.SetState(GameManager.GameState.OnFoot);
+
+        player.transform.SetParent(originalParent);
+
+        if (_exitPoint != null)
+        {
+            player.transform.position = _exitPoint.position;
+            player.transform.rotation = _exitPoint.rotation;
+        }
+        else
+        {
+            player.transform.position = transform.position + transform.right * 2f;
+        }
+
+        if (playerController != null)
+            playerController.enabled = true;
+
+        if (characterController != null)
+            characterController.enabled = true;
+
+        if (boatCamera != null)
+            boatCamera.SetActive(false);
+    }
 }

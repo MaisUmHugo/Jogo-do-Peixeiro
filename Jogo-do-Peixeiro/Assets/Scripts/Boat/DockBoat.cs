@@ -16,7 +16,7 @@ public class Dock : MonoBehaviour, IInteractable
         }
         else if (GameManager.instance.currentState == GameManager.GameState.OnBoat)
         {
-            //boat.ExitBoat(exitPoint);
+            boat.ExitBoat(exitPoint);
         }
     }
 }
