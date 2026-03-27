@@ -865,7 +865,7 @@ GameObject:
   - component: {fileID: 1928465786}
   - component: {fileID: 1928465785}
   - component: {fileID: 1928465789}
-  - component: {fileID: 1928465788}
+  - component: {fileID: 1928465790}
   m_Layer: 0
   m_Name: Main Camera
   m_TagString: MainCamera
@@ -947,31 +947,6 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!114 &1928465788
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1928465784}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 6f6078d49c7e92f4c8fbd11250d9ba8f, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  target: {fileID: 657260902}
-  playerTransform: {fileID: 330522637}
-  distance: 5
-  minDistance: 3
-  maxDistance: 20
-  height: 1.25
-  sensitivityX: 30
-  sensitivityY: 10
-  minPitch: -100
-  maxPitch: 100
-  followSpeed: 5
-  autoAlignSpeed: 5
-  zoomSpeed: 100
 --- !u!114 &1928465789
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1016,6 +991,30 @@ MonoBehaviour:
     m_MipBias: 0
     m_VarianceClampScale: 0.9
     m_ContrastAdaptiveSharpening: 0
+--- !u!114 &1928465790
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1928465784}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 6f6078d49c7e92f4c8fbd11250d9ba8f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  target: {fileID: 657260902}
+  playerTransform: {fileID: 330522637}
+  distance: 5
+  minDistance: 3
+  maxDistance: 8
+  height: 1.5
+  sensitivityX: 2
+  sensitivityY: 2
+  minPitch: -25
+  maxPitch: 60
+  followSpeed: 10
+  zoomSpeed: 2
 --- !u!1 &1937330388
 GameObject:
   m_ObjectHideFlags: 0
@@ -1214,6 +1213,10 @@ PrefabInstance:
     - target: {fileID: 5467897367501000705, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: m_Name
       value: Water
+      objectReference: {fileID: 0}
+    - target: {fileID: 5467897367501000705, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: speed
