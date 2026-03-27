@@ -1,10 +1,13 @@
 using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
+[RequireComponent(typeof(MeshRenderer))]
 public class GenerateWaterMesh : MonoBehaviour
 {
-    public int resolution = 100; // quantidade de subdivisões
-    public float size = 50f;     // tamanho do tile
+    public int resolution = 100;
+    public float size = 50f;
+
+    public Material waterMaterial;
 
     void Awake()
     {
@@ -12,6 +15,9 @@ public class GenerateWaterMesh : MonoBehaviour
 
         Vector3[] vertices =
             new Vector3[(resolution + 1) * (resolution + 1)];
+
+        Vector2[] uvs =
+            new Vector2[(resolution + 1) * (resolution + 1)];
 
         int[] triangles =
             new int[resolution * resolution * 6];
@@ -25,12 +31,17 @@ public class GenerateWaterMesh : MonoBehaviour
                 float percentX = x / (float)resolution;
                 float percentZ = z / (float)resolution;
 
-                vertices[z * (resolution + 1) + x] =
+                int i = z * (resolution + 1) + x;
+
+                vertices[i] =
                     new Vector3(
                         percentX * size - halfSize,
                         0,
                         percentZ * size - halfSize
                     );
+
+                uvs[i] =
+                    new Vector2(percentX, percentZ);
             }
         }
 
@@ -54,10 +65,12 @@ public class GenerateWaterMesh : MonoBehaviour
 
         mesh.vertices = vertices;
         mesh.triangles = triangles;
+        mesh.uv = uvs;
 
         mesh.RecalculateNormals();
         mesh.RecalculateBounds();
 
         GetComponent<MeshFilter>().mesh = mesh;
+        GetComponent<MeshRenderer>().material = waterMaterial;
     }
 }
