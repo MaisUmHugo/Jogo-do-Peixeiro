@@ -37,15 +37,8 @@ public class PlayerInteract : MonoBehaviour
                 // se for dock e não puder interagir agora, esconde UI e limpa se precisar
                 if (dock != null && !dock.CanInteract())
                 {
-                    if (currentInteractable == interactable)
-                    {
-                        currentInteractable = null;
-                        currentInteractableTransform = null;
-                        currentPromptPoint = null;
-
-                        if (interactionUI != null)
-                            interactionUI.Hide();
-                    }
+                    if (interactionUI != null)
+                        interactionUI.Hide();
 
                     return;
                 }
