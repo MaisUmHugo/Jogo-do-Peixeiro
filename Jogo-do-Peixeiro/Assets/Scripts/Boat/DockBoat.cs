@@ -46,4 +46,9 @@ public class Dock : MonoBehaviour, IInteractable
 
         return false;
     }
+
+    public int GetInteractionPriority()
+    {
+        return 100;
+    }
 }
