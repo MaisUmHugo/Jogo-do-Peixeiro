@@ -83,6 +83,36 @@ public class FishingSpot : MonoBehaviour
         FishingManager.instance.StartFishing(currentShipInventory, availableFish);
     }
 
+    public void StartFishingFromRod()
+    {
+        if (FishingManager.instance == null)
+            return;
+
+        if (availableFish == null || availableFish.Length == 0)
+        {
+            Debug.LogWarning("Esse FishingSpot não tem peixes configurados.");
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+            return;
+        }
+
+        ShipInventory inventoryToUse = null;
+
+        if (currentShipInventory != null)
+            inventoryToUse = currentShipInventory;
+        else
+            inventoryToUse = Object.FindFirstObjectByType<ShipInventory>();
+
+        if (inventoryToUse == null)
+        {
+            Debug.LogWarning("Nenhum ShipInventory encontrado.");
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+            return;
+        }
+
+        Debug.Log("Iniciando pesca pela vara");
+        FishingManager.instance.StartFishing(inventoryToUse, availableFish);
+    }
+
     private void OnTriggerEnter(Collider _other)
     {
         if (!_other.CompareTag("Boat"))
