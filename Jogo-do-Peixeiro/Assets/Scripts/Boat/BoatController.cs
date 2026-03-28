@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class BoatController : MonoBehaviour, IInteractable
+public class BoatController : MonoBehaviour
 {
     [SerializeField] private GameObject player;
     [SerializeField] private GameObject boatCamera;
@@ -17,12 +17,6 @@ public class BoatController : MonoBehaviour, IInteractable
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-    }
-
-    public void Interact()
-    {
-        if (!isPlayerOnBoat)
-            EnterBoat();
     }
 
     public void EnterBoat()

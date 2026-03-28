@@ -20,7 +20,7 @@ public class InteractionUI : MonoBehaviour
     private void Update()
     {
         if (GameManager.instance != null &&
-            GameManager.instance.currentState != GameManager.GameState.OnFoot)
+            GameManager.instance.currentState == GameManager.GameState.Fishing)
         {
             if (interactButton != null)
                 interactButton.gameObject.SetActive(false);

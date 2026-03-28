@@ -6,7 +6,11 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private Transform cameraTransform;
 
+    [Header("Gravity")]
+    [SerializeField] private float gravity = -20f;
+
     private CharacterController characterController;
+    private float verticalVelocity;
 
     private void Awake()
     {
@@ -18,6 +22,7 @@ public class PlayerMove : MonoBehaviour
         if (cameraTransform == null)
             return;
 
+        // DIREÇÃO BASEADA NA CAMERA
         Vector3 cameraForward = cameraTransform.forward;
         Vector3 cameraRight = cameraTransform.right;
 
@@ -32,8 +37,24 @@ public class PlayerMove : MonoBehaviour
         if (moveDirection.magnitude > 1f)
             moveDirection.Normalize();
 
-        characterController.Move(moveDirection * moveSpeed * Time.deltaTime);
+        // GRAVIDADE
+        if (characterController.isGrounded)
+        {
+            if (verticalVelocity < 0)
+                verticalVelocity = -2f; // gruda no chão
+        }
+        else
+        {
+            verticalVelocity += gravity * Time.deltaTime;
+        }
 
+        // aplica movimento + gravidade
+        Vector3 finalMove = moveDirection * moveSpeed;
+        finalMove.y = verticalVelocity;
+
+        characterController.Move(finalMove * Time.deltaTime);
+
+        // ROTAÇÃO
         if (moveDirection != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);

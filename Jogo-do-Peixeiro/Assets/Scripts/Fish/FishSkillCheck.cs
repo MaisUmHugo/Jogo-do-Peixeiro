@@ -27,21 +27,29 @@ public class FishSkillCheck : MonoBehaviour
 
     }
 
-    public void CheckClick(InputAction.CallbackContext input)
+    private void Start()
     {
-        if (input.phase == InputActionPhase.Started)
+        if (InputHandler.instance != null)
+            InputHandler.instance.onInteractPressed += CheckClick;
+    }
+
+    private void OnDestroy()
+    {
+        if (InputHandler.instance != null)
+            InputHandler.instance.onInteractPressed -= CheckClick;
+    }
+
+    private void CheckClick()
+    {
+        float index = currentSpotIndex;
+
+        if (index >= fishingRangeStart && index <= fishingRangeEnd)
         {
-            float index = currentSpotIndex;
-
-            if (index >= fishingRangeStart && index <= fishingRangeEnd)
-            {
-
-                WinMinigame();
-                return;
-            }
-
-            FailMinigame();
+            WinMinigame();
+            return;
         }
+
+        FailMinigame();
     }
 
     private void AddSpotIndex()
