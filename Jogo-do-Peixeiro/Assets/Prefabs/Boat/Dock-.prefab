@@ -77,7 +77,7 @@ GameObject:
   - component: {fileID: 2209320804476283096}
   - component: {fileID: 6108088878583689026}
   m_Layer: 0
-  m_Name: Dock
+  m_Name: Dock-
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
