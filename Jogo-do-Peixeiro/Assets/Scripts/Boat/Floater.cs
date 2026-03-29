@@ -27,6 +27,7 @@ public class Floater : MonoBehaviour
 
     float submersion;
     float depth;
+    public bool canFloat = true;
 
     void Awake()
     {
@@ -46,7 +47,7 @@ public class Floater : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (rb == null) return;
+        if (rb == null || WaveManager.instance == null || !canFloat) return;
         if (WaveManager.instance == null) return;
 
         float waveHeight = WaveManager.instance.GetWaveHeight(

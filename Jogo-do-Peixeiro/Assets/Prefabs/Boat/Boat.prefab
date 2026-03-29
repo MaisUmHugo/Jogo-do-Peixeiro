@@ -51,8 +51,9 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 2.1
+  heightOffset: 1.2
   outOfWaterWeight: 3
+  canFloat: 1
 --- !u!1 &1564771001610840528
 GameObject:
   m_ObjectHideFlags: 0
@@ -104,8 +105,9 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 2.1
+  heightOffset: 1.2
   outOfWaterWeight: 3
+  canFloat: 1
 --- !u!1 &2617819272185565381
 GameObject:
   m_ObjectHideFlags: 0
@@ -159,6 +161,7 @@ MonoBehaviour:
   emergencyLift: 6
   heightOffset: 0
   outOfWaterWeight: 0.6
+  canFloat: 1
 --- !u!1 &2969741457684812338
 GameObject:
   m_ObjectHideFlags: 0
@@ -351,6 +354,7 @@ MonoBehaviour:
   emergencyLift: 6
   heightOffset: 0
   outOfWaterWeight: 0.6
+  canFloat: 1
 --- !u!1 &6624495967338947341
 GameObject:
   m_ObjectHideFlags: 0
@@ -402,8 +406,9 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 2.1
+  heightOffset: 1.2
   outOfWaterWeight: 3
+  canFloat: 1
 --- !u!1 &8751418402140965307
 GameObject:
   m_ObjectHideFlags: 0
@@ -455,8 +460,9 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 2.1
+  heightOffset: 1.2
   outOfWaterWeight: 3
+  canFloat: 1
 --- !u!1001 &3599164887304230025
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -479,15 +485,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.x
-      value: 0
+      value: -16.850113
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0
+      value: -0.63
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 0
+      value: 17.08
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalRotation.w
@@ -680,7 +686,7 @@ MonoBehaviour:
   floatStrength: 3
   waterDrag: 5
   waterAngularDrag: 4
-  heightOffset: 0.2
+  heightOffset: 0
 --- !u!65 &8649050672369772335
 BoxCollider:
   m_ObjectHideFlags: 0
