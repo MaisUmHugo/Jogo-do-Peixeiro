@@ -297,7 +297,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -16.214966, y: -327}
+  m_AnchoredPosition: {x: -16.214844, y: -327}
   m_SizeDelta: {x: -952.323, y: -768.405}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &39067745
@@ -1935,6 +1935,52 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 601701484}
   m_CullTransparentMesh: 1
+--- !u!1 &725494550 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 8443410670292128224, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+  m_PrefabInstance: {fileID: 2428750734561153943}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &725494555
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 725494550}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c772cea525cb1ba46be02cee1126e934, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  moneyLender: {fileID: 1911377931}
+  moneyLenderUI: {fileID: 2105225072}
+--- !u!54 &725494557
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 725494550}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!1 &747439087
 GameObject:
   m_ObjectHideFlags: 0
@@ -2791,7 +2837,7 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -30.149048, y: 0}
+  m_AnchoredPosition: {x: -30.148926, y: 0}
   m_SizeDelta: {x: -924.454, y: -355.71}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &1105738563
@@ -4858,20 +4904,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 7038679507549674273, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
   m_PrefabInstance: {fileID: 2428750734561153943}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &1911377930
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1911377929}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: c772cea525cb1ba46be02cee1126e934, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  moneyLender: {fileID: 1911377931}
-  moneyLenderUI: {fileID: 2105225072}
 --- !u!114 &1911377931
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4884,11 +4916,38 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f5fa4254efd0ac344a36bfa2754009cc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  initialFishWeightPaid: 100
+  initialFishWeightPaid: 5
   fishWeightPaidIncremetion: 20
   qttSpecificFish: 0
   specificFish: {fileID: 0}
   shipInventory: {fileID: 1406331909}
+--- !u!54 &1911377934
+Rigidbody:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1911377929}
+  serializedVersion: 4
+  m_Mass: 1
+  m_Drag: 0
+  m_AngularDrag: 0.05
+  m_CenterOfMass: {x: 0, y: 0, z: 0}
+  m_InertiaTensor: {x: 1, y: 1, z: 1}
+  m_InertiaRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ImplicitCom: 1
+  m_ImplicitTensor: 1
+  m_UseGravity: 0
+  m_IsKinematic: 1
+  m_Interpolate: 0
+  m_Constraints: 0
+  m_CollisionDetection: 0
 --- !u!114 &1912255055 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4104836381165108609, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
@@ -5968,9 +6027,9 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   panel: {fileID: 1047726713}
-  requiredWeightText: {fileID: 0}
-  currentWeightText: {fileID: 0}
-  statusText: {fileID: 0}
+  requiredWeightText: {fileID: 775798967}
+  currentWeightText: {fileID: 1006267620}
+  statusText: {fileID: 1831340875}
 --- !u!1001 &2428750734561153943
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -5979,6 +6038,22 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 4799299300154214656, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+      propertyPath: m_Convex
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 4799299300154214656, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+      propertyPath: m_IsTrigger
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6622219023015449302, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+      propertyPath: m_Convex
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6622219023015449302, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+      propertyPath: m_IsTrigger
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 7038679507549674273, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
       propertyPath: m_Name
       value: Agiotagem
@@ -6032,7 +6107,13 @@ PrefabInstance:
       addedObject: {fileID: 1911377931}
     - targetCorrespondingSourceObject: {fileID: 7038679507549674273, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
       insertIndex: -1
-      addedObject: {fileID: 1911377930}
+      addedObject: {fileID: 1911377934}
+    - targetCorrespondingSourceObject: {fileID: 8443410670292128224, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 725494557}
+    - targetCorrespondingSourceObject: {fileID: 8443410670292128224, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 725494555}
   m_SourcePrefab: {fileID: 100100000, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
 --- !u!1001 &4476546381769992960
 PrefabInstance:
