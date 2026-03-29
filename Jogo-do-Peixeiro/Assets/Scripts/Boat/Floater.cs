@@ -54,7 +54,8 @@ public class Floater : MonoBehaviour
             transform.position.z
         );
 
-        depth = waveHeight - (transform.position.y + heightOffset);
+        float floaterLevel = transform.position.y + heightOffset;
+        depth = waveHeight - floaterLevel;
 
         submersion = Mathf.Clamp01(depth / depthBeforeSubmerged);
 

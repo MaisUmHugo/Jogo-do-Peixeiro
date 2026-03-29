@@ -2567,6 +2567,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1207713843}
   m_CullTransparentMesh: 1
+--- !u!4 &1310227272 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 8806574729677044999, guid: 1f663953669a812428a0fcdcfe497b54, type: 3}
+  m_PrefabInstance: {fileID: 4476546381769992960}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &1317440842
 GameObject:
   m_ObjectHideFlags: 0
@@ -3362,9 +3367,21 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 6.46
       objectReference: {fileID: 0}
+    - target: {fileID: 475328000502811339, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 475328000502811339, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: heightOffset
+      value: 2.1
+      objectReference: {fileID: 0}
     - target: {fileID: 1473987026800473671, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: maxFishCapacity
       value: 10
+      objectReference: {fileID: 0}
+    - target: {fileID: 1614043984450894772, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: offset.y
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 2045394431756957250, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: player
@@ -3378,6 +3395,14 @@ PrefabInstance:
       propertyPath: characterController
       value: 
       objectReference: {fileID: 591612417}
+    - target: {fileID: 2195625284161683878, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 2195625284161683878, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: heightOffset
+      value: 2.1
+      objectReference: {fileID: 0}
     - target: {fileID: 2698527336920815991, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 2.73
@@ -3389,6 +3414,14 @@ PrefabInstance:
     - target: {fileID: 2698527336920815991, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: m_LocalPosition.z
       value: 11.83
+      objectReference: {fileID: 0}
+    - target: {fileID: 3504577152565179876, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3504577152565179876, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: heightOffset
+      value: 2.1
       objectReference: {fileID: 0}
     - target: {fileID: 3925014722443653986, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: m_LocalPosition.x
@@ -3438,9 +3471,25 @@ PrefabInstance:
       propertyPath: m_Name
       value: Boat
       objectReference: {fileID: 0}
+    - target: {fileID: 4410049556211755480, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 5166821595822685571, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: m_UseGravity
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6083694497584935514, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8432771331784936446, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 8432771331784936446, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: heightOffset
+      value: 2.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
@@ -3800,6 +3849,11 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1772285559}
   m_CullTransparentMesh: 1
+--- !u!4 &1808977766 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 2366700437929240261, guid: 1f663953669a812428a0fcdcfe497b54, type: 3}
+  m_PrefabInstance: {fileID: 4476546381769992960}
+  m_PrefabAsset: {fileID: 0}
 --- !u!114 &1912255055 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4104836381165108609, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
@@ -4407,10 +4461,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: Water
       objectReference: {fileID: 0}
-    - target: {fileID: 5467897367501000705, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4795,11 +4845,11 @@ PrefabInstance:
     - target: {fileID: 4944136675637345162, guid: 1f663953669a812428a0fcdcfe497b54, type: 3}
       propertyPath: exitPoint
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1310227272}
     - target: {fileID: 4944136675637345162, guid: 1f663953669a812428a0fcdcfe497b54, type: 3}
       propertyPath: boatParkPoint
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1808977766}
     - target: {fileID: 8526589890193615046, guid: 1f663953669a812428a0fcdcfe497b54, type: 3}
       propertyPath: m_Name
       value: ilha
