@@ -177,7 +177,7 @@ public class PauseManager : MonoBehaviour
         ShowConfirmation(() =>
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("Main Menu");
         });
     }
 }
