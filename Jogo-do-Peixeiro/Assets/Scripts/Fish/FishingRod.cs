@@ -10,9 +10,15 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private LayerMask fishingSpotLayer;
 
     [Header("Cast Settings")]
-    [SerializeField] private float maxCastDistance = 20f;
     [SerializeField] private float arcHeight = 4f;
     [SerializeField] private int linePoints = 25;
+
+    [Header("Force")]
+    [SerializeField] private float minCastDistance = 5f;
+    [SerializeField] private float maxCastDistance = 20f;
+    [SerializeField] private float chargeSpeed = 10f;
+
+    private float currentForce;
 
     [Header("Temporary Input")]
     [SerializeField] private bool allowMouseTest = true;
@@ -61,6 +67,7 @@ public class FishingRod : MonoBehaviour
 
         isAiming = true;
         currentTargetSpot = null;
+        currentForce = minCastDistance;
 
         GameManager.instance.SetState(GameManager.GameState.Fishing);
 
@@ -70,6 +77,10 @@ public class FishingRod : MonoBehaviour
 
     private void UpdateAim()
     {
+        // aumenta força enquanto segura
+        currentForce += chargeSpeed * Time.deltaTime;
+        currentForce = Mathf.Clamp(currentForce, minCastDistance, maxCastDistance);
+
         Vector3 targetPoint = GetAimPoint(out FishingSpot hitSpot);
         currentTargetSpot = hitSpot;
 
@@ -104,13 +115,19 @@ public class FishingRod : MonoBehaviour
 
         Ray ray = playerCamera.ScreenPointToRay(Mouse.current.position.ReadValue());
 
-        if (Physics.Raycast(ray, out RaycastHit hit, maxCastDistance, fishingSpotLayer))
+        Vector3 direction = ray.direction;
+        Vector3 origin = rodTip.position;
+
+        // usa a força ao invés de distância fixa
+        Vector3 target = origin + direction * currentForce;
+
+        if (Physics.Raycast(origin, direction, out RaycastHit hit, currentForce, fishingSpotLayer))
         {
             hitSpot = hit.collider.GetComponent<FishingSpot>();
             return hit.point;
         }
 
-        return ray.origin + ray.direction * maxCastDistance;
+        return target;
     }
 
     private void DrawArc(Vector3 startPoint, Vector3 endPoint)
@@ -120,12 +137,18 @@ public class FishingRod : MonoBehaviour
 
         lineRenderer.positionCount = linePoints;
 
+        float distance = Vector3.Distance(startPoint, endPoint);
+
+        // altura baseada na distância
+        float dynamicHeight = distance * 0.5f;
+
         for (int i = 0; i < linePoints; i++)
         {
             float t = i / (float)(linePoints - 1);
 
             Vector3 point = Vector3.Lerp(startPoint, endPoint, t);
-            float heightOffset = Mathf.Sin(t * Mathf.PI) * arcHeight;
+
+            float heightOffset = Mathf.Sin(t * Mathf.PI) * dynamicHeight;
             point.y += heightOffset;
 
             lineRenderer.SetPosition(i, point);
