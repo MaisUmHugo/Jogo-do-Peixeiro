@@ -9,6 +9,7 @@ public class GameManager : MonoBehaviour
         OnFoot,
         OnBoat,
         Fishing,
+        InUI,
         Paused
     }
 
@@ -26,13 +27,13 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    private void Start()
-    {
-        //currentState = GameState.OnFoot;
-    }
-
     public void SetState(GameState _newState)
     {
         currentState = _newState;
+    }
+
+    public bool IsGameplayBlocked()
+    {
+        return currentState == GameState.InUI || currentState == GameState.Paused;
     }
 }
