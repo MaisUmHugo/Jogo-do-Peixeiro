@@ -5,87 +5,22 @@ public class FishingSpot : MonoBehaviour
 {
     [SerializeField] private FishScriptableObject[] availableFish;
 
-    [Header("Temporary Test")]
-    [SerializeField] private bool allowSpaceTest = true;
-    [SerializeField] private bool ignoreAllChecksForTest = true;
+    [Header("Debug Test")]
+    [SerializeField] private bool allowSpaceTest = false;
     [SerializeField] private ShipInventory debugShipInventory;
 
     private bool boatInRange;
     private ShipInventory currentShipInventory;
 
-    private void Start()
-    {
-        if (InputHandler.instance != null)
-            InputHandler.instance.onInteractPressed += TryStartFishing;
-    }
-
-    private void OnDestroy()
-    {
-        if (InputHandler.instance != null)
-            InputHandler.instance.onInteractPressed -= TryStartFishing;
-    }
-
     private void Update()
     {
-        if (allowSpaceTest &&
-            Keyboard.current != null &&
-            Keyboard.current.spaceKey.wasPressedThisFrame)
+        if (!allowSpaceTest)
+            return;
+
+        if (Keyboard.current != null && Keyboard.current.spaceKey.wasPressedThisFrame)
         {
-            TryStartFishing();
+            StartFishingFromRod();
         }
-    }
-
-    private void TryStartFishing()
-    {
-        if (FishingManager.instance == null)
-            return;
-
-        if (availableFish == null || availableFish.Length == 0)
-        {
-            Debug.LogWarning("Esse FishingSpot não tem peixes configurados.");
-            return;
-        }
-
-        if (ignoreAllChecksForTest)
-        {
-            ShipInventory inventoryToUse = debugShipInventory != null
-                ? debugShipInventory
-                : Object.FindFirstObjectByType<ShipInventory>();
-
-            if (inventoryToUse == null)
-            {
-                Debug.LogWarning("Nenhum ShipInventory encontrado para teste.");
-                return;
-            }
-
-            Debug.Log("Tentando pescar (modo teste)");
-            FishingManager.instance.StartFishing(inventoryToUse, availableFish);
-            return;
-        }
-
-        if (!boatInRange)
-            return;
-
-        if (currentShipInventory == null)
-            return;
-
-        if (currentShipInventory.IsFull)
-        {
-            Debug.Log("Inventário cheio, não é possível pescar.");
-            return;
-        }
-
-        if (GameManager.instance == null)
-            return;
-
-        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
-            return;
-
-        if (FishingManager.instance.IsFishing)
-            return;
-
-        Debug.Log("Tentando pescar");
-        FishingManager.instance.StartFishing(currentShipInventory, availableFish);
     }
 
     public void StartFishingFromRod()
@@ -99,12 +34,25 @@ public class FishingSpot : MonoBehaviour
             return;
         }
 
+        if (FishingManager.instance.IsFishing)
+            return;
+
         ShipInventory inventoryToUse = null;
 
-        if (currentShipInventory != null)
-            inventoryToUse = currentShipInventory;
+        if (allowSpaceTest && debugShipInventory != null)
+        {
+            inventoryToUse = debugShipInventory;
+        }
         else
-            inventoryToUse = Object.FindFirstObjectByType<ShipInventory>();
+        {
+            if (!boatInRange)
+            {
+                Debug.Log("O barco não está na área de pesca.");
+                return;
+            }
+
+            inventoryToUse = currentShipInventory;
+        }
 
         if (inventoryToUse == null)
         {
@@ -112,8 +60,30 @@ public class FishingSpot : MonoBehaviour
             return;
         }
 
+        if (GameManager.instance == null)
+            return;
+
+        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
+            return;
+
+        if (inventoryToUse.IsFull)
+        {
+            Debug.Log("Inventário cheio, não é possível pescar.");
+            return;
+        }
+
         Debug.Log("Iniciando pesca pela vara");
         FishingManager.instance.StartFishing(inventoryToUse, availableFish);
+    }
+
+    public FishScriptableObject[] GetAvailableFish()
+    {
+        return availableFish;
+    }
+
+    public bool HasFishAvailable()
+    {
+        return availableFish != null && availableFish.Length > 0;
     }
 
     private void OnTriggerEnter(Collider _other)
@@ -121,9 +91,11 @@ public class FishingSpot : MonoBehaviour
         if (!_other.CompareTag("Boat"))
             return;
 
-        Debug.Log("Barco detectado");
         currentShipInventory = _other.GetComponent<ShipInventory>();
         boatInRange = currentShipInventory != null;
+
+        if (boatInRange)
+            Debug.Log("Barco detectado no FishingSpot.");
     }
 
     private void OnTriggerExit(Collider _other)
@@ -133,10 +105,5 @@ public class FishingSpot : MonoBehaviour
 
         boatInRange = false;
         currentShipInventory = null;
-    }
-
-    public int GetInteractionPriority()
-    {
-        return 0;
     }
 }

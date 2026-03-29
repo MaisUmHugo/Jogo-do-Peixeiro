@@ -19,9 +19,6 @@ public class FishingRod : MonoBehaviour
 
     private float currentForce;
 
-    [Header("Temporary Input")]
-    [SerializeField] private bool allowMouseTest = true;
-
     private bool isAiming;
     private FishingSpot currentTargetSpot;
 
@@ -34,11 +31,45 @@ public class FishingRod : MonoBehaviour
             lineRenderer.enabled = false;
     }
 
-    private void Update()
+    private void Start()
     {
-        if (!allowMouseTest)
+        if (InputHandler.instance != null)
+        {
+            InputHandler.instance.onAimPressed += HandleAimPressed;
+            InputHandler.instance.onAimReleased += HandleAimReleased;
+        }
+    }
+
+    private void OnDestroy()
+    {
+        if (InputHandler.instance != null)
+        {
+            InputHandler.instance.onAimPressed -= HandleAimPressed;
+            InputHandler.instance.onAimReleased -= HandleAimReleased;
+        }
+    }
+
+    private void HandleAimPressed()
+    {
+        if (GameManager.instance == null)
             return;
 
+        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
+            return;
+
+        StartAim();
+    }
+
+    private void HandleAimReleased()
+    {
+        if (!isAiming)
+            return;
+
+        ReleaseCast();
+    }
+
+    private void Update()
+    {
         if (GameManager.instance == null)
             return;
 
@@ -46,17 +77,8 @@ public class FishingRod : MonoBehaviour
             GameManager.instance.currentState != GameManager.GameState.Fishing)
             return;
 
-        if (Mouse.current == null)
-            return;
-
-        if (Mouse.current.leftButton.wasPressedThisFrame)
-            StartAim();
-
         if (isAiming)
             UpdateAim();
-
-        if (Mouse.current.leftButton.wasReleasedThisFrame)
-            ReleaseCast();
     }
 
     private void StartAim()

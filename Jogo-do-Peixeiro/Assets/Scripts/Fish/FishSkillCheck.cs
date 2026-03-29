@@ -5,10 +5,13 @@ public class FishSkillCheck : MonoBehaviour
     [Header("Timing")]
     [SerializeField] private float timingDuration = 1f;
 
-    [Header("Fishing Progress")]
-    [SerializeField] private int requiredSuccesses = 3;
+    [Header("Fail Settings")]
     [SerializeField] private int maxFails = 3;
-    [SerializeField] private int failPenalty = 1;
+
+    [Header("Progress System")]
+    [SerializeField] private float passiveProgressSpeed = 0.08f;
+    [SerializeField] private float successBonus = 0.18f;
+    [SerializeField] private float failPenaltyProgress = 0.12f;
 
     [Header("Default Difficulty")]
     [SerializeField, Range(0.05f, 0.8f)] private float defaultSuccessZoneSize = 0.2f;
@@ -33,9 +36,8 @@ public class FishSkillCheck : MonoBehaviour
     public float SuccessZoneStartNormalized { get; private set; }
     public float SuccessZoneEndNormalized { get; private set; }
     public float IndicatorNormalized { get; private set; }
+    public float ProgressNormalized { get; private set; }
 
-    public int CurrentProgress => currentProgress;
-    public int RequiredSuccesses => requiredSuccesses;
     public int CurrentFails => currentFails;
     public int MaxFails => maxFails;
 
@@ -45,9 +47,7 @@ public class FishSkillCheck : MonoBehaviour
     private FishingManager fishingManager;
     private FishScriptableObject currentFishType;
 
-    private int currentProgress;
     private int currentFails;
-
     private float currentSuccessZoneSize;
     private float currentIndicatorSpeed;
 
@@ -56,9 +56,9 @@ public class FishSkillCheck : MonoBehaviour
         fishingManager = _fishingManager;
         currentFishType = _fishType;
 
-        currentProgress = 0;
         currentFails = 0;
         IndicatorNormalized = 0f;
+        ProgressNormalized = 0f;
 
         ApplyDifficultyFromFish();
         GenerateNewZone();
@@ -82,6 +82,7 @@ public class FishSkillCheck : MonoBehaviour
     private void Update()
     {
         UpdateIndicator();
+        UpdateProgress();
     }
 
     private void UpdateIndicator()
@@ -90,6 +91,15 @@ public class FishSkillCheck : MonoBehaviour
 
         if (IndicatorNormalized >= 1f)
             RegisterFail();
+    }
+
+    private void UpdateProgress()
+    {
+        ProgressNormalized += passiveProgressSpeed * Time.deltaTime;
+        ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
+
+        if (ProgressNormalized >= 1f)
+            WinMinigame();
     }
 
     private void CheckClick()
@@ -109,9 +119,10 @@ public class FishSkillCheck : MonoBehaviour
 
     private void RegisterSuccess()
     {
-        currentProgress++;
+        ProgressNormalized += successBonus;
+        ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
 
-        if (currentProgress >= requiredSuccesses)
+        if (ProgressNormalized >= 1f)
         {
             WinMinigame();
             return;
@@ -123,7 +134,9 @@ public class FishSkillCheck : MonoBehaviour
     private void RegisterFail()
     {
         currentFails++;
-        currentProgress = Mathf.Max(0, currentProgress - failPenalty);
+
+        ProgressNormalized -= failPenaltyProgress;
+        ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
 
         if (currentFails >= maxFails)
         {
@@ -185,7 +198,7 @@ public class FishSkillCheck : MonoBehaviour
         gameObject.SetActive(false);
 
         IndicatorNormalized = 0f;
-        currentProgress = 0;
+        ProgressNormalized = 0f;
         currentFails = 0;
         currentFishType = null;
 
@@ -199,7 +212,7 @@ public class FishSkillCheck : MonoBehaviour
         gameObject.SetActive(false);
 
         IndicatorNormalized = 0f;
-        currentProgress = 0;
+        ProgressNormalized = 0f;
         currentFails = 0;
         currentFishType = null;
 

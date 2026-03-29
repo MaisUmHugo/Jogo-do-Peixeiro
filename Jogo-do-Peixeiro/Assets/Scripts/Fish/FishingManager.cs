@@ -5,13 +5,13 @@ public class FishingManager : MonoBehaviour
 {
     public static FishingManager instance;
 
+    [SerializeField] private FishingResultUI fishingResultUI;
     [SerializeField] private float fishingTime = 2f;
     [SerializeField] private FishSkillCheck fishSkillCheck;
     [SerializeField] private bool useSkillCheck = true;
 
     public bool IsFishing { get; private set; }
 
-    private GameManager.GameState previousState;
     private ShipInventory currentShipInventory;
     private FishScriptableObject[] currentAvailableFish;
 
@@ -69,7 +69,6 @@ public class FishingManager : MonoBehaviour
 
         if (GameManager.instance != null)
         {
-            previousState = GameManager.instance.currentState;
             GameManager.instance.SetState(GameManager.GameState.Fishing);
         }
 
@@ -124,9 +123,21 @@ public class FishingManager : MonoBehaviour
         bool addedSuccessfully = currentShipInventory.TryAddFish(pendingFish);
 
         if (addedSuccessfully)
+        {
             Debug.Log($"Peixe capturado: {pendingFish.typeOfFish.fishName} - {pendingFish.weight}kg");
+
+            if (fishingResultUI != null)
+            {
+                fishingResultUI.ShowCatchResult(
+                    pendingFish.typeOfFish.fishName,
+                    pendingFish.weight
+                );
+            }
+        }
         else
+        {
             Debug.Log("Inventário cheio.");
+        }
 
         pendingFish = null;
     }

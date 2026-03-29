@@ -2,41 +2,58 @@ using UnityEngine;
 
 public class FishSkillCheckUI : MonoBehaviour
 {
-    [Header("UI References")]
+    [Header("References")]
     [SerializeField] private FishSkillCheck fishSkillCheck;
-    [SerializeField] private RectTransform barArea;
+
+    [Header("Progress Bar")]
+    [SerializeField] private RectTransform progressBarArea;
+    [SerializeField] private RectTransform progressBarFill;
+
+    [Header("Timing Bar")]
+    [SerializeField] private RectTransform timingBarArea;
     [SerializeField] private RectTransform successZone;
     [SerializeField] private RectTransform indicator;
 
     private void Update()
     {
-        if (fishSkillCheck == null || barArea == null || successZone == null || indicator == null)
+        if (fishSkillCheck == null)
             return;
 
-        UpdateSuccessZone();
-        UpdateIndicator();
+        UpdateProgressBar();
+        UpdateTimingBar();
     }
 
-    private void UpdateSuccessZone()
+    private void UpdateProgressBar()
     {
-        float barWidth = barArea.rect.width;
+        if (progressBarArea == null || progressBarFill == null)
+            return;
+
+        float width = progressBarArea.rect.width;
+        float fillWidth = fishSkillCheck.ProgressNormalized * width;
+
+        progressBarFill.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, fillWidth);
+
+        float fillPosX = (fillWidth * 0.5f) - (width * 0.5f);
+        progressBarFill.anchoredPosition = new Vector2(fillPosX, progressBarFill.anchoredPosition.y);
+    }
+
+    private void UpdateTimingBar()
+    {
+        if (timingBarArea == null || successZone == null || indicator == null)
+            return;
+
+        float width = timingBarArea.rect.width;
 
         float zoneStart = fishSkillCheck.SuccessZoneStartNormalized;
         float zoneEnd = fishSkillCheck.SuccessZoneEndNormalized;
 
-        float zoneWidth = (zoneEnd - zoneStart) * barWidth;
-        float zoneCenterX = ((zoneStart + zoneEnd) * 0.5f - 0.5f) * barWidth;
+        float zoneWidth = (zoneEnd - zoneStart) * width;
+        float zoneCenterX = ((zoneStart + zoneEnd) * 0.5f - 0.5f) * width;
 
         successZone.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, zoneWidth);
         successZone.anchoredPosition = new Vector2(zoneCenterX, successZone.anchoredPosition.y);
-    }
 
-    private void UpdateIndicator()
-    {
-        float barWidth = barArea.rect.width;
-
-        float indicatorX = (fishSkillCheck.IndicatorNormalized - 0.5f) * barWidth;
-
+        float indicatorX = (fishSkillCheck.IndicatorNormalized - 0.5f) * width;
         indicator.anchoredPosition = new Vector2(indicatorX, indicator.anchoredPosition.y);
     }
 }
