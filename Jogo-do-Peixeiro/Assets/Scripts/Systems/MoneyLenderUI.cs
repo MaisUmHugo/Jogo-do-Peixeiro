@@ -52,7 +52,10 @@ public class MoneyLenderUI : MonoBehaviour
             statusText.text = string.Empty;
 
         if (GameManager.instance != null)
-            GameManager.instance.SetState(GameManager.GameState.Paused);
+            GameManager.instance.SetState(GameManager.GameState.InUI);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
 
         Refresh();
     }
@@ -65,7 +68,7 @@ public class MoneyLenderUI : MonoBehaviour
         bool success = currentMoneyLender.TryGetFishWeightPayment();
 
         if (statusText != null)
-            statusText.text = success ? "Payment delivered." : "Not enough fish weight.";
+            statusText.text = success ? "Pagamento entregue." : "Peso de peixe insuficiente.";
 
         Refresh();
     }
@@ -101,6 +104,9 @@ public class MoneyLenderUI : MonoBehaviour
 
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnFoot);
+
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
     }
 
     private void CloseImmediate()
