@@ -379,7 +379,6 @@ MonoBehaviour:
   availableFish:
   - {fileID: 11400000, guid: 2ca48ec2910fc764a9a2790039651937, type: 2}
   allowSpaceTest: 1
-  ignoreAllChecksForTest: 1
   debugShipInventory: {fileID: 0}
 --- !u!136 &252890215
 CapsuleCollider:
@@ -4141,7 +4140,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 5467897367501000705, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: m_IsActive
-      value: 0
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: length
+      value: 5
+      objectReference: {fileID: 0}
+    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: amplitude
+      value: 5
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
