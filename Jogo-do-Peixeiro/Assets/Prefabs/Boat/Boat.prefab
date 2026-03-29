@@ -740,6 +740,7 @@ MonoBehaviour:
   player: {fileID: 0}
   boatCamera: {fileID: 0}
   seatPoint: {fileID: 2698527336920815991}
+  OffsetRotacao: {x: 90, y: 0, z: 0}
   playerController: {fileID: 0}
   characterController: {fileID: 0}
 --- !u!114 &1473987026800473671

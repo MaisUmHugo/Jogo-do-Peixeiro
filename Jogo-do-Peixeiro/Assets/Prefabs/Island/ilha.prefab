@@ -234,8 +234,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   boat: {fileID: 0}
-  boatParkPoint: {fileID: 0}
-  exitPoint: {fileID: 0}
+  boatParkPoint: {fileID: 2366700437929240261}
+  exitPoint: {fileID: 8806574729677044999}
   dockRange: 20
 --- !u!64 &3401073311035979898
 MeshCollider:
