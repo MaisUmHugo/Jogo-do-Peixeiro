@@ -1,33 +1,42 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 public class FishSkillCheckUI : MonoBehaviour
 {
-    private FishSkillCheck fishSkillCheck;
-    private Transform positionIndicator;
-    private Scrollbar fishingRangeIndicator;
-
-    private void Awake()
-    {
-        fishSkillCheck = GetComponent<FishSkillCheck>();
-        positionIndicator = transform.GetChild(1).transform.GetChild(0).transform.GetChild(1);
-        fishingRangeIndicator = transform.GetChild(1).GetComponent<Scrollbar>();
-    }
-
-    private void MoveIndicator()
-    {
-        float spot = fishSkillCheck.currentSpotIndex / fishSkillCheck.fishingSpotSize;
-        float newPos = (spot * 1000f) - 500f;
-
-        positionIndicator.position = new Vector3(newPos + 960f, positionIndicator.position.y, 0f);
-    }
+    [Header("UI References")]
+    [SerializeField] private FishSkillCheck fishSkillCheck;
+    [SerializeField] private RectTransform barArea;
+    [SerializeField] private RectTransform successZone;
+    [SerializeField] private RectTransform indicator;
 
     private void Update()
     {
-        if (fishSkillCheck == null)
+        if (fishSkillCheck == null || barArea == null || successZone == null || indicator == null)
             return;
 
-        fishingRangeIndicator.value = fishSkillCheck.fishingRangeStart;
-        MoveIndicator();
+        UpdateSuccessZone();
+        UpdateIndicator();
+    }
+
+    private void UpdateSuccessZone()
+    {
+        float barWidth = barArea.rect.width;
+
+        float zoneStart = fishSkillCheck.SuccessZoneStartNormalized;
+        float zoneEnd = fishSkillCheck.SuccessZoneEndNormalized;
+
+        float zoneWidth = (zoneEnd - zoneStart) * barWidth;
+        float zoneCenterX = ((zoneStart + zoneEnd) * 0.5f - 0.5f) * barWidth;
+
+        successZone.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, zoneWidth);
+        successZone.anchoredPosition = new Vector2(zoneCenterX, successZone.anchoredPosition.y);
+    }
+
+    private void UpdateIndicator()
+    {
+        float barWidth = barArea.rect.width;
+
+        float indicatorX = (fishSkillCheck.IndicatorNormalized - 0.5f) * barWidth;
+
+        indicator.anchoredPosition = new Vector2(indicatorX, indicator.anchoredPosition.y);
     }
 }

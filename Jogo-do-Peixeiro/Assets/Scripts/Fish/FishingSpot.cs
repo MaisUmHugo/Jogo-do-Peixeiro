@@ -69,6 +69,12 @@ public class FishingSpot : MonoBehaviour
         if (currentShipInventory == null)
             return;
 
+        if (currentShipInventory.IsFull)
+        {
+            Debug.Log("Inventário cheio, não é possível pescar.");
+            return;
+        }
+
         if (GameManager.instance == null)
             return;
 
@@ -79,7 +85,6 @@ public class FishingSpot : MonoBehaviour
             return;
 
         Debug.Log("Tentando pescar");
-        GameManager.instance.SetState(GameManager.GameState.Fishing);
         FishingManager.instance.StartFishing(currentShipInventory, availableFish);
     }
 
@@ -91,7 +96,6 @@ public class FishingSpot : MonoBehaviour
         if (availableFish == null || availableFish.Length == 0)
         {
             Debug.LogWarning("Esse FishingSpot não tem peixes configurados.");
-            GameManager.instance.SetState(GameManager.GameState.OnBoat);
             return;
         }
 
@@ -105,7 +109,6 @@ public class FishingSpot : MonoBehaviour
         if (inventoryToUse == null)
         {
             Debug.LogWarning("Nenhum ShipInventory encontrado.");
-            GameManager.instance.SetState(GameManager.GameState.OnBoat);
             return;
         }
 

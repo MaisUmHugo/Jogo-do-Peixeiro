@@ -15,6 +15,8 @@ public class FishingManager : MonoBehaviour
     private ShipInventory currentShipInventory;
     private FishScriptableObject[] currentAvailableFish;
 
+    private FishData pendingFish;
+
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -33,23 +35,37 @@ public class FishingManager : MonoBehaviour
 
         if (_shipInventory == null)
         {
-            if (GameManager.instance != null)
-                GameManager.instance.SetState(GameManager.GameState.OnBoat);
+            ReturnToBoatState();
             return;
         }
 
         if (_availableFish == null || _availableFish.Length == 0)
         {
             Debug.LogWarning("Nenhum peixe configurado nesse spot.");
-
-            if (GameManager.instance != null)
-                GameManager.instance.SetState(GameManager.GameState.OnBoat);
-
+            ReturnToBoatState();
             return;
         }
 
         currentShipInventory = _shipInventory;
         currentAvailableFish = _availableFish;
+
+        FishScriptableObject selectedFishType = PickRandomFishType();
+        if (selectedFishType == null)
+        {
+            Debug.LogWarning("Falha ao selecionar um peixe.");
+            ReturnToBoatState();
+            return;
+        }
+
+        pendingFish = new FishData(selectedFishType);
+
+        if (!currentShipInventory.CanAddFish(pendingFish))
+        {
+            Debug.Log("Inventário do barco cheio ou sem espaço para esse peixe.");
+            pendingFish = null;
+            ReturnToBoatState();
+            return;
+        }
 
         if (GameManager.instance != null)
         {
@@ -60,7 +76,7 @@ public class FishingManager : MonoBehaviour
         if (useSkillCheck && fishSkillCheck != null)
         {
             IsFishing = true;
-            fishSkillCheck.StartSkillCheck(this);
+            fishSkillCheck.StartSkillCheck(this, selectedFishType);
             return;
         }
 
@@ -75,14 +91,13 @@ public class FishingManager : MonoBehaviour
 
         yield return new WaitForSeconds(fishingTime);
 
-        GiveRandomFish();
-
+        GivePendingFish();
         EndFishing();
     }
 
     public void OnSkillCheckSuccess()
     {
-        GiveRandomFish();
+        GivePendingFish();
         EndFishing();
     }
 
@@ -92,20 +107,28 @@ public class FishingManager : MonoBehaviour
         EndFishing();
     }
 
-    private void GiveRandomFish()
+    private FishScriptableObject PickRandomFishType()
     {
-        if (currentShipInventory == null || currentAvailableFish == null || currentAvailableFish.Length == 0)
-            return;
+        if (currentAvailableFish == null || currentAvailableFish.Length == 0)
+            return null;
 
         int randomIndex = Random.Range(0, currentAvailableFish.Length);
-        FishData fish = new FishData(currentAvailableFish[randomIndex]);
+        return currentAvailableFish[randomIndex];
+    }
 
-        bool addedSuccessfully = currentShipInventory.TryAddFish(fish);
+    private void GivePendingFish()
+    {
+        if (currentShipInventory == null || pendingFish == null)
+            return;
+
+        bool addedSuccessfully = currentShipInventory.TryAddFish(pendingFish);
 
         if (addedSuccessfully)
-            Debug.Log($"Peixe capturado: {fish.typeOfFish.fishName} - {fish.weight}kg");
+            Debug.Log($"Peixe capturado: {pendingFish.typeOfFish.fishName} - {pendingFish.weight}kg");
         else
             Debug.Log("Inventário cheio.");
+
+        pendingFish = null;
     }
 
     private void EndFishing()
@@ -113,9 +136,16 @@ public class FishingManager : MonoBehaviour
         IsFishing = false;
 
         if (GameManager.instance != null)
-            GameManager.instance.SetState(previousState);
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
 
         currentShipInventory = null;
         currentAvailableFish = null;
+        pendingFish = null;
+    }
+
+    private void ReturnToBoatState()
+    {
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
     }
 }

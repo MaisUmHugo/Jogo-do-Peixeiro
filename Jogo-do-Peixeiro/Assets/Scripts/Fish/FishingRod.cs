@@ -10,7 +10,6 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private LayerMask fishingSpotLayer;
 
     [Header("Cast Settings")]
-    [SerializeField] private float arcHeight = 4f;
     [SerializeField] private int linePoints = 25;
 
     [Header("Force")]
@@ -69,8 +68,6 @@ public class FishingRod : MonoBehaviour
         currentTargetSpot = null;
         currentForce = minCastDistance;
 
-        GameManager.instance.SetState(GameManager.GameState.Fishing);
-
         if (lineRenderer != null)
             lineRenderer.enabled = true;
     }
@@ -87,27 +84,26 @@ public class FishingRod : MonoBehaviour
         DrawArc(rodTip.position, targetPoint);
     }
 
-    private void ReleaseCast()
+   private void ReleaseCast()
+{
+    if (!isAiming)
+        return;
+
+    isAiming = false;
+
+    if (lineRenderer != null)
+        lineRenderer.enabled = false;
+
+    if (currentTargetSpot != null)
     {
-        if (!isAiming)
-            return;
-
-        isAiming = false;
-
-        if (lineRenderer != null)
-            lineRenderer.enabled = false;
-
-        if (currentTargetSpot != null)
-        {
-            Debug.Log("Acertou o FishingSpot com a vara");
-            currentTargetSpot.StartFishingFromRod();
-        }
-        else
-        {
-            Debug.Log("Errou o FishingSpot");
-            GameManager.instance.SetState(GameManager.GameState.OnBoat);
-        }
+        Debug.Log("Acertou o FishingSpot com a vara");
+        currentTargetSpot.StartFishingFromRod();
     }
+    else
+    {
+        Debug.Log("Errou o FishingSpot");
+    }
+}
 
     private Vector3 GetAimPoint(out FishingSpot hitSpot)
     {

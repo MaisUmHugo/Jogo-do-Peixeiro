@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minWeight: 3
   maxWeight: 5
-  rarity: 1
+  rarity: 2
   pricePerWeight: 0
   fishName: "Til\xE1pia"
   description: 
