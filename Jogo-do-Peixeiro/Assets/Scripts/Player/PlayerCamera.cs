@@ -6,14 +6,14 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField] private Transform playerTransform;
 
     [Header("Offset")]
-    [SerializeField] private float distance = 5f;
-    [SerializeField] private float minDistance = 3f;
-    [SerializeField] private float maxDistance = 8f;
-    [SerializeField] private float height = 1.5f;
+    [SerializeField] private float distance = 3f;
+    [SerializeField] private float minDistance = 1f;
+    [SerializeField] private float maxDistance = 4f;
+    [SerializeField] private float height = 1f;
 
     [Header("Sensitivity")]
-    [SerializeField] private float sensitivityX = 2f;
-    [SerializeField] private float sensitivityY = 2f;
+    [SerializeField] private float sensitivityX = 0.1f;
+    [SerializeField] private float sensitivityY = 0.1f;
 
     [Header("Clamp")]
     [SerializeField] private float minPitch = -25f;
@@ -23,44 +23,27 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField] private float followSpeed = 10f;
 
     [Header("Zoom")]
-    [SerializeField] private float zoomSpeed = 2f;
+    [SerializeField] private float zoomSpeed = 30f;
 
     private float yaw;
     private float pitch;
 
     private void Start()
     {
-        Cursor.lockState = CursorLockMode.Locked;
-        Cursor.visible = false;
-
         Vector3 currentRotation = transform.eulerAngles;
         yaw = currentRotation.y;
         pitch = currentRotation.x;
 
         if (pitch > 180f)
             pitch -= 360f;
+
+        LoadSensitivity();
     }
 
     private void LateUpdate()
     {
         if (target == null || playerTransform == null || InputHandler.instance == null)
             return;
-        if (GameManager.instance != null)
-        {
-            if (GameManager.instance.currentState == GameManager.GameState.InUI ||
-                GameManager.instance.currentState == GameManager.GameState.Paused)
-            {
-                Cursor.lockState = CursorLockMode.None;
-                Cursor.visible = true;
-                return;
-            }
-            else
-            {
-                // Garante que volte a travar ao sair do menu
-                Cursor.lockState = CursorLockMode.Locked;
-                Cursor.visible = false;
-            }
-        }
 
         if (GameManager.instance != null)
         {
@@ -89,5 +72,22 @@ public class PlayerCamera : MonoBehaviour
 
         transform.position = Vector3.Lerp(transform.position, desiredPosition, followSpeed * Time.deltaTime);
         transform.LookAt(targetPosition);
+    }
+
+    public void SetSensitivity(float _value)
+    {
+        sensitivityX = _value;
+        sensitivityY = _value;
+    }
+
+    public float GetSensitivity()
+    {
+        return sensitivityX;
+    }
+
+    public void LoadSensitivity()
+    {
+        float savedSensitivity = PlayerPrefs.GetFloat("CameraSensitivity", sensitivityX);
+        SetSensitivity(savedSensitivity);
     }
 }
