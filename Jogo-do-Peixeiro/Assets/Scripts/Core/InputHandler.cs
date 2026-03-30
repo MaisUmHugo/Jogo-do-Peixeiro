@@ -17,6 +17,10 @@ public class InputHandler : MonoBehaviour
 
     public Action onInteractPressed;
 
+    public Action onAimPressed;
+
+    public Action onAimReleased;
+
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -43,7 +47,7 @@ public class InputHandler : MonoBehaviour
     {
         moveInput = inputActions.Player.Move.ReadValue<Vector2>();
         lookInput = inputActions.Player.Look.ReadValue<Vector2>();
-        zoomInput = inputActions.Player.Zoom.ReadValue<Vector2>().y;
+        zoomInput = inputActions.Player.Zoom.ReadValue<float>();
 
         if (inputActions.Player.Interact.WasPressedThisFrame())
         {
@@ -55,6 +59,16 @@ public class InputHandler : MonoBehaviour
         {
             Debug.Log("Pause pressionado");
             onPausePressed?.Invoke();
+        }
+
+        if (inputActions.Player.Aim.WasPressedThisFrame())
+        {
+            onAimPressed?.Invoke();
+        }
+
+        if (inputActions.Player.Aim.WasReleasedThisFrame())
+        {
+            onAimReleased?.Invoke();
         }
     }
 }

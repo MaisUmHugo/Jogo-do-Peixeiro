@@ -43,6 +43,13 @@ public class PlayerCamera : MonoBehaviour
         if (target == null || playerTransform == null || InputHandler.instance == null)
             return;
 
+        if (GameManager.instance != null)
+        {
+            if (GameManager.instance.currentState == GameManager.GameState.InUI ||
+                GameManager.instance.currentState == GameManager.GameState.Paused)
+                return;
+        }
+
         Vector2 lookInput = InputHandler.instance.lookInput;
 
         yaw += lookInput.x * sensitivityX;
