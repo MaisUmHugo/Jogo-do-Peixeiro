@@ -1,7 +1,21 @@
+using System;
 using UnityEngine;
 
 public class FishSkillCheck : MonoBehaviour
 {
+    public enum FeedbackResult
+    {
+        Terrible,
+        Bad,
+        Near,
+        Good,
+        Great,
+        Perfect
+    }
+
+    public event Action<FeedbackResult> OnFeedbackTriggered;
+    public event Action OnFailShake;
+
     [Header("Timing")]
     [SerializeField] private float timingDuration = 1f;
 
@@ -32,6 +46,15 @@ public class FishSkillCheck : MonoBehaviour
     [Header("Zone Spawn")]
     [SerializeField, Range(0f, 1f)] private float minZoneStart = 0.1f;
     [SerializeField, Range(0f, 1f)] private float maxZoneStart = 0.75f;
+
+    [Header("Accuracy Thresholds")]
+    [SerializeField, Range(0f, 1f)] private float perfectThreshold = 0.15f;
+    [SerializeField, Range(0f, 1f)] private float greatThreshold = 0.35f;
+    [SerializeField, Range(0f, 1f)] private float nearMissThreshold = 1.25f;
+    [SerializeField, Range(0f, 1f)] private float badMissThreshold = 2.2f;
+
+    [Header("Zone Variation")]
+    [SerializeField] private float zoneVariationPercent = 0.25f;
 
     public float SuccessZoneStartNormalized { get; private set; }
     public float SuccessZoneEndNormalized { get; private set; }
@@ -119,7 +142,27 @@ public class FishSkillCheck : MonoBehaviour
 
     private void RegisterSuccess()
     {
-        ProgressNormalized += successBonus;
+        FeedbackResult feedback = CalculateSuccessFeedback();
+        OnFeedbackTriggered?.Invoke(feedback);
+
+        float bonus = successBonus;
+
+        switch (feedback)
+        {
+            case FeedbackResult.Good:
+                bonus *= 1f;
+                break;
+
+            case FeedbackResult.Great:
+                bonus *= 1.25f;
+                break;
+
+            case FeedbackResult.Perfect:
+                bonus *= 1.6f;
+                break;
+        }
+
+        ProgressNormalized += bonus;
         ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
 
         if (ProgressNormalized >= 1f)
@@ -138,6 +181,10 @@ public class FishSkillCheck : MonoBehaviour
         ProgressNormalized -= failPenaltyProgress;
         ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
 
+        FeedbackResult feedback = CalculateFailFeedback();
+        OnFeedbackTriggered?.Invoke(feedback);
+        OnFailShake?.Invoke();
+
         if (currentFails >= maxFails)
         {
             FailMinigame();
@@ -145,6 +192,39 @@ public class FishSkillCheck : MonoBehaviour
         }
 
         ResetRound();
+    }
+
+    private FeedbackResult CalculateSuccessFeedback()
+    {
+        float center = (SuccessZoneStartNormalized + SuccessZoneEndNormalized) * 0.5f;
+        float halfSize = (SuccessZoneEndNormalized - SuccessZoneStartNormalized) * 0.5f;
+
+        float distanceFromCenter = Mathf.Abs(IndicatorNormalized - center);
+        float normalizedDistance = halfSize > 0f ? distanceFromCenter / halfSize : 1f;
+
+        if (normalizedDistance <= perfectThreshold)
+            return FeedbackResult.Perfect;
+
+        if (normalizedDistance <= greatThreshold)
+            return FeedbackResult.Great;
+
+        return FeedbackResult.Good;
+    }
+
+    private FeedbackResult CalculateFailFeedback()
+    {
+        float center = (SuccessZoneStartNormalized + SuccessZoneEndNormalized) * 0.5f;
+
+        float distance = Mathf.Abs(IndicatorNormalized - center);
+        float normalized = distance / 0.5f;
+
+        if (normalized <= 0.25f)
+            return FeedbackResult.Near;
+
+        if (normalized <= 0.6f)
+            return FeedbackResult.Bad;
+
+        return FeedbackResult.Terrible;
     }
 
     private void ResetRound()
@@ -155,13 +235,16 @@ public class FishSkillCheck : MonoBehaviour
 
     private void GenerateNewZone()
     {
-        float clampedZoneSize = Mathf.Clamp(currentSuccessZoneSize, 0.01f, 0.95f);
+        float variation = currentSuccessZoneSize * zoneVariationPercent;
 
-        float allowedMaxStart = Mathf.Min(maxZoneStart, 1f - clampedZoneSize);
+        float variedSize = currentSuccessZoneSize + UnityEngine.Random.Range(-variation, variation);
+        variedSize = Mathf.Clamp(variedSize, 0.05f, 0.9f);
+
+        float allowedMaxStart = Mathf.Min(maxZoneStart, 1f - variedSize);
         float allowedMinStart = Mathf.Clamp(minZoneStart, 0f, allowedMaxStart);
 
-        SuccessZoneStartNormalized = Random.Range(allowedMinStart, allowedMaxStart);
-        SuccessZoneEndNormalized = SuccessZoneStartNormalized + clampedZoneSize;
+        SuccessZoneStartNormalized = UnityEngine.Random.Range(allowedMinStart, allowedMaxStart);
+        SuccessZoneEndNormalized = SuccessZoneStartNormalized + variedSize;
     }
 
     private void ApplyDifficultyFromFish()
