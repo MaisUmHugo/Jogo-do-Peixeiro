@@ -61,7 +61,7 @@ public class FishingManager : MonoBehaviour
 
         pendingFish = new FishData(selectedFishType);
 
-        if (!currentShipInventory.CanAddFish(pendingFish))
+        if (currentShipInventory.IsFull)
         {
             Debug.Log("Inventário do barco cheio ou sem espaço para esse peixe.");
             pendingFish = null;
@@ -136,7 +136,7 @@ public class FishingManager : MonoBehaviour
                 );
             }
 
-            if (currentShipInventory.GetCurrentWeight() < 5)
+            if (currentShipInventory.GetCurrentWeight() < 10)
             {
                 TutorialHandler.Instance.AttFishWeightTutorialText();
             }
