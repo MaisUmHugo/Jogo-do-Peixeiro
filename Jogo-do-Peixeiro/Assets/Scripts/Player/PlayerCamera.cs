@@ -30,6 +30,9 @@ public class PlayerCamera : MonoBehaviour
 
     private void Start()
     {
+        Cursor.lockState = CursorLockMode.Locked;
+        Cursor.visible = false;
+
         Vector3 currentRotation = transform.eulerAngles;
         yaw = currentRotation.y;
         pitch = currentRotation.x;
@@ -42,6 +45,29 @@ public class PlayerCamera : MonoBehaviour
     {
         if (target == null || playerTransform == null || InputHandler.instance == null)
             return;
+        if (GameManager.instance != null)
+        {
+            if (GameManager.instance.currentState == GameManager.GameState.InUI ||
+                GameManager.instance.currentState == GameManager.GameState.Paused)
+            {
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                return;
+            }
+            else
+            {
+                // Garante que volte a travar ao sair do menu
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+            }
+        }
+
+        if (GameManager.instance != null)
+        {
+            if (GameManager.instance.currentState == GameManager.GameState.InUI ||
+                GameManager.instance.currentState == GameManager.GameState.Paused)
+                return;
+        }
 
         Vector2 lookInput = InputHandler.instance.lookInput;
 
