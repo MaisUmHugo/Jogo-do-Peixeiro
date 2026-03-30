@@ -70,6 +70,17 @@ public class MoneyLenderUI : MonoBehaviour
         if (statusText != null)
             statusText.text = success ? "Pagamento entregue." : "Peso de peixe insuficiente.";
 
+        if (success && TutorialHandler.Instance != null)
+        {
+            TutorialHandler.Instance.GoNextObjective();
+
+            if (TutorialHandler.Instance.IsTutorialFinished)
+            {
+                CloseForTutorialFinish();
+                return;
+            }
+        }
+
         Refresh();
     }
 
@@ -107,6 +118,17 @@ public class MoneyLenderUI : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.Locked;
         Cursor.visible = false;
+    }
+
+    private void CloseForTutorialFinish()
+    {
+        CloseImmediate();
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.InUI);
+
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private void CloseImmediate()
