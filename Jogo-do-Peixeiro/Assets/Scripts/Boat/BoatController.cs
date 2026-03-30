@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class BoatController : MonoBehaviour
 {
@@ -19,15 +20,28 @@ public class BoatController : MonoBehaviour
     private void Awake()
     {
         rb = GetComponent<Rigidbody>();
-        // Busca todos os scripts de flutuação no barco ou nos filhos
         floaters = GetComponentsInChildren<Floater>();
 
-        // Estado inicial: Se o jogador não está no barco, desativa a física
-        if (!isPlayerOnBoat)
-            SetBoatPhysics(false);
+        bool isMainMenu = SceneManager.GetActiveScene().name == "Main Menu";
+
+        if (isMainMenu)
+        {
+            // força o barco a sempre flutuar no menu
+            SetBoatPhysics(true);
+
+            // garante que o rigidbody NÃO seja kinematic
+            if (rb != null)
+                rb.isKinematic = false;
+        }
+        else
+        {
+            // comportamento normal
+            if (!isPlayerOnBoat)
+                SetBoatPhysics(false);
+        }
     }
 
-    private void SetBoatPhysics(bool active)
+private void SetBoatPhysics(bool active)
     {
         if (rb != null)
         {
