@@ -3884,6 +3884,37 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1464603239}
   m_CullTransparentMesh: 1
+--- !u!1 &1575781122
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1575781123}
+  m_Layer: 0
+  m_Name: Tutorial Point 2
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1575781123
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1575781122}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -14.39, y: -0.55, z: 18.39}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2068770418}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1577049518
 GameObject:
   m_ObjectHideFlags: 0
@@ -4959,6 +4990,37 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 46e3dedc5ac66244c8c9334781bc4a11, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+--- !u!1 &1926269264
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1926269265}
+  m_Layer: 0
+  m_Name: 'Tutorial Point 1 '
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1926269265
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1926269264}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -11.92, y: -0.91, z: 11.9}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2068770418}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1963413865
 GameObject:
   m_ObjectHideFlags: 0
@@ -5564,6 +5626,118 @@ PrefabInstance:
     m_AddedGameObjects: []
     m_AddedComponents: []
   m_SourcePrefab: {fileID: 100100000, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+--- !u!1001 &2068770417
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 115033336240543459, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: inventory
+      value: 
+      objectReference: {fileID: 1406331909}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: tutorialTexts.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: tutorialsPoints.Array.size
+      value: 3
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialTexts.Array.data[0]'
+      value: Falar com o agiota
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialTexts.Array.data[1]'
+      value: Ir para a Baia pescar 5kg de Peixe
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialTexts.Array.data[2]'
+      value: Falar com o agiota para pagar os peixes
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialTexts.Array.data[3]'
+      value: Falar com o agiota para pagar os peixes
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialsPoints.Array.data[0]'
+      value: 
+      objectReference: {fileID: 1926269265}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialsPoints.Array.data[1]'
+      value: 
+      objectReference: {fileID: 1575781123}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialsPoints.Array.data[2]'
+      value: 
+      objectReference: {fileID: 1926269265}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialsPoints.Array.data[3]'
+      value: 
+      objectReference: {fileID: 1926269265}
+    - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: m_Name
+      value: Tutorial Manager
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 3884940415692986650, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1926269265}
+    - targetCorrespondingSourceObject: {fileID: 3884940415692986650, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 1575781123}
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+--- !u!4 &2068770418 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 3884940415692986650, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+  m_PrefabInstance: {fileID: 2068770417}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &2092476017
 GameObject:
   m_ObjectHideFlags: 0
@@ -6285,3 +6459,4 @@ SceneRoots:
   - {fileID: 2428750734561153943}
   - {fileID: 2047460351}
   - {fileID: 252890218}
+  - {fileID: 2068770417}

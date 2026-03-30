@@ -29,6 +29,7 @@ public class MoneyLender : MonoBehaviour
         if (shipInventory.TryPayFishWeight(currentFishWeightPayment))
         {
             GetFishWeightPayment();
+            TutorialHandler.Instance.GoNextObjective();
             Debug.Log("Pagou o peso de peixe.");
             return true;
         }
