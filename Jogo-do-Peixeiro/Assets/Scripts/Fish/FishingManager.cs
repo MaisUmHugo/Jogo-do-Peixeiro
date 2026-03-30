@@ -10,6 +10,8 @@ public class FishingManager : MonoBehaviour
     [SerializeField] private FishSkillCheck fishSkillCheck;
     [SerializeField] private bool useSkillCheck = true;
 
+
+
     public bool IsFishing { get; private set; }
 
     private ShipInventory currentShipInventory;
@@ -132,6 +134,16 @@ public class FishingManager : MonoBehaviour
                     pendingFish.typeOfFish.fishName,
                     pendingFish.weight
                 );
+            }
+
+            if (currentShipInventory.GetCurrentWeight() < 5)
+            {
+                TutorialHandler.Instance.AttFishWeightTutorialText();
+            }
+            else{ 
+                
+                TutorialHandler.Instance.isFinishedFishing = true;
+                TutorialHandler.Instance.GoNextObjective();
             }
         }
         else
