@@ -7,6 +7,7 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private Transform rodTip;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private LayerMask fishingSpotLayer;
+    [SerializeField] private ShipInventory shipInventory;
 
     [Header("Cast Settings")]
     [SerializeField] private int linePoints = 25;
@@ -25,6 +26,9 @@ public class FishingRod : MonoBehaviour
     {
         if (playerCamera == null)
             playerCamera = Camera.main;
+
+        if (shipInventory == null)
+            shipInventory = GetComponentInParent<ShipInventory>();
 
         if (lineRenderer != null)
             lineRenderer.enabled = false;
@@ -62,9 +66,6 @@ public class FishingRod : MonoBehaviour
 
     private void HandleAimPressed()
     {
-        if (GameManager.instance == null)
-            return;
-
         if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
             return;
 
@@ -81,12 +82,6 @@ public class FishingRod : MonoBehaviour
 
     private void StartAim()
     {
-        if (GameManager.instance == null)
-            return;
-
-        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
-            return;
-
         if (rodTip == null || playerCamera == null)
             return;
 
@@ -100,9 +95,6 @@ public class FishingRod : MonoBehaviour
 
     private void UpdateAim()
     {
-        if (rodTip == null || playerCamera == null)
-            return;
-
         currentForce += chargeSpeed * Time.deltaTime;
         currentForce = Mathf.Clamp(currentForce, minCastDistance, maxCastDistance);
 
@@ -125,7 +117,7 @@ public class FishingRod : MonoBehaviour
         if (currentTargetSpot != null)
         {
             Debug.Log("Acertou o FishingSpot com a vara");
-            currentTargetSpot.StartFishingFromRod();
+            currentTargetSpot.StartFishingFromRod(shipInventory);
         }
         else
         {
@@ -142,6 +134,7 @@ public class FishingRod : MonoBehaviour
 
         Vector3 origin = rodTip.position;
         Vector3 direction = ray.direction;
+
         Vector3 target = origin + direction * currentForce;
 
         if (Physics.SphereCast(origin, raycastRadius, direction, out RaycastHit hit, currentForce, fishingSpotLayer))

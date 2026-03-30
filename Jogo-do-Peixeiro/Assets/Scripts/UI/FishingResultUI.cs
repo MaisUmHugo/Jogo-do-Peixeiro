@@ -21,13 +21,13 @@ public class FishingResultUI : MonoBehaviour
     private void Start()
     {
         if (InputHandler.instance != null)
-            InputHandler.instance.onInteractPressed += TryClose;
+            InputHandler.instance.onAnyButtonPressed += TryClose;
     }
 
     private void OnDestroy()
     {
         if (InputHandler.instance != null)
-            InputHandler.instance.onInteractPressed -= TryClose;
+            InputHandler.instance.onAnyButtonPressed -= TryClose;
     }
 
     public void ShowCatchResult(string _fishName, int _weight)
