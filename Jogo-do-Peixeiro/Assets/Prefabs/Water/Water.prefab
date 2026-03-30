@@ -102,10 +102,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7dbc55c534b57c458e3c82221d1bb26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  amplitude: 1000
+  amplitude: 0.1
   length: 1
-  speed: 1
-  direction: {x: 1, y: 0.3}
+  speed: 0.1
+  direction: {x: 1, y: 0.5}
 --- !u!114 &5214603387934129709
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -131,7 +131,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   resolution: 80
-  size: 150
+  size: 400
+  waterMaterial: {fileID: -876546973899608171, guid: da62d6bbf110d1e4bb17099e26569424, type: 3}
 --- !u!114 &8068605801289175824
 MonoBehaviour:
   m_ObjectHideFlags: 0

@@ -594,6 +594,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   availableFish:
   - {fileID: 11400000, guid: 2ca48ec2910fc764a9a2790039651937, type: 2}
+  allowSpaceTest: 0
+  debugShipInventory: {fileID: 0}
 --- !u!136 &820283558
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -970,7 +972,6 @@ MonoBehaviour:
   minPitch: -100
   maxPitch: 100
   followSpeed: 5
-  autoAlignSpeed: 5
   zoomSpeed: 100
 --- !u!114 &1928465789
 MonoBehaviour:
@@ -1163,18 +1164,6 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
-    - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: size
-      value: 200
-      objectReference: {fileID: 0}
-    - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: resolution
-      value: 150
-      objectReference: {fileID: 0}
-    - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: waterMaterial
-      value: 
-      objectReference: {fileID: -876546973899608171, guid: da62d6bbf110d1e4bb17099e26569424, type: 3}
     - target: {fileID: 340691023402868448, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: m_LocalPosition.x
       value: -5.31
@@ -1218,22 +1207,6 @@ PrefabInstance:
     - target: {fileID: 5467897367501000705, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: m_Name
       value: Water
-      objectReference: {fileID: 0}
-    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: speed
-      value: 2
-      objectReference: {fileID: 0}
-    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: length
-      value: 10
-      objectReference: {fileID: 0}
-    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: amplitude
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: direction.y
-      value: 1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
