@@ -338,7 +338,7 @@ Transform:
   m_GameObject: {fileID: 211865285}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -12.41, y: -0.58, z: 12.26}
+  m_LocalPosition: {x: -12.41, y: -0.58, z: 12}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -409,7 +409,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 252890213}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -589,6 +589,10 @@ PrefabInstance:
       objectReference: {fileID: 874178875}
     - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: 'tutorialsPoints.Array.data[2]'
+      value: 
+      objectReference: {fileID: 211865286}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: 'tutorialsPoints.Array.data[3]'
       value: 
       objectReference: {fileID: 211865286}
     - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
@@ -1128,6 +1132,7 @@ MonoBehaviour:
   availableFish:
   - {fileID: 11400000, guid: 2ca48ec2910fc764a9a2790039651937, type: 2}
   - {fileID: 11400000, guid: 226c8121ca12d7240a0bad449842489a, type: 2}
+  - {fileID: 11400000, guid: f07016660d91d444a91171159bfcf55e, type: 2}
 --- !u!136 &1403193686
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1174,7 +1179,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 10e1745221f4cba4a90f2cf8174e7827, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -2114,6 +2119,10 @@ PrefabInstance:
       propertyPath: shipInventory
       value: 
       objectReference: {fileID: 1406331909}
+    - target: {fileID: 1075037960241451397, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f6ccf9dd4f3f0d84caf0a073bf088876, type: 2}
     - target: {fileID: 2830531516403571763, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
       propertyPath: playerCamera
       value: 
@@ -2122,6 +2131,18 @@ PrefabInstance:
       propertyPath: interactionUI
       value: 
       objectReference: {fileID: 1912255055}
+    - target: {fileID: 3090198354105305423, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f6ccf9dd4f3f0d84caf0a073bf088876, type: 2}
+    - target: {fileID: 3284577354864671098, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f6ccf9dd4f3f0d84caf0a073bf088876, type: 2}
+    - target: {fileID: 4232855109026090329, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: f6ccf9dd4f3f0d84caf0a073bf088876, type: 2}
     - target: {fileID: 7573157933820204051, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
       propertyPath: cameraTransform
       value: 
