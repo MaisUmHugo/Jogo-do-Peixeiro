@@ -13,26 +13,18 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     [SerializeField] private float pulseAmount = 0.05f;
 
     [Header("Tilt")]
-    [SerializeField] private bool useTilt = true;
+    [SerializeField] private bool useTilt = false;
     [SerializeField] private float tiltAmount = 5f;
     [SerializeField] private float tiltSpeed = 1f;
 
     private bool isHovered;
-    private bool isKeyboardSelected;
-
-    private bool IsReallySelected()
-    {
-        if (EventSystem.current == null)
-            return false;
-
-        return EventSystem.current.currentSelectedGameObject == gameObject;
-    }
+    private bool isSelected;
 
     private void Update()
     {
-        bool isActive = isHovered || isKeyboardSelected || IsReallySelected();
+        bool active = isHovered || IsCurrentlySelected();
 
-        if (!isActive)
+        if (!active)
         {
             transform.localScale = Vector3.Lerp(
                 transform.localScale,
@@ -52,28 +44,39 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
             return;
         }
 
-        float targetScale = selectedScale;
+        float scale = selectedScale;
 
         if (usePulse)
-            targetScale += Mathf.Sin(Time.unscaledTime * pulseSpeed) * pulseAmount;
+        {
+            scale += Mathf.Sin(Time.unscaledTime * pulseSpeed) * pulseAmount;
+        }
 
         transform.localScale = Vector3.Lerp(
             transform.localScale,
-            Vector3.one * targetScale,
+            Vector3.one * scale,
             Time.unscaledDeltaTime * 10f
         );
 
         if (useTilt)
         {
             float tilt = Mathf.Sin(Time.unscaledTime * tiltSpeed) * tiltAmount;
-            Quaternion targetRotation = Quaternion.Euler(0f, 0f, tilt);
+
+            Quaternion targetRot = Quaternion.Euler(0f, 0f, tilt);
 
             transform.rotation = Quaternion.Lerp(
                 transform.rotation,
-                targetRotation,
+                targetRot,
                 Time.unscaledDeltaTime * 10f
             );
         }
+    }
+
+    private bool IsCurrentlySelected()
+    {
+        if (EventSystem.current == null)
+            return false;
+
+        return EventSystem.current.currentSelectedGameObject == gameObject;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -84,32 +87,41 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     public void OnPointerExit(PointerEventData eventData)
     {
         isHovered = false;
+
+        // limpa seleção se esse botão ainda estiver selecionado
+        if (EventSystem.current != null &&
+            EventSystem.current.currentSelectedGameObject == gameObject)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
     public void OnSelect(BaseEventData eventData)
     {
-        isKeyboardSelected = true;
+        isSelected = true;
     }
 
     public void OnDeselect(BaseEventData eventData)
     {
-        isKeyboardSelected = false;
+        isSelected = false;
     }
 
     private void OnDisable()
     {
         ResetVisuals();
-    }
 
-    private void OnDestroy()
-    {
-        ResetVisuals();
+        if (EventSystem.current != null &&
+            EventSystem.current.currentSelectedGameObject == gameObject)
+        {
+            EventSystem.current.SetSelectedGameObject(null);
+        }
     }
 
     private void ResetVisuals()
     {
         isHovered = false;
-        isKeyboardSelected = false;
+        isSelected = false;
+
         transform.localScale = Vector3.one * normalScale;
         transform.rotation = Quaternion.identity;
     }

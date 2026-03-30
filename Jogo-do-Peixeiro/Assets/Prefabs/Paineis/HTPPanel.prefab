@@ -202,7 +202,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Como Jogar
+  m_text: Como Jogar?
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -286,7 +286,7 @@ GameObject:
   - component: {fileID: 5053148656395679130}
   - component: {fileID: 8177577450973875326}
   m_Layer: 5
-  m_Name: HTPText (1)
+  m_Name: ControlsText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -350,7 +350,7 @@ MonoBehaviour:
   m_fontColor32:
     serializedVersion: 2
     rgba: 4278190080
-  m_fontColor: {r: 0, g: 0, b: 0, a: 1}
+  m_fontColor: {r: 1, g: 1, b: 1, a: 1}
   m_enableVertexGradient: 0
   m_colorMode: 3
   m_fontColorGradient:
@@ -563,6 +563,9 @@ MonoBehaviour:
   usePulse: 1
   pulseSpeed: 4
   pulseAmount: 0.05
+  useTilt: 0
+  tiltAmount: 5
+  tiltSpeed: 1
 --- !u!1 &8819875601737815549
 GameObject:
   m_ObjectHideFlags: 0
@@ -593,8 +596,8 @@ RectTransform:
   m_LocalScale: {x: 1.0000131, y: 1.0000131, z: 1.0000131}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 1263438413753930414}
   - {fileID: 481962204753512856}
+  - {fileID: 1263438413753930414}
   - {fileID: 5193104197696311372}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
