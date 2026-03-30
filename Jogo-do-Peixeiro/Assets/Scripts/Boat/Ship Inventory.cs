@@ -15,7 +15,7 @@ public class ShipInventory : MonoBehaviour
         if (fish == null)
             return false;
 
-        if (!CanAddFish(fish))
+        if (IsFull)
         {
             Debug.Log($"Inventário cheio. Peso atual: {currentFishWeight} / {maxFishCapacity}");
             return false;
@@ -133,13 +133,6 @@ public class ShipInventory : MonoBehaviour
         }
 
         return false;
-    }
-    public bool CanAddFish(FishData _fish)
-    {
-        if (_fish == null)
-            return false;
-
-        return currentFishWeight + _fish.weight <= maxFishCapacity;
     }
 }
 

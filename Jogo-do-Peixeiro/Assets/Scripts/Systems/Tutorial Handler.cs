@@ -53,7 +53,7 @@ public class TutorialHandler : MonoBehaviour
 
             tutorialTexts.RemoveAt(0);
             currentTutorialText.text = tutorialTexts[0];
-            if (isFinishedTalk && isFinishedFishing == false) { isFishing = true; currentTutorialText.text += $" ({inventory.GetCurrentWeight()}/5) "; }
+            if (isFinishedTalk && isFinishedFishing == false) { isFishing = true; currentTutorialText.text += $" ({inventory.GetCurrentWeight()}/10) "; }
 
             currentTutorialPoint = tutorialsPoints[0];
             tutorialPointer.transform.position = tutorialsPoints[0].position;
@@ -65,7 +65,7 @@ public class TutorialHandler : MonoBehaviour
     public void AttFishWeightTutorialText()
     {
         currentTutorialText.text = tutorialTexts[0];
-        currentTutorialText.text += $" ({inventory.GetCurrentWeight()}/5) ";
+        currentTutorialText.text += $" ({inventory.GetCurrentWeight()}/10) ";
     }
 
     void FinishTutorial()
