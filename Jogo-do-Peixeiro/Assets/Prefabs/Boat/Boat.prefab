@@ -51,7 +51,7 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 1.2
+  heightOffset: 1
   outOfWaterWeight: 3
   canFloat: 1
 --- !u!1 &1564771001610840528
@@ -105,7 +105,7 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 1.2
+  heightOffset: 1
   outOfWaterWeight: 3
   canFloat: 1
 --- !u!1 &2617819272185565381
@@ -187,7 +187,7 @@ Transform:
   m_GameObject: {fileID: 2969741457684812338}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 0.72}
+  m_LocalPosition: {x: 0, y: -0.7, z: 0.72}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -221,8 +221,8 @@ Transform:
   m_GameObject: {fileID: 3248771064400139511}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0, y: 0.1671, z: 1.4864}
-  m_LocalScale: {x: 1, y: 0.43505403, z: 2.3515258}
+  m_LocalPosition: {x: -0.0134, y: 0.1317, z: 1.4207}
+  m_LocalScale: {x: 1.0863361, y: 0.3723171, z: 2.0956159}
   m_ConstrainProportionsScale: 0
   m_Children: []
   m_Father: {fileID: 3925014722443653986}
@@ -406,7 +406,7 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 1.2
+  heightOffset: 1
   outOfWaterWeight: 3
   canFloat: 1
 --- !u!1 &8751418402140965307
@@ -460,7 +460,7 @@ MonoBehaviour:
   waterAngularDrag: 4
   maxSubmersionDepth: 0.35
   emergencyLift: 2.2
-  heightOffset: 1.2
+  heightOffset: 1
   outOfWaterWeight: 3
   canFloat: 1
 --- !u!1001 &3599164887304230025

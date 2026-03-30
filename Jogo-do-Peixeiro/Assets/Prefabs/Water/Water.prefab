@@ -102,9 +102,9 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f7dbc55c534b57c458e3c82221d1bb26, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  amplitude: 0.1
+  amplitude: 0.3
   length: 1
-  speed: 0.1
+  speed: 0.3
   direction: {x: 1, y: 0.5}
 --- !u!114 &5214603387934129709
 MonoBehaviour:
