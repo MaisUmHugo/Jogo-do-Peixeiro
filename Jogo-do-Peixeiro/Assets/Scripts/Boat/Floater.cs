@@ -27,6 +27,7 @@ public class Floater : MonoBehaviour
 
     float submersion;
     float depth;
+    public bool canFloat = true;
 
     void Awake()
     {
@@ -46,7 +47,7 @@ public class Floater : MonoBehaviour
 
     void FixedUpdate()
     {
-        if (rb == null) return;
+        if (rb == null || WaveManager.instance == null || !canFloat) return;
         if (WaveManager.instance == null) return;
 
         float waveHeight = WaveManager.instance.GetWaveHeight(
@@ -54,7 +55,8 @@ public class Floater : MonoBehaviour
             transform.position.z
         );
 
-        depth = waveHeight - (transform.position.y + heightOffset);
+        float floaterLevel = transform.position.y + heightOffset;
+        depth = waveHeight - floaterLevel;
 
         submersion = Mathf.Clamp01(depth / depthBeforeSubmerged);
 

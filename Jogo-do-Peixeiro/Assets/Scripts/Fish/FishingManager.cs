@@ -5,9 +5,19 @@ public class FishingManager : MonoBehaviour
 {
     public static FishingManager instance;
 
+    [SerializeField] private FishingResultUI fishingResultUI;
     [SerializeField] private float fishingTime = 2f;
+    [SerializeField] private FishSkillCheck fishSkillCheck;
+    [SerializeField] private bool useSkillCheck = true;
+
+
 
     public bool IsFishing { get; private set; }
+
+    private ShipInventory currentShipInventory;
+    private FishScriptableObject[] currentAvailableFish;
+
+    private FishData pendingFish;
 
     private void Awake()
     {
@@ -27,21 +37,54 @@ public class FishingManager : MonoBehaviour
 
         if (_shipInventory == null)
         {
-            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+            ReturnToBoatState();
             return;
         }
 
         if (_availableFish == null || _availableFish.Length == 0)
         {
             Debug.LogWarning("Nenhum peixe configurado nesse spot.");
-            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+            ReturnToBoatState();
             return;
         }
 
-        StartCoroutine(FishingRoutine(_shipInventory, _availableFish));
+        currentShipInventory = _shipInventory;
+        currentAvailableFish = _availableFish;
+
+        FishScriptableObject selectedFishType = PickRandomFishType();
+        if (selectedFishType == null)
+        {
+            Debug.LogWarning("Falha ao selecionar um peixe.");
+            ReturnToBoatState();
+            return;
+        }
+
+        pendingFish = new FishData(selectedFishType);
+
+        if (currentShipInventory.IsFull)
+        {
+            Debug.Log("Inventário do barco cheio ou sem espaço para esse peixe.");
+            pendingFish = null;
+            ReturnToBoatState();
+            return;
+        }
+
+        if (GameManager.instance != null)
+        {
+            GameManager.instance.SetState(GameManager.GameState.Fishing);
+        }
+
+        if (useSkillCheck && fishSkillCheck != null)
+        {
+            IsFishing = true;
+            fishSkillCheck.StartSkillCheck(this, selectedFishType);
+            return;
+        }
+
+        StartCoroutine(FishingRoutine());
     }
 
-    private IEnumerator FishingRoutine(ShipInventory _shipInventory, FishScriptableObject[] _availableFish)
+    private IEnumerator FishingRoutine()
     {
         IsFishing = true;
 
@@ -49,17 +92,83 @@ public class FishingManager : MonoBehaviour
 
         yield return new WaitForSeconds(fishingTime);
 
-        int randomIndex = Random.Range(0, _availableFish.Length);
-        FishData fish = new FishData(_availableFish[randomIndex]);
+        GivePendingFish();
+        EndFishing();
+    }
 
-        bool addedSuccessfully = _shipInventory.TryAddFish(fish);
+    public void OnSkillCheckSuccess()
+    {
+        GivePendingFish();
+        EndFishing();
+    }
+
+    public void OnSkillCheckFail()
+    {
+        Debug.Log("Falhou na pescaria.");
+        EndFishing();
+    }
+
+    private FishScriptableObject PickRandomFishType()
+    {
+        if (currentAvailableFish == null || currentAvailableFish.Length == 0)
+            return null;
+
+        int randomIndex = Random.Range(0, currentAvailableFish.Length);
+        return currentAvailableFish[randomIndex];
+    }
+
+    private void GivePendingFish()
+    {
+        if (currentShipInventory == null || pendingFish == null)
+            return;
+
+        bool addedSuccessfully = currentShipInventory.TryAddFish(pendingFish);
 
         if (addedSuccessfully)
-            Debug.Log($"Peixe capturado: {fish.typeOfFish.fishName} - {fish.weight}kg");
-        else
-            Debug.Log("Inventário cheio.");
+        {
+            Debug.Log($"Peixe capturado: {pendingFish.typeOfFish.fishName} - {pendingFish.weight}kg");
 
+            if (fishingResultUI != null)
+            {
+                fishingResultUI.ShowCatchResult(
+                    pendingFish.typeOfFish.fishName,
+                    pendingFish.weight
+                );
+            }
+
+            if (currentShipInventory.GetCurrentWeight() < 10)
+            {
+                TutorialHandler.Instance.AttFishWeightTutorialText();
+            }
+            else{ 
+                
+                TutorialHandler.Instance.isFinishedFishing = true;
+                TutorialHandler.Instance.GoNextObjective();
+            }
+        }
+        else
+        {
+            Debug.Log("Inventário cheio.");
+        }
+
+        pendingFish = null;
+    }
+
+    private void EndFishing()
+    {
         IsFishing = false;
-        GameManager.instance.SetState(GameManager.GameState.OnBoat);
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+
+        currentShipInventory = null;
+        currentAvailableFish = null;
+        pendingFish = null;
+    }
+
+    private void ReturnToBoatState()
+    {
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
     }
 }

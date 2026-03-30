@@ -5,22 +5,25 @@ public class ShipInventory : MonoBehaviour
 {
     public List<FishData> ownedFish = new List<FishData>();
     [SerializeField] private float maxFishCapacity;
-    private float currentFishWeight = 0;
+    private float currentFishWeight = 0f;
     public bool IsFull => currentFishWeight >= maxFishCapacity;
 
     public DebugShipInventory debugShipInventory;
 
     public bool TryAddFish(FishData fish)
     {
+        if (fish == null)
+            return false;
+
         if (IsFull)
         {
             Debug.Log($"Inventário cheio. Peso atual: {currentFishWeight} / {maxFishCapacity}");
             return false;
         }
+
         AddFish(fish);
         return true;
     }
-
     private void AddFish(FishData _fish)
     {
         ownedFish.Add(_fish);
@@ -131,6 +134,5 @@ public class ShipInventory : MonoBehaviour
 
         return false;
     }
-
 }
 

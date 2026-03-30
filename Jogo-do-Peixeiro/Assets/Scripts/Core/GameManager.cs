@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 
 public class GameManager : MonoBehaviour
 {
@@ -9,6 +10,7 @@ public class GameManager : MonoBehaviour
         OnFoot,
         OnBoat,
         Fishing,
+        InUI,
         Paused
     }
 
@@ -26,13 +28,28 @@ public class GameManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
     }
 
-    private void Start()
-    {
-        //currentState = GameState.OnFoot;
-    }
-
     public void SetState(GameState _newState)
     {
         currentState = _newState;
+    }
+
+    public bool IsGameplayBlocked()
+    {
+        return currentState == GameState.InUI || currentState == GameState.Paused;
+    }
+
+    private void OnEnable()
+    {
+        SceneManager.sceneLoaded += OnSceneLoaded;
+    }
+
+    private void OnDisable()
+    {
+        SceneManager.sceneLoaded -= OnSceneLoaded;
+    }
+
+    private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
+    {
+        SetState(GameState.OnFoot);
     }
 }

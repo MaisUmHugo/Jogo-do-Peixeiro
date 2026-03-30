@@ -1,39 +1,59 @@
 using UnityEngine;
-using UnityEngine.UI;
 
 public class FishSkillCheckUI : MonoBehaviour
 {
-    private FishSkillCheck fishSkillCheck;
+    [Header("References")]
+    [SerializeField] private FishSkillCheck fishSkillCheck;
 
-    private Transform positionIndicator;
+    [Header("Progress Bar")]
+    [SerializeField] private RectTransform progressBarArea;
+    [SerializeField] private RectTransform progressBarFill;
 
-
-    private Scrollbar fishingRangeIndicator;
-
-    private void Awake()
-    {
-        fishSkillCheck        = GetComponent<FishSkillCheck>();
-        positionIndicator     = transform.GetChild(1).transform.GetChild(0).transform.GetChild(1);
-        fishingRangeIndicator = transform.GetChild(1).GetComponent<Scrollbar>();
-
-        
-    }
-    private void MoveIndicator()
-    {
-
-        float spot = fishSkillCheck.currentSpotIndex / fishSkillCheck.fishingSpotSize;
-        float newPos = (spot * 1000) - 500;
-
-        positionIndicator.transform.position = new Vector3(newPos + 960, positionIndicator.transform.position.y, 0);
-    }
-
-    private void Start()
-    {
-        fishingRangeIndicator.value = fishSkillCheck.fishingRangeStart;
-    }
+    [Header("Timing Bar")]
+    [SerializeField] private RectTransform timingBarArea;
+    [SerializeField] private RectTransform successZone;
+    [SerializeField] private RectTransform indicator;
 
     private void Update()
     {
-        MoveIndicator();
+        if (fishSkillCheck == null)
+            return;
+
+        UpdateProgressBar();
+        UpdateTimingBar();
+    }
+
+    private void UpdateProgressBar()
+    {
+        if (progressBarArea == null || progressBarFill == null)
+            return;
+
+        float width = progressBarArea.rect.width;
+        float fillWidth = fishSkillCheck.ProgressNormalized * width;
+
+        progressBarFill.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, fillWidth);
+
+        float fillPosX = (fillWidth * 0.5f) - (width * 0.5f);
+        progressBarFill.anchoredPosition = new Vector2(fillPosX, progressBarFill.anchoredPosition.y);
+    }
+
+    private void UpdateTimingBar()
+    {
+        if (timingBarArea == null || successZone == null || indicator == null)
+            return;
+
+        float width = timingBarArea.rect.width;
+
+        float zoneStart = fishSkillCheck.SuccessZoneStartNormalized;
+        float zoneEnd = fishSkillCheck.SuccessZoneEndNormalized;
+
+        float zoneWidth = (zoneEnd - zoneStart) * width;
+        float zoneCenterX = ((zoneStart + zoneEnd) * 0.5f - 0.5f) * width;
+
+        successZone.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, zoneWidth);
+        successZone.anchoredPosition = new Vector2(zoneCenterX, successZone.anchoredPosition.y);
+
+        float indicatorX = (fishSkillCheck.IndicatorNormalized - 0.5f) * width;
+        indicator.anchoredPosition = new Vector2(indicatorX, indicator.anchoredPosition.y);
     }
 }

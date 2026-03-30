@@ -4,8 +4,8 @@ using UnityEngine;
 [RequireComponent(typeof(MeshRenderer))]
 public class GenerateWaterMesh : MonoBehaviour
 {
-    public int resolution = 100;
-    public float size = 50f;
+    public int resolution;
+    public float size;
 
     public Material waterMaterial;
 

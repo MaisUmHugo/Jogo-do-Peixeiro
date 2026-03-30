@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using static GameManager;
 
 public class PauseManager : MonoBehaviour
 {
@@ -177,7 +178,7 @@ public class PauseManager : MonoBehaviour
         ShowConfirmation(() =>
         {
             Time.timeScale = 1f;
-            SceneManager.LoadScene("MainMenu");
+            SceneManager.LoadScene("Main Menu");
         });
     }
 }
