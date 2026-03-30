@@ -6,7 +6,7 @@ public class FishingManager : MonoBehaviour
     public static FishingManager instance;
 
     [SerializeField] private FishingResultUI fishingResultUI;
-    [SerializeField] private float fishingTime = 2f;
+    [SerializeField] private float fishingTime = 10f;
     [SerializeField] private FishSkillCheck fishSkillCheck;
     [SerializeField] private bool useSkillCheck = true;
 

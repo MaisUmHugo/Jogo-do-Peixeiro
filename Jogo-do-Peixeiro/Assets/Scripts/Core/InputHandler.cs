@@ -10,16 +10,13 @@ public class InputHandler : MonoBehaviour
 
     public Vector2 moveInput { get; private set; }
     public Vector2 lookInput { get; private set; }
-
     public float zoomInput { get; private set; }
-        
+
     public Action onPausePressed;
-
     public Action onInteractPressed;
-
     public Action onAimPressed;
-
     public Action onAimReleased;
+    public Action onAnyButtonPressed;
 
     private void Awake()
     {
@@ -51,13 +48,11 @@ public class InputHandler : MonoBehaviour
 
         if (inputActions.Player.Interact.WasPressedThisFrame())
         {
-            Debug.Log("E pressionado");
             onInteractPressed?.Invoke();
         }
 
         if (inputActions.Player.Pause.WasPressedThisFrame())
         {
-            Debug.Log("Pause pressionado");
             onPausePressed?.Invoke();
         }
 
@@ -69,6 +64,11 @@ public class InputHandler : MonoBehaviour
         if (inputActions.Player.Aim.WasReleasedThisFrame())
         {
             onAimReleased?.Invoke();
+        }
+
+        if (inputActions.Player.AnyButton.WasPressedThisFrame())
+        {
+           onAnyButtonPressed?.Invoke();
         }
     }
 }
