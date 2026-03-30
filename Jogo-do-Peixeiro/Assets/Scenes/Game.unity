@@ -4679,6 +4679,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1077080428454773318, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 496d234ff9a219f41bbbdccb95d0b98e, type: 2}
     - target: {fileID: 2045394431756957250, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: player
       value: 
@@ -6179,6 +6183,10 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 1529104258664979441, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 3cd9af3c31729e148a2939cfdf4bc8ce, type: 2}
     - target: {fileID: 7038679507549674273, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
       propertyPath: m_Name
       value: Agiotagem
