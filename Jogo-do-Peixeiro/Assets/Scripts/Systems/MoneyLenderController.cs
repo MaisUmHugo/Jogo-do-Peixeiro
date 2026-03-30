@@ -12,6 +12,12 @@ public class MoneyLenderController : MonoBehaviour, IInteractable
             return;
 
         moneyLenderUI.Open(moneyLender);
+        if (TutorialHandler.Instance.isFinishedTalk == false)
+        {
+            TutorialHandler.Instance.isFinishedTalk = true;
+            TutorialHandler.Instance.GoNextObjective();
+
+        }
     }
 
     public int GetInteractionPriority()
