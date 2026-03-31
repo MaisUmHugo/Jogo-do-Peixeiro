@@ -72,6 +72,13 @@ public class GameManager : MonoBehaviour
 
     private void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        SetState(GameState.OnFoot);
+        if (scene.name == "Main Menu")
+        {
+            SetState(GameState.InUI); // libera o cursor no menu
+        }
+        else
+        {
+            SetState(GameState.OnFoot); // gameplay normal
+        }
     }
 }
