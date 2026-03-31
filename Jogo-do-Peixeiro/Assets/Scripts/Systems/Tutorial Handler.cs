@@ -17,7 +17,7 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField] private InteractionUI interactionUI;
 
     [Header("Scene")]
-    [SerializeField] private string mainMenuSceneName = "MainMenu";
+    [SerializeField] private string mainMenuSceneName = "Main Menu";
 
     public bool isFinishedTalk = false;
     public bool isFinishedFishing = false;
