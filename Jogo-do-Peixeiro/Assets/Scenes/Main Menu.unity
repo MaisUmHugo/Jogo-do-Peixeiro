@@ -2274,8 +2274,8 @@ RectTransform:
   m_GameObject: {fileID: 976350027}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
+  m_LocalScale: {x: 0.46, y: 0.46, z: 0.46}
+  m_ConstrainProportionsScale: 1
   m_Children:
   - {fileID: 626267721}
   m_Father: {fileID: 693702193}
@@ -3133,6 +3133,12 @@ MonoBehaviour:
   optionsPanel: {fileID: 814681565}
   howToPlayPanel: {fileID: 1534351151}
   confirmPanel: {fileID: 219494904}
+  confirmText: {fileID: 1751431687}
+  yesButton: {fileID: 1710991155}
+  noButton: {fileID: 676605768}
+  spookyButton: {fileID: 976350027}
+  shakeIntensity: 4
+  shakeDuration: 0.15
 --- !u!114 &1098323748
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4269,7 +4275,7 @@ GameObject:
   - component: {fileID: 1751431687}
   m_Layer: 5
   m_Name: ConfirmText
-  m_TagString: Untagged
+  m_TagString: TextoConfirmacao
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -4291,7 +4297,7 @@ RectTransform:
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
   m_AnchoredPosition: {x: -0.5809326, y: 231.00305}
-  m_SizeDelta: {x: 816.437, y: 115}
+  m_SizeDelta: {x: 900.56, y: 115}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1751431687
 MonoBehaviour:

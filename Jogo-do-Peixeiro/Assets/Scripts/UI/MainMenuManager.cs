@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
@@ -13,8 +14,18 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private GameObject optionsPanel;
     [SerializeField] private GameObject howToPlayPanel;
     [SerializeField] private GameObject confirmPanel;
-    [Header("Confirm Text")]
+
+    [Header("Confirm UI")]
     [SerializeField] private TMP_Text confirmText;
+    [SerializeField] private Transform yesButton;
+    [SerializeField] private Transform noButton;
+
+    [Header("Spooky Button")]
+    [SerializeField] private GameObject spookyButton;
+
+    [Header("Shake Settings")]
+    [SerializeField] private float shakeIntensity = 4f;
+    [SerializeField] private float shakeDuration = 0.15f;
 
     private string defaultConfirmMessage = "Tem certeza?";
 
@@ -22,38 +33,68 @@ public class MainMenuManager : MonoBehaviour
 
     // SPOOKY MODE 👻
     private int spookyClicks = 0;
-    private bool waitingForSpookyClicks = false;
     private const int requiredClicks = 10;
+
+    private Vector3 originalTextPos;
+    private Vector3 yesOriginalPos;
+    private Vector3 noOriginalPos;
 
     private void Start()
     {
         ShowMenu();
+
         Time.timeScale = 1f;
+
+        // sempre começa desativado
         PlayerPrefs.SetInt("SpookyMode", 0);
+
+        if (spookyButton != null)
+            spookyButton.SetActive(true);
+
+        originalTextPos = confirmText.transform.localPosition;
+
+        if (yesButton != null)
+            yesOriginalPos = yesButton.localPosition;
+
+        if (noButton != null)
+            noOriginalPos = noButton.localPosition;
     }
 
-    // MENU
-
+    // BOTÃO PLAY
     public void PlayGame()
     {
         SceneManager.LoadScene(gameSceneName);
     }
 
+    // BOTÃO SPOOKY 👻
     public void spookymode()
     {
         spookyClicks = 0;
-        waitingForSpookyClicks = true;
 
         confirmText.text = defaultConfirmMessage;
+        confirmText.color = Color.white;
+
+        ResetButtonPositions();
 
         ShowConfirmation(() =>
         {
             spookyClicks++;
 
-            // adiciona mais um ?
+            // adiciona mais ?
             confirmText.text += "?";
 
-            Debug.Log("Spooky click: " + spookyClicks);
+            // vai ficando vermelho
+            float t = (float)spookyClicks / requiredClicks;
+            confirmText.color = Color.Lerp(Color.white, Color.red, t);
+
+            // tremer texto
+            StartCoroutine(ShakeText());
+
+            // troca posição dos botões no final
+            if (spookyClicks == requiredClicks - 1)
+            {
+                SwapButtons();
+            }
 
             if (spookyClicks >= requiredClicks)
             {
@@ -66,17 +107,26 @@ public class MainMenuManager : MonoBehaviour
         });
     }
 
+    // ATIVA O SPOOKY MODE
     private void ActivateSpookyMode()
     {
-        waitingForSpookyClicks = false;
-
         PlayerPrefs.SetInt("SpookyMode", 1);
 
         confirmText.text = defaultConfirmMessage;
+        confirmText.color = Color.white;
+
+        ResetButtonPositions();
+
+        // esconde botão spooky
+        if (spookyButton != null)
+            spookyButton.SetActive(false);
 
         ShowMenu();
+
+        Debug.Log("👻 SPOOKY MODE ATIVADO");
     }
 
+    // BOTÃO SAIR
     public void OnClickQuit()
     {
         ShowConfirmation(() =>
@@ -87,7 +137,6 @@ public class MainMenuManager : MonoBehaviour
     }
 
     // PAINÉIS
-
     public void OpenOptions()
     {
         ShowOnly(optionsPanel);
@@ -116,8 +165,7 @@ public class MainMenuManager : MonoBehaviour
         if (confirmPanel != null) confirmPanel.SetActive(panel == confirmPanel);
     }
 
-    // CONFIRMAÇÃO
-
+    // CONFIRMAR
     public void ShowConfirmation(Action action)
     {
         confirmAction = action;
@@ -132,10 +180,56 @@ public class MainMenuManager : MonoBehaviour
     public void ConfirmNo()
     {
         confirmAction = null;
-        waitingForSpookyClicks = false;
 
         confirmText.text = defaultConfirmMessage;
+        confirmText.color = Color.white;
+
+        ResetButtonPositions();
 
         ShowMenu();
+    }
+
+    // EFEITO TREMER TEXTO
+    private IEnumerator ShakeText()
+    {
+        float timer = 0f;
+
+        while (timer < shakeDuration)
+        {
+            timer += Time.unscaledDeltaTime;
+
+            Vector3 offset =
+                new Vector3(
+                    UnityEngine.Random.Range(-1f, 1f),
+                    UnityEngine.Random.Range(-1f, 1f),
+                    0f
+                ) * shakeIntensity;
+
+            confirmText.transform.localPosition =
+                originalTextPos + offset;
+
+            yield return null;
+        }
+
+        confirmText.transform.localPosition = originalTextPos;
+    }
+
+    // TROCAR POSIÇÃO DOS BOTÕES
+    private void SwapButtons()
+    {
+        if (yesButton == null || noButton == null)
+            return;
+
+        yesButton.localPosition = noOriginalPos;
+        noButton.localPosition = yesOriginalPos;
+    }
+
+    private void ResetButtonPositions()
+    {
+        if (yesButton != null)
+            yesButton.localPosition = yesOriginalPos;
+
+        if (noButton != null)
+            noButton.localPosition = noOriginalPos;
     }
 }

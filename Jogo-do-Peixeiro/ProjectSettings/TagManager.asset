@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Boat
   - Fish
+  - TextoConfirmacao
   layers:
   - Default
   - TransparentFX
