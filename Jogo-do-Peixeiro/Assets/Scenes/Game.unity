@@ -560,6 +560,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1406331909}
     - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: mainMenuSceneName
+      value: Main Menu
+      objectReference: {fileID: 0}
+    - target: {fileID: 907600093194731295, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: tutorialTexts.Array.size
       value: 3
       objectReference: {fileID: 0}
