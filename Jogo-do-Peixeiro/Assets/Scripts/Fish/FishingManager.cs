@@ -146,17 +146,19 @@ public class FishingManager : MonoBehaviour
                     pendingFish.weight
                 );
             }
-
             if (TutorialHandler.Instance != null)
             {
-                if (currentShipInventory.GetCurrentWeight() < 10)
-                {
-                    TutorialHandler.Instance.AttFishWeightTutorialText();
-                }
-                else
+                float currentWeight = currentShipInventory.GetCurrentWeight();
+                Debug.Log($"Peso atual após capturar peixe: {currentWeight}");
+
+                if (currentWeight >= 10f)
                 {
                     TutorialHandler.Instance.isFinishedFishing = true;
                     TutorialHandler.Instance.GoNextObjective();
+                }
+                else
+                {
+                    TutorialHandler.Instance.AttFishWeightTutorialText();
                 }
             }
         }
