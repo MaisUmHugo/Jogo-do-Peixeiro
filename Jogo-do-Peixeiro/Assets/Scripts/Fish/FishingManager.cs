@@ -10,8 +10,6 @@ public class FishingManager : MonoBehaviour
     [SerializeField] private FishSkillCheck fishSkillCheck;
     [SerializeField] private bool useSkillCheck = true;
 
-
-
     public bool IsFishing { get; private set; }
 
     private ShipInventory currentShipInventory;
@@ -61,9 +59,14 @@ public class FishingManager : MonoBehaviour
 
         pendingFish = new FishData(selectedFishType);
 
+        // Agora bloqueia só se já estiver cheio antes de começar a pescaria.
         if (currentShipInventory.IsFull)
         {
-            Debug.Log("Inventário do barco cheio ou sem espaço para esse peixe.");
+            Debug.Log("Inventário do barco cheio.");
+
+            if (HUDWarningUI.Instance != null)
+                HUDWarningUI.Instance.ShowWarning("Inventário cheio");
+
             pendingFish = null;
             ReturnToBoatState();
             return;
@@ -128,6 +131,14 @@ public class FishingManager : MonoBehaviour
         {
             Debug.Log($"Peixe capturado: {pendingFish.typeOfFish.fishName} - {pendingFish.weight}kg");
 
+            if (HUDFishInfoUI.Instance != null)
+            {
+                HUDFishInfoUI.Instance.ShowFishInfo(
+                    pendingFish.typeOfFish.fishName,
+                    pendingFish.weight
+                );
+            }
+
             if (fishingResultUI != null)
             {
                 fishingResultUI.ShowCatchResult(
@@ -136,19 +147,25 @@ public class FishingManager : MonoBehaviour
                 );
             }
 
-            if (currentShipInventory.GetCurrentWeight() < 10)
+            if (TutorialHandler.Instance != null)
             {
-                TutorialHandler.Instance.AttFishWeightTutorialText();
-            }
-            else{ 
-                
-                TutorialHandler.Instance.isFinishedFishing = true;
-                TutorialHandler.Instance.GoNextObjective();
+                if (currentShipInventory.GetCurrentWeight() < 10)
+                {
+                    TutorialHandler.Instance.AttFishWeightTutorialText();
+                }
+                else
+                {
+                    TutorialHandler.Instance.isFinishedFishing = true;
+                    TutorialHandler.Instance.GoNextObjective();
+                }
             }
         }
         else
         {
             Debug.Log("Inventário cheio.");
+
+            if (HUDWarningUI.Instance != null)
+                HUDWarningUI.Instance.ShowWarning("Sem espaço para mais peixes");
         }
 
         pendingFish = null;
