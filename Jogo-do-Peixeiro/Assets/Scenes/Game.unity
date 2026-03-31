@@ -409,7 +409,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 252890213}
-  m_Enabled: 0
+  m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -425,7 +425,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  - {fileID: 2100000, guid: 10e1745221f4cba4a90f2cf8174e7827, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -464,7 +464,7 @@ Transform:
   m_GameObject: {fileID: 252890213}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -17.83, y: -1.94, z: 21.72}
+  m_LocalPosition: {x: -17.83, y: -1.85, z: 47.08}
   m_LocalScale: {x: 3.1093037, y: 1, z: 2.7716}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1353,6 +1353,14 @@ PrefabInstance:
     - target: {fileID: 5467897367501000705, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: m_Name
       value: Water
+      objectReference: {fileID: 0}
+    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: speed
+      value: 0.1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: amplitude
+      value: 0.1
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

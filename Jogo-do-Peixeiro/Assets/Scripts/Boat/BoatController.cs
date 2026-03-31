@@ -117,7 +117,7 @@ private void SetBoatPhysics(bool active)
         if (_exitPoint != null)
         {
             player.transform.position = _exitPoint.position;
-            player.transform.rotation = _exitPoint.rotation;
+            player.transform.rotation = _exitPoint.rotation * Quaternion.Euler(OffsetRotacao);
         }
         else
         {
