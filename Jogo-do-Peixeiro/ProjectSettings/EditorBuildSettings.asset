@@ -11,9 +11,6 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/Game.unity
     guid: 4e11a50adc4e464439799f1a14385597
-  - enabled: 1
-    path: Assets/Scenes/CenasTeste/Teste Gabilete 2.unity
-    guid: ca3b9605a8c962a48860bfae8a58ea37
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}
   m_UseUCBPForAssetBundles: 0

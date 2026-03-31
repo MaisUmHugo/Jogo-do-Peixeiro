@@ -14,6 +14,8 @@ public class TutorialHandler : MonoBehaviour
     [SerializeField] private GameObject tutorialPointer;
     [SerializeField] private GameObject finishPanel;
 
+    [SerializeField] private InteractionUI interactionUI;
+
     [Header("Scene")]
     [SerializeField] private string mainMenuSceneName = "MainMenu";
 
@@ -85,6 +87,9 @@ public class TutorialHandler : MonoBehaviour
 
         if (finishPanel != null)
             finishPanel.SetActive(true);
+
+        if (interactionUI != null)
+            interactionUI.Hide();
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
