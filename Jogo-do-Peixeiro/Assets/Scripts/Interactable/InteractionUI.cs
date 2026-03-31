@@ -49,6 +49,12 @@ public class InteractionUI : MonoBehaviour
 
         interactButton.gameObject.SetActive(true);
         interactButton.position = screenPosition;
+
+        if (TutorialHandler.Instance != null && TutorialHandler.Instance.IsTutorialFinished)
+        {
+            interactButton.gameObject.SetActive(false);
+            return;
+        }
     }
 
     public void Show(Transform _target, Transform _playerTransform, Transform _promptPoint = null)
