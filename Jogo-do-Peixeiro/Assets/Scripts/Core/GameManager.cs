@@ -31,6 +31,28 @@ public class GameManager : MonoBehaviour
     public void SetState(GameState _newState)
     {
         currentState = _newState;
+        UpdateCursor();
+    }
+
+    private void UpdateCursor()
+    {
+        switch (currentState)
+        {
+            case GameState.OnFoot:
+            case GameState.OnBoat:
+            case GameState.Fishing:
+
+                Cursor.lockState = CursorLockMode.Locked;
+                Cursor.visible = false;
+                break;
+
+            case GameState.InUI:
+            case GameState.Paused:
+
+                Cursor.lockState = CursorLockMode.None;
+                Cursor.visible = true;
+                break;
+        }
     }
 
     public bool IsGameplayBlocked()
