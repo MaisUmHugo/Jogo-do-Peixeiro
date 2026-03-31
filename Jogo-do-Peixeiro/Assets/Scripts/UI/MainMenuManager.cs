@@ -14,6 +14,7 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private GameObject optionsPanel;
     [SerializeField] private GameObject howToPlayPanel;
     [SerializeField] private GameObject confirmPanel;
+    [SerializeField] private GameObject creditsPanel;
 
     [Header("Confirm UI")]
     [SerializeField] private TMP_Text confirmText;
@@ -157,12 +158,18 @@ public class MainMenuManager : MonoBehaviour
         ShowOnly(menuPanel);
     }
 
+    public void OpenCredits()
+    {
+        ShowOnly(creditsPanel);
+    }
+
     private void ShowOnly(GameObject panel)
     {
         if (menuPanel != null) menuPanel.SetActive(panel == menuPanel);
         if (optionsPanel != null) optionsPanel.SetActive(panel == optionsPanel);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(panel == howToPlayPanel);
         if (confirmPanel != null) confirmPanel.SetActive(panel == confirmPanel);
+        if (creditsPanel != null) creditsPanel.SetActive(panel == creditsPanel);
     }
 
     // CONFIRMAR
