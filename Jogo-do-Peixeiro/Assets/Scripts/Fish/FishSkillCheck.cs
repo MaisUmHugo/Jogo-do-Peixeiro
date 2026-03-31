@@ -1,5 +1,7 @@
 using System;
+using System.Collections;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class FishSkillCheck : MonoBehaviour
 {
@@ -12,6 +14,7 @@ public class FishSkillCheck : MonoBehaviour
         Great,
         Perfect
     }
+    public GameObject peixeexe;
 
     public event Action<FeedbackResult> OnFeedbackTriggered;
     public event Action OnFailShake;
@@ -277,13 +280,13 @@ public class FishSkillCheck : MonoBehaviour
 
     private void FailMinigame()
     {
+        if (PlayerPrefs.GetInt("SpookyMode", 0) == 1)
+        {
+            CoroutineRunner.instance.StartCoroutine(FalhaSpooky());
+        }
+
         enabled = false;
         gameObject.SetActive(false);
-
-        IndicatorNormalized = 0f;
-        ProgressNormalized = 0f;
-        currentFails = 0;
-        currentFishType = null;
 
         if (fishingManager != null)
             fishingManager.OnSkillCheckFail();
@@ -301,5 +304,11 @@ public class FishSkillCheck : MonoBehaviour
 
         if (fishingManager != null)
             fishingManager.OnSkillCheckSuccess();
+    }
+    private IEnumerator FalhaSpooky()
+    {
+        peixeexe.SetActive(true);
+        yield return new WaitForSecondsRealtime(0.5f);
+        peixeexe.SetActive(false);
     }
 }

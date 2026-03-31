@@ -1,6 +1,7 @@
-using System;
+ï»¿using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using TMPro;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -12,13 +13,23 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private GameObject optionsPanel;
     [SerializeField] private GameObject howToPlayPanel;
     [SerializeField] private GameObject confirmPanel;
+    [Header("Confirm Text")]
+    [SerializeField] private TMP_Text confirmText;
+
+    private string defaultConfirmMessage = "Tem certeza?";
 
     private Action confirmAction;
+
+    // SPOOKY MODE ðŸ‘»
+    private int spookyClicks = 0;
+    private bool waitingForSpookyClicks = false;
+    private const int requiredClicks = 10;
 
     private void Start()
     {
         ShowMenu();
         Time.timeScale = 1f;
+        PlayerPrefs.SetInt("SpookyMode", 0);
     }
 
     // MENU
@@ -26,6 +37,44 @@ public class MainMenuManager : MonoBehaviour
     public void PlayGame()
     {
         SceneManager.LoadScene(gameSceneName);
+    }
+
+    public void spookymode()
+    {
+        spookyClicks = 0;
+        waitingForSpookyClicks = true;
+
+        confirmText.text = defaultConfirmMessage;
+
+        ShowConfirmation(() =>
+        {
+            spookyClicks++;
+
+            // adiciona mais um ?
+            confirmText.text += "?";
+
+            Debug.Log("Spooky click: " + spookyClicks);
+
+            if (spookyClicks >= requiredClicks)
+            {
+                ActivateSpookyMode();
+            }
+            else
+            {
+                ShowConfirmation(confirmAction);
+            }
+        });
+    }
+
+    private void ActivateSpookyMode()
+    {
+        waitingForSpookyClicks = false;
+
+        PlayerPrefs.SetInt("SpookyMode", 1);
+
+        confirmText.text = defaultConfirmMessage;
+
+        ShowMenu();
     }
 
     public void OnClickQuit()
@@ -37,7 +86,7 @@ public class MainMenuManager : MonoBehaviour
         });
     }
 
-    // PAINÉIS
+    // PAINÃ‰IS
 
     public void OpenOptions()
     {
@@ -67,7 +116,7 @@ public class MainMenuManager : MonoBehaviour
         if (confirmPanel != null) confirmPanel.SetActive(panel == confirmPanel);
     }
 
-    // CONFIRMAÇÃO
+    // CONFIRMAÃ‡ÃƒO
 
     public void ShowConfirmation(Action action)
     {
@@ -78,12 +127,15 @@ public class MainMenuManager : MonoBehaviour
     public void ConfirmYes()
     {
         confirmAction?.Invoke();
-        confirmAction = null;
     }
 
     public void ConfirmNo()
     {
         confirmAction = null;
+        waitingForSpookyClicks = false;
+
+        confirmText.text = defaultConfirmMessage;
+
         ShowMenu();
     }
 }
