@@ -1,3 +1,4 @@
+using System.Runtime.CompilerServices;
 using UnityEngine;
 
 public class PlayerMove : MonoBehaviour
@@ -10,11 +11,16 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float gravity = -20f;
 
     private CharacterController characterController;
+    private Vector3 PosicaoInicial;
     private float verticalVelocity;
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
+    }
+    private void Start()
+    {
+        PosicaoInicial = transform.position;
     }
 
     public void HandleMove(Vector2 _moveInput)
@@ -63,6 +69,13 @@ public class PlayerMove : MonoBehaviour
                 targetRotation,
                 rotationSpeed * Time.deltaTime
             );
+        }
+    }
+    private void Update()
+    {
+        if (this.transform.position.y <= -5)
+        {
+            transform.position = PosicaoInicial;
         }
     }
 }
