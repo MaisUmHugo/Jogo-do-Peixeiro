@@ -2574,10 +2574,22 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: e8c853a663dca6d4baadf58f558fc3b3, type: 2}
+    - target: {fileID: 3494013422406189063, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: m_Layer
+      value: 7
+      objectReference: {fileID: 0}
     - target: {fileID: 4232855109026090329, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: fc24aa4afcecb1f45a353ab6337aa99c, type: 2}
+    - target: {fileID: 6240258338328857801, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: m_SortingLayer
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 6240258338328857801, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: m_SortingLayerID
+      value: -416840363
+      objectReference: {fileID: 0}
     - target: {fileID: 7573157933820204051, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
       propertyPath: cameraTransform
       value: 

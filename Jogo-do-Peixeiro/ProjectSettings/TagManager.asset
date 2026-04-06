@@ -15,7 +15,7 @@ TagManager:
   - Water
   - UI
   - FishingSpot
-  - 
+  - Line
   - 
   - 
   - 
@@ -43,6 +43,9 @@ TagManager:
   m_SortingLayers:
   - name: Default
     uniqueID: 0
+    locked: 0
+  - name: Line
+    uniqueID: 3878126933
     locked: 0
   m_RenderingLayers:
   - Default
