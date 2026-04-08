@@ -46,32 +46,51 @@ public class TutorialHandler : MonoBehaviour
     [ContextMenu("teste")]
     public void GoNextObjective()
     {
-        if (currentTutorialPoint != null)
-        {
-            tutorialsPoints.Remove(currentTutorialPoint);
+        if (IsTutorialFinished)
+            return;
 
-            if (tutorialsPoints.Count == 0)
-            {
-                FinishTutorial();
-                return;
-            }
+        if (currentTutorialPoint == null)
+            return;
 
+        tutorialsPoints.Remove(currentTutorialPoint);
+
+        if (tutorialTexts.Count > 0)
             tutorialTexts.RemoveAt(0);
+
+        if (tutorialsPoints.Count == 0)
+        {
+            FinishTutorial();
+            return;
+        }
+
+        if (currentTutorialText != null && tutorialTexts.Count > 0)
+        {
             currentTutorialText.text = tutorialTexts[0];
 
-            if (isFinishedTalk && isFinishedFishing == false)
+            if (isFinishedTalk && !isFinishedFishing)
             {
                 isFishing = true;
                 currentTutorialText.text += $" ({inventory.GetCurrentWeight()}/10) ";
             }
+        }
 
-            currentTutorialPoint = tutorialsPoints[0];
-            tutorialPointer.transform.position = tutorialsPoints[0].position;
+        currentTutorialPoint = tutorialsPoints[0];
+
+        if (tutorialPointer != null)
+        {
+            tutorialPointer.SetActive(true);
+            tutorialPointer.transform.position = currentTutorialPoint.position;
         }
     }
 
     public void AttFishWeightTutorialText()
     {
+        if (IsTutorialFinished)
+            return;
+
+        if (currentTutorialText == null || tutorialTexts.Count == 0)
+            return;
+
         currentTutorialText.text = tutorialTexts[0];
         currentTutorialText.text += $" ({inventory.GetCurrentWeight()}/10) ";
     }
@@ -79,20 +98,23 @@ public class TutorialHandler : MonoBehaviour
     private void FinishTutorial()
     {
         IsTutorialFinished = true;
-
-        Time.timeScale = 0f;
+        isFinishedFishing = true;
+        isFishing = false;
+        currentTutorialPoint = null;
 
         if (tutorialPointer != null)
             tutorialPointer.SetActive(false);
 
+        if (currentTutorialText != null)
+            currentTutorialText.text = "Tutorial concluído!";
+
         if (finishPanel != null)
-            finishPanel.SetActive(true);
+            finishPanel.SetActive(false);
 
         if (interactionUI != null)
             interactionUI.Hide();
 
-        Cursor.lockState = CursorLockMode.None;
-        Cursor.visible = true;
+        Debug.Log("Tutorial concluído.");
     }
 
     public void GoToMainMenu()
@@ -112,10 +134,26 @@ public class TutorialHandler : MonoBehaviour
         if (tutorialTexts.Count > 0 && currentTutorialText != null)
             currentTutorialText.text = tutorialTexts[0];
 
-        if (tutorialPointer != null && tutorialsPoints.Count > 0)
-            tutorialPointer.transform.position = tutorialsPoints[0].position;
+        if (tutorialPointer != null)
+        {
+            if (tutorialsPoints.Count > 0)
+            {
+                tutorialPointer.SetActive(true);
+                tutorialPointer.transform.position = tutorialsPoints[0].position;
+            }
+            else
+            {
+                tutorialPointer.SetActive(false);
+            }
+        }
 
         if (finishPanel != null)
             finishPanel.SetActive(false);
     }
+
+    //if (interactionUI != null)
+    //    interactionUI.Hide();
+
+    //Cursor.lockState = CursorLockMode.None;
+    //Cursor.visible = true;
 }

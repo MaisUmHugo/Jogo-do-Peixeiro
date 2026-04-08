@@ -70,15 +70,10 @@ public class MoneyLenderUI : MonoBehaviour
         if (statusText != null)
             statusText.text = success ? "Pagamento entregue." : "Peso de peixe insuficiente.";
 
-        if (success && TutorialHandler.Instance != null)
+        if (success)
         {
-            TutorialHandler.Instance.GoNextObjective();
-
-            if (TutorialHandler.Instance.IsTutorialFinished)
-            {
-                CloseForTutorialFinish();
-                return;
-            }
+            Close();
+            return;
         }
 
         Refresh();
