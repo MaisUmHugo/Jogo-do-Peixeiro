@@ -547,7 +547,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 252890213}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1
@@ -1629,7 +1629,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 10f6a40284c691f43806202604c1fb61, type: 2}
     - target: {fileID: 919132149155446097, guid: 4812bc4a20b6b9c40b50f499d4f7c4d1, type: 3}
       propertyPath: m_Name
-      value: vurcao
+      value: vulcao
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects:
@@ -1817,11 +1817,130 @@ Transform:
   m_Children: []
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!4 &1763639318 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1317810795301237967, guid: 0711606290a5c67469806aa8d9beada9, type: 3}
+  m_PrefabInstance: {fileID: 2428750734561153943}
+  m_PrefabAsset: {fileID: 0}
 --- !u!224 &1839366450 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 2144954068593178289, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
   m_PrefabInstance: {fileID: 395645081}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &1901991781
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1901991784}
+  - component: {fileID: 1901991783}
+  - component: {fileID: 1901991782}
+  m_Layer: 0
+  m_Name: Bubble Effect
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!73398921 &1901991782
+VFXRenderer:
+  serializedVersion: 1
+  m_ObjectHideFlags: 2
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1901991781}
+  m_Enabled: 1
+  m_CastShadows: 0
+  m_ReceiveShadows: 0
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 0
+  m_LightProbeUsage: 0
+  m_ReflectionProbeUsage: 0
+  m_RayTracingMode: 0
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_SortingLayerID: -649288389
+  m_SortingLayer: 2
+  m_SortingOrder: 0
+--- !u!2083052967 &1901991783
+VisualEffect:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1901991781}
+  m_Enabled: 1
+  m_Asset: {fileID: 8926484042661614526, guid: e2d13110f5d460c418c15368c1950eb0, type: 3}
+  m_InitialEventName: OnPlay
+  m_InitialEventNameOverriden: 0
+  m_StartSeed: 0
+  m_ResetSeedOnPlay: 1
+  m_AllowInstancing: 1
+  m_ResourceVersion: 1
+  m_PropertySheet:
+    m_Float:
+      m_Array: []
+    m_Vector2f:
+      m_Array: []
+    m_Vector3f:
+      m_Array: []
+    m_Vector4f:
+      m_Array: []
+    m_Uint:
+      m_Array: []
+    m_Int:
+      m_Array: []
+    m_Matrix4x4f:
+      m_Array: []
+    m_AnimationCurve:
+      m_Array: []
+    m_Gradient:
+      m_Array: []
+    m_NamedObject:
+      m_Array: []
+    m_Bool:
+      m_Array: []
+--- !u!4 &1901991784
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1901991781}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -19.046, y: -1, z: 46.227}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!114 &1912255055 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 4104836381165108609, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
@@ -2609,6 +2728,9 @@ MonoBehaviour:
   qttSpecificFish: 0
   specificFish: {fileID: 0}
   shipInventory: {fileID: 1406331909}
+  fireworkVFXPrefab: {fileID: 657135347526506168, guid: c03e8e9b0239ca243a6efb1711b77f6c, type: 3}
+  fireworkSpawnPoint: {fileID: 1763639318}
+  fireworkVFXLifetime: 3
 --- !u!114 &2428750734561153946
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2780,6 +2902,10 @@ PrefabInstance:
       value: -416840363
       objectReference: {fileID: 0}
     - target: {fileID: 7573157933820204051, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: stepVFXPrefab
+      value: 
+      objectReference: {fileID: 1413960062567170281, guid: c4e672bba57e45045aa5eefc2575400a, type: 3}
+    - target: {fileID: 7573157933820204051, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 574899195}
@@ -2848,3 +2974,4 @@ SceneRoots:
   - {fileID: 803253384}
   - {fileID: 1389856174}
   - {fileID: 421226239}
+  - {fileID: 1901991784}
