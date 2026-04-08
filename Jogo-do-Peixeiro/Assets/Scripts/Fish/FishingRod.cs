@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.VFX;
 
 public class FishingRod : MonoBehaviour
 {
@@ -8,6 +9,10 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private Camera playerCamera;
     [SerializeField] private LayerMask fishingSpotLayer;
     [SerializeField] private ShipInventory shipInventory;
+
+    [Header("VFX")]
+    [SerializeField] private VisualEffect splashVFXPrefab;
+    [SerializeField] private float splashLifetime = 3f;
 
     [Header("Cast Settings")]
     [SerializeField] private int linePoints = 25;
@@ -21,6 +26,7 @@ public class FishingRod : MonoBehaviour
     private float currentForce;
     private bool isAiming;
     private FishingSpot currentTargetSpot;
+    private VisualEffect currentSplashInstance;
 
     private void Awake()
     {
@@ -114,15 +120,44 @@ public class FishingRod : MonoBehaviour
         if (lineRenderer != null)
             lineRenderer.enabled = false;
 
+        Vector3 splashPosition = GetLineEndPosition();
+
+        SpawnSplash(splashPosition);
+
         if (currentTargetSpot != null)
-        {
-            Debug.Log("Acertou o FishingSpot com a vara");
             currentTargetSpot.StartFishingFromRod(shipInventory);
-        }
-        else
-        {
-            Debug.Log("Errou o FishingSpot");
-        }
+    }
+
+    private Vector3 GetLineEndPosition()
+    {
+        if (lineRenderer == null || lineRenderer.positionCount == 0)
+            return rodTip.position;
+
+        return lineRenderer.GetPosition(lineRenderer.positionCount - 1);
+    }
+
+    private void SpawnSplash(Vector3 position)
+    {
+        if (splashVFXPrefab == null)
+            return;
+
+        if (currentSplashInstance != null)
+            Destroy(currentSplashInstance.gameObject);
+
+        currentSplashInstance = Instantiate(
+            splashVFXPrefab,
+            position,
+            Quaternion.identity
+        );
+
+        float normalizedForce = Mathf.InverseLerp(minCastDistance, maxCastDistance, currentForce);
+
+        if (currentSplashInstance.HasFloat("Intensity"))
+            currentSplashInstance.SetFloat("Intensity", normalizedForce);
+
+        currentSplashInstance.Play();
+
+        Destroy(currentSplashInstance.gameObject, splashLifetime);
     }
 
     private Vector3 GetAimPoint(out FishingSpot hitSpot)
@@ -161,7 +196,9 @@ public class FishingRod : MonoBehaviour
             float t = i / (float)(linePoints - 1);
 
             Vector3 point = Vector3.Lerp(startPoint, endPoint, t);
+
             float heightOffset = Mathf.Sin(t * Mathf.PI) * dynamicHeight;
+
             point.y += heightOffset;
 
             lineRenderer.SetPosition(i, point);
