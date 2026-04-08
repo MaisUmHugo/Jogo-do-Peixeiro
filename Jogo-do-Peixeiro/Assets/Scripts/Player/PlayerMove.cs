@@ -1,5 +1,6 @@
 using UnityEngine;
 using UnityEngine.VFX;
+using System.Collections.Generic;
 
 public class PlayerMove : MonoBehaviour
 {
@@ -11,17 +12,21 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float gravity = -20f;
 
     [Header("Step VFX")]
-    [SerializeField] private VisualEffect stepVFX;
+    [SerializeField] private VisualEffect stepVFXPrefab;
     [SerializeField] private Transform stepPoint;
     [SerializeField] private float stepInterval = 0.25f;
     [SerializeField] private float moveThreshold = 0.1f;
     [SerializeField] private float stepBackOffset = 0.12f;
     [SerializeField] private float stepHeight = 0.05f;
+    [SerializeField] private float stepVFXLifetime = 2f;
+    [SerializeField] private int maxStepVFXInstances = 10;
 
     private CharacterController characterController;
-    private Vector3 PosicaoInicial;
+    private Vector3 posicaoInicial;
     private float verticalVelocity;
     private float stepTimer;
+
+    private readonly List<VisualEffect> activeStepVFX = new();
 
     private void Awake()
     {
@@ -30,7 +35,7 @@ public class PlayerMove : MonoBehaviour
 
     private void Start()
     {
-        PosicaoInicial = transform.position;
+        posicaoInicial = transform.position;
     }
 
     public void HandleMove(Vector2 _moveInput)
@@ -54,7 +59,7 @@ public class PlayerMove : MonoBehaviour
 
         if (characterController.isGrounded)
         {
-            if (verticalVelocity < 0)
+            if (verticalVelocity < 0f)
                 verticalVelocity = -2f;
         }
         else
@@ -70,6 +75,7 @@ public class PlayerMove : MonoBehaviour
         if (moveDirection != Vector3.zero)
         {
             Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
                 targetRotation,
@@ -82,7 +88,7 @@ public class PlayerMove : MonoBehaviour
 
     private void HandleStepVFX(Vector3 _moveDirection)
     {
-        if (stepVFX == null || stepPoint == null)
+        if (stepVFXPrefab == null || stepPoint == null)
             return;
 
         bool isMoving = _moveDirection.magnitude > moveThreshold;
@@ -95,21 +101,50 @@ public class PlayerMove : MonoBehaviour
         }
 
         Vector3 backwardOffset = -_moveDirection.normalized * stepBackOffset;
-        stepPoint.localPosition = new Vector3(backwardOffset.x, stepHeight, backwardOffset.z);
+
+        stepPoint.localPosition = new Vector3(
+            backwardOffset.x,
+            stepHeight,
+            backwardOffset.z
+        );
 
         stepTimer -= Time.deltaTime;
 
         if (stepTimer > 0f)
             return;
 
-        Debug.Log("Disparando Step VFX");
-        stepVFX.SendEvent("OnPlay");
+        SpawnStepVFX(stepPoint.position, stepPoint.rotation);
+
         stepTimer = stepInterval;
+    }
+
+    private void SpawnStepVFX(Vector3 position, Quaternion rotation)
+    {
+        if (activeStepVFX.Count >= maxStepVFXInstances)
+        {
+            if (activeStepVFX[0] != null)
+                Destroy(activeStepVFX[0].gameObject);
+
+            activeStepVFX.RemoveAt(0);
+        }
+
+        VisualEffect instance = Instantiate(
+            stepVFXPrefab,
+            position,
+            rotation,
+            transform
+        );
+
+        instance.Play();
+
+        activeStepVFX.Add(instance);
+
+        Destroy(instance.gameObject, stepVFXLifetime);
     }
 
     private void Update()
     {
-        if (transform.position.y <= -5)
-            transform.position = PosicaoInicial;
+        if (transform.position.y <= -5f)
+            transform.position = posicaoInicial;
     }
 }
