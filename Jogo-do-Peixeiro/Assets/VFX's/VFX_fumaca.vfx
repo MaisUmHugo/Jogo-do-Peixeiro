@@ -100,7 +100,7 @@ MonoBehaviour:
     x: -604
     y: -23
     width: 1079
-    height: 2061
+    height: 2037
 --- !u!114 &114350483966674985
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2042,7 +2042,7 @@ MonoBehaviour:
       m_Type:
         m_SerializableType: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      m_SerializableObject: '{"x":-0.4000000059604645,"y":0.0,"z":-0.4000000059604645}'
+      m_SerializableObject: '{"x":-0.10000000149011612,"y":0.0,"z":-0.10000000149011612}'
     m_Space: -1
   m_Property:
     name: Min
@@ -2178,7 +2178,7 @@ MonoBehaviour:
       m_Type:
         m_SerializableType: UnityEngine.Vector3, UnityEngine.CoreModule, Version=0.0.0.0,
           Culture=neutral, PublicKeyToken=null
-      m_SerializableObject: '{"x":0.30000001192092898,"y":1.0,"z":0.30000001192092898}'
+      m_SerializableObject: '{"x":0.05000000074505806,"y":1.0,"z":0.05000000074505806}'
     m_Space: -1
   m_Property:
     name: Max

@@ -899,7 +899,7 @@ Transform:
   m_GameObject: {fileID: 421226236}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -39.17, y: 7.82, z: 9.3}
+  m_LocalPosition: {x: -39.17, y: 6.43, z: 9.3}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1623,6 +1623,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0.37
       objectReference: {fileID: 0}
+    - target: {fileID: -4683669308469848369, guid: 4812bc4a20b6b9c40b50f499d4f7c4d1, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 10f6a40284c691f43806202604c1fb61, type: 2}
     - target: {fileID: 919132149155446097, guid: 4812bc4a20b6b9c40b50f499d4f7c4d1, type: 3}
       propertyPath: m_Name
       value: vurcao
@@ -2665,7 +2669,7 @@ PrefabInstance:
     - target: {fileID: 5014091956547027800, guid: 1f663953669a812428a0fcdcfe497b54, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
-      objectReference: {fileID: 2100000, guid: 10f6a40284c691f43806202604c1fb61, type: 2}
+      objectReference: {fileID: 2100000, guid: 496d234ff9a219f41bbbdccb95d0b98e, type: 2}
     - target: {fileID: 8526589890193615046, guid: 1f663953669a812428a0fcdcfe497b54, type: 3}
       propertyPath: m_Name
       value: ilha
