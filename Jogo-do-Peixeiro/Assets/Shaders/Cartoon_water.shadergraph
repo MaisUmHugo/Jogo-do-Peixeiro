@@ -461,8 +461,8 @@
     },
     "m_FragmentContext": {
         "m_Position": {
-            "x": 638.0,
-            "y": 388.99993896484377
+            "x": 820.0,
+            "y": 438.0000305175781
         },
         "m_Blocks": [
             {
@@ -844,7 +844,7 @@
     "overrideHLSLDeclaration": false,
     "hlslDeclarationOverride": 0,
     "m_Hidden": false,
-    "m_Value": 15.0,
+    "m_Value": 100.0,
     "m_FloatType": 0,
     "m_RangeValues": {
         "x": 0.0,
@@ -3038,7 +3038,7 @@
     "m_Hidden": false,
     "m_ShaderOutputName": "Alpha",
     "m_StageCapability": 2,
-    "m_Value": 1.0,
+    "m_Value": 0.699999988079071,
     "m_DefaultValue": 1.0,
     "m_Labels": []
 }
@@ -3248,7 +3248,7 @@
     "overrideHLSLDeclaration": false,
     "hlslDeclarationOverride": 0,
     "m_Hidden": false,
-    "m_Value": 5.0,
+    "m_Value": 15.0,
     "m_FloatType": 0,
     "m_RangeValues": {
         "x": 0.0,
