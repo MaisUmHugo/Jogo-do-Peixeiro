@@ -499,6 +499,8 @@ MonoBehaviour:
     serializedVersion: 2
     m_Bits: 16
   shipInventory: {fileID: 0}
+  hookPrefab: {fileID: 1660917770477979820, guid: 72ba4fd3b6b151b469aa375d84eb4ec1, type: 3}
+  hookSpeed: 10
   splashVFXPrefab: {fileID: 2267440588711215473, guid: 2bcff4dc608427b4ea072faf9ce2aef9, type: 3}
   splashLifetime: 3
   linePoints: 25

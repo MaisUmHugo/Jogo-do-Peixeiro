@@ -1,9 +1,10 @@
 using UnityEngine;
 using UnityEngine.VFX;
+using System.Collections;
+using UnityEngine.InputSystem;
 
 public class FishingRod : MonoBehaviour
 {
-    [Header("References")]
     [SerializeField] private LineRenderer lineRenderer;
     [SerializeField] private Transform rodTip;
     [SerializeField] private Camera playerCamera;
@@ -11,23 +12,31 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private LayerMask waterLayer;
     [SerializeField] private ShipInventory shipInventory;
 
-    [Header("VFX")]
+    [SerializeField] private Transform hookPrefab;
+    [SerializeField] private float hookSpeed = 25f;
+
     [SerializeField] private VisualEffect splashVFXPrefab;
     [SerializeField] private float splashLifetime = 3f;
 
-    [Header("Cast Settings")]
-    [SerializeField] private int linePoints = 25;
+    [SerializeField] private int arcPoints = 25;
     [SerializeField] private float raycastRadius = 0.5f;
 
-    [Header("Force")]
     [SerializeField] private float minCastDistance = 5f;
     [SerializeField] private float maxCastDistance = 20f;
     [SerializeField] private float chargeSpeed = 10f;
 
     private float currentForce;
     private bool isAiming;
+    private bool hookTraveling;
+    private bool hookReturning;
+    private bool hookWaitingInWater;
+
     private FishingSpot currentTargetSpot;
     private VisualEffect currentSplashInstance;
+    private Transform currentHook;
+    private Coroutine hookRoutine;
+
+    private Vector3[] arcCache;
 
     private void Awake()
     {
@@ -37,8 +46,7 @@ public class FishingRod : MonoBehaviour
         if (shipInventory == null)
             shipInventory = GetComponentInParent<ShipInventory>();
 
-        if (lineRenderer != null)
-            lineRenderer.enabled = false;
+        lineRenderer.enabled = false;
     }
 
     private void Start()
@@ -64,19 +72,32 @@ public class FishingRod : MonoBehaviour
         if (GameManager.instance == null)
             return;
 
-        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
-            return;
-
         if (isAiming)
             UpdateAim();
+
+        UpdateHookLine();
+
+        if (hookWaitingInWater &&
+            Mouse.current.leftButton.wasPressedThisFrame &&
+            (FishingManager.instance == null || !FishingManager.instance.IsFishing))
+        {
+            RecallHook();
+        }
     }
 
     private void HandleAimPressed()
     {
+        if (hookTraveling || hookReturning || hookWaitingInWater)
+            return;
+
         if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
             return;
 
-        StartAim();
+        isAiming = true;
+        currentTargetSpot = null;
+        currentForce = minCastDistance;
+
+        lineRenderer.enabled = true;
     }
 
     private void HandleAimReleased()
@@ -84,20 +105,19 @@ public class FishingRod : MonoBehaviour
         if (!isAiming)
             return;
 
-        ReleaseCast();
-    }
+        isAiming = false;
+        hookTraveling = true;
 
-    private void StartAim()
-    {
-        if (rodTip == null || playerCamera == null)
-            return;
+        arcCache = new Vector3[arcPoints];
 
-        isAiming = true;
-        currentTargetSpot = null;
-        currentForce = minCastDistance;
+        for (int i = 0; i < arcPoints; i++)
+            arcCache[i] = lineRenderer.GetPosition(i);
 
-        if (lineRenderer != null)
-            lineRenderer.enabled = true;
+        lineRenderer.enabled = false;
+
+        GameManager.instance.SetState(GameManager.GameState.Fishing);
+
+        hookRoutine = StartCoroutine(AnimateHook());
     }
 
     private void UpdateAim()
@@ -111,25 +131,92 @@ public class FishingRod : MonoBehaviour
         DrawArc(rodTip.position, targetPoint);
     }
 
-    private void ReleaseCast()
+    private IEnumerator AnimateHook()
     {
-        if (!isAiming)
-            return;
+        if (currentHook != null)
+            Destroy(currentHook.gameObject);
 
-        isAiming = false;
+        currentHook = Instantiate(hookPrefab, rodTip.position, Quaternion.identity);
 
-        if (lineRenderer != null)
-            lineRenderer.enabled = false;
+        lineRenderer.positionCount = 2;
+        lineRenderer.enabled = true;
 
-        Vector3 endPosition = lineRenderer.GetPosition(lineRenderer.positionCount - 1);
+        for (int i = 0; i < arcCache.Length; i++)
+        {
+            Vector3 target = arcCache[i];
+
+            while (Vector3.Distance(currentHook.position, target) > 0.05f)
+            {
+                currentHook.position = Vector3.MoveTowards(
+                    currentHook.position,
+                    target,
+                    hookSpeed * Time.deltaTime
+                );
+
+                yield return null;
+            }
+        }
 
         if (TryGetWaterHit(out Vector3 waterHit))
+        {
             SpawnSplash(waterHit);
-        else if (Physics.Raycast(endPosition + Vector3.up * 2f, Vector3.down, out RaycastHit hit, 5f, waterLayer))
-            SpawnSplash(hit.point);
+            currentHook.position = waterHit;
+        }
+
+        hookTraveling = false;
+        hookWaitingInWater = true;
 
         if (currentTargetSpot != null)
             currentTargetSpot.StartFishingFromRod(shipInventory);
+    }
+
+    private void RecallHook()
+    {
+        if (!hookWaitingInWater)
+            return;
+
+        if (FishingManager.instance != null && FishingManager.instance.IsFishing)
+            return;
+
+        if (hookRoutine != null)
+            StopCoroutine(hookRoutine);
+
+        hookRoutine = StartCoroutine(ReturnHook());
+    }
+
+    private IEnumerator ReturnHook()
+    {
+        hookReturning = true;
+        hookWaitingInWater = false;
+
+        while (Vector3.Distance(currentHook.position, rodTip.position) > 0.05f)
+        {
+            currentHook.position = Vector3.MoveTowards(
+                currentHook.position,
+                rodTip.position,
+                hookSpeed * 1.5f * Time.deltaTime
+            );
+
+            yield return null;
+        }
+
+        Destroy(currentHook.gameObject);
+
+        lineRenderer.enabled = false;
+
+        hookTraveling = false;
+        hookReturning = false;
+
+        GameManager.instance.SetState(GameManager.GameState.OnBoat);
+    }
+
+    private void UpdateHookLine()
+    {
+        if (!lineRenderer.enabled || currentHook == null)
+            return;
+
+        lineRenderer.SetPosition(0, rodTip.position);
+        lineRenderer.SetPosition(1, currentHook.position);
     }
 
     private void SpawnSplash(Vector3 position)
@@ -160,8 +247,9 @@ public class FishingRod : MonoBehaviour
     {
         hitSpot = null;
 
-        Vector2 screenCenter = new Vector2(Screen.width * 0.5f, Screen.height * 0.5f);
-        Ray ray = playerCamera.ScreenPointToRay(screenCenter);
+        Ray ray = playerCamera.ScreenPointToRay(
+            new Vector2(Screen.width * 0.5f, Screen.height * 0.5f)
+        );
 
         Vector3 origin = rodTip.position;
         Vector3 direction = ray.direction;
@@ -179,23 +267,17 @@ public class FishingRod : MonoBehaviour
 
     private void DrawArc(Vector3 startPoint, Vector3 endPoint)
     {
-        if (lineRenderer == null)
-            return;
-
-        lineRenderer.positionCount = linePoints;
+        lineRenderer.positionCount = arcPoints;
 
         float distance = Vector3.Distance(startPoint, endPoint);
-        float dynamicHeight = distance * 0.5f;
+        float height = distance * 0.5f;
 
-        for (int i = 0; i < linePoints; i++)
+        for (int i = 0; i < arcPoints; i++)
         {
-            float t = i / (float)(linePoints - 1);
+            float t = i / (float)(arcPoints - 1);
 
             Vector3 point = Vector3.Lerp(startPoint, endPoint, t);
-
-            float heightOffset = Mathf.Sin(t * Mathf.PI) * dynamicHeight;
-
-            point.y += heightOffset;
+            point.y += Mathf.Sin(t * Mathf.PI) * height;
 
             lineRenderer.SetPosition(i, point);
         }
@@ -205,10 +287,10 @@ public class FishingRod : MonoBehaviour
     {
         hitPoint = Vector3.zero;
 
-        for (int i = 0; i < lineRenderer.positionCount - 1; i++)
+        for (int i = 0; i < arcCache.Length - 1; i++)
         {
-            Vector3 a = lineRenderer.GetPosition(i);
-            Vector3 b = lineRenderer.GetPosition(i + 1);
+            Vector3 a = arcCache[i];
+            Vector3 b = arcCache[i + 1];
 
             Vector3 dir = b - a;
             float dist = dir.magnitude;

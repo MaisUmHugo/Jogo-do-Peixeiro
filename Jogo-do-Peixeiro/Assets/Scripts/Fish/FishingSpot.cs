@@ -31,8 +31,10 @@ public class FishingSpot : MonoBehaviour
         if (GameManager.instance == null)
             return;
 
-        if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
-            return;
+        if (GameManager.instance.currentState == GameManager.GameState.Fishing &&
+            FishingManager.instance.IsFishing == false)
+        {
+        }
 
         if (_inventory.IsFull)
         {
