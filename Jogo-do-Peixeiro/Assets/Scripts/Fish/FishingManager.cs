@@ -16,7 +16,7 @@ public class FishingManager : MonoBehaviour
     private FishScriptableObject[] currentAvailableFish;
 
     private FishData pendingFish;
-
+    [SerializeField] private FishingRod fishingRod;
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -171,6 +171,11 @@ public class FishingManager : MonoBehaviour
         }
 
         pendingFish = null;
+    }
+    public void OnSkillCheckSuccessTick(FishSkillCheck.FeedbackResult result)
+    {
+        if (fishingRod != null)
+            fishingRod.PlaySuccessSplash(result);
     }
 
     private void EndFishing()

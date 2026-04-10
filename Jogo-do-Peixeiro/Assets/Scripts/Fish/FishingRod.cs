@@ -282,6 +282,81 @@ public class FishingRod : MonoBehaviour
             lineRenderer.SetPosition(i, point);
         }
     }
+    public void PlaySuccessSplash(FishSkillCheck.FeedbackResult result)
+    {
+        if (currentHook == null)
+            return;
+
+        float intensityMultiplier = 1f;
+
+        switch (result)
+        {
+            case FishSkillCheck.FeedbackResult.Good:
+                intensityMultiplier = 0.8f;
+                break;
+
+            case FishSkillCheck.FeedbackResult.Great:
+                intensityMultiplier = 1.2f;
+                break;
+
+            case FishSkillCheck.FeedbackResult.Perfect:
+                intensityMultiplier = 1.6f;
+                StartCoroutine(PerfectPull());
+                break;
+        }
+
+        SpawnScaledSplash(currentHook.position, intensityMultiplier);
+    }
+
+    private void SpawnScaledSplash(Vector3 position, float multiplier)
+    {
+        if (splashVFXPrefab == null)
+            return;
+
+        var splash = Instantiate(splashVFXPrefab, position, Quaternion.identity);
+
+        float normalizedForce = Mathf.InverseLerp(minCastDistance, maxCastDistance, currentForce);
+        float finalIntensity = normalizedForce * multiplier;
+
+        if (splash.HasFloat("Intensity"))
+            splash.SetFloat("Intensity", finalIntensity);
+
+        splash.Play();
+
+        Destroy(splash.gameObject, splashLifetime);
+    }
+
+    private IEnumerator PerfectPull()
+    {
+        if (currentHook == null)
+            yield break;
+
+        Vector3 start = currentHook.position;
+        Vector3 pullTarget = start + (rodTip.position - start).normalized * 0.7f;
+
+        float t = 0f;
+        float duration = 0.12f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+
+            currentHook.position = Vector3.Lerp(start, pullTarget, t);
+
+            yield return null;
+        }
+
+        t = 0f;
+
+        while (t < 1f)
+        {
+            t += Time.deltaTime / duration;
+
+            currentHook.position = Vector3.Lerp(pullTarget, start, t);
+
+            yield return null;
+        }
+    }
 
     private bool TryGetWaterHit(out Vector3 hitPoint)
     {

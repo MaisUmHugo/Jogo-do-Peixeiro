@@ -146,7 +146,11 @@ public class FishSkillCheck : MonoBehaviour
     private void RegisterSuccess()
     {
         FeedbackResult feedback = CalculateSuccessFeedback();
+
         OnFeedbackTriggered?.Invoke(feedback);
+
+        if (fishingManager != null)
+            fishingManager.OnSkillCheckSuccessTick(feedback);
 
         float bonus = successBonus;
 
