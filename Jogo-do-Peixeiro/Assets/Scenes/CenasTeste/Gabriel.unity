@@ -517,6 +517,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2ca48ec2910fc764a9a2790039651937, type: 2}
   - {fileID: 11400000, guid: 226c8121ca12d7240a0bad449842489a, type: 2}
   - {fileID: 11400000, guid: f07016660d91d444a91171159bfcf55e, type: 2}
+  minHorizontalDistance: 4
 --- !u!136 &252890215
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -2965,6 +2966,10 @@ PrefabInstance:
       propertyPath: shipInventory
       value: 
       objectReference: {fileID: 1406331909}
+    - target: {fileID: 723917050433723326, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
+      propertyPath: maxCastDistance
+      value: 5
+      objectReference: {fileID: 0}
     - target: {fileID: 2830531516403571763, guid: c3251e7f5e2f7f548a1b17cb052d60f7, type: 3}
       propertyPath: playerCamera
       value: 

@@ -1,12 +1,9 @@
 using UnityEngine;
-using UnityEngine.InputSystem;
 
 public class FishingSpot : MonoBehaviour
 {
     [SerializeField] private FishScriptableObject[] availableFish;
-
-    //[Header("Debug Test")]
-    //[SerializeField] private ShipInventory debugShipInventory;
+    [SerializeField] private float minHorizontalDistance = 4f;
 
     public void StartFishingFromRod(ShipInventory _inventory)
     {
@@ -14,16 +11,10 @@ public class FishingSpot : MonoBehaviour
             return;
 
         if (availableFish == null || availableFish.Length == 0)
-        {
-            Debug.LogWarning("Esse FishingSpot não tem peixes configurados.");
             return;
-        }
 
         if (_inventory == null)
-        {
-            Debug.LogWarning("Nenhum ShipInventory foi enviado.");
             return;
-        }
 
         if (FishingManager.instance.IsFishing)
             return;
@@ -31,18 +22,22 @@ public class FishingSpot : MonoBehaviour
         if (GameManager.instance == null)
             return;
 
-        if (GameManager.instance.currentState == GameManager.GameState.Fishing &&
-            FishingManager.instance.IsFishing == false)
-        {
-        }
-
         if (_inventory.IsFull)
-        {
-            Debug.Log("Inventário cheio, não é possível pescar.");
             return;
-        }
 
-        Debug.Log("Iniciando pesca pela vara");
+        Transform player = _inventory.transform.root;
+
+        Vector3 a = player.position;
+        Vector3 b = transform.position;
+
+        a.y = 0f;
+        b.y = 0f;
+
+        float horizontalDistance = Vector3.Distance(a, b);
+
+        if (horizontalDistance < minHorizontalDistance)
+            return;
+
         FishingManager.instance.StartFishing(_inventory, availableFish);
     }
 
