@@ -8,6 +8,7 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private Transform rodTip;
     [SerializeField] private Camera playerCamera;
     [SerializeField] private LayerMask fishingSpotLayer;
+    [SerializeField] private LayerMask waterLayer;
     [SerializeField] private ShipInventory shipInventory;
 
     [Header("VFX")]
@@ -120,20 +121,15 @@ public class FishingRod : MonoBehaviour
         if (lineRenderer != null)
             lineRenderer.enabled = false;
 
-        Vector3 splashPosition = GetLineEndPosition();
+        Vector3 endPosition = lineRenderer.GetPosition(lineRenderer.positionCount - 1);
 
-        SpawnSplash(splashPosition);
+        if (TryGetWaterHit(out Vector3 waterHit))
+            SpawnSplash(waterHit);
+        else if (Physics.Raycast(endPosition + Vector3.up * 2f, Vector3.down, out RaycastHit hit, 5f, waterLayer))
+            SpawnSplash(hit.point);
 
         if (currentTargetSpot != null)
             currentTargetSpot.StartFishingFromRod(shipInventory);
-    }
-
-    private Vector3 GetLineEndPosition()
-    {
-        if (lineRenderer == null || lineRenderer.positionCount == 0)
-            return rodTip.position;
-
-        return lineRenderer.GetPosition(lineRenderer.positionCount - 1);
     }
 
     private void SpawnSplash(Vector3 position)
@@ -203,5 +199,27 @@ public class FishingRod : MonoBehaviour
 
             lineRenderer.SetPosition(i, point);
         }
+    }
+
+    private bool TryGetWaterHit(out Vector3 hitPoint)
+    {
+        hitPoint = Vector3.zero;
+
+        for (int i = 0; i < lineRenderer.positionCount - 1; i++)
+        {
+            Vector3 a = lineRenderer.GetPosition(i);
+            Vector3 b = lineRenderer.GetPosition(i + 1);
+
+            Vector3 dir = b - a;
+            float dist = dir.magnitude;
+
+            if (Physics.Raycast(a, dir.normalized, out RaycastHit hit, dist, waterLayer))
+            {
+                hitPoint = hit.point;
+                return true;
+            }
+        }
+
+        return false;
     }
 }

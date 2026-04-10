@@ -67,7 +67,7 @@ MonoBehaviour:
   rotationSpeed: 10
   cameraTransform: {fileID: 0}
   gravity: -20
-  stepVFXPrefab: {fileID: 7858917041816825030}
+  stepVFXPrefab: {fileID: 1413960062567170281, guid: c4e672bba57e45045aa5eefc2575400a, type: 3}
   stepPoint: {fileID: 2724447339426420817}
   stepInterval: 0.25
   moveThreshold: 0.2
@@ -495,8 +495,11 @@ MonoBehaviour:
   fishingSpotLayer:
     serializedVersion: 2
     m_Bits: 64
+  waterLayer:
+    serializedVersion: 2
+    m_Bits: 16
   shipInventory: {fileID: 0}
-  splashVFXPrefab: {fileID: 0}
+  splashVFXPrefab: {fileID: 2267440588711215473, guid: 2bcff4dc608427b4ea072faf9ce2aef9, type: 3}
   splashLifetime: 3
   linePoints: 25
   raycastRadius: 0.5
@@ -1013,10 +1016,5 @@ PrefabInstance:
 --- !u!4 &1826146510147550978 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 7482969192062210861, guid: c4e672bba57e45045aa5eefc2575400a, type: 3}
-  m_PrefabInstance: {fileID: 9119541057303260207}
-  m_PrefabAsset: {fileID: 0}
---- !u!2083052967 &7858917041816825030 stripped
-VisualEffect:
-  m_CorrespondingSourceObject: {fileID: 1413960062567170281, guid: c4e672bba57e45045aa5eefc2575400a, type: 3}
   m_PrefabInstance: {fileID: 9119541057303260207}
   m_PrefabAsset: {fileID: 0}

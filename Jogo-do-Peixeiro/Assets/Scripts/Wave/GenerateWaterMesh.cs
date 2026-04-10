@@ -2,25 +2,20 @@ using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
+[RequireComponent(typeof(MeshCollider))]
 public class GenerateWaterMesh : MonoBehaviour
 {
     public int resolution;
     public float size;
-
     public Material waterMaterial;
 
     void Awake()
     {
         Mesh mesh = new Mesh();
 
-        Vector3[] vertices =
-            new Vector3[(resolution + 1) * (resolution + 1)];
-
-        Vector2[] uvs =
-            new Vector2[(resolution + 1) * (resolution + 1)];
-
-        int[] triangles =
-            new int[resolution * resolution * 6];
+        Vector3[] vertices = new Vector3[(resolution + 1) * (resolution + 1)];
+        Vector2[] uvs = new Vector2[(resolution + 1) * (resolution + 1)];
+        int[] triangles = new int[resolution * resolution * 6];
 
         float halfSize = size * 0.5f;
 
@@ -33,15 +28,13 @@ public class GenerateWaterMesh : MonoBehaviour
 
                 int i = z * (resolution + 1) + x;
 
-                vertices[i] =
-                    new Vector3(
-                        percentX * size - halfSize,
-                        0,
-                        percentZ * size - halfSize
-                    );
+                vertices[i] = new Vector3(
+                    percentX * size - halfSize,
+                    0,
+                    percentZ * size - halfSize
+                );
 
-                uvs[i] =
-                    new Vector2(percentX, percentZ);
+                uvs[i] = new Vector2(percentX, percentZ);
             }
         }
 
@@ -72,5 +65,7 @@ public class GenerateWaterMesh : MonoBehaviour
 
         GetComponent<MeshFilter>().mesh = mesh;
         GetComponent<MeshRenderer>().material = waterMaterial;
+
+        GetComponent<MeshCollider>().sharedMesh = mesh;
     }
 }
