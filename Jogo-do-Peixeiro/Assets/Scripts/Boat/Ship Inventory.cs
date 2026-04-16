@@ -14,6 +14,9 @@ public class ShipInventory : MonoBehaviour
 
     public DebugShipInventory debugShipInventory;
 
+    [SerializeField] private PlayerMoneyManager playerMoneyManager;
+
+
     public bool TryAddFish(FishData fish)
     {
         if (fish == null)
@@ -47,30 +50,12 @@ public class ShipInventory : MonoBehaviour
         AttFishWeight();
     }
 
-    public void SellAllFish()
-    {
-        int moneyToRecive = 0;
-
-        foreach (FishData _fish in ownedFish)
-        {
-            moneyToRecive += _fish.CalculatePrice();
-        }
-
-        ownedFish.Clear();
-        AttFishWeight();
-    }
-
-    public void SellFish(int _i)
-    {
-        // add money by fish.CalculatePrice();
-        ownedFish.RemoveAt(_i);
-        AttFishWeight();
-    }
-
     public bool TryPayFishWeight(int _weightFishPayment)
     {
         int fishWeight = 0;
         int fishIndex = -1;
+
+        Debug.Log("tentou pagar peixe");
 
         foreach (FishData fish in ownedFish)
         {
@@ -85,12 +70,45 @@ public class ShipInventory : MonoBehaviour
 
         if (fishIndex != -1)
         {
-            ownedFish.RemoveRange(0, fishIndex + 1);
+            Debug.Log("conseguiu pagar o peixe");
             AttFishWeight();
+            SellHalfPriceFish(fishIndex);
+            SellRemainingFish(); 
             return true;
         }
 
         return false;
+    }
+
+    private void SellRemainingFish()
+    {
+        Debug.Log("tentando receber peixe");
+        float money = 0;
+        foreach (FishData _fish in ownedFish)
+        {
+            money += _fish.price;
+        }
+
+        ownedFish.Clear();
+        Debug.Log($"dinheiro a receber: {money}");
+        playerMoneyManager.ReciveMoney(money);
+    }
+
+    private void SellHalfPriceFish(int _fishIndex)
+    {
+        float money = 0;
+
+        for (int i = 0; i < _fishIndex; i++)
+        {
+
+            money += ownedFish[i].price;
+
+        }
+
+        ownedFish.RemoveRange(0, _fishIndex + 1);
+        money = money / 2;
+        playerMoneyManager.ReciveMoney(money);
+
     }
 
     private void AttFishWeight()

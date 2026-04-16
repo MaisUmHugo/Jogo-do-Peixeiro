@@ -2,10 +2,11 @@ using UnityEngine;
 
 public class FishData
 {
-    public FishScriptableObject typeOfFish;
-    public int weight {  get; private set; }
+    public FishScriptableObject typeOfFish { get; private set; }
+    public int weight { get; private set; }
+    public float price { get; private set; }
 
-    public int CalculatePrice()
+    private float CalculatePrice()
     {
 
         return weight * typeOfFish.pricePerWeight;
@@ -14,11 +15,9 @@ public class FishData
 
     public FishData(FishScriptableObject _typeOfFish)
     {
-       
-       typeOfFish = _typeOfFish;
-       weight = Random.Range(typeOfFish.minWeight, typeOfFish.maxWeight);        
 
+        typeOfFish = _typeOfFish;
+        weight = Random.Range(typeOfFish.minWeight, typeOfFish.maxWeight);
+        price = CalculatePrice();
     }
-
-
 }

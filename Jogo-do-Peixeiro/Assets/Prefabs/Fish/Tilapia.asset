@@ -15,6 +15,6 @@ MonoBehaviour:
   minWeight: 3
   maxWeight: 5
   rarity: 2
-  pricePerWeight: 0
+  pricePerWeight: 3
   fishName: "Til\xE1pia"
   description: 

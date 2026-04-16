@@ -15,6 +15,6 @@ MonoBehaviour:
   minWeight: 1
   maxWeight: 5
   rarity: 1
-  pricePerWeight: 0
+  pricePerWeight: 2
   fishName: Pacu
   description: 

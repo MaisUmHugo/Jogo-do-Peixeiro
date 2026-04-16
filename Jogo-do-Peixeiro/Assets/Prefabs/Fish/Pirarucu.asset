@@ -15,6 +15,6 @@ MonoBehaviour:
   minWeight: 4
   maxWeight: 6
   rarity: 3
-  pricePerWeight: 0
+  pricePerWeight: 2
   fishName: Pirarucu
   description: 
