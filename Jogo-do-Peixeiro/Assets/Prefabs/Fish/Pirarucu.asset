@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minWeight: 4
   maxWeight: 6
+  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  material: {fileID: -4202900029629182695, guid: b56fe480accb4b541a3954810f3b1f99, type: 3}
   rarity: 3
   pricePerWeight: 2
   fishName: Pirarucu

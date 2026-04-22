@@ -5,6 +5,7 @@ public class FishingResultUI : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private GameObject panel;
+    private FishResultPanelUI fishResultPanelUI;
     [SerializeField] private TMP_Text resultText;
 
     [Header("Settings")]
@@ -15,6 +16,7 @@ public class FishingResultUI : MonoBehaviour
 
     private void Awake()
     {
+        fishResultPanelUI = panel.GetComponent<FishResultPanelUI>();
         HideImmediate();
     }
 
@@ -30,13 +32,16 @@ public class FishingResultUI : MonoBehaviour
             InputHandler.instance.onAnyButtonPressed -= TryClose;
     }
 
-    public void ShowCatchResult(string _fishName, int _weight)
+    public void ShowCatchResult(FishData _fish)
     {
         if (panel != null)
             panel.SetActive(true);
 
+        if (fishResultPanelUI != null)
+            fishResultPanelUI.SetNewFish(_fish);
+
         if (resultText != null)
-            resultText.text = $"{_fishName} - {_weight} kg";
+            resultText.text = $"{_fish.typeOfFish.name} - {_fish.weight} kg";
 
         isShowing = true;
         canSkip = false;
