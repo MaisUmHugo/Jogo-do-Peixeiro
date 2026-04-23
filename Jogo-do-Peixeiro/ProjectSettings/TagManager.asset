@@ -50,6 +50,9 @@ TagManager:
   - name: VFX
     uniqueID: 3645678907
     locked: 0
+  - name: UI
+    uniqueID: 1637288171
+    locked: 0
   m_RenderingLayers:
   - Default
   - Light Layer 1
