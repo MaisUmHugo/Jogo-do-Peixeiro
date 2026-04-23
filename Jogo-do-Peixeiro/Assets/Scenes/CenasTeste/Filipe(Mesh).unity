@@ -363,6 +363,10 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 3c8498ebca799a540ba9db4c4dd5712f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  mesh: {fileID: 1215119740}
+  renderer: {fileID: 1215119739}
+  newMesh: {fileID: -5495902117074765545, guid: 46a80d31dcf0b36429148b91279ff945, type: 3}
+  material: {fileID: 2100000, guid: 496d234ff9a219f41bbbdccb95d0b98e, type: 2}
 --- !u!23 &1215119739
 MeshRenderer:
   m_ObjectHideFlags: 0

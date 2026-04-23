@@ -141,10 +141,7 @@ public class FishingManager : MonoBehaviour
 
             if (fishingResultUI != null)
             {
-                fishingResultUI.ShowCatchResult(
-                    pendingFish.typeOfFish.fishName,
-                    pendingFish.weight
-                );
+                fishingResultUI.ShowCatchResult(pendingFish);
             }
             if (TutorialHandler.Instance != null)
             {

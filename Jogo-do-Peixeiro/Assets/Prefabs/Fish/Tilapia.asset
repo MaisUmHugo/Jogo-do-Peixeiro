@@ -14,6 +14,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minWeight: 3
   maxWeight: 5
+  mesh: {fileID: 10202, guid: 0000000000000000e000000000000000, type: 0}
+  material: {fileID: 2100000, guid: 10f6a40284c691f43806202604c1fb61, type: 2}
   rarity: 2
   pricePerWeight: 3
   fishName: "Til\xE1pia"
