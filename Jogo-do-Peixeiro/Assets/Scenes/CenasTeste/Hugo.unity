@@ -517,6 +517,7 @@ MonoBehaviour:
   - {fileID: 11400000, guid: 2ca48ec2910fc764a9a2790039651937, type: 2}
   - {fileID: 11400000, guid: 226c8121ca12d7240a0bad449842489a, type: 2}
   - {fileID: 11400000, guid: f07016660d91d444a91171159bfcf55e, type: 2}
+  minHorizontalDistance: 4
 --- !u!136 &252890215
 CapsuleCollider:
   m_ObjectHideFlags: 0
