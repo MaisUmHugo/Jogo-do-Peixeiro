@@ -5,18 +5,33 @@ public class FishingManager : MonoBehaviour
 {
     public static FishingManager instance;
 
-    [SerializeField] private FishingResultUI fishingResultUI;
-    [SerializeField] private float fishingTime = 10f;
-    [SerializeField] private FishSkillCheck fishSkillCheck;
-    [SerializeField] private bool useSkillCheck = true;
+    [Header("UI")]
+    [SerializeField] private FishingResultUI _fishingResultUI;
+
+    [Header("Fishing Settings")]
+    [SerializeField] private bool _useSkillCheck = true;
+    [SerializeField] private float _baseProgressSpeed = 0.08f;
+
+    [Header("Rarity Progress Multipliers")]
+    [SerializeField] private float _rarity1ProgressMultiplier = 1f;
+    [SerializeField] private float _rarity2ProgressMultiplier = 0.85f;
+    [SerializeField] private float _rarity3ProgressMultiplier = 0.7f;
+
+    [Header("References")]
+    [SerializeField] private FishSkillCheck _fishSkillCheck;
+    [SerializeField] private FishBiteHandler _fishBiteHandler;
+    [SerializeField] private FishDirectionPull _fishDirectionPull;
+    [SerializeField] private FishingRod _fishingRod;
 
     public bool IsFishing { get; private set; }
+    public bool HasFishBitten { get; private set; }
+    public float ProgressNormalized { get; private set; }
 
-    private ShipInventory currentShipInventory;
-    private FishScriptableObject[] currentAvailableFish;
+    private ShipInventory _currentShipInventory;
+    private FishScriptableObject[] _currentAvailableFish;
+    private FishScriptableObject _selectedFishType;
+    private FishData _pendingFish;
 
-    private FishData pendingFish;
-    [SerializeField] private FishingRod fishingRod;
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -26,6 +41,14 @@ public class FishingManager : MonoBehaviour
         }
 
         instance = this;
+    }
+
+    private void Update()
+    {
+        if (!IsFishing || !HasFishBitten)
+            return;
+
+        UpdateFishingProgress();
     }
 
     public void StartFishing(ShipInventory _shipInventory, FishScriptableObject[] _availableFish)
@@ -46,118 +69,177 @@ public class FishingManager : MonoBehaviour
             return;
         }
 
-        currentShipInventory = _shipInventory;
-        currentAvailableFish = _availableFish;
-
-        FishScriptableObject selectedFishType = PickRandomFishType();
-        if (selectedFishType == null)
-        {
-            Debug.LogWarning("Falha ao selecionar um peixe.");
-            ReturnToBoatState();
-            return;
-        }
-
-        pendingFish = new FishData(selectedFishType);
-
-        // Agora bloqueia só se já estiver cheio antes de começar a pescaria.
-        if (currentShipInventory.IsFull)
+        if (_shipInventory.IsFull)
         {
             Debug.Log("Inventário do barco cheio.");
 
             if (HUDWarningUI.Instance != null)
                 HUDWarningUI.Instance.ShowWarning("Inventário cheio");
 
-            pendingFish = null;
             ReturnToBoatState();
             return;
         }
 
-        if (GameManager.instance != null)
-        {
-            GameManager.instance.SetState(GameManager.GameState.Fishing);
-        }
+        _currentShipInventory = _shipInventory;
+        _currentAvailableFish = _availableFish;
 
-        if (useSkillCheck && fishSkillCheck != null)
+        _selectedFishType = PickRandomFishType();
+
+        if (_selectedFishType == null)
         {
-            IsFishing = true;
-            fishSkillCheck.StartSkillCheck(this, selectedFishType);
+            Debug.LogWarning("Falha ao selecionar um peixe.");
+            ClearFishingData();
+            ReturnToBoatState();
             return;
         }
 
-        StartCoroutine(FishingRoutine());
-    }
+        _pendingFish = new FishData(_selectedFishType);
 
-    private IEnumerator FishingRoutine()
-    {
         IsFishing = true;
+        HasFishBitten = false;
+        ProgressNormalized = 0f;
 
-        Debug.Log("Pescando...");
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.Fishing);
 
-        yield return new WaitForSeconds(fishingTime);
-
-        GivePendingFish();
-        EndFishing();
+        StartBiteWaiting();
     }
 
-    public void OnSkillCheckSuccess()
+    private void StartBiteWaiting()
     {
-        GivePendingFish();
-        EndFishing();
+        if (_fishBiteHandler != null)
+        {
+            _fishBiteHandler.StartWaiting(OnFishBite);
+            return;
+        }
+
+        OnFishBite();
+    }
+
+    private void OnFishBite()
+    {
+        if (!IsFishing)
+            return;
+
+        HasFishBitten = true;
+
+        if (_fishDirectionPull != null)
+            _fishDirectionPull.StartPull();
+
+        if (_useSkillCheck && _fishSkillCheck != null)
+            _fishSkillCheck.StartSkillCheck(this, _selectedFishType);
+
+        Debug.Log("Peixe mordeu a isca.");
+    }
+
+    private void UpdateFishingProgress()
+    {
+        float progressMultiplier = GetProgressMultiplierByFish();
+        float progressDelta = _baseProgressSpeed * progressMultiplier;
+
+        if (_fishDirectionPull != null)
+        {
+            Vector2 input = Vector2.zero;
+
+            if (InputHandler.instance != null)
+                input = InputHandler.instance.moveInput;
+
+            progressDelta += _fishDirectionPull.GetProgressModifier(input, ProgressNormalized);
+        }
+
+        ProgressNormalized += progressDelta * Time.deltaTime;
+        ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
+
+        if (ProgressNormalized >= 1f)
+            CompleteFishing();
+    }
+
+    public void AddSkillCheckProgressBonus(float _bonus)
+    {
+        ProgressNormalized += _bonus;
+        ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
+
+        if (ProgressNormalized >= 1f)
+            CompleteFishing();
+    }
+
+    public void ApplySkillCheckPenalty(float _penalty)
+    {
+        ProgressNormalized -= _penalty;
+        ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
+    }
+
+    public void OnSkillCheckSuccessTick(FishSkillCheck.FeedbackResult _result)
+    {
+        if (_fishingRod != null)
+            _fishingRod.PlaySuccessSplash(_result);
     }
 
     public void OnSkillCheckFail()
     {
         Debug.Log("Falhou na pescaria.");
-        EndFishing();
+        EndFishing(false);
+    }
+
+    private void CompleteFishing()
+    {
+        GivePendingFish();
+        EndFishing(true);
     }
 
     private FishScriptableObject PickRandomFishType()
     {
-        if (currentAvailableFish == null || currentAvailableFish.Length == 0)
+        if (_currentAvailableFish == null || _currentAvailableFish.Length == 0)
             return null;
 
-        int randomIndex = Random.Range(0, currentAvailableFish.Length);
-        return currentAvailableFish[randomIndex];
+        int randomIndex = Random.Range(0, _currentAvailableFish.Length);
+        return _currentAvailableFish[randomIndex];
+    }
+
+    private float GetProgressMultiplierByFish()
+    {
+        if (_selectedFishType == null)
+            return 1f;
+
+        switch (_selectedFishType.rarity)
+        {
+            case 1:
+                return _rarity1ProgressMultiplier;
+
+            case 2:
+                return _rarity2ProgressMultiplier;
+
+            case 3:
+                return _rarity3ProgressMultiplier;
+
+            default:
+                return 1f;
+        }
     }
 
     private void GivePendingFish()
     {
-        if (currentShipInventory == null || pendingFish == null)
+        if (_currentShipInventory == null || _pendingFish == null)
             return;
 
-        bool addedSuccessfully = currentShipInventory.TryAddFish(pendingFish);
+        bool addedSuccessfully = _currentShipInventory.TryAddFish(_pendingFish);
 
         if (addedSuccessfully)
         {
-            Debug.Log($"Peixe capturado: {pendingFish.typeOfFish.fishName} - {pendingFish.weight}kg");
+            Debug.Log($"Peixe capturado: {_pendingFish.typeOfFish.fishName} - {_pendingFish.weight}kg");
 
             if (HUDFishInfoUI.Instance != null)
             {
                 HUDFishInfoUI.Instance.ShowFishInfo(
-                    pendingFish.typeOfFish.fishName,
-                    pendingFish.weight
+                    _pendingFish.typeOfFish.fishName,
+                    _pendingFish.weight
                 );
             }
 
-            if (fishingResultUI != null)
-            {
-                fishingResultUI.ShowCatchResult(pendingFish);
-            }
-            if (TutorialHandler.Instance != null)
-            {
-                float currentWeight = currentShipInventory.GetCurrentWeight();
-                Debug.Log($"Peso atual após capturar peixe: {currentWeight}");
+            if (_fishingResultUI != null)
+                _fishingResultUI.ShowCatchResult(_pendingFish);
 
-                if (currentWeight >= 10f)
-                {
-                    TutorialHandler.Instance.isFinishedFishing = true;
-                    TutorialHandler.Instance.GoNextObjective();
-                }
-                else
-                {
-                    TutorialHandler.Instance.AttFishWeightTutorialText();
-                }
-            }
+            UpdateTutorialAfterFishCaught();
         }
         else
         {
@@ -167,24 +249,55 @@ public class FishingManager : MonoBehaviour
                 HUDWarningUI.Instance.ShowWarning("Sem espaço para mais peixes");
         }
 
-        pendingFish = null;
-    }
-    public void OnSkillCheckSuccessTick(FishSkillCheck.FeedbackResult result)
-    {
-        if (fishingRod != null)
-            fishingRod.PlaySuccessSplash(result);
+        _pendingFish = null;
     }
 
-    private void EndFishing()
+    private void UpdateTutorialAfterFishCaught()
+    {
+        if (TutorialHandler.Instance == null || _currentShipInventory == null)
+            return;
+
+        float currentWeight = _currentShipInventory.GetCurrentWeight();
+        Debug.Log($"Peso atual após capturar peixe: {currentWeight}");
+
+        if (currentWeight >= 10f)
+        {
+            TutorialHandler.Instance.isFinishedFishing = true;
+            TutorialHandler.Instance.GoNextObjective();
+        }
+        else
+        {
+            TutorialHandler.Instance.AttFishWeightTutorialText();
+        }
+    }
+
+    private void EndFishing(bool _success)
     {
         IsFishing = false;
+        HasFishBitten = false;
+        ProgressNormalized = 0f;
+
+        if (_fishBiteHandler != null)
+            _fishBiteHandler.StopWaiting();
+
+        if (_fishDirectionPull != null)
+            _fishDirectionPull.StopPull();
+
+        if (_fishSkillCheck != null)
+            _fishSkillCheck.StopSkillCheck();
 
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnBoat);
 
-        currentShipInventory = null;
-        currentAvailableFish = null;
-        pendingFish = null;
+        ClearFishingData();
+    }
+
+    private void ClearFishingData()
+    {
+        _currentShipInventory = null;
+        _currentAvailableFish = null;
+        _selectedFishType = null;
+        _pendingFish = null;
     }
 
     private void ReturnToBoatState()
