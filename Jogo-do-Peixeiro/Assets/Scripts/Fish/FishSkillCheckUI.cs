@@ -6,6 +6,7 @@ public class FishSkillCheckUI : MonoBehaviour
 {
     [Header("References")]
     [SerializeField] private FishSkillCheck fishSkillCheck;
+    [SerializeField] private FishingManager fishingManager;
 
     [Header("Progress Bar")]
     [SerializeField] private RectTransform progressBarArea;
@@ -54,11 +55,11 @@ public class FishSkillCheckUI : MonoBehaviour
 
     private void Update()
     {
-        if (fishSkillCheck == null)
-            return;
+        if (fishingManager != null)
+            UpdateProgressBar();
 
-        UpdateProgressBar();
-        UpdateTimingBar();
+        if (fishSkillCheck != null && fishSkillCheck.IsSkillCheckActive)
+            UpdateTimingBar();
     }
 
     private void UpdateProgressBar()
@@ -67,7 +68,7 @@ public class FishSkillCheckUI : MonoBehaviour
             return;
 
         float width = progressBarArea.rect.width;
-        float fillWidth = fishSkillCheck.ProgressNormalized * width;
+        float fillWidth = fishingManager.ProgressNormalized * width;
 
         progressBarFill.SetSizeWithCurrentAnchors(RectTransform.Axis.Horizontal, fillWidth);
 
