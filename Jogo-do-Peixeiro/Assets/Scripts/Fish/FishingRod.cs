@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.VFX;
 using System.Collections;
-using UnityEngine.InputSystem;
 
 public class FishingRod : MonoBehaviour
 {
@@ -22,14 +21,19 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private float raycastRadius = 0.5f;
 
     [SerializeField] private float minCastDistance = 5f;
-    [SerializeField] private float maxCastDistance = 20f;
-    [SerializeField] private float chargeSpeed = 10f;
+    [SerializeField] private float maxCastDistance = 35f;
+    [SerializeField] private float chargeSpeed = 14f;
+    [SerializeField] private float noSpotWaitBeforeReturn = 1.2f;
+    [SerializeField] private bool cancelAimOnQuickRelease = true;
+    [SerializeField] private bool cancelAimOnSecondPress = true;
+    [SerializeField] private float minAimHoldBeforeCast = 0.25f;
 
     private float currentForce;
     private bool isAiming;
     private bool hookTraveling;
     private bool hookReturning;
     private bool hookWaitingInWater;
+    private float aimStartTime;
 
     private FishingSpot currentTargetSpot;
     private VisualEffect currentSplashInstance;
@@ -37,6 +41,17 @@ public class FishingRod : MonoBehaviour
     private Coroutine hookRoutine;
 
     private Vector3[] arcCache;
+
+    private void OnValidate()
+    {
+        minCastDistance = Mathf.Max(0.1f, minCastDistance);
+        maxCastDistance = Mathf.Max(minCastDistance, maxCastDistance);
+        chargeSpeed = Mathf.Max(0.1f, chargeSpeed);
+        minAimHoldBeforeCast = Mathf.Max(0f, minAimHoldBeforeCast);
+        noSpotWaitBeforeReturn = Mathf.Max(0f, noSpotWaitBeforeReturn);
+        hookSpeed = Mathf.Max(0.1f, hookSpeed);
+        arcPoints = Mathf.Max(2, arcPoints);
+    }
 
     private void Awake()
     {
@@ -77,17 +92,26 @@ public class FishingRod : MonoBehaviour
 
         UpdateHookLine();
 
-        if (hookWaitingInWater &&
-            Mouse.current.leftButton.wasPressedThisFrame &&
-            (FishingManager.instance == null || !FishingManager.instance.IsFishing))
-        {
-            RecallHook();
-        }
     }
 
     private void HandleAimPressed()
     {
-        if (hookTraveling || hookReturning || hookWaitingInWater)
+        if (isAiming && cancelAimOnSecondPress)
+        {
+            CancelAim();
+            return;
+        }
+
+        if (hookWaitingInWater)
+        {
+            RecallHook();
+            return;
+        }
+
+        if (hookTraveling || hookReturning)
+            return;
+
+        if (GameManager.instance == null)
             return;
 
         if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
@@ -96,6 +120,7 @@ public class FishingRod : MonoBehaviour
         isAiming = true;
         currentTargetSpot = null;
         currentForce = minCastDistance;
+        aimStartTime = Time.time;
 
         lineRenderer.enabled = true;
     }
@@ -104,6 +129,12 @@ public class FishingRod : MonoBehaviour
     {
         if (!isAiming)
             return;
+
+        if (cancelAimOnQuickRelease && Time.time - aimStartTime < minAimHoldBeforeCast)
+        {
+            CancelAim();
+            return;
+        }
 
         isAiming = false;
         hookTraveling = true;
@@ -115,7 +146,8 @@ public class FishingRod : MonoBehaviour
 
         lineRenderer.enabled = false;
 
-        GameManager.instance.SetState(GameManager.GameState.Fishing);
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.Fishing);
 
         hookRoutine = StartCoroutine(AnimateHook());
     }
@@ -137,6 +169,7 @@ public class FishingRod : MonoBehaviour
             Destroy(currentHook.gameObject);
 
         currentHook = Instantiate(hookPrefab, rodTip.position, Quaternion.identity);
+        PrepareHookForManualMovement(currentHook);
 
         lineRenderer.positionCount = 2;
         lineRenderer.enabled = true;
@@ -166,8 +199,31 @@ public class FishingRod : MonoBehaviour
         hookTraveling = false;
         hookWaitingInWater = true;
 
-        if (currentTargetSpot != null)
-            currentTargetSpot.StartFishingFromRod(shipInventory);
+        bool startedFishing = currentTargetSpot != null &&
+                              currentTargetSpot.TryStartFishingFromRod(shipInventory);
+
+        if (!startedFishing)
+        {
+            yield return new WaitForSeconds(noSpotWaitBeforeReturn);
+
+            if (!hookWaitingInWater)
+                yield break;
+
+            yield return ReturnHook();
+            yield break;
+        }
+
+        hookRoutine = null;
+    }
+
+    private void CancelAim()
+    {
+        isAiming = false;
+        currentTargetSpot = null;
+        currentForce = minCastDistance;
+
+        if (lineRenderer != null)
+            lineRenderer.enabled = false;
     }
 
     private void RecallHook()
@@ -176,6 +232,17 @@ public class FishingRod : MonoBehaviour
             return;
 
         if (FishingManager.instance != null && FishingManager.instance.IsFishing)
+            FishingManager.instance.CancelFishing();
+
+        if (hookRoutine != null)
+            StopCoroutine(hookRoutine);
+
+        hookRoutine = StartCoroutine(ReturnHook());
+    }
+
+    public void ReturnHookAfterFishing()
+    {
+        if (!hookWaitingInWater || hookReturning)
             return;
 
         if (hookRoutine != null)
@@ -189,6 +256,12 @@ public class FishingRod : MonoBehaviour
         hookReturning = true;
         hookWaitingInWater = false;
 
+        if (currentHook == null)
+        {
+            ResetHookState();
+            yield break;
+        }
+
         while (Vector3.Distance(currentHook.position, rodTip.position) > 0.05f)
         {
             currentHook.position = Vector3.MoveTowards(
@@ -201,13 +274,24 @@ public class FishingRod : MonoBehaviour
         }
 
         Destroy(currentHook.gameObject);
+        currentHook = null;
 
         lineRenderer.enabled = false;
 
+        ResetHookState();
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+    }
+
+    private void ResetHookState()
+    {
         hookTraveling = false;
         hookReturning = false;
-
-        GameManager.instance.SetState(GameManager.GameState.OnBoat);
+        hookWaitingInWater = false;
+        isAiming = false;
+        currentTargetSpot = null;
+        hookRoutine = null;
     }
 
     private void UpdateHookLine()
@@ -262,7 +346,26 @@ public class FishingRod : MonoBehaviour
             return hit.point;
         }
 
+        if (Physics.Raycast(origin, direction, out RaycastHit waterHit, currentForce, waterLayer))
+            return waterHit.point;
+
         return target;
+    }
+
+    private void PrepareHookForManualMovement(Transform _hook)
+    {
+        if (_hook == null)
+            return;
+
+        Rigidbody[] rigidbodies = _hook.GetComponentsInChildren<Rigidbody>();
+
+        foreach (Rigidbody hookRigidbody in rigidbodies)
+        {
+            hookRigidbody.useGravity = false;
+            hookRigidbody.linearVelocity = Vector3.zero;
+            hookRigidbody.angularVelocity = Vector3.zero;
+            hookRigidbody.isKinematic = true;
+        }
     }
 
     private void DrawArc(Vector3 startPoint, Vector3 endPoint)
