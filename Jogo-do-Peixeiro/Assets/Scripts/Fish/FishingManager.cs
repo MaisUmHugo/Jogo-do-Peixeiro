@@ -1,14 +1,17 @@
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class FishingManager : MonoBehaviour
 {
     public static FishingManager instance;
 
     [Header("UI")]
+    [FormerlySerializedAs("fishingResultUI")]
     [SerializeField] private FishingResultUI _fishingResultUI;
 
     [Header("Fishing Settings")]
+    [FormerlySerializedAs("useSkillCheck")]
     [SerializeField] private bool _useSkillCheck = true;
     [SerializeField] private float _baseProgressSpeed = 0.08f;
 
@@ -18,9 +21,13 @@ public class FishingManager : MonoBehaviour
     [SerializeField] private float _rarity3ProgressMultiplier = 0.7f;
 
     [Header("References")]
+    [FormerlySerializedAs("fishSkillCheck")]
     [SerializeField] private FishSkillCheck _fishSkillCheck;
+    [FormerlySerializedAs("fishBiteHandler")]
     [SerializeField] private FishBiteHandler _fishBiteHandler;
+    [FormerlySerializedAs("fishDirectionPull")]
     [SerializeField] private FishDirectionPull _fishDirectionPull;
+    [FormerlySerializedAs("fishingRod")]
     [SerializeField] private FishingRod _fishingRod;
 
     public bool IsFishing { get; private set; }
@@ -31,6 +38,8 @@ public class FishingManager : MonoBehaviour
     private FishScriptableObject[] _currentAvailableFish;
     private FishScriptableObject _selectedFishType;
     private FishData _pendingFish;
+    private FishDirectionPull _subscribedDirectionPull;
+    private float _pendingDirectionPullPenalty;
 
     private void Awake()
     {
@@ -41,6 +50,61 @@ public class FishingManager : MonoBehaviour
         }
 
         instance = this;
+        AutoAssignMissingReferences();
+    }
+
+    private void OnEnable()
+    {
+        AutoAssignMissingReferences();
+        SubscribeToDirectionPull();
+    }
+
+    private void OnDisable()
+    {
+        UnsubscribeFromDirectionPull();
+    }
+
+    private void AutoAssignMissingReferences()
+    {
+        if (_fishSkillCheck == null)
+            _fishSkillCheck = FindFirstObjectByType<FishSkillCheck>(FindObjectsInactive.Include);
+
+        if (_fishBiteHandler == null)
+            _fishBiteHandler = FindFirstObjectByType<FishBiteHandler>(FindObjectsInactive.Include);
+
+        if (_fishDirectionPull == null)
+            _fishDirectionPull = FindFirstObjectByType<FishDirectionPull>(FindObjectsInactive.Include);
+
+        if (_fishingRod == null)
+            _fishingRod = FindFirstObjectByType<FishingRod>(FindObjectsInactive.Include);
+    }
+
+    private void SubscribeToDirectionPull()
+    {
+        if (_subscribedDirectionPull == _fishDirectionPull)
+            return;
+
+        UnsubscribeFromDirectionPull();
+
+        if (_fishDirectionPull == null)
+            return;
+
+        _subscribedDirectionPull = _fishDirectionPull;
+        _subscribedDirectionPull.PenaltyApplied += HandleDirectionPullPenalty;
+    }
+
+    private void UnsubscribeFromDirectionPull()
+    {
+        if (_subscribedDirectionPull == null)
+            return;
+
+        _subscribedDirectionPull.PenaltyApplied -= HandleDirectionPullPenalty;
+        _subscribedDirectionPull = null;
+    }
+
+    private void HandleDirectionPullPenalty(float _penalty)
+    {
+        _pendingDirectionPullPenalty += _penalty;
     }
 
     private void Update()
@@ -51,33 +115,33 @@ public class FishingManager : MonoBehaviour
         UpdateFishingProgress();
     }
 
-    public void StartFishing(ShipInventory _shipInventory, FishScriptableObject[] _availableFish)
+    public bool StartFishing(ShipInventory _shipInventory, FishScriptableObject[] _availableFish)
     {
         if (IsFishing)
-            return;
+            return false;
 
         if (_shipInventory == null)
         {
             ReturnToBoatState();
-            return;
+            return false;
         }
 
         if (_availableFish == null || _availableFish.Length == 0)
         {
             Debug.LogWarning("Nenhum peixe configurado nesse spot.");
             ReturnToBoatState();
-            return;
+            return false;
         }
 
         if (_shipInventory.IsFull)
         {
-            Debug.Log("Inventário do barco cheio.");
+            Debug.Log("InventÃ¡rio do barco cheio.");
 
             if (HUDWarningUI.Instance != null)
-                HUDWarningUI.Instance.ShowWarning("Inventário cheio");
+                HUDWarningUI.Instance.ShowWarning("InventÃ¡rio cheio");
 
             ReturnToBoatState();
-            return;
+            return false;
         }
 
         _currentShipInventory = _shipInventory;
@@ -90,7 +154,7 @@ public class FishingManager : MonoBehaviour
             Debug.LogWarning("Falha ao selecionar um peixe.");
             ClearFishingData();
             ReturnToBoatState();
-            return;
+            return false;
         }
 
         _pendingFish = new FishData(_selectedFishType);
@@ -103,6 +167,15 @@ public class FishingManager : MonoBehaviour
             GameManager.instance.SetState(GameManager.GameState.Fishing);
 
         StartBiteWaiting();
+        return true;
+    }
+
+    public void CancelFishing()
+    {
+        if (!IsFishing)
+            return;
+
+        EndFishing(false);
     }
 
     private void StartBiteWaiting()
@@ -124,7 +197,7 @@ public class FishingManager : MonoBehaviour
         HasFishBitten = true;
 
         if (_fishDirectionPull != null)
-            _fishDirectionPull.StartPull();
+            _fishDirectionPull.StartPull(_selectedFishType);
 
         if (_useSkillCheck && _fishSkillCheck != null)
             _fishSkillCheck.StartSkillCheck(this, _selectedFishType);
@@ -136,55 +209,110 @@ public class FishingManager : MonoBehaviour
     {
         float progressMultiplier = GetProgressMultiplierByFish();
         float progressDelta = _baseProgressSpeed * progressMultiplier;
+        float directionPullPenalty = ConsumePendingDirectionPullPenalty();
 
         if (_fishDirectionPull != null)
         {
-            Vector2 input = Vector2.zero;
+            if (IsSkillCheckActive())
+            {
+                _fishDirectionPull.PausePullFeedback();
+            }
+            else
+            {
+                Vector2 input = Vector2.zero;
 
-            if (InputHandler.instance != null)
-                input = InputHandler.instance.moveInput;
+                if (InputHandler.instance != null)
+                    input = InputHandler.instance.moveInput;
 
-            progressDelta += _fishDirectionPull.GetProgressModifier(input, ProgressNormalized);
+                progressDelta += _fishDirectionPull.GetProgressModifier(input, ProgressNormalized);
+                directionPullPenalty += ConsumePendingDirectionPullPenalty();
+            }
         }
 
-        ProgressNormalized += progressDelta * Time.deltaTime;
+        float nextProgress = ProgressNormalized + (progressDelta * Time.deltaTime);
+        nextProgress -= directionPullPenalty;
+
+        if (_fishDirectionPull != null && _fishDirectionPull.ShouldHoldCompletion(nextProgress))
+            nextProgress = Mathf.Min(nextProgress, _fishDirectionPull.CompletionGateProgress);
+
+        ProgressNormalized = nextProgress;
         ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
 
-        if (ProgressNormalized >= 1f)
+        if (CanCompleteFishing())
             CompleteFishing();
+    }
+
+    private float ConsumePendingDirectionPullPenalty()
+    {
+        float penalty = _pendingDirectionPullPenalty;
+        _pendingDirectionPullPenalty = 0f;
+        return penalty;
     }
 
     public void AddSkillCheckProgressBonus(float _bonus)
     {
+        if (!IsFishing)
+            return;
+
         ProgressNormalized += _bonus;
+
+        if (_fishDirectionPull != null && _fishDirectionPull.ShouldHoldCompletion(ProgressNormalized))
+            ProgressNormalized = Mathf.Min(ProgressNormalized, _fishDirectionPull.CompletionGateProgress);
+
         ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
 
-        if (ProgressNormalized >= 1f)
+        if (CanCompleteFishing())
             CompleteFishing();
     }
 
     public void ApplySkillCheckPenalty(float _penalty)
     {
+        if (!IsFishing)
+            return;
+
         ProgressNormalized -= _penalty;
         ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
     }
 
     public void OnSkillCheckSuccessTick(FishSkillCheck.FeedbackResult _result)
     {
+        if (!IsFishing)
+            return;
+
         if (_fishingRod != null)
             _fishingRod.PlaySuccessSplash(_result);
     }
 
     public void OnSkillCheckFail()
     {
+        if (!IsFishing)
+            return;
+
         Debug.Log("Falhou na pescaria.");
         EndFishing(false);
     }
 
     private void CompleteFishing()
     {
+        if (!IsFishing)
+            return;
+
+        ProgressNormalized = 1f;
         GivePendingFish();
         EndFishing(true);
+    }
+
+    private bool CanCompleteFishing()
+    {
+        if (_fishDirectionPull != null && _fishDirectionPull.RequiresCompletionToFinish)
+            return ProgressNormalized >= _fishDirectionPull.CompletionGateProgress && _fishDirectionPull.IsCompletionComplete;
+
+        return ProgressNormalized >= 1f;
+    }
+
+    private bool IsSkillCheckActive()
+    {
+        return _fishSkillCheck != null && _fishSkillCheck.IsSkillCheckActive;
     }
 
     private FishScriptableObject PickRandomFishType()
@@ -243,10 +371,10 @@ public class FishingManager : MonoBehaviour
         }
         else
         {
-            Debug.Log("Inventário cheio.");
+            Debug.Log("InventÃ¡rio cheio.");
 
             if (HUDWarningUI.Instance != null)
-                HUDWarningUI.Instance.ShowWarning("Sem espaço para mais peixes");
+                HUDWarningUI.Instance.ShowWarning("Sem espaÃ§o para mais peixes");
         }
 
         _pendingFish = null;
@@ -258,7 +386,7 @@ public class FishingManager : MonoBehaviour
             return;
 
         float currentWeight = _currentShipInventory.GetCurrentWeight();
-        Debug.Log($"Peso atual após capturar peixe: {currentWeight}");
+        Debug.Log($"Peso atual apÃ³s capturar peixe: {currentWeight}");
 
         if (currentWeight >= 10f)
         {
@@ -288,6 +416,9 @@ public class FishingManager : MonoBehaviour
 
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnBoat);
+
+        if (_fishingRod != null)
+            _fishingRod.ReturnHookAfterFishing();
 
         ClearFishingData();
     }
