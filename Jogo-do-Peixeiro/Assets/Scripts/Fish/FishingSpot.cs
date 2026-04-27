@@ -5,25 +5,21 @@ public class FishingSpot : MonoBehaviour
     [SerializeField] private FishScriptableObject[] availableFish;
     [SerializeField] private float minHorizontalDistance = 4f;
 
-    public void StartFishingFromRod(ShipInventory _inventory)
+    [Header("Fish Escape")]
+    [SerializeField] private bool ignoreEscapeForDebug;
+    [SerializeField] private string boatTag = "Boat";
+    [SerializeField] private string escapeWarningMessage = "Os peixes fugiram";
+
+    public bool TryStartFishingFromRod(ShipInventory _inventory)
     {
         if (FishingManager.instance == null)
-            return;
-
-        if (availableFish == null || availableFish.Length == 0)
-            return;
+            return false;
 
         if (_inventory == null)
-            return;
-
-        if (FishingManager.instance.IsFishing)
-            return;
+            return false;
 
         if (GameManager.instance == null)
-            return;
-
-        if (_inventory.IsFull)
-            return;
+            return false;
 
         Transform player = _inventory.transform.root;
 
@@ -36,9 +32,9 @@ public class FishingSpot : MonoBehaviour
         float horizontalDistance = Vector3.Distance(a, b);
 
         if (horizontalDistance < minHorizontalDistance)
-            return;
+            return false;
 
-        FishingManager.instance.StartFishing(_inventory, availableFish);
+        return FishingManager.instance.StartFishing(_inventory, availableFish);
     }
 
     public FishScriptableObject[] GetAvailableFish()
@@ -49,5 +45,39 @@ public class FishingSpot : MonoBehaviour
     public bool HasFishAvailable()
     {
         return availableFish != null && availableFish.Length > 0;
+    }
+
+    private void OnTriggerEnter(Collider _other)
+    {
+        if (ignoreEscapeForDebug)
+            return;
+
+        if (!IsBoatCollider(_other))
+            return;
+
+        EscapeFish();
+    }
+
+    private bool IsBoatCollider(Collider _collider)
+    {
+        Transform current = _collider.transform;
+
+        while (current != null)
+        {
+            if (current.CompareTag(boatTag))
+                return true;
+
+            current = current.parent;
+        }
+
+        return false;
+    }
+
+    private void EscapeFish()
+    {
+        if (HUDWarningUI.Instance != null)
+            HUDWarningUI.Instance.ShowWarning(escapeWarningMessage);
+
+        gameObject.SetActive(false);
     }
 }

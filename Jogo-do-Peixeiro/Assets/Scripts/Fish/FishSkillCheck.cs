@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class FishSkillCheck : MonoBehaviour
 {
@@ -15,51 +16,76 @@ public class FishSkillCheck : MonoBehaviour
     }
 
     [Header("Spooky")]
+    [FormerlySerializedAs("peixeexe")]
     [SerializeField] private GameObject _spookyFishObject;
+
+    [Header("References")]
+    [SerializeField] private FishDirectionPull _fishDirectionPull;
 
     public event Action<FeedbackResult> OnFeedbackTriggered;
     public event Action OnFailShake;
 
     [Header("Timing")]
-    [SerializeField] private float _timingDuration = 1f;
+    [FormerlySerializedAs("timingDuration")]
+    [SerializeField] private float _timingDuration = 1.25f;
 
     [Header("Fail Settings")]
+    [FormerlySerializedAs("maxFails")]
     [SerializeField] private int _maxFails = 3;
 
     [Header("Progress Impact")]
+    [FormerlySerializedAs("successBonus")]
     [SerializeField] private float _successBonus = 0.18f;
+    [FormerlySerializedAs("failPenaltyProgress")]
     [SerializeField] private float _failPenaltyProgress = 0.12f;
 
     [Header("Skill Check Frequency")]
+    [FormerlySerializedAs("minSkillCheckInterval")]
     [SerializeField] private float _minSkillCheckInterval = 3f;
+    [FormerlySerializedAs("maxSkillCheckInterval")]
     [SerializeField] private float _maxSkillCheckInterval = 6f;
 
     [Header("Default Difficulty")]
-    [SerializeField, Range(0.05f, 0.8f)] private float _defaultSuccessZoneSize = 0.2f;
+    [FormerlySerializedAs("defaultSuccessZoneSize")]
+    [SerializeField, Range(0.05f, 0.8f)] private float _defaultSuccessZoneSize = 0.28f;
+    [FormerlySerializedAs("defaultIndicatorSpeed")]
     [SerializeField] private float _defaultIndicatorSpeed = 1f;
 
     [Header("Rarity 1")]
-    [SerializeField, Range(0.05f, 0.8f)] private float _rarity1SuccessZoneSize = 0.24f;
+    [FormerlySerializedAs("rarity1SuccessZoneSize")]
+    [SerializeField, Range(0.05f, 0.8f)] private float _rarity1SuccessZoneSize = 0.32f;
+    [FormerlySerializedAs("rarity1IndicatorSpeed")]
     [SerializeField] private float _rarity1IndicatorSpeed = 0.9f;
 
     [Header("Rarity 2")]
-    [SerializeField, Range(0.05f, 0.8f)] private float _rarity2SuccessZoneSize = 0.18f;
+    [FormerlySerializedAs("rarity2SuccessZoneSize")]
+    [SerializeField, Range(0.05f, 0.8f)] private float _rarity2SuccessZoneSize = 0.26f;
+    [FormerlySerializedAs("rarity2IndicatorSpeed")]
     [SerializeField] private float _rarity2IndicatorSpeed = 1.15f;
 
     [Header("Rarity 3")]
-    [SerializeField, Range(0.05f, 0.8f)] private float _rarity3SuccessZoneSize = 0.12f;
+    [FormerlySerializedAs("rarity3SuccessZoneSize")]
+    [SerializeField, Range(0.05f, 0.8f)] private float _rarity3SuccessZoneSize = 0.2f;
+    [FormerlySerializedAs("rarity3IndicatorSpeed")]
     [SerializeField] private float _rarity3IndicatorSpeed = 1.4f;
 
     [Header("Zone Spawn")]
+    [FormerlySerializedAs("minZoneStart")]
     [SerializeField, Range(0f, 1f)] private float _minZoneStart = 0.1f;
+    [FormerlySerializedAs("maxZoneStart")]
     [SerializeField, Range(0f, 1f)] private float _maxZoneStart = 0.75f;
 
     [Header("Accuracy Thresholds")]
+    [SerializeField, Range(0f, 1f)] private float _minPerfectThreshold = 0.08f;
+    [FormerlySerializedAs("perfectThreshold")]
     [SerializeField, Range(0f, 1f)] private float _perfectThreshold = 0.15f;
+    [FormerlySerializedAs("greatThreshold")]
     [SerializeField, Range(0f, 1f)] private float _greatThreshold = 0.35f;
+    [SerializeField, Range(0f, 0.05f)] private float _successInputTolerance = 0.01f;
 
     [Header("Zone Variation")]
-    [SerializeField] private float _zoneVariationPercent = 0.25f;
+    [FormerlySerializedAs("zoneVariationPercent")]
+    [SerializeField] private float _zoneVariationPercent = 0.15f;
 
     public float SuccessZoneStartNormalized { get; private set; }
     public float SuccessZoneEndNormalized { get; private set; }
@@ -68,6 +94,9 @@ public class FishSkillCheck : MonoBehaviour
 
     public int CurrentFails => _currentFails;
     public int MaxFails => _maxFails;
+    public float MinPerfectThreshold => _minPerfectThreshold;
+    public float MaxPerfectThreshold => _perfectThreshold;
+    public float CurrentPerfectThreshold => _currentPerfectThreshold;
 
     private FishingManager _fishingManager;
     private FishScriptableObject _currentFishType;
@@ -75,11 +104,27 @@ public class FishSkillCheck : MonoBehaviour
     private int _currentFails;
     private float _currentSuccessZoneSize;
     private float _currentIndicatorSpeed;
+    private float _currentPerfectThreshold;
     private float _nextSkillCheckTimer;
     private bool _isSessionActive;
 
+    private void OnValidate()
+    {
+        _timingDuration = Mathf.Max(0.25f, _timingDuration);
+        _minSkillCheckInterval = Mathf.Max(0f, _minSkillCheckInterval);
+        _maxSkillCheckInterval = Mathf.Max(_minSkillCheckInterval, _maxSkillCheckInterval);
+        _defaultIndicatorSpeed = Mathf.Max(0.01f, _defaultIndicatorSpeed);
+        _rarity1IndicatorSpeed = Mathf.Max(0.01f, _rarity1IndicatorSpeed);
+        _rarity2IndicatorSpeed = Mathf.Max(0.01f, _rarity2IndicatorSpeed);
+        _rarity3IndicatorSpeed = Mathf.Max(0.01f, _rarity3IndicatorSpeed);
+        ClampAccuracySettings();
+    }
+
     public void StartSkillCheck(FishingManager _fishingManagerReference, FishScriptableObject _fishType)
     {
+        ClampAccuracySettings();
+        AutoAssignMissingReferences();
+
         _fishingManager = _fishingManagerReference;
         _currentFishType = _fishType;
 
@@ -107,13 +152,13 @@ public class FishSkillCheck : MonoBehaviour
         gameObject.SetActive(false);
     }
 
-    private void Start()
+    private void OnEnable()
     {
         if (InputHandler.instance != null)
             InputHandler.instance.onInteractPressed += CheckClick;
     }
 
-    private void OnDestroy()
+    private void OnDisable()
     {
         if (InputHandler.instance != null)
             InputHandler.instance.onInteractPressed -= CheckClick;
@@ -135,10 +180,24 @@ public class FishSkillCheck : MonoBehaviour
 
     private void UpdateSkillCheckTimer()
     {
+        if (ShouldDelayForDirectionPull())
+            return;
+
         _nextSkillCheckTimer -= Time.deltaTime;
 
         if (_nextSkillCheckTimer <= 0f)
             ActivateSkillCheck();
+    }
+
+    private void AutoAssignMissingReferences()
+    {
+        if (_fishDirectionPull == null)
+            _fishDirectionPull = FindFirstObjectByType<FishDirectionPull>(FindObjectsInactive.Include);
+    }
+
+    private bool ShouldDelayForDirectionPull()
+    {
+        return _fishDirectionPull != null && _fishDirectionPull.ShouldBlockSkillCheck;
     }
 
     private void ActivateSkillCheck()
@@ -150,7 +209,7 @@ public class FishSkillCheck : MonoBehaviour
 
     private void UpdateIndicator()
     {
-        IndicatorNormalized += (_currentIndicatorSpeed / Mathf.Max(0.01f, _timingDuration)) * Time.deltaTime;
+        IndicatorNormalized += (_currentIndicatorSpeed / Mathf.Max(0.25f, _timingDuration)) * Time.deltaTime;
 
         if (IndicatorNormalized >= 1f)
             RegisterFail();
@@ -161,8 +220,10 @@ public class FishSkillCheck : MonoBehaviour
         if (!_isSessionActive || !IsSkillCheckActive)
             return;
 
-        if (IndicatorNormalized >= SuccessZoneStartNormalized &&
-            IndicatorNormalized <= SuccessZoneEndNormalized)
+        float hitStart = Mathf.Clamp01(SuccessZoneStartNormalized - _successInputTolerance);
+        float hitEnd = Mathf.Clamp01(SuccessZoneEndNormalized + _successInputTolerance);
+
+        if (IndicatorNormalized >= hitStart && IndicatorNormalized <= hitEnd)
         {
             RegisterSuccess();
             return;
@@ -242,7 +303,7 @@ public class FishSkillCheck : MonoBehaviour
         float distanceFromCenter = Mathf.Abs(IndicatorNormalized - center);
         float normalizedDistance = halfSize > 0f ? distanceFromCenter / halfSize : 1f;
 
-        if (normalizedDistance <= _perfectThreshold)
+        if (normalizedDistance <= _currentPerfectThreshold)
             return FeedbackResult.Perfect;
 
         if (normalizedDistance <= _greatThreshold)
@@ -279,6 +340,21 @@ public class FishSkillCheck : MonoBehaviour
 
         SuccessZoneStartNormalized = UnityEngine.Random.Range(allowedMinStart, allowedMaxStart);
         SuccessZoneEndNormalized = SuccessZoneStartNormalized + variedSize;
+        _currentPerfectThreshold = UnityEngine.Random.Range(_minPerfectThreshold, _perfectThreshold);
+    }
+
+    private void ClampAccuracySettings()
+    {
+        _minPerfectThreshold = Mathf.Clamp01(_minPerfectThreshold);
+        _perfectThreshold = Mathf.Clamp01(_perfectThreshold);
+        _greatThreshold = Mathf.Clamp01(_greatThreshold);
+        _successInputTolerance = Mathf.Clamp(_successInputTolerance, 0f, 0.05f);
+
+        if (_perfectThreshold < _minPerfectThreshold)
+            _perfectThreshold = _minPerfectThreshold;
+
+        if (_greatThreshold < _perfectThreshold)
+            _greatThreshold = _perfectThreshold;
     }
 
     private void ApplyDifficultyFromFish()

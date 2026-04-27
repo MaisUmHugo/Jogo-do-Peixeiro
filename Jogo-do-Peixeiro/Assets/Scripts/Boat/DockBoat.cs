@@ -30,6 +30,7 @@ public class Dock : MonoBehaviour, IInteractable
         }
     }
 
+    // Implementação da interface — sem downcast necessário em PlayerInteract
     public bool CanInteract()
     {
         if (GameManager.instance == null || boat == null)
