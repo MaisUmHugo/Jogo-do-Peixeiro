@@ -6,9 +6,14 @@ public class PlayerInteract : MonoBehaviour
     [SerializeField] private InteractionUI interactionUI;
     [SerializeField] private Camera playerCamera;
 
+    [Header("Player Reference")]
+    [Tooltip("Arraste o GameObject do Player aqui. Necessario quando o trigger e filho do Player.")]
+    [SerializeField] private Transform playerRoot;
+
     [Header("Focus Settings")]
     [SerializeField] private float maxInteractDistance = 4f;
     [SerializeField] private float minViewDot = 0.35f;
+    [SerializeField] private float screenCenterWeight = 50f;
 
     private IInteractable currentInteractable;
     private Transform currentInteractableTransform;
@@ -18,11 +23,29 @@ public class PlayerInteract : MonoBehaviour
 
     private void Start()
     {
-        if (InputHandler.instance != null)
-            InputHandler.instance.onInteractPressed += TryInteract;
+        // Fallback: se playerRoot nao foi preenchido, sobe na hierarquia ate o pai com CharacterController.
+        if (playerRoot == null)
+        {
+            CharacterController cc = GetComponentInParent<CharacterController>();
+            if (cc != null)
+                playerRoot = cc.transform;
+        }
+
+        // Ultimo fallback.
+        if (playerRoot == null)
+        {
+            playerRoot = transform.parent != null ? transform.parent : transform;
+            Debug.LogWarning("[PlayerInteract] playerRoot nao encontrado automaticamente. Preencha o campo no Inspector.");
+        }
 
         if (playerCamera == null)
             playerCamera = Camera.main;
+
+        if (playerCamera == null)
+            Debug.LogWarning("[PlayerInteract] Nenhuma camera encontrada. Preencha o campo playerCamera no Inspector ou adicione a tag MainCamera.");
+
+        if (InputHandler.instance != null)
+            InputHandler.instance.onInteractPressed += TryInteract;
     }
 
     private void OnDestroy()
@@ -33,57 +56,56 @@ public class PlayerInteract : MonoBehaviour
 
     private void OnTriggerEnter(Collider _other)
     {
-        if (_other.transform.root == transform.root)
+        // Usa IsChildOf(playerRoot) em vez de transform.root para funcionar com qualquer hierarquia
+        if (playerRoot != null && _other.transform.IsChildOf(playerRoot))
             return;
 
-        MonoBehaviour[] components = _other.GetComponents<MonoBehaviour>();
+        MonoBehaviour[] components = _other.GetComponentsInParent<MonoBehaviour>();
 
         foreach (MonoBehaviour component in components)
         {
             if (component is IInteractable && !interactablesInRange.Contains(component))
-            {
                 interactablesInRange.Add(component);
-            }
         }
     }
 
     private void OnTriggerExit(Collider _other)
     {
-        if (_other.transform.root == transform.root)
+        if (playerRoot != null && _other.transform.IsChildOf(playerRoot))
             return;
 
-        MonoBehaviour[] components = _other.GetComponents<MonoBehaviour>();
+        MonoBehaviour[] components = _other.GetComponentsInParent<MonoBehaviour>();
 
         foreach (MonoBehaviour component in components)
         {
             if (component is IInteractable && interactablesInRange.Contains(component))
-            {
                 interactablesInRange.Remove(component);
-            }
         }
 
-        if (currentInteractable != null && currentInteractableTransform == _other.transform)
-        {
-            ClearCurrentInteractable();
-        }
+        ClearCurrentInteractable();
     }
 
     private void Update()
     {
+        if (playerCamera == null)
+            playerCamera = Camera.main;
+
+        if (IsInteractionBlocked())
+        {
+            ClearCurrentInteractable();
+            return;
+        }
+
         UpdateBestInteractable();
 
-        if (currentInteractable != null &&
-     interactionUI != null &&
-     GameManager.instance != null &&
-     GameManager.instance.currentState != GameManager.GameState.Fishing)
-        {
-            interactionUI.Show(currentInteractableTransform, transform.root, currentPromptPoint);
-        }
-        else
-        {
-            if (interactionUI != null)
-                interactionUI.Hide();
-        }
+        bool shouldShowUI =
+            currentInteractable != null &&
+            interactionUI != null;
+
+        if (shouldShowUI)
+            interactionUI.Show(currentInteractableTransform, playerRoot, currentPromptPoint);
+        else if (interactionUI != null)
+            interactionUI.Hide();
     }
 
     private void UpdateBestInteractable()
@@ -91,7 +113,6 @@ public class PlayerInteract : MonoBehaviour
         IInteractable bestInteractable = null;
         Transform bestTransform = null;
         Transform bestPromptPoint = null;
-
         float bestScore = float.MinValue;
 
         for (int i = interactablesInRange.Count - 1; i >= 0; i--)
@@ -107,33 +128,21 @@ public class PlayerInteract : MonoBehaviour
             if (component is not IInteractable interactable)
                 continue;
 
-            Dock dock = component as Dock;
-            if (dock != null && !dock.CanInteract())
+            if (!interactable.CanInteract())
                 continue;
 
             Transform interactableTransform = component.transform;
+            Transform promptPoint = GetBestPromptPoint(interactableTransform, interactable, out float score);
 
-            float distance = Vector3.Distance(transform.root.position, interactableTransform.position);
-            if (distance > maxInteractDistance)
+            if (score == float.MinValue)
                 continue;
-
-            Vector3 directionToTarget = (interactableTransform.position - playerCamera.transform.position).normalized;
-            float viewDot = Vector3.Dot(playerCamera.transform.forward, directionToTarget);
-
-            if (viewDot < minViewDot)
-                continue;
-
-            int priority = interactable.GetInteractionPriority();
-            float score = priority + (viewDot * 100f) - distance;
 
             if (score > bestScore)
             {
                 bestScore = score;
                 bestInteractable = interactable;
                 bestTransform = interactableTransform;
-
-                InteractablePromptPoint promptPointComponent = interactableTransform.GetComponent<InteractablePromptPoint>();
-                bestPromptPoint = promptPointComponent != null ? promptPointComponent.PromptPoint : null;
+                bestPromptPoint = promptPoint;
             }
         }
 
@@ -142,19 +151,105 @@ public class PlayerInteract : MonoBehaviour
         currentPromptPoint = bestPromptPoint;
     }
 
+    private Transform GetBestPromptPoint(Transform _interactableTransform, IInteractable _interactable, out float _bestScore)
+    {
+        _bestScore = float.MinValue;
+        Transform bestPromptPoint = null;
+
+        InteractablePromptPoint[] promptPointComponents = _interactableTransform.GetComponentsInChildren<InteractablePromptPoint>();
+
+        if (promptPointComponents.Length == 0)
+        {
+            if (TryScorePrompt(_interactableTransform.position, _interactable.GetInteractionPriority(), out _bestScore))
+                return null;
+
+            return null;
+        }
+
+        foreach (InteractablePromptPoint promptPointComponent in promptPointComponents)
+        {
+            foreach (Transform candidatePromptPoint in promptPointComponent.GetPromptPoints())
+            {
+                if (candidatePromptPoint == null)
+                    continue;
+
+                if (!TryScorePrompt(candidatePromptPoint.position, _interactable.GetInteractionPriority(), out float score))
+                    continue;
+
+                if (score > _bestScore)
+                {
+                    _bestScore = score;
+                    bestPromptPoint = candidatePromptPoint;
+                }
+            }
+        }
+
+        return bestPromptPoint;
+    }
+
     private void TryInteract()
     {
-        if (GameManager.instance == null)
+        if (IsInteractionBlocked())
             return;
 
         if (currentInteractable == null)
             return;
 
-        Dock dock = currentInteractable as Dock;
-        if (dock != null && !dock.CanInteract())
+        if (!currentInteractable.CanInteract())
             return;
 
         currentInteractable.Interact();
+    }
+
+    private bool TryScorePrompt(Vector3 _worldPosition, int _priority, out float _score)
+    {
+        _score = float.MinValue;
+
+        if (playerRoot == null)
+            return false;
+
+        float distance = Vector3.Distance(playerRoot.position, _worldPosition);
+
+        if (distance > maxInteractDistance)
+            return false;
+
+        if (playerCamera == null)
+        {
+            _score = _priority - distance;
+            return true;
+        }
+
+        Vector3 directionToTarget = (_worldPosition - playerCamera.transform.position).normalized;
+        float viewDot = Vector3.Dot(playerCamera.transform.forward, directionToTarget);
+
+        if (viewDot < minViewDot)
+            return false;
+
+        Vector3 viewportPoint = playerCamera.WorldToViewportPoint(_worldPosition);
+
+        if (viewportPoint.z <= 0f)
+            return false;
+
+        if (viewportPoint.x < 0f || viewportPoint.x > 1f ||
+            viewportPoint.y < 0f || viewportPoint.y > 1f)
+            return false;
+
+        Vector2 viewportPosition = new Vector2(viewportPoint.x, viewportPoint.y);
+        float screenCenterDistance = Vector2.Distance(viewportPosition, new Vector2(0.5f, 0.5f));
+
+        _score = _priority + (viewDot * 100f) - distance - (screenCenterDistance * screenCenterWeight);
+        return true;
+    }
+
+    private bool IsInteractionBlocked()
+    {
+        if (GameManager.instance == null)
+            return true;
+
+        if (GameManager.instance.currentState == GameManager.GameState.Fishing)
+            return true;
+
+        return GameManager.instance.IsGameplayBlocked();
     }
 
     private void ClearCurrentInteractable()
