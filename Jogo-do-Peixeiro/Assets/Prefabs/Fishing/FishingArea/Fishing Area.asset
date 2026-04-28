@@ -1,0 +1,20 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 549146635d7dc7849958ad062fe18003, type: 3}
+  m_Name: Fishing Area
+  m_EditorClassIdentifier: 
+  _areaId: lake_shallow
+  _displayName: Lago raso
+  _availableFish:
+  - {fileID: 11400000, guid: 2ca48ec2910fc764a9a2790039651937, type: 2}
+  - {fileID: 11400000, guid: f07016660d91d444a91171159bfcf55e, type: 2}
+  - {fileID: 11400000, guid: 226c8121ca12d7240a0bad449842489a, type: 2}

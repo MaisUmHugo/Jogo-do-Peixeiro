@@ -13,7 +13,9 @@ public class FishingManager : MonoBehaviour
     [Header("Fishing Settings")]
     [FormerlySerializedAs("useSkillCheck")]
     [SerializeField] private bool _useSkillCheck = true;
-    [SerializeField] private float _baseProgressSpeed = 0.08f;
+    [SerializeField] private float _baseProgressSpeed;
+    [SerializeField] private bool _requireSkillCheckToFinish = true;
+    [SerializeField, Range(0f, 1f)] private float _skillCheckFinishGateProgress = 0.8f;
 
     [Header("Rarity Progress Multipliers")]
     [SerializeField] private float _rarity1ProgressMultiplier = 1f;
@@ -38,8 +40,6 @@ public class FishingManager : MonoBehaviour
     private FishScriptableObject[] _currentAvailableFish;
     private FishScriptableObject _selectedFishType;
     private FishData _pendingFish;
-    private FishDirectionPull _subscribedDirectionPull;
-    private float _pendingDirectionPullPenalty;
 
     private void Awake()
     {
@@ -56,12 +56,6 @@ public class FishingManager : MonoBehaviour
     private void OnEnable()
     {
         AutoAssignMissingReferences();
-        SubscribeToDirectionPull();
-    }
-
-    private void OnDisable()
-    {
-        UnsubscribeFromDirectionPull();
     }
 
     private void AutoAssignMissingReferences()
@@ -77,34 +71,6 @@ public class FishingManager : MonoBehaviour
 
         if (_fishingRod == null)
             _fishingRod = FindFirstObjectByType<FishingRod>(FindObjectsInactive.Include);
-    }
-
-    private void SubscribeToDirectionPull()
-    {
-        if (_subscribedDirectionPull == _fishDirectionPull)
-            return;
-
-        UnsubscribeFromDirectionPull();
-
-        if (_fishDirectionPull == null)
-            return;
-
-        _subscribedDirectionPull = _fishDirectionPull;
-        _subscribedDirectionPull.PenaltyApplied += HandleDirectionPullPenalty;
-    }
-
-    private void UnsubscribeFromDirectionPull()
-    {
-        if (_subscribedDirectionPull == null)
-            return;
-
-        _subscribedDirectionPull.PenaltyApplied -= HandleDirectionPullPenalty;
-        _subscribedDirectionPull = null;
-    }
-
-    private void HandleDirectionPullPenalty(float _penalty)
-    {
-        _pendingDirectionPullPenalty += _penalty;
     }
 
     private void Update()
@@ -209,31 +175,21 @@ public class FishingManager : MonoBehaviour
     {
         float progressMultiplier = GetProgressMultiplierByFish();
         float progressDelta = _baseProgressSpeed * progressMultiplier;
-        float directionPullPenalty = ConsumePendingDirectionPullPenalty();
 
         if (_fishDirectionPull != null)
         {
-            if (IsSkillCheckActive())
-            {
-                _fishDirectionPull.PausePullFeedback();
-            }
-            else
-            {
-                Vector2 input = Vector2.zero;
+            Vector2 input = Vector2.zero;
 
-                if (InputHandler.instance != null)
-                    input = InputHandler.instance.moveInput;
+            if (InputHandler.instance != null)
+                input = InputHandler.instance.moveInput;
 
-                progressDelta += _fishDirectionPull.GetProgressModifier(input, ProgressNormalized);
-                directionPullPenalty += ConsumePendingDirectionPullPenalty();
-            }
+            progressDelta += _fishDirectionPull.GetProgressModifier(input, ProgressNormalized);
         }
 
         float nextProgress = ProgressNormalized + (progressDelta * Time.deltaTime);
-        nextProgress -= directionPullPenalty;
 
-        if (_fishDirectionPull != null && _fishDirectionPull.ShouldHoldCompletion(nextProgress))
-            nextProgress = Mathf.Min(nextProgress, _fishDirectionPull.CompletionGateProgress);
+        if (ShouldHoldForFinalSkillCheck(nextProgress))
+            nextProgress = Mathf.Min(nextProgress, _skillCheckFinishGateProgress);
 
         ProgressNormalized = nextProgress;
         ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
@@ -242,22 +198,12 @@ public class FishingManager : MonoBehaviour
             CompleteFishing();
     }
 
-    private float ConsumePendingDirectionPullPenalty()
-    {
-        float penalty = _pendingDirectionPullPenalty;
-        _pendingDirectionPullPenalty = 0f;
-        return penalty;
-    }
-
     public void AddSkillCheckProgressBonus(float _bonus)
     {
         if (!IsFishing)
             return;
 
         ProgressNormalized += _bonus;
-
-        if (_fishDirectionPull != null && _fishDirectionPull.ShouldHoldCompletion(ProgressNormalized))
-            ProgressNormalized = Mathf.Min(ProgressNormalized, _fishDirectionPull.CompletionGateProgress);
 
         ProgressNormalized = Mathf.Clamp01(ProgressNormalized);
 
@@ -304,10 +250,14 @@ public class FishingManager : MonoBehaviour
 
     private bool CanCompleteFishing()
     {
-        if (_fishDirectionPull != null && _fishDirectionPull.RequiresCompletionToFinish)
-            return ProgressNormalized >= _fishDirectionPull.CompletionGateProgress && _fishDirectionPull.IsCompletionComplete;
-
         return ProgressNormalized >= 1f;
+    }
+
+    private bool ShouldHoldForFinalSkillCheck(float _progressNormalized)
+    {
+        return _requireSkillCheckToFinish &&
+               _useSkillCheck &&
+               _progressNormalized >= _skillCheckFinishGateProgress;
     }
 
     private bool IsSkillCheckActive()
