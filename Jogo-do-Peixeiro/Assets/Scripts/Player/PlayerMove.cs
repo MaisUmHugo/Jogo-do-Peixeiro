@@ -4,6 +4,8 @@ using System.Collections.Generic;
 
 public class PlayerMove : MonoBehaviour
 {
+    private const string FootstepAudioSourceName = "FootstepAudioSource";
+
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private Transform cameraTransform;
@@ -11,7 +13,7 @@ public class PlayerMove : MonoBehaviour
     [Header("Gravity")]
     [SerializeField] private float gravity = -20f;
 
-    [Header("Step VFX")]
+    [Header("Step Feedback")]
     [SerializeField] private VisualEffect stepVFXPrefab;
     [SerializeField] private Transform stepPoint;
     [SerializeField] private float stepInterval = 0.25f;
@@ -20,6 +22,12 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float stepHeight = 0.05f;
     [SerializeField] private float stepVFXLifetime = 2f;
     [SerializeField] private int maxStepVFXInstances = 10;
+    [SerializeField] private AudioClip footstepSfx;
+    [SerializeField] private AudioSource footstepAudioSource;
+    [SerializeField, Range(0f, 1f)] private float footstepSfxVolume = 0.7f;
+    [SerializeField] private float footstepPitchMin = 0.9f;
+    [SerializeField] private float footstepPitchMax = 1.1f;
+    [SerializeField, Range(0f, 1f)] private float footstepSpatialBlend = 1f;
 
     private CharacterController characterController;
     private Vector3 posicaoInicial;
@@ -31,6 +39,7 @@ public class PlayerMove : MonoBehaviour
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        SetupFootstepAudioSource();
     }
 
     private void Start()
@@ -88,7 +97,7 @@ public class PlayerMove : MonoBehaviour
 
     private void HandleStepVFX(Vector3 _moveDirection)
     {
-        if (stepVFXPrefab == null || stepPoint == null)
+        if (stepVFXPrefab == null && footstepSfx == null)
             return;
 
         bool isMoving = _moveDirection.magnitude > moveThreshold;
@@ -96,30 +105,34 @@ public class PlayerMove : MonoBehaviour
 
         if (!isMoving || !isGrounded)
         {
-            stepTimer = 0f;
+            ResetStepFeedback();
             return;
         }
 
-        Vector3 backwardOffset = -_moveDirection.normalized * stepBackOffset;
-
-        stepPoint.localPosition = new Vector3(
-            backwardOffset.x,
-            stepHeight,
-            backwardOffset.z
-        );
+        Vector3 spawnPosition = GetStepFeedbackPosition(_moveDirection);
+        Quaternion spawnRotation = Quaternion.LookRotation(_moveDirection.normalized, Vector3.up);
 
         stepTimer -= Time.deltaTime;
 
         if (stepTimer > 0f)
             return;
 
-        SpawnStepVFX(stepPoint.position, stepPoint.rotation);
+        PlayStepFeedback(spawnPosition, spawnRotation);
 
         stepTimer = stepInterval;
     }
 
+    private void PlayStepFeedback(Vector3 position, Quaternion rotation)
+    {
+        SpawnStepVFX(position, rotation);
+        PlayFootstepSfx(position);
+    }
+
     private void SpawnStepVFX(Vector3 position, Quaternion rotation)
     {
+        if (stepVFXPrefab == null)
+            return;
+
         if (activeStepVFX.Count >= maxStepVFXInstances)
         {
             if (activeStepVFX[0] != null)
@@ -142,9 +155,73 @@ public class PlayerMove : MonoBehaviour
         Destroy(instance.gameObject, stepVFXLifetime);
     }
 
+    private void PlayFootstepSfx(Vector3 _position)
+    {
+        if (footstepSfx == null || footstepAudioSource == null)
+            return;
+
+        footstepAudioSource.transform.position = _position;
+        footstepAudioSource.pitch = Random.Range(footstepPitchMin, footstepPitchMax);
+        footstepAudioSource.PlayOneShot(footstepSfx, footstepSfxVolume);
+    }
+
     private void Update()
     {
+        if (ShouldStopStepFeedback())
+            ResetStepFeedback();
+
         if (transform.position.y <= -5f)
             transform.position = posicaoInicial;
+    }
+
+    private void SetupFootstepAudioSource()
+    {
+        if (footstepAudioSource == null)
+        {
+            Transform audioSourceTransform = transform.Find(FootstepAudioSourceName);
+
+            if (audioSourceTransform != null)
+                footstepAudioSource = audioSourceTransform.GetComponent<AudioSource>();
+        }
+
+        if (footstepAudioSource == null)
+        {
+            GameObject audioSourceObject = new GameObject(FootstepAudioSourceName);
+            audioSourceObject.transform.SetParent(transform, false);
+            footstepAudioSource = audioSourceObject.AddComponent<AudioSource>();
+        }
+
+        footstepAudioSource.playOnAwake = false;
+        footstepAudioSource.loop = false;
+        footstepAudioSource.spatialBlend = footstepSpatialBlend;
+    }
+
+    private Vector3 GetStepFeedbackPosition(Vector3 _moveDirection)
+    {
+        Vector3 basePosition = stepPoint != null && stepPoint != transform
+            ? stepPoint.position
+            : transform.position;
+
+        Vector3 backwardOffset = -_moveDirection.normalized * stepBackOffset;
+        return basePosition + backwardOffset + (Vector3.up * stepHeight);
+    }
+
+    private bool ShouldStopStepFeedback()
+    {
+        if (Time.timeScale <= 0f)
+            return true;
+
+        if (GameManager.instance == null)
+            return false;
+
+        return GameManager.instance.currentState != GameManager.GameState.OnFoot;
+    }
+
+    private void ResetStepFeedback()
+    {
+        stepTimer = 0f;
+
+        if (footstepAudioSource != null && footstepAudioSource.isPlaying)
+            footstepAudioSource.Stop();
     }
 }
