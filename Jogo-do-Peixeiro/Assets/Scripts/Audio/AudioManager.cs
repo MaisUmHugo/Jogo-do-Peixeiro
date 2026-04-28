@@ -67,6 +67,31 @@ public class AudioManager : MonoBehaviour
         _sfxSource.pitch = 1f;
     }
 
+    public void PlaySfxAtPosition(AudioClip clip, Vector3 position, float volume = 1f, float pitchMin = 0.95f, float pitchMax = 1.05f)
+    {
+        if (clip == null)
+            return;
+
+        if (_sfxSource == null)
+        {
+            AudioSource.PlayClipAtPoint(clip, position, volume);
+            return;
+        }
+
+        GameObject sfxObject = new GameObject($"SFX_{clip.name}");
+        sfxObject.transform.position = position;
+
+        AudioSource audioSource = sfxObject.AddComponent<AudioSource>();
+        audioSource.outputAudioMixerGroup = _sfxSource.outputAudioMixerGroup;
+        audioSource.spatialBlend = 1f;
+        audioSource.volume = volume;
+        audioSource.pitch = Random.Range(pitchMin, pitchMax);
+        audioSource.clip = clip;
+        audioSource.Play();
+
+        Destroy(sfxObject, clip.length / Mathf.Max(0.01f, audioSource.pitch));
+    }
+
     public void SetMasterVolume(float value)
     {
         SetVolume(MasterExposedName, value);
