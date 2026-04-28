@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
@@ -7,14 +8,16 @@ public class HUDWarningUI : MonoBehaviour
     public static HUDWarningUI Instance { get; private set; }
 
     [Header("References")]
-    [SerializeField] private TMP_Text messageText;
-    [SerializeField] private CanvasGroup canvasGroup;
+    [SerializeField] private TMP_Text _messageText;
+    [SerializeField] private CanvasGroup _canvasGroup;
 
     [Header("Settings")]
-    [SerializeField] private float visibleTime = 1.5f;
-    [SerializeField] private float fadeSpeed = 8f;
+    [SerializeField] private float _visibleTime = 1.5f;
+    [SerializeField] private float _fadeSpeed = 8f;
 
-    private Coroutine messageRoutine;
+    private readonly Queue<string> _messageQueue = new();
+    private Coroutine _messageRoutine;
+    private bool _isShowingMessage;
 
     private void Awake()
     {
@@ -25,44 +28,79 @@ public class HUDWarningUI : MonoBehaviour
         }
 
         Instance = this;
-
-        if (messageText != null)
-            messageText.text = string.Empty;
-
-        if (canvasGroup != null)
-            canvasGroup.alpha = 0f;
+        ClearVisual();
     }
 
     public void ShowWarning(string _message)
     {
-        if (messageRoutine != null)
-            StopCoroutine(messageRoutine);
+        if (string.IsNullOrWhiteSpace(_message))
+            return;
 
-        messageRoutine = StartCoroutine(ShowMessageRoutine(_message));
+        _messageQueue.Enqueue(_message);
+
+        if (!_isShowingMessage)
+            _messageRoutine = StartCoroutine(ProcessMessageQueue());
+    }
+
+    private IEnumerator ProcessMessageQueue()
+    {
+        _isShowingMessage = true;
+
+        while (_messageQueue.Count > 0)
+        {
+            string message = _messageQueue.Dequeue();
+
+            yield return ShowMessageRoutine(message);
+        }
+
+        _isShowingMessage = false;
+        _messageRoutine = null;
     }
 
     private IEnumerator ShowMessageRoutine(string _message)
     {
-        if (messageText != null)
-            messageText.text = _message;
+        if (_messageText != null)
+            _messageText.text = _message;
 
-        if (canvasGroup != null)
-            canvasGroup.alpha = 1f;
+        if (_canvasGroup != null)
+            _canvasGroup.alpha = 1f;
 
-        yield return new WaitForSeconds(visibleTime);
+        yield return new WaitForSeconds(_visibleTime);
 
-        if (canvasGroup != null)
+        if (_canvasGroup != null)
         {
-            while (canvasGroup.alpha > 0f)
+            while (_canvasGroup.alpha > 0f)
             {
-                canvasGroup.alpha -= fadeSpeed * Time.deltaTime;
+                _canvasGroup.alpha -= _fadeSpeed * Time.deltaTime;
                 yield return null;
             }
 
-            canvasGroup.alpha = 0f;
+            _canvasGroup.alpha = 0f;
         }
 
-        if (messageText != null)
-            messageText.text = string.Empty;
+        if (_messageText != null)
+            _messageText.text = string.Empty;
+    }
+
+    private void ClearVisual()
+    {
+        if (_messageText != null)
+            _messageText.text = string.Empty;
+
+        if (_canvasGroup != null)
+            _canvasGroup.alpha = 0f;
+    }
+
+    public void ClearQueue()
+    {
+        _messageQueue.Clear();
+
+        if (_messageRoutine != null)
+            StopCoroutine(_messageRoutine);
+
+        _messageRoutine = null;
+        _isShowingMessage = false;
+
+        ClearVisual();
     }
 }

@@ -579,6 +579,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69acd70d789997d48a9ffc918cc5ec56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  peixeexe: {fileID: 0}
   timingDuration: 2
   maxFails: 3
   passiveProgressSpeed: 0.08
@@ -594,6 +595,11 @@ MonoBehaviour:
   rarity3IndicatorSpeed: 1.4
   minZoneStart: 0.1
   maxZoneStart: 0.75
+  perfectThreshold: 0.15
+  greatThreshold: 0.35
+  nearMissThreshold: 1
+  badMissThreshold: 1
+  zoneVariationPercent: 0.25
 --- !u!1 &7468071377371142181
 GameObject:
   m_ObjectHideFlags: 0

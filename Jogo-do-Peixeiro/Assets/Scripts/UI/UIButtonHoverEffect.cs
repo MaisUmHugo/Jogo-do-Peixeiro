@@ -1,7 +1,7 @@
 using UnityEngine;
 using UnityEngine.EventSystems;
 
-public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, ISelectHandler, IDeselectHandler
+public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("Scale")]
     [SerializeField] private float normalScale = 1f;
@@ -18,7 +18,6 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     [SerializeField] private float tiltSpeed = 1f;
 
     private bool isHovered;
-    private bool isSelected;
 
     private void Update()
     {
@@ -88,22 +87,12 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     {
         isHovered = false;
 
-        // limpa seleção se esse botão ainda estiver selecionado
+        // Limpa a selecao se esse botao ainda estiver selecionado.
         if (EventSystem.current != null &&
             EventSystem.current.currentSelectedGameObject == gameObject)
         {
             EventSystem.current.SetSelectedGameObject(null);
         }
-    }
-
-    public void OnSelect(BaseEventData eventData)
-    {
-        isSelected = true;
-    }
-
-    public void OnDeselect(BaseEventData eventData)
-    {
-        isSelected = false;
     }
 
     private void OnDisable()
@@ -120,7 +109,6 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     private void ResetVisuals()
     {
         isHovered = false;
-        isSelected = false;
 
         transform.localScale = Vector3.one * normalScale;
         transform.rotation = Quaternion.identity;
