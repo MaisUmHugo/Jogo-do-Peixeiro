@@ -12,11 +12,28 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private GameObject confirmPanel;
     [SerializeField] private GameObject howToPlayPanel;
 
-    // guarda aÁ„o que ser· executada apÛs confirmaÁ„o 
+    [Header("Pause Visibility")]
+    [SerializeField] private GameObject[] panelsToHideWhilePaused;
+    [SerializeField] private bool restoreHiddenPanelsOnResume = true;
+    [SerializeField] private bool hidePanelsWithCanvasGroup = true;
+
+    // guarda a√ß√£o que ser√° executada ap√≥s confirma√ß√£o 
     private Action confirmAction;
 
     // guarda estado antes do pause (OnFoot, OnBoat, etc)
     private GameManager.GameState stateBeforePause;
+    private HiddenPanelState[] hiddenPanelStates;
+
+    private struct HiddenPanelState
+    {
+        public GameObject Panel;
+        public CanvasGroup CanvasGroup;
+        public bool WasActiveSelf;
+        public bool WasHiddenWithCanvasGroup;
+        public float OriginalAlpha;
+        public bool OriginalInteractable;
+        public bool OriginalBlocksRaycasts;
+    }
 
     private void Awake()
     {
@@ -35,7 +52,7 @@ public class PauseManager : MonoBehaviour
         if (InputHandler.instance != null)
             InputHandler.instance.onPausePressed += HandlePause;
 
-        // garante que todos os painÈis comeÁam desligados
+        // garante que todos os pain√©is come√ßam desligados
         if (pausePanel != null) pausePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
@@ -43,7 +60,7 @@ public class PauseManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        // remove inscriÁ„o do evento (evita bugs/memory leak)
+        // remove inscri√ß√£o do evento (evita bugs/memory leak)
         if (InputHandler.instance != null)
             InputHandler.instance.onPausePressed -= HandlePause;
     }
@@ -54,7 +71,7 @@ public class PauseManager : MonoBehaviour
         if (GameManager.instance == null)
             return;
 
-        // se estiver na confirmaÁ„o - cancela (volta pro pause)
+        // se estiver na confirma√ß√£o - cancela (volta pro pause)
         if (confirmPanel != null && confirmPanel.activeSelf)
         {
             ConfirmNo();
@@ -91,19 +108,21 @@ public class PauseManager : MonoBehaviour
 
         Time.timeScale = 0f;
 
+        HideConfiguredPanelsForPause();
+
         // ativa painel de pause e desativa outros
         if (pausePanel != null) pausePanel.SetActive(true);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
     }
 
-    // funÁ„o para os botıes abaixo
+    // fun√ß√£o para os bot√µes abaixo
     public void ResumeGame()
     {
         if (GameManager.instance == null)
             return;
 
-        // sÛ volta se estiver pausado
+        // s√≥ volta se estiver pausado
         if (GameManager.instance.currentState != GameManager.GameState.Paused)
             return;
 
@@ -113,12 +132,14 @@ public class PauseManager : MonoBehaviour
         // volta para estado anterior (OnFoot, OnBoat, etc)
         GameManager.instance.SetState(stateBeforePause);
 
-        // desativa todos os painÈis
+        RestoreConfiguredPanelsAfterPause();
+
+        // desativa todos os pain√©is
         if (pausePanel != null) pausePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
 
-        // limpa aÁ„o pendente
+        // limpa a√ß√£o pendente
         confirmAction = null;
     }
 
@@ -139,10 +160,10 @@ public class PauseManager : MonoBehaviour
 
     public void ShowConfirmation(Action action)
     {
-        // guarda aÁ„o que ser· executada ao confirmar
+        // guarda a√ß√£o que ser√° executada ao confirmar
         confirmAction = action;
 
-        // abre painel de confirmaÁ„o
+        // abre painel de confirma√ß√£o
         if (pausePanel != null) pausePanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(true);
@@ -152,7 +173,7 @@ public class PauseManager : MonoBehaviour
     {
         confirmAction?.Invoke();
 
-        // limpa referÍncia
+        // limpa refer√™ncia
         confirmAction = null;
     }
 
@@ -180,5 +201,96 @@ public class PauseManager : MonoBehaviour
             Time.timeScale = 1f;
             SceneManager.LoadScene("Main Menu");
         });
+    }
+
+    private void HideConfiguredPanelsForPause()
+    {
+        if (panelsToHideWhilePaused == null || panelsToHideWhilePaused.Length == 0)
+            return;
+
+        hiddenPanelStates = new HiddenPanelState[panelsToHideWhilePaused.Length];
+
+        for (int i = 0; i < panelsToHideWhilePaused.Length; i++)
+        {
+            GameObject panel = panelsToHideWhilePaused[i];
+
+            if (panel == null || IsPausePanelOrParent(panel))
+                continue;
+
+            HiddenPanelState state = new HiddenPanelState
+            {
+                Panel = panel,
+                WasActiveSelf = panel.activeSelf
+            };
+
+            if (hidePanelsWithCanvasGroup && panel.activeInHierarchy)
+            {
+                CanvasGroup canvasGroup = panel.GetComponent<CanvasGroup>();
+
+                if (canvasGroup == null)
+                    canvasGroup = panel.AddComponent<CanvasGroup>();
+
+                state.CanvasGroup = canvasGroup;
+                state.WasHiddenWithCanvasGroup = true;
+                state.OriginalAlpha = canvasGroup.alpha;
+                state.OriginalInteractable = canvasGroup.interactable;
+                state.OriginalBlocksRaycasts = canvasGroup.blocksRaycasts;
+
+                canvasGroup.alpha = 0f;
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
+            else
+            {
+                panel.SetActive(false);
+            }
+
+            hiddenPanelStates[i] = state;
+        }
+    }
+
+    private void RestoreConfiguredPanelsAfterPause()
+    {
+        if (!restoreHiddenPanelsOnResume)
+            return;
+
+        if (hiddenPanelStates == null)
+            return;
+
+        for (int i = 0; i < hiddenPanelStates.Length; i++)
+        {
+            HiddenPanelState state = hiddenPanelStates[i];
+            GameObject panel = state.Panel;
+
+            if (panel == null || IsPausePanelOrParent(panel))
+                continue;
+
+            if (state.WasHiddenWithCanvasGroup && state.CanvasGroup != null)
+            {
+                state.CanvasGroup.alpha = state.OriginalAlpha;
+                state.CanvasGroup.interactable = state.OriginalInteractable;
+                state.CanvasGroup.blocksRaycasts = state.OriginalBlocksRaycasts;
+                continue;
+            }
+
+            panel.SetActive(state.WasActiveSelf);
+        }
+
+        hiddenPanelStates = null;
+    }
+
+    private bool IsPausePanelOrParent(GameObject panel)
+    {
+        return IsSameOrParent(panel, pausePanel) ||
+               IsSameOrParent(panel, confirmPanel) ||
+               IsSameOrParent(panel, howToPlayPanel);
+    }
+
+    private bool IsSameOrParent(GameObject candidate, GameObject child)
+    {
+        if (candidate == null || child == null)
+            return false;
+
+        return candidate == child || child.transform.IsChildOf(candidate.transform);
     }
 }
