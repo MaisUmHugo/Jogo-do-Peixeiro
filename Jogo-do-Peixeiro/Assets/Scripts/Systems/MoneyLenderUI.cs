@@ -9,6 +9,12 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField] private TMP_Text currentWeightText;
     [SerializeField] private TMP_Text statusText;
 
+    [Header("Audio")]
+    [SerializeField] private AudioClip doorOpenSfx;
+    [SerializeField] private AudioClip doorCloseSfx;
+    [SerializeField, Range(0f, 1f)] private float doorOpenSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float doorCloseSfxVolume = 1f;
+
     private MoneyLender currentMoneyLender;
     private bool isOpen;
 
@@ -42,6 +48,8 @@ public class MoneyLenderUI : MonoBehaviour
         if (_moneyLender == null)
             return;
 
+        bool wasOpen = isOpen;
+
         currentMoneyLender = _moneyLender;
         isOpen = true;
 
@@ -56,6 +64,9 @@ public class MoneyLenderUI : MonoBehaviour
 
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+
+        if (!wasOpen)
+            PlayDoorSfx(doorOpenSfx, doorOpenSfxVolume);
 
         Refresh();
     }
@@ -106,6 +117,9 @@ public class MoneyLenderUI : MonoBehaviour
 
     private void Close()
     {
+        if (isOpen)
+            PlayDoorSfx(doorCloseSfx, doorCloseSfxVolume);
+
         CloseImmediate();
 
         if (GameManager.instance != null)
@@ -117,6 +131,9 @@ public class MoneyLenderUI : MonoBehaviour
 
     private void CloseForTutorialFinish()
     {
+        if (isOpen)
+            PlayDoorSfx(doorCloseSfx, doorCloseSfxVolume);
+
         CloseImmediate();
 
         if (GameManager.instance != null)
@@ -133,5 +150,13 @@ public class MoneyLenderUI : MonoBehaviour
 
         if (panel != null)
             panel.SetActive(false);
+    }
+
+    private void PlayDoorSfx(AudioClip _clip, float _volume)
+    {
+        if (AudioManager.Instance == null || _clip == null)
+            return;
+
+        AudioManager.Instance.PlaySfx(_clip, _volume);
     }
 }
