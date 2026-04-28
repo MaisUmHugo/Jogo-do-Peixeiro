@@ -1,6 +1,7 @@
-using UnityEngine;
-using UnityEngine.VFX;
 using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.EventSystems;
+using UnityEngine.VFX;
 
 public class PlayerMove : MonoBehaviour
 {
@@ -25,6 +26,7 @@ public class PlayerMove : MonoBehaviour
     private Vector3 posicaoInicial;
     private float verticalVelocity;
     private float stepTimer;
+    private Transform PlayerPosition;
 
     private readonly List<VisualEffect> activeStepVFX = new();
 
@@ -74,7 +76,7 @@ public class PlayerMove : MonoBehaviour
 
         if (moveDirection != Vector3.zero)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection);
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection) * Quaternion.Euler(0f, 180f, 0f);
 
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
