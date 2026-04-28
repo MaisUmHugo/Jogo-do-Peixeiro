@@ -12,8 +12,10 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField] private float height = 1f;
 
     [Header("Sensitivity")]
-    [SerializeField] private float sensitivityX = 0.1f;
-    [SerializeField] private float sensitivityY = 0.1f;
+    [SerializeField] private float mouseSensitivity = 0.1f;
+    [SerializeField] private float controllerSensitivity = 90f;
+    [SerializeField] private float controllerDeadZone = 0.12f;
+    [SerializeField] private float controllerResponseExponent = 1.25f;
 
     [Header("Clamp")]
     [SerializeField] private float minPitch = -25f;
@@ -54,8 +56,11 @@ public class PlayerCamera : MonoBehaviour
 
         Vector2 lookInput = InputHandler.instance.lookInput;
 
-        yaw += lookInput.x * sensitivityX;
-        pitch -= lookInput.y * sensitivityY;
+        Vector2 cameraInput = GetProcessedLookInput(lookInput, out bool isControllerInput);
+        float sensitivity = isControllerInput ? controllerSensitivity * Time.deltaTime : mouseSensitivity;
+
+        yaw += cameraInput.x * sensitivity;
+        pitch -= cameraInput.y * sensitivity;
         pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
 
         float scroll = InputHandler.instance.zoomInput;
@@ -76,18 +81,43 @@ public class PlayerCamera : MonoBehaviour
 
     public void SetSensitivity(float _value)
     {
-        sensitivityX = _value;
-        sensitivityY = _value;
+        mouseSensitivity = _value;
+    }
+
+    public void SetSensitivity(float _mouseSensitivity, float _controllerSensitivity)
+    {
+        mouseSensitivity = _mouseSensitivity;
+        controllerSensitivity = _controllerSensitivity;
     }
 
     public float GetSensitivity()
     {
-        return sensitivityX;
+        return mouseSensitivity;
     }
 
     public void LoadSensitivity()
     {
-        float savedSensitivity = PlayerPrefs.GetFloat("CameraSensitivity", sensitivityX);
-        SetSensitivity(savedSensitivity);
+        float savedMouseSensitivity = PlayerPrefs.GetFloat("CameraMouseSensitivity", PlayerPrefs.GetFloat("CameraSensitivity", mouseSensitivity));
+        float savedControllerSensitivity = PlayerPrefs.GetFloat("CameraControllerSensitivity", controllerSensitivity);
+        SetSensitivity(savedMouseSensitivity, savedControllerSensitivity);
+    }
+
+    private Vector2 GetProcessedLookInput(Vector2 _lookInput, out bool _isControllerInput)
+    {
+        _isControllerInput = InputDeviceDetector.CurrentDeviceType == InputDeviceType.GenericController;
+
+        if (!_isControllerInput)
+            return _lookInput;
+
+        float magnitude = _lookInput.magnitude;
+
+        if (magnitude <= controllerDeadZone)
+            return Vector2.zero;
+
+        Vector2 direction = _lookInput / magnitude;
+        float normalizedMagnitude = Mathf.InverseLerp(controllerDeadZone, 1f, Mathf.Clamp01(magnitude));
+        float curvedMagnitude = Mathf.Pow(normalizedMagnitude, controllerResponseExponent);
+
+        return direction * curvedMagnitude;
     }
 }
