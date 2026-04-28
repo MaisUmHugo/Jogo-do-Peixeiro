@@ -1,21 +1,28 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 public class ShipInventory : MonoBehaviour
 {
-    public List<FishData> ownedFish = new List<FishData>();
+    private List<FishData> ownedFish = new List<FishData>();
+
+    public delegate void OnFishListChangeDelegate(List<FishData> fishList, float fishWeight);
+    public event OnFishListChangeDelegate OnFishListChange;
 
     [SerializeField] private float maxFishCapacity;
 
     private float currentFishWeight = 0f;
     private bool wasFullLastUpdate = false;
 
-    public bool IsFull => currentFishWeight >= maxFishCapacity;
-
-    public DebugShipInventory debugShipInventory;
+    public List<FishData> OwnedFish => ownedFish;
+    public bool IsFull => currentFishWeight >= maxFishCapacity;    
 
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
 
+
+    private int[] intsTest = new int[10] {10,8,6,8,1,2,6,7,3,5};
 
     public bool TryAddFish(FishData fish)
     {
@@ -46,8 +53,11 @@ public class ShipInventory : MonoBehaviour
 
     private void AddFish(FishData _fish)
     {
-        ownedFish.Add(_fish);
+        Debug.Log("adicionou peixe: " + _fish.typeOfFish.name + "de preço: " + _fish.price);
+        ownedFish.Add(_fish);       
+        MergeSort(ownedFish.ToArray());        
         AttFishWeight();
+
     }
 
     public bool TryPayFishWeight(int _weightFishPayment)
@@ -71,9 +81,9 @@ public class ShipInventory : MonoBehaviour
         if (fishIndex != -1)
         {
             Debug.Log("conseguiu pagar o peixe");
-            AttFishWeight();
             SellHalfPriceFish(fishIndex);
             SellRemainingFish(); 
+            AttFishWeight();
             return true;
         }
 
@@ -82,7 +92,7 @@ public class ShipInventory : MonoBehaviour
 
     private void SellRemainingFish()
     {
-        Debug.Log("tentando receber peixe");
+        
         float money = 0;
         foreach (FishData _fish in ownedFish)
         {
@@ -90,7 +100,7 @@ public class ShipInventory : MonoBehaviour
         }
 
         ownedFish.Clear();
-        Debug.Log($"dinheiro a receber: {money}");
+        
         playerMoneyManager.ReciveMoney(money);
     }
 
@@ -118,10 +128,7 @@ public class ShipInventory : MonoBehaviour
         foreach (FishData _fish in ownedFish)
         {
             currentFishWeight += _fish.weight;
-        }
-
-        if (debugShipInventory != null)
-            debugShipInventory.AttFishDebugText();
+        }        
 
         bool isFullNow = IsFull;
 
@@ -132,6 +139,7 @@ public class ShipInventory : MonoBehaviour
         }
 
         wasFullLastUpdate = isFullNow;
+        OnFishListChange?.Invoke(ownedFish,currentFishWeight);
     }
 
     public float GetCurrentWeight()
@@ -177,4 +185,79 @@ public class ShipInventory : MonoBehaviour
 
         return false;
     }
+
+    private void MergeSort(FishData[] _fishArray)
+    {
+        if (_fishArray.Length <= 1) return;        
+
+        int mid = _fishArray.Length / 2;
+        FishData[] leftArray = new FishData[mid];
+        FishData[] rightArray = new FishData[_fishArray.Length - mid];
+
+        int j = 0;
+        int i = 0;
+
+        for (;i < _fishArray.Length; i++)
+        {
+            if (i < mid)
+            {
+                leftArray[i] = _fishArray[i];
+            }else
+            {
+                rightArray[j] = _fishArray[i];
+                j++;
+            }
+
+        }
+
+        MergeSort(leftArray);
+        MergeSort(rightArray);
+        Merge(leftArray, rightArray, _fishArray);
+
+        ownedFish = _fishArray.ToList();
+    }
+
+    private void Merge(FishData[] _leftArray, FishData[] _rightArray, FishData[] _result)
+    {
+        int leftLenght = _result.Length / 2;
+        int rightLenght = _result.Length - leftLenght;
+        int l = 0; int i = 0; int r = 0;
+
+        while (l < leftLenght && r < rightLenght)
+        {
+
+            if(_leftArray[l].price < _rightArray[r].price)
+            {
+                _result[i] = _leftArray[l];
+                i++;
+                l++;
+
+            }
+            else
+            {
+                _result[i] = _rightArray[r];
+                i++; 
+                r++;
+
+            }
+        }
+
+        while (l < leftLenght)
+        {
+            _result[i] = _leftArray[l];
+            i++;
+            l++;
+
+        }
+
+        while (r < rightLenght)
+        {
+            _result[i] = _rightArray[r];
+            i++;
+            r++;
+
+        }
+    }
+
+    
 }

@@ -20,11 +20,16 @@ public class MoneyLender : MonoBehaviour
     [SerializeField] private float fireworkVFXLifetime = 3f;
 
     private int currentFishWeightPayment;
+    public int CurrentFishWeightPayment => currentFishWeightPayment;
+
     private int timesPaid = 0;
     private bool tutorialFinishFireworksStarted = false;
 
-    private void Awake()
-    {
+    public delegate void OnNewFishWeightPaymentDelegate(int fishWeightPayment);
+    public event OnNewFishWeightPaymentDelegate OnNewFishWeightPayment;
+
+    private void Start()
+    {                
         CalculateNewPayment();
     }
 
@@ -68,6 +73,7 @@ public class MoneyLender : MonoBehaviour
     private void CalculateNewPayment()
     {
         currentFishWeightPayment = initialFishWeightPaid + fishWeightPaidIncremetion * timesPaid;
+        OnNewFishWeightPayment?.Invoke(currentFishWeightPayment);        
     }
 
     public bool TryGetSpecificFishPayment()
@@ -160,4 +166,11 @@ public class MoneyLender : MonoBehaviour
     {
         return qttSpecificFish;
     }
+
+    public void TryPayButton()
+    {
+
+       TryGetFishWeightPayment();
+
+    }    
 }
