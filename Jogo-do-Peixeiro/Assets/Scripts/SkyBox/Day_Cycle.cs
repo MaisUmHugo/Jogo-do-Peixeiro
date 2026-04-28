@@ -23,14 +23,31 @@ public class DayCycle : MonoBehaviour
     [SerializeField] private float atmosphereThickness = 1.0f;
     [SerializeField] private float exposure = 1.3f;
 
+    [Header("Dias")]
+    [SerializeField] private int currentDay = 1;
+    [SerializeField] private int totalDays = 3;
+    [SerializeField] private TextMeshProUGUI DayText;
+
     void Update()
     {
         currentTime += Time.deltaTime / dayDuration;
-        if (currentTime > 1f) currentTime = 0f;
+        if (currentTime > 1f)
+        {
+            currentTime = 0f;
+            NextDay();
+        }
 
         UpdateSun();
         UpdateSkybox();
         UpdateTime();
+    }
+    void UpdateDayUI()
+    {
+        DayText.text = $"Dia {currentDay}/{totalDays}";
+    }
+    void Start()
+    {
+        UpdateDayUI();
     }
 
     void UpdateSun()
@@ -77,11 +94,16 @@ public class DayCycle : MonoBehaviour
     }
     public void NextDay()
     {
-        currentTime = 6f / 24;
+        currentDay++;
+
+        if (currentDay > totalDays)
+            currentDay = 1;
+        currentTime = 6f / 24f;
         Clock = 6f;
 
         UpdateSun();
         UpdateSkybox();
         UpdateTime();
+        UpdateDayUI();
     }
 }

@@ -26,8 +26,6 @@ public class House : MonoBehaviour, IInteractable
     {
         return 0;
     }
-
-    // 💤 Botões da UI
     public void ConfirmSleep()
     {
         sleepUI.SetActive(false);
