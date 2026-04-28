@@ -27,7 +27,6 @@ public class DayCycle : MonoBehaviour
     {
         currentTime += Time.deltaTime / dayDuration;
         if (currentTime > 1f) currentTime = 0f;
-        if (Clock > 24f) Clock = 0f;
 
         UpdateSun();
         UpdateSkybox();
@@ -64,7 +63,25 @@ public class DayCycle : MonoBehaviour
     }
     void UpdateTime()
     {
-        Clock = currentTime * 24;
-        HourText.text = MathF.Round(Clock).ToString();
+        Clock = currentTime * 24f;
+
+        int hours24 = Mathf.FloorToInt(Clock);
+        int minutes = Mathf.FloorToInt((Clock % 1f) * 60f);
+
+        string period = hours24 >= 12 ? "PM" : "AM";
+
+        int hours12 = hours24 % 12;
+        if (hours12 == 0) hours12 = 12;
+
+        HourText.text = $"{hours12:00}:{minutes:00} {period}";
+    }
+    public void NextDay()
+    {
+        currentTime = 6f / 24;
+        Clock = 6f;
+
+        UpdateSun();
+        UpdateSkybox();
+        UpdateTime();
     }
 }
