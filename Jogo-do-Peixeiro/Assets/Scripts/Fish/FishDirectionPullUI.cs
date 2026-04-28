@@ -4,12 +4,9 @@ using UnityEngine.UI;
 
 public class FishDirectionPullUI : MonoBehaviour
 {
-    private const int MaxPromptIcons = 2;
-
     [Header("References")]
     [FormerlySerializedAs("directionPull")]
     [SerializeField] private FishDirectionPull _directionPull;
-    [SerializeField] private FishSkillCheck _fishSkillCheck;
     [FormerlySerializedAs("iconDatabase")]
     [SerializeField] private InputIconDatabase _iconDatabase;
     [FormerlySerializedAs("directionIcon")]
@@ -18,44 +15,41 @@ public class FishDirectionPullUI : MonoBehaviour
     [SerializeField] private Vector2 _iconSize = new Vector2(72f, 72f);
 
     [Header("Position")]
-    [SerializeField] private float _horizontalPullOffset = 180f;
-    [SerializeField] private float _verticalPullOffset = 120f;
-    [SerializeField] private bool _randomizePositionOnDirectionChange = true;
-    [SerializeField] private bool _placeComboIconsByDirection = true;
+    [SerializeField] private float _horizontalPullOffset = 260f;
+    [FormerlySerializedAs("_verticalPullOffset")]
+    [SerializeField] private float _upPullOffset = 180f;
+    [SerializeField] private float _downPullOffset = 180f;
+    [SerializeField] private bool _randomizePositionOnDirectionChange;
     [SerializeField] private float _sideVerticalOffset = 110f;
+    [SerializeField, Range(0f, 1f)] private float _sideButtonHeightMultiplier = 0.55f;
     [SerializeField] private float _sideHorizontalJitter = 45f;
     [SerializeField] private float _topHorizontalRange = 260f;
-    [SerializeField] private float _comboIconSpacing = 132f;
     [SerializeField] private float _positionFollowSpeed = 18f;
+
+    [Header("Canvas Relative Position")]
+    [SerializeField] private bool _useCanvasRelativeOffsets;
+    [SerializeField, Range(0f, 0.5f)] private float _horizontalCanvasOffset = 0.32f;
+    [SerializeField, Range(0f, 0.5f)] private float _sideVerticalCanvasOffset = 0.12f;
+    [SerializeField, Range(0f, 0.5f)] private float _upCanvasOffset = 0.28f;
+    [SerializeField, Range(0f, 0.5f)] private float _downCanvasOffset = 0.28f;
+    [SerializeField] private bool _clampInsideParent = true;
+    [SerializeField] private Vector2 _parentPadding = new Vector2(72f, 72f);
 
     [Header("Pulse")]
     [SerializeField] private float _pulseSpeed = 6f;
     [SerializeField] private float _activeIconBaseScale = 1f;
     [SerializeField] private float _activeIconMinimumScale = 0.45f;
-    [SerializeField] private float _completedIconScale = 0.92f;
-    [SerializeField] private float _pendingIconScale = 0.76f;
     [SerializeField] private float _idlePulseScale = 0.1f;
     [SerializeField] private float _activePulseScale = 0.22f;
-    [SerializeField, Range(0f, 1f)] private float _pendingAlpha = 0.45f;
-    [SerializeField, Range(0f, 1f)] private float _completedAlpha = 0.85f;
     [SerializeField, Range(0f, 1f)] private float _idleAlpha = 0.72f;
     [SerializeField, Range(0f, 1f)] private float _activeAlpha = 1f;
 
-    [Header("Completion Fill")]
-    [SerializeField] private bool _useIconCompletionFill = true;
-    [SerializeField] private bool _fillIconFromBottom = true;
-    [SerializeField] private Image _completionFillIcon;
-    [SerializeField] private Color _iconIncompleteColor = new Color(0.25f, 0.25f, 0.25f, 0.75f);
-    [SerializeField] private Color _iconCompleteColor = Color.white;
-    [SerializeField] private Color _completionFillColor = new Color(0.15f, 1f, 0.45f, 1f);
+    [Header("Input Color")]
+    [SerializeField] private Color _idleIconColor = Color.white;
+    [SerializeField] private Color _pressedIconColor = new Color(0.25f, 1f, 0.35f, 1f);
 
     private RectTransform _directionIconRect;
-    private Image[] _directionIcons;
-    private Image[] _completionFillIcons;
-    private RectTransform[] _directionIconRects;
-    private FishDirectionPull.FishForceDirection _lastRequiredPullDirection;
     private Vector2 _currentIconTargetPosition;
-    private Vector2[] _currentIconTargetPositions;
     private int _lastPromptId = -1;
     private bool _hasIconTargetPosition;
 
@@ -64,28 +58,29 @@ public class FishDirectionPullUI : MonoBehaviour
         _iconSize.x = Mathf.Max(1f, _iconSize.x);
         _iconSize.y = Mathf.Max(1f, _iconSize.y);
         _horizontalPullOffset = Mathf.Max(0f, _horizontalPullOffset);
-        _verticalPullOffset = Mathf.Max(0f, _verticalPullOffset);
+        _upPullOffset = Mathf.Max(0f, _upPullOffset);
+        _downPullOffset = Mathf.Max(0f, _downPullOffset);
         _sideVerticalOffset = Mathf.Max(0f, _sideVerticalOffset);
+        _sideButtonHeightMultiplier = Mathf.Clamp01(_sideButtonHeightMultiplier);
         _sideHorizontalJitter = Mathf.Max(0f, _sideHorizontalJitter);
         _topHorizontalRange = Mathf.Max(0f, _topHorizontalRange);
-        _comboIconSpacing = Mathf.Max(0f, _comboIconSpacing);
         _positionFollowSpeed = Mathf.Max(0f, _positionFollowSpeed);
+        _parentPadding.x = Mathf.Max(0f, _parentPadding.x);
+        _parentPadding.y = Mathf.Max(0f, _parentPadding.y);
         _pulseSpeed = Mathf.Max(0f, _pulseSpeed);
         _activeIconBaseScale = Mathf.Max(0.01f, _activeIconBaseScale);
         _activeIconMinimumScale = Mathf.Clamp(_activeIconMinimumScale, 0.01f, _activeIconBaseScale);
-        _completedIconScale = Mathf.Max(0.01f, _completedIconScale);
-        _pendingIconScale = Mathf.Max(0.01f, _pendingIconScale);
         _idlePulseScale = Mathf.Max(0f, _idlePulseScale);
         _activePulseScale = Mathf.Max(_idlePulseScale, _activePulseScale);
+
+        if (Application.isPlaying && isActiveAndEnabled)
+            RefreshRuntimePosition();
     }
 
     private void Awake()
     {
         if (_directionPull == null)
             _directionPull = FindFirstObjectByType<FishDirectionPull>();
-
-        if (_fishSkillCheck == null)
-            _fishSkillCheck = FindFirstObjectByType<FishSkillCheck>(FindObjectsInactive.Include);
 
         if (_directionIcon == null)
             _directionIcon = GetComponent<Image>();
@@ -94,7 +89,6 @@ public class FishDirectionPullUI : MonoBehaviour
             _directionIcon = CreateDirectionIcon();
 
         _directionIconRect = _directionIcon.rectTransform;
-        EnsurePromptIcons();
         SetVisible(false);
     }
 
@@ -171,11 +165,10 @@ public class FishDirectionPullUI : MonoBehaviour
             return;
         }
 
-        SetVisible(true);
-
         if (!UpdateIcon())
             return;
 
+        SetVisible(true);
         UpdateIconFeedback();
     }
 
@@ -184,34 +177,16 @@ public class FishDirectionPullUI : MonoBehaviour
         if (_directionIcon == null || _iconDatabase == null)
             return false;
 
-        int iconCount = Mathf.Clamp(_directionPull.RequiredPullDirectionCount, 1, MaxPromptIcons);
+        InputIconAction action = GetDirectionAction(_directionPull.RequiredPullDirection);
+        Sprite icon = _iconDatabase.GetIcon(InputDeviceDetector.CurrentDeviceType, action);
 
-        for (int i = 0; i < MaxPromptIcons; i++)
+        if (icon == null)
         {
-            bool shouldShowIcon = i < iconCount;
-
-            if (_directionIcons[i] != null)
-                _directionIcons[i].gameObject.SetActive(shouldShowIcon);
-
-            if (_completionFillIcons[i] != null)
-                _completionFillIcons[i].gameObject.SetActive(shouldShowIcon && _useIconCompletionFill);
-
-            if (!shouldShowIcon)
-                continue;
-
-            InputIconAction action = GetDirectionAction(_directionPull.GetRequiredPullDirection(i));
-            Sprite icon = _iconDatabase.GetIcon(InputDeviceDetector.CurrentDeviceType, action);
-
-            if (icon == null)
-            {
-                SetVisible(false);
-                return false;
-            }
-
-            _directionIcons[i].sprite = icon;
-            UpdateCompletionFillSprite(i, icon);
+            SetVisible(false);
+            return false;
         }
 
+        _directionIcon.sprite = icon;
         return true;
     }
 
@@ -223,98 +198,26 @@ public class FishDirectionPullUI : MonoBehaviour
         UpdateIconTargetPosition();
 
         float followT = 1f - Mathf.Exp(-_positionFollowSpeed * Time.unscaledDeltaTime);
-
         float pulseT = (Mathf.Sin(Time.unscaledTime * _pulseSpeed) * 0.5f) + 0.5f;
-        int iconCount = Mathf.Clamp(_directionPull.RequiredPullDirectionCount, 1, MaxPromptIcons);
+        float inputAmount = _directionPull.PullInputNormalized;
 
-        for (int i = 0; i < iconCount; i++)
-        {
-            if (_directionIconRects[i] == null || _directionIcons[i] == null)
-                continue;
-
-            Vector2 iconOffset = _placeComboIconsByDirection ? Vector2.zero : GetPromptIconOffset(i, iconCount);
-            Vector2 targetPosition = _currentIconTargetPositions != null && i < _currentIconTargetPositions.Length
-                ? _currentIconTargetPositions[i]
-                : _currentIconTargetPosition;
-
-            _directionIconRects[i].anchoredPosition = Vector2.Lerp(
-                _directionIconRects[i].anchoredPosition,
-                targetPosition + iconOffset,
-                followT
-            );
-
-            bool isActive = _directionPull.IsRequiredPullDirectionActive(i);
-            bool isCompleted = _directionPull.IsRequiredPullDirectionCompleted(i);
-            float iconProgress = _directionPull.GetRequiredPullDirectionProgress(i);
-            float scale = GetIconScale(isActive, isCompleted, pulseT);
-            Color color = GetIconColor(isActive, isCompleted, iconProgress);
-
-            _directionIconRects[i].localScale = Vector3.one * scale;
-            _directionIcons[i].color = color;
-        }
-
-        UpdateCompletionFill();
-    }
-
-    private float GetIconScale(bool _isActive, bool _isCompleted, float _pulseT)
-    {
-        if (_isCompleted)
-            return _completedIconScale;
-
-        if (!_isActive)
-            return _pendingIconScale;
+        _directionIconRect.anchoredPosition = Vector2.Lerp(
+            _directionIconRect.anchoredPosition,
+            _currentIconTargetPosition,
+            followT
+        );
 
         float timerScale = Mathf.Lerp(
             _activeIconMinimumScale,
             _activeIconBaseScale,
             _directionPull.ActiveDirectionTimeNormalized
         );
-        float pulseAmount = Mathf.Lerp(_idlePulseScale, _activePulseScale, _directionPull.PullInputNormalized);
-        return timerScale + (_pulseT * pulseAmount);
-    }
+        float pulseAmount = Mathf.Lerp(_idlePulseScale, _activePulseScale, inputAmount);
+        _directionIconRect.localScale = Vector3.one * (timerScale + (pulseT * pulseAmount));
 
-    private Color GetIconColor(bool _isActive, bool _isCompleted, float _progress)
-    {
-        if (!_useIconCompletionFill)
-            return Color.white;
-
-        Color color = Color.Lerp(_iconIncompleteColor, _iconCompleteColor, _progress);
-
-        if (_isCompleted)
-        {
-            color.a *= _completedAlpha;
-            return color;
-        }
-
-        if (!_isActive)
-        {
-            color.a *= _pendingAlpha;
-            return color;
-        }
-
-        color.a *= Mathf.Lerp(_idleAlpha, _activeAlpha, _directionPull.PullInputNormalized);
-        return color;
-    }
-
-    private void UpdateCompletionFill()
-    {
-        if (!_useIconCompletionFill || _directionPull == null || _completionFillIcons == null)
-            return;
-
-        int iconCount = Mathf.Clamp(_directionPull.RequiredPullDirectionCount, 1, MaxPromptIcons);
-
-        for (int i = 0; i < iconCount; i++)
-        {
-            if (_completionFillIcons[i] == null)
-                continue;
-
-            _completionFillIcons[i].gameObject.SetActive(true);
-            _completionFillIcons[i].color = _completionFillColor;
-            _completionFillIcons[i].type = Image.Type.Filled;
-            _completionFillIcons[i].fillMethod = Image.FillMethod.Vertical;
-            _completionFillIcons[i].fillOrigin = _fillIconFromBottom ? (int)Image.OriginVertical.Bottom : (int)Image.OriginVertical.Top;
-            _completionFillIcons[i].fillAmount = _directionPull.GetRequiredPullDirectionProgress(i);
-        }
+        Color color = Color.Lerp(_idleIconColor, _pressedIconColor, inputAmount);
+        color.a = Mathf.Lerp(_idleAlpha, _activeAlpha, inputAmount);
+        _directionIcon.color = color;
     }
 
     private bool CanShowDirectionPull()
@@ -322,8 +225,6 @@ public class FishDirectionPullUI : MonoBehaviour
         return _directionPull != null &&
                _directionPull.UseDirectionalPull &&
                _directionPull.IsPullActive &&
-               !_directionPull.IsCompletionComplete &&
-               !IsSkillCheckActive() &&
                _iconDatabase != null &&
                _directionIcon != null;
     }
@@ -349,6 +250,18 @@ public class FishDirectionPullUI : MonoBehaviour
         }
     }
 
+    private void UpdateIconTargetPosition()
+    {
+        int promptId = _directionPull.CurrentPromptId;
+
+        if (_hasIconTargetPosition && promptId == _lastPromptId)
+            return;
+
+        _lastPromptId = promptId;
+        _currentIconTargetPosition = ClampToParent(GetIconPosition(_directionPull.RequiredPullDirection));
+        _hasIconTargetPosition = true;
+    }
+
     private Vector2 GetIconPosition(FishDirectionPull.FishForceDirection _direction)
     {
         switch (_direction)
@@ -363,77 +276,20 @@ public class FishDirectionPullUI : MonoBehaviour
                 return GetTopPullPosition();
 
             case FishDirectionPull.FishForceDirection.Down:
-                return GetTopPullPosition();
+                return GetBottomPullPosition();
 
             default:
                 return _iconAnchoredPosition;
         }
     }
 
-    private void UpdateIconTargetPosition()
-    {
-        int promptId = _directionPull.CurrentPromptId;
-
-        if (_hasIconTargetPosition && promptId == _lastPromptId)
-            return;
-
-        _lastPromptId = promptId;
-        _lastRequiredPullDirection = _directionPull.RequiredPullDirection;
-        _currentIconTargetPosition = GetPromptPosition();
-
-        int iconCount = Mathf.Clamp(_directionPull.RequiredPullDirectionCount, 1, MaxPromptIcons);
-
-        for (int i = 0; i < iconCount; i++)
-            _currentIconTargetPositions[i] = GetPromptPosition(i, iconCount);
-
-        _hasIconTargetPosition = true;
-    }
-
-    private Vector2 GetPromptPosition(int _index, int _iconCount)
-    {
-        if (!_placeComboIconsByDirection || _iconCount <= 1)
-            return _currentIconTargetPosition;
-
-        return GetIconPosition(_directionPull.GetRequiredPullDirection(_index));
-    }
-
-    private Vector2 GetPromptPosition()
-    {
-        Vector2 requiredVector = _directionPull.RequiredPullVector;
-
-        if (Mathf.Abs(requiredVector.x) > 0.1f && Mathf.Abs(requiredVector.y) > 0.1f)
-        {
-            float sideJitter = _randomizePositionOnDirectionChange ? Random.Range(-_sideHorizontalJitter, _sideHorizontalJitter) : 0f;
-
-            return new Vector2(
-                _iconAnchoredPosition.x + (_horizontalPullOffset * Mathf.Sign(requiredVector.x)) + sideJitter,
-                _iconAnchoredPosition.y + _verticalPullOffset
-            );
-        }
-
-        if (Mathf.Abs(requiredVector.x) > 0.1f)
-            return GetSidePullPosition(Mathf.Sign(requiredVector.x));
-
-        return GetTopPullPosition();
-    }
-
-    private Vector2 GetPromptIconOffset(int _index, int _iconCount)
-    {
-        if (_iconCount <= 1)
-            return Vector2.zero;
-
-        float spacing = Mathf.Max(110f, _comboIconSpacing);
-        float startOffset = -spacing * (_iconCount - 1) * 0.5f;
-        return new Vector2(startOffset + (spacing * _index), 0f);
-    }
-
     private Vector2 GetSidePullPosition(float _side)
     {
         float sideJitter = _randomizePositionOnDirectionChange ? Random.Range(-_sideHorizontalJitter, _sideHorizontalJitter) : 0f;
-        float verticalOffset = _randomizePositionOnDirectionChange ? Random.Range(0f, _sideVerticalOffset) : _sideVerticalOffset;
+        float verticalOffset = _randomizePositionOnDirectionChange ? Random.Range(0f, GetSideVerticalOffset()) : GetSideVerticalOffset();
 
         return new Vector2(
-            _iconAnchoredPosition.x + (_horizontalPullOffset * _side) + sideJitter,
+            _iconAnchoredPosition.x + (GetHorizontalOffset() * _side) + sideJitter,
             _iconAnchoredPosition.y + verticalOffset
         );
     }
@@ -444,37 +300,98 @@ public class FishDirectionPullUI : MonoBehaviour
 
         return new Vector2(
             _iconAnchoredPosition.x + horizontalOffset,
-            _iconAnchoredPosition.y + _verticalPullOffset
+            _iconAnchoredPosition.y + GetUpOffset()
         );
     }
 
-    private bool IsSkillCheckActive()
+    private Vector2 GetBottomPullPosition()
     {
-        return _fishSkillCheck != null && _fishSkillCheck.IsSkillCheckActive;
+        float horizontalOffset = _randomizePositionOnDirectionChange ? Random.Range(-_topHorizontalRange, _topHorizontalRange) : 0f;
+
+        return new Vector2(
+            _iconAnchoredPosition.x + horizontalOffset,
+            _iconAnchoredPosition.y - GetDownOffset()
+        );
+    }
+
+    private float GetHorizontalOffset()
+    {
+        if (!_useCanvasRelativeOffsets)
+            return _horizontalPullOffset;
+
+        RectTransform parentRect = GetParentRect();
+        return parentRect != null ? parentRect.rect.width * _horizontalCanvasOffset : _horizontalPullOffset;
+    }
+
+    private float GetSideVerticalOffset()
+    {
+        if (!_useCanvasRelativeOffsets)
+            return _sideVerticalOffset * _sideButtonHeightMultiplier;
+
+        RectTransform parentRect = GetParentRect();
+        return parentRect != null
+            ? parentRect.rect.height * _sideVerticalCanvasOffset * _sideButtonHeightMultiplier
+            : _sideVerticalOffset * _sideButtonHeightMultiplier;
+    }
+
+    private float GetUpOffset()
+    {
+        if (!_useCanvasRelativeOffsets)
+            return _upPullOffset;
+
+        RectTransform parentRect = GetParentRect();
+        return parentRect != null ? parentRect.rect.height * _upCanvasOffset : _upPullOffset;
+    }
+
+    private float GetDownOffset()
+    {
+        if (!_useCanvasRelativeOffsets)
+            return _downPullOffset;
+
+        RectTransform parentRect = GetParentRect();
+        return parentRect != null ? parentRect.rect.height * _downCanvasOffset : _downPullOffset;
+    }
+
+    private Vector2 ClampToParent(Vector2 _position)
+    {
+        if (!_clampInsideParent)
+            return _position;
+
+        RectTransform parentRect = GetParentRect();
+
+        if (parentRect == null)
+            return _position;
+
+        Rect rect = parentRect.rect;
+        float minX = rect.xMin + _parentPadding.x;
+        float maxX = rect.xMax - _parentPadding.x;
+        float minY = rect.yMin + _parentPadding.y;
+        float maxY = rect.yMax - _parentPadding.y;
+
+        if (minX > maxX)
+            minX = maxX = 0f;
+
+        if (minY > maxY)
+            minY = maxY = 0f;
+
+        return new Vector2(
+            Mathf.Clamp(_position.x, minX, maxX),
+            Mathf.Clamp(_position.y, minY, maxY)
+        );
+    }
+
+    private RectTransform GetParentRect()
+    {
+        if (_directionIconRect != null && _directionIconRect.parent is RectTransform iconParentRect)
+            return iconParentRect;
+
+        return transform as RectTransform;
     }
 
     private void SetVisible(bool _visible)
     {
         if (_directionIcon != null)
             _directionIcon.gameObject.SetActive(_visible);
-
-        if (_directionIcons != null)
-        {
-            for (int i = 0; i < _directionIcons.Length; i++)
-            {
-                if (_directionIcons[i] != null)
-                    _directionIcons[i].gameObject.SetActive(_visible && i == 0);
-            }
-        }
-
-        if (_completionFillIcons != null)
-        {
-            for (int i = 0; i < _completionFillIcons.Length; i++)
-            {
-                if (_completionFillIcons[i] != null)
-                    _completionFillIcons[i].gameObject.SetActive(_visible && _useIconCompletionFill && i == 0);
-            }
-        }
 
         if (!_visible && _directionIconRect != null)
             _directionIconRect.localScale = Vector3.one;
@@ -484,6 +401,26 @@ public class FishDirectionPullUI : MonoBehaviour
             _hasIconTargetPosition = false;
             _lastPromptId = -1;
         }
+    }
+
+    private void RefreshRuntimePosition()
+    {
+        _hasIconTargetPosition = false;
+        _lastPromptId = -1;
+        RefreshDisplay();
+    }
+
+    [ContextMenu("Log Current Direction Pull UI Settings")]
+    private void LogCurrentSettings()
+    {
+        Debug.Log(
+            $"DirectionPullUI settings - Icon Anchored Position: {_iconAnchoredPosition}, " +
+            $"Horizontal Pull Offset: {_horizontalPullOffset}, Up Pull Offset: {_upPullOffset}, " +
+            $"Down Pull Offset: {_downPullOffset}, Side Vertical Offset: {_sideVerticalOffset}, " +
+            $"Side Button Height Multiplier: {_sideButtonHeightMultiplier}, " +
+            $"Use Canvas Relative Offsets: {_useCanvasRelativeOffsets}, Horizontal Canvas Offset: {_horizontalCanvasOffset}, " +
+            $"Up Canvas Offset: {_upCanvasOffset}, Down Canvas Offset: {_downCanvasOffset}"
+        );
     }
 
     private Image CreateDirectionIcon()
@@ -503,76 +440,6 @@ public class FishDirectionPullUI : MonoBehaviour
         iconImage.preserveAspect = true;
         iconImage.enabled = true;
 
-        return iconImage;
-    }
-
-    private void EnsurePromptIcons()
-    {
-        _directionIcons = new Image[MaxPromptIcons];
-        _completionFillIcons = new Image[MaxPromptIcons];
-        _directionIconRects = new RectTransform[MaxPromptIcons];
-        _currentIconTargetPositions = new Vector2[MaxPromptIcons];
-
-        _directionIcons[0] = _directionIcon;
-        _directionIconRects[0] = _directionIcon.rectTransform;
-        _completionFillIcons[0] = EnsureCompletionFillIcon(_directionIcon, _completionFillIcon, "DirectionPullCompletionFill");
-
-        for (int i = 1; i < MaxPromptIcons; i++)
-        {
-            _directionIcons[i] = CreateDirectionIcon($"DirectionPullIcon{i + 1}");
-            _directionIconRects[i] = _directionIcons[i].rectTransform;
-            _completionFillIcons[i] = EnsureCompletionFillIcon(_directionIcons[i], null, $"DirectionPullCompletionFill{i + 1}");
-        }
-    }
-
-    private Image EnsureCompletionFillIcon(Image _targetIcon, Image _existingFillIcon, string _objectName)
-    {
-        if (_targetIcon == null || !_useIconCompletionFill)
-            return null;
-
-        Image fillIcon = _existingFillIcon != null ? _existingFillIcon : CreateCompletionFillIcon(_targetIcon, _objectName);
-
-        fillIcon.raycastTarget = false;
-        fillIcon.preserveAspect = true;
-        fillIcon.type = Image.Type.Filled;
-        fillIcon.fillMethod = Image.FillMethod.Vertical;
-        fillIcon.fillOrigin = _fillIconFromBottom ? (int)Image.OriginVertical.Bottom : (int)Image.OriginVertical.Top;
-
-        return fillIcon;
-    }
-
-    private void UpdateCompletionFillSprite(int _index, Sprite _sprite)
-    {
-        if (_completionFillIcons == null || _index < 0 || _index >= _completionFillIcons.Length || _completionFillIcons[_index] == null)
-            return;
-
-        _completionFillIcons[_index].sprite = _sprite;
-    }
-
-    private Image CreateCompletionFillIcon(Image _targetIcon, string _objectName)
-    {
-        GameObject fillObject = new GameObject(_objectName, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
-        fillObject.transform.SetParent(_targetIcon.transform, false);
-        fillObject.transform.SetAsLastSibling();
-
-        RectTransform rectTransform = fillObject.GetComponent<RectTransform>();
-        rectTransform.anchorMin = Vector2.zero;
-        rectTransform.anchorMax = Vector2.one;
-        rectTransform.pivot = new Vector2(0.5f, 0.5f);
-        rectTransform.anchoredPosition = Vector2.zero;
-        rectTransform.sizeDelta = Vector2.zero;
-
-        Image fillImage = fillObject.GetComponent<Image>();
-        fillImage.color = _completionFillColor;
-        fillImage.fillAmount = 0f;
-
-        return fillImage;
-    }
-
-    private Image CreateDirectionIcon(string _objectName)
-    {
-        Image iconImage = CreateDirectionIcon();
-        iconImage.gameObject.name = _objectName;
         return iconImage;
     }
 }
