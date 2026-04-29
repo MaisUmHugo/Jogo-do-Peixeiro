@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 
 public class FishResultPanelUI : MonoBehaviour
@@ -15,6 +16,9 @@ public class FishResultPanelUI : MonoBehaviour
     [SerializeField] private MeshFilter mesh;
     [SerializeField] private Renderer objectRenderer;
     [SerializeField] private GameObject[] fishStarsRateObjects;
+    [SerializeField] private float fishRotationSpeed;
+    private float fishAngle;
+
 
     private int fishRarity;
     private Mesh fishMesh;
@@ -47,14 +51,24 @@ public class FishResultPanelUI : MonoBehaviour
 
     private void RotateStarImage()
     {
-        if (starImage != null)
-        {
+        if (starImage == null) return;
 
-            starAngle += rotationSpeed * Time.fixedDeltaTime;
-            starAngle %= 360f;
-            starImage.localRotation = Quaternion.Euler(0, 0, starAngle);
+        starAngle += rotationSpeed * Time.fixedDeltaTime;
+        starAngle %= 360f;
+        starImage.localRotation = Quaternion.Euler(0, 0, starAngle);
 
-        }
+    }
+
+    private void RotateFish()
+    {
+
+        if (fishMesh == null) return;
+
+        fishAngle += rotationSpeed * Time.fixedDeltaTime;
+        fishAngle %= 360f;
+        
+        objectRenderer.transform.rotation = Quaternion.Euler(90, fishAngle, 90);        
+
     }
 
     private void ShowRarityStars(int _fishRarity)
@@ -71,7 +85,7 @@ public class FishResultPanelUI : MonoBehaviour
     private void FixedUpdate()
     {
 
-        RotateStarImage();
-
+        RotateStarImage();       
+        RotateFish();
     }
 }
