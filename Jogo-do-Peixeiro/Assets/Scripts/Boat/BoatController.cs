@@ -26,10 +26,10 @@ public class BoatController : MonoBehaviour
 
         if (isMainMenu)
         {
-            // forÁa o barco a sempre flutuar no menu
+            // for√ßa o barco a sempre flutuar no menu
             SetBoatPhysics(true);
 
-            // garante que o rigidbody N√O seja kinematic
+            // garante que o rigidbody N√ÉO seja kinematic
             if (rb != null)
                 rb.isKinematic = false;
         }
@@ -45,7 +45,7 @@ private void SetBoatPhysics(bool active)
     {
         if (rb != null)
         {
-            // Trava o Rigidbody (isKinematic = true) quando o player N√O est· no barco
+            // Trava o Rigidbody (isKinematic = true) quando o player N√ÉO est√° no barco
             rb.isKinematic = !active;
 
             if (!active)
@@ -55,7 +55,7 @@ private void SetBoatPhysics(bool active)
             }
         }
 
-        // Avisa cada floater se ele deve calcular flutuaÁ„o ou n„o
+        // Avisa cada floater se ele deve calcular flutua√ß√£o ou n√£o
         if (floaters != null)
         {
             foreach (var f in floaters)
@@ -72,10 +72,10 @@ private void SetBoatPhysics(bool active)
         Debug.Log("Entrou no barco");
         isPlayerOnBoat = true;
 
-        // 1. Liga a fÌsica e flutuaÁ„o
+        // 1. Liga a f√≠sica e flutua√ß√£o
         SetBoatPhysics(true);
 
-        // 2. LÛgica de Jogo e Parentesco
+        // 2. L√≥gica de Jogo e Parentesco
         GameManager.instance.SetState(GameManager.GameState.OnBoat);
         originalParent = player.transform.parent;
 
@@ -91,6 +91,8 @@ private void SetBoatPhysics(bool active)
 
         if (boatCamera != null)
             boatCamera.SetActive(true);
+
+        TutorialEvents.NotifyBoatEntered();
     }
 
     public void ParkBoatAndExit(Transform _parkPoint, Transform _exitPoint)
@@ -100,7 +102,7 @@ private void SetBoatPhysics(bool active)
         Debug.Log("Barco estacionado e player saiu");
         isPlayerOnBoat = false;
 
-        // 1. Desliga a fÌsica (Barco congela)
+        // 1. Desliga a f√≠sica (Barco congela)
         SetBoatPhysics(false);
 
         // 2. Reposiciona o barco no ponto de estacionamento se houver um
@@ -110,7 +112,7 @@ private void SetBoatPhysics(bool active)
             transform.rotation = _parkPoint.rotation * Quaternion.Euler(OffsetRotacao);
         }
 
-        // 3. LÛgica do Player saindo
+        // 3. L√≥gica do Player saindo
         GameManager.instance.SetState(GameManager.GameState.OnFoot);
         player.transform.SetParent(originalParent);
 
