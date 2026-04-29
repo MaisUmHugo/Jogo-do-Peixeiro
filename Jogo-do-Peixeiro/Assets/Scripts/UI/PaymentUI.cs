@@ -6,6 +6,7 @@ public class PaymentUI : MonoBehaviour
 {
     [Header("Texts References")]
     [SerializeField] private TMP_Text paymentText;
+    [SerializeField] private TMP_Text fishesText;
 
     [Header("Ship References")]
     [SerializeField] private ShipInventory shipInventory;
@@ -45,6 +46,14 @@ public class PaymentUI : MonoBehaviour
         ownedFish.Clear();
         ownedFish.AddRange(_fishList);       
         fishWeight = _fishWeight;
+
+        if (fishesText == null) return;
+
+        fishesText.text = "";
+        foreach (FishData fish in ownedFish)
+        {
+            fishesText.text += $"{fish.typeOfFish.fishName}, peso: {fish.weight} \n \n";
+        }
     }
 
     private void SetPaymentTexts()

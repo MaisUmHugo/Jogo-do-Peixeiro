@@ -3,8 +3,7 @@ using TMPro;
 using UnityEngine;
 
 public class DebugShipInventory : MonoBehaviour
-{
-    private TMP_Text shipInventoryText;
+{    
     [SerializeField] private TMP_Text fishesText;
 
     private ShipInventory shipInventory;
@@ -24,16 +23,6 @@ public class DebugShipInventory : MonoBehaviour
 
         shipInventory = GetComponent<ShipInventory>();        
         
-    }
-
-    private void OnEnable()
-    {
-        shipInventory.OnFishListChange += AttFishDebugText;
-    }
-
-    private void OnDisable()
-    {
-        shipInventory.OnFishListChange -= AttFishDebugText;
     }
 
     private void Start()
@@ -71,18 +60,6 @@ public class DebugShipInventory : MonoBehaviour
 
 
         }     
-    }
-
-    public void AttFishDebugText(List<FishData> _ownedFish, float _fishWeight)
-    {
-        if (fishesText == null) return;        
-
-        fishesText.text = "";
-        foreach (FishData fish in _ownedFish)
-        {
-            fishesText.text += $"{fish.typeOfFish.fishName}, weight: {fish.weight} \n \n";
-        }
-
     }
 
 }
