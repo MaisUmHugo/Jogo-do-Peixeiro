@@ -8,16 +8,16 @@ public class MoneyLenderController : MonoBehaviour, IInteractable
 
     public void Interact()
     {
-        if (moneyLender == null || moneyLenderUI == null)
+        if (moneyLender == null)
+            return;
+
+        if (TutorialEvents.TryHandleMoneyLenderInteraction(moneyLender))
+            return;
+
+        if (moneyLenderUI == null)
             return;
 
         moneyLenderUI.Open(moneyLender);
-        if (TutorialHandler.Instance.isFinishedTalk == false)
-        {
-            TutorialHandler.Instance.isFinishedTalk = true;
-            TutorialHandler.Instance.GoNextObjective();
-
-        }
     }
 
     public int GetInteractionPriority()

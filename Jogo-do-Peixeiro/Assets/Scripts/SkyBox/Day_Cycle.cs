@@ -4,7 +4,9 @@ using UnityEngine;
 
 public class DayCycle : MonoBehaviour
 {
-    [Header("Referências")]
+    public event Action<int> DayChanged;
+
+    [Header("ReferÃªncias")]
     [SerializeField] private Material skyboxMaterial;
     [SerializeField] private Light sun;
     [SerializeField] private TextMeshProUGUI HourText;
@@ -27,6 +29,12 @@ public class DayCycle : MonoBehaviour
     [SerializeField] private int currentDay = 1;
     [SerializeField] private int totalDays = 3;
     [SerializeField] private TextMeshProUGUI DayText;
+    [SerializeField] private int elapsedDays = 1;
+
+    public int CurrentDay => currentDay;
+    public int TotalDays => totalDays;
+    public int ElapsedDays => elapsedDays;
+    public float NormalizedTime => currentTime;
 
     void Update()
     {
@@ -43,7 +51,8 @@ public class DayCycle : MonoBehaviour
     }
     void UpdateDayUI()
     {
-        DayText.text = $"Dia {currentDay}/{totalDays}";
+        if (DayText != null)
+            DayText.text = $"Dia {currentDay}/{totalDays}";
     }
     void Start()
     {
@@ -52,6 +61,9 @@ public class DayCycle : MonoBehaviour
 
     void UpdateSun()
     {
+        if (sun == null)
+            return;
+
         float sunAngle = currentTime * 360f - 90f;
         sun.transform.rotation = Quaternion.Euler(sunAngle, 170f, 0);
         sun.intensity = sunIntensity.Evaluate(currentTime);
@@ -61,21 +73,21 @@ public class DayCycle : MonoBehaviour
     {
         if (skyboxMaterial == null) return;
 
-        // Cor do céu
+        // Cor do cÃ©u
         Color sky = skyColor.Evaluate(currentTime);
         skyboxMaterial.SetColor("_SkyTint", sky);
 
-        // Cor do chão
+        // Cor do chÃ£o
         Color ground = groundColor.Evaluate(currentTime);
         skyboxMaterial.SetColor("_GroundColor", ground);
 
         // Atmosfera
         skyboxMaterial.SetFloat("_AtmosphereThickness", atmosphereThickness);
 
-        // Exposição
+        // ExposiÃ§Ã£o
         skyboxMaterial.SetFloat("_Exposure", exposure);
 
-        // Atualiza a iluminação global
+        // Atualiza a iluminaÃ§Ã£o global
         DynamicGI.UpdateEnvironment();
     }
     void UpdateTime()
@@ -90,11 +102,13 @@ public class DayCycle : MonoBehaviour
         int hours12 = hours24 % 12;
         if (hours12 == 0) hours12 = 12;
 
-        HourText.text = $"{hours12:00}:{minutes:00} {period}";
+        if (HourText != null)
+            HourText.text = $"{hours12:00}:{minutes:00} {period}";
     }
     public void NextDay()
     {
         currentDay++;
+        elapsedDays++;
 
         if (currentDay > totalDays)
             currentDay = 1;
@@ -105,5 +119,6 @@ public class DayCycle : MonoBehaviour
         UpdateSkybox();
         UpdateTime();
         UpdateDayUI();
+        DayChanged?.Invoke(elapsedDays);
     }
 }

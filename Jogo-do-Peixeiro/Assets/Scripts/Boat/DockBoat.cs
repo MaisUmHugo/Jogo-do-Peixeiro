@@ -14,6 +14,12 @@ public class Dock : MonoBehaviour, IInteractable
 
         if (GameManager.instance.currentState == GameManager.GameState.OnFoot)
         {
+            if (TutorialEvents.ShouldBlockBoatEntry())
+            {
+                TutorialEvents.NotifyBoatEntryBlocked();
+                return;
+            }
+
             boat.EnterBoat();
         }
         else if (GameManager.instance.currentState == GameManager.GameState.OnBoat)
@@ -30,7 +36,7 @@ public class Dock : MonoBehaviour, IInteractable
         }
     }
 
-    // Implementação da interface — sem downcast necessário em PlayerInteract
+    // ImplementaÃ§Ã£o da interface â€” sem downcast necessÃ¡rio em PlayerInteract
     public bool CanInteract()
     {
         if (GameManager.instance == null || boat == null)

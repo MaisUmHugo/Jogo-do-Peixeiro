@@ -22,11 +22,11 @@ public class ShipInventory : MonoBehaviour
         if (fish == null)
             return false;
 
-        // SÛ bloqueia se j· estiver cheio antes da adiÁ„o.
-        // Assim ainda permite passar do limite na ˙ltima captura.
+        // S√≥ bloqueia se j√° estiver cheio antes da adi√ß√£o.
+        // Assim ainda permite passar do limite na √∫ltima captura.
         if (IsFull)
         {
-            Debug.Log($"Invent·rio cheio. Peso atual: {currentFishWeight} / {maxFishCapacity}");
+            Debug.Log($"Invent√°rio cheio. Peso atual: {currentFishWeight} / {maxFishCapacity}");
             return false;
         }
 
@@ -34,8 +34,8 @@ public class ShipInventory : MonoBehaviour
         return true;
     }
 
-    // Pode continuar existindo para usos futuros, mas n„o ser· usado
-    // para bloquear a pescaria antes da ˙ltima captura.
+    // Pode continuar existindo para usos futuros, mas n√£o ser√° usado
+    // para bloquear a pescaria antes da √∫ltima captura.
     public bool CanAddFish(FishData _fish)
     {
         if (_fish == null)
@@ -128,7 +128,7 @@ public class ShipInventory : MonoBehaviour
         if (isFullNow && !wasFullLastUpdate)
         {
             if (HUDWarningUI.Instance != null)
-                HUDWarningUI.Instance.ShowWarning("Invent·rio cheio");
+                HUDWarningUI.Instance.ShowWarning("Invent√°rio cheio");
         }
 
         wasFullLastUpdate = isFullNow;
@@ -142,6 +142,22 @@ public class ShipInventory : MonoBehaviour
     public float GetMaxCapacity()
     {
         return maxFishCapacity;
+    }
+
+    public int CountFish(FishScriptableObject _wantedFish)
+    {
+        if (_wantedFish == null)
+            return 0;
+
+        int currentQtt = 0;
+
+        foreach (FishData fish in ownedFish)
+        {
+            if (fish.typeOfFish == _wantedFish)
+                currentQtt++;
+        }
+
+        return currentQtt;
     }
 
     private bool TryFindFish(FishScriptableObject _wantedFish, int _wantedQtt = 1)
