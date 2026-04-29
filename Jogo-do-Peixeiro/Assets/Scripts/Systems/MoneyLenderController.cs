@@ -11,7 +11,7 @@ public class MoneyLenderController : MonoBehaviour, IInteractable
         if (moneyLender == null)
             return;
 
-        if (TutorialEvents.TryHandleMoneyLenderInteraction(moneyLender))
+        if (TutorialEvents.TryHandleMoneyLenderInteraction(moneyLender, moneyLenderUI))
             return;
 
         if (moneyLenderUI == null)

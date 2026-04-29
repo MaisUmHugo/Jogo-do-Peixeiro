@@ -34,6 +34,8 @@ public class TutorialController : MonoBehaviour
     [SerializeField] private FishScriptableObject[] fallbackAvailableFish;
     [SerializeField, Min(1)] private int minRequestedQuantity = 1;
     [SerializeField, Min(1)] private int maxRequestedQuantity = 3;
+    [SerializeField, Min(0)] private int minRequestedTotalWeight = 10;
+    [SerializeField, Min(0)] private int maxRequestedTotalWeight = 25;
     [SerializeField, Min(1)] private int tutorialDurationDays = 3;
 
     [Header("References")]
@@ -46,6 +48,7 @@ public class TutorialController : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject tutorialCompletePanel;
     [SerializeField] private GameObject tutorialFailedPanel;
+    [SerializeField] private bool pauseGameOnCompletion;
     [SerializeField] private bool pauseGameOnFailure = true;
 
     [Header("Dialogs")]
@@ -53,11 +56,13 @@ public class TutorialController : MonoBehaviour
     [SerializeField] private DialogData noDeliveryDialog;
     [SerializeField] private DialogData readyToDeliverDialog;
     [SerializeField] private DialogData completedDialog;
-    [SerializeField] private DialogData failedDialog;
 
     [Header("Single Marker")]
     [SerializeField] private TutorialMarker tutorialMarker;
     [SerializeField] private GameObject tutorialPointer;
+    [SerializeField] private bool autoTargetActiveFishingSpot = true;
+    [SerializeField] private FishingSpotSpawner fishingSpotSpawner;
+    [SerializeField] private Transform fishingSpotMarkerReference;
     [SerializeField] private Transform moneyLenderCabinMarkerTarget;
     [SerializeField] private Transform boatMarkerTarget;
     [SerializeField] private Transform fishingSpotMarkerTarget;
@@ -76,6 +81,7 @@ public class TutorialController : MonoBehaviour
 
     private FishScriptableObject requestedFish;
     private int requestedQuantity;
+    private int requestedTotalWeight;
     private int tutorialStartDay = 1;
     private bool hasAcceptedRequest;
     private bool isFinishingDelivery;
@@ -83,6 +89,13 @@ public class TutorialController : MonoBehaviour
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
     public int RequestedQuantity => requestedQuantity;
+    public int RequestedTotalWeight => requestedTotalWeight;
+    public int OwnedRequestedFishCount => GetOwnedRequestedFishCount();
+    public float CurrentOwnedFishWeight => GetCurrentOwnedFishWeight();
+    public string RequestedFishName => GetRequestedFishName();
+    public bool HasEnoughRequestedFish => requestedFish != null && GetOwnedRequestedFishCount() >= requestedQuantity;
+    public bool HasEnoughRequestedWeight => GetCurrentOwnedFishWeight() >= requestedTotalWeight;
+    public bool HasCompletedDeliveryRequest => HasEnoughRequestedFish && HasEnoughRequestedWeight;
     public bool HasAcceptedRequest => hasAcceptedRequest;
     public bool IsTutorialFinished { get; private set; }
     public bool IsTutorialFailed { get; private set; }
@@ -107,6 +120,9 @@ public class TutorialController : MonoBehaviour
 
         if (textCanvaManager == null)
             textCanvaManager = FindFirstObjectByType<TextCanvaManager>();
+
+        if (fishingSpotSpawner == null)
+            fishingSpotSpawner = FindFirstObjectByType<FishingSpotSpawner>();
     }
 
     private void OnEnable()
@@ -146,6 +162,15 @@ public class TutorialController : MonoBehaviour
         }
 
         SetStep(TutorialStep.GoToMoneyLenderCabin);
+    }
+
+    private void Update()
+    {
+        if (!IsTutorialRunning || !autoTargetActiveFishingSpot)
+            return;
+
+        if (currentStep == TutorialStep.GoToFishingSpot || currentStep == TutorialStep.CatchRequiredFish)
+            UpdateMarkers();
     }
 
     public void SetStep(TutorialStep _newStep)
@@ -221,30 +246,42 @@ public class TutorialController : MonoBehaviour
         SceneManager.LoadScene(mainMenuSceneName);
     }
 
-    private bool HandleMoneyLenderInteraction(MoneyLender _moneyLender)
+    public void ContinueAfterTutorial()
+    {
+        Time.timeScale = 1f;
+        SetPanelActive(tutorialCompletePanel, false);
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
+    }
+
+    public void CloseTutorialFailedPanel()
+    {
+        Time.timeScale = 1f;
+        SetPanelActive(tutorialFailedPanel, false);
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
+    }
+
+    private bool HandleMoneyLenderInteraction(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
     {
         if (!IsTutorialRunning || !handleMoneyLenderDuringTutorial)
             return false;
 
         if (currentStep == TutorialStep.GoToMoneyLenderCabin)
         {
-            StartDeliveryRequest(_moneyLender);
+            StartDeliveryRequest(_moneyLender, _moneyLenderUI);
             return true;
         }
 
         if (!hasAcceptedRequest)
         {
-            StartDeliveryRequest(_moneyLender);
+            StartDeliveryRequest(_moneyLender, _moneyLenderUI);
             return true;
         }
 
-        if (CanTryDeliverRequest())
-        {
-            TryFinishDelivery(_moneyLender);
-            return true;
-        }
-
-        ShowMissingRequestMessage();
+        OpenTutorialMoneyLenderUI(_moneyLender, _moneyLenderUI);
         return true;
     }
 
@@ -282,9 +319,10 @@ public class TutorialController : MonoBehaviour
 
         if (ownedRequestedFish >= requestedQuantity)
         {
-            if (currentStep == TutorialStep.CatchRequiredFish ||
+            if (HasCompletedDeliveryRequest &&
+                (currentStep == TutorialStep.CatchRequiredFish ||
                 currentStep == TutorialStep.GoToFishingSpot ||
-                currentStep == TutorialStep.GoToBoat)
+                currentStep == TutorialStep.GoToBoat))
             {
                 SetStep(TutorialStep.ReturnToDock);
                 return;
@@ -313,7 +351,7 @@ public class TutorialController : MonoBehaviour
             FailTutorial();
     }
 
-    private void StartDeliveryRequest(MoneyLender _moneyLender)
+    private void StartDeliveryRequest(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
     {
         PickRandomRequest(_moneyLender);
         hasAcceptedRequest = true;
@@ -324,12 +362,28 @@ public class TutorialController : MonoBehaviour
         {
             if (basicPanelSequence != null)
             {
-                basicPanelSequence.Show(() => SetStep(TutorialStep.GoToBoat));
+                basicPanelSequence.Show(() =>
+                {
+                    SetStep(TutorialStep.GoToBoat);
+                    OpenTutorialMoneyLenderUI(_moneyLender, _moneyLenderUI);
+                });
                 return;
             }
 
             SetStep(TutorialStep.GoToBoat);
+            OpenTutorialMoneyLenderUI(_moneyLender, _moneyLenderUI);
         });
+    }
+
+    private void OpenTutorialMoneyLenderUI(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
+    {
+        if (_moneyLenderUI == null)
+        {
+            ShowMissingRequestMessage(false);
+            return;
+        }
+
+        _moneyLenderUI.OpenForTutorial(_moneyLender, this);
     }
 
     private void PickRandomRequest(MoneyLender _moneyLender)
@@ -342,6 +396,10 @@ public class TutorialController : MonoBehaviour
         int minQuantity = Mathf.Max(1, minRequestedQuantity);
         int maxQuantity = Mathf.Max(minQuantity, maxRequestedQuantity);
         requestedQuantity = UnityEngine.Random.Range(minQuantity, maxQuantity + 1);
+
+        int minWeight = Mathf.Max(0, minRequestedTotalWeight);
+        int maxWeight = Mathf.Max(minWeight, maxRequestedTotalWeight);
+        requestedTotalWeight = UnityEngine.Random.Range(minWeight, maxWeight + 1);
 
         if (requestedFish == null)
             Debug.LogWarning("Tutorial sem peixe configurado para o pedido.");
@@ -363,7 +421,7 @@ public class TutorialController : MonoBehaviour
         return currentStep == TutorialStep.ReturnToDock ||
                currentStep == TutorialStep.TalkToMoneyLender ||
                currentStep == TutorialStep.DeliverFish ||
-               GetOwnedRequestedFishCount() >= requestedQuantity;
+               HasCompletedDeliveryRequest;
     }
 
     private void TryFinishDelivery(MoneyLender _moneyLender)
@@ -371,7 +429,7 @@ public class TutorialController : MonoBehaviour
         if (isFinishingDelivery)
             return;
 
-        if (requestedFish == null || GetOwnedRequestedFishCount() < requestedQuantity)
+        if (requestedFish == null || !HasCompletedDeliveryRequest)
         {
             ShowMissingRequestMessage();
             return;
@@ -406,14 +464,47 @@ public class TutorialController : MonoBehaviour
         return shipInventory.TryPaySpecificFish(requestedFish, requestedQuantity);
     }
 
-    private void ShowMissingRequestMessage()
+    public bool TryDeliverRequestedFishFromUI(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
+    {
+        if (!IsTutorialRunning || !hasAcceptedRequest)
+            return false;
+
+        if (requestedFish == null || !HasCompletedDeliveryRequest)
+        {
+            ShowMissingRequestMessage(false);
+            return false;
+        }
+
+        SetStep(TutorialStep.DeliverFish);
+
+        bool paid = TryPayRequestedFish(_moneyLender);
+
+        if (!paid)
+        {
+            ShowMissingRequestMessage(false);
+            return false;
+        }
+
+        if (_moneyLenderUI != null)
+            _moneyLenderUI.CloseForTutorialFinish();
+
+        FinishTutorial();
+        return true;
+    }
+
+    private void ShowMissingRequestMessage(bool _showDialog = true)
     {
         int ownedRequestedFish = GetOwnedRequestedFishCount();
         string fishName = GetRequestedFishName();
+        float ownedWeight = GetCurrentOwnedFishWeight();
         string message = $"Você ainda precisa entregar {requestedQuantity}x {fishName}. ({ownedRequestedFish}/{requestedQuantity})";
 
+        message = $"Pedido: {requestedQuantity}x {fishName} ({ownedRequestedFish}/{requestedQuantity}) e {requestedTotalWeight}kg no total ({ownedWeight:0}/{requestedTotalWeight}).";
         ShowWarning(message);
-        ShowDialog(noDeliveryDialog, UpdateObjectiveText);
+        if (_showDialog)
+            ShowDialog(noDeliveryDialog, UpdateObjectiveText);
+        else
+            UpdateObjectiveText();
     }
 
     private void FinishTutorial()
@@ -425,6 +516,15 @@ public class TutorialController : MonoBehaviour
         ShowDialog(completedDialog, () =>
         {
             SetPanelActive(tutorialCompletePanel, true);
+
+            if (pauseGameOnCompletion)
+                Time.timeScale = 0f;
+
+            if (GameManager.instance != null)
+                GameManager.instance.SetState(GameManager.GameState.InUI);
+
+            Cursor.lockState = CursorLockMode.None;
+            Cursor.visible = true;
             ShowWarning("Tutorial concluído!");
         });
     }
@@ -435,19 +535,16 @@ public class TutorialController : MonoBehaviour
         isFinishingDelivery = false;
         SetStep(TutorialStep.Failed);
 
-        ShowDialog(failedDialog, () =>
-        {
-            SetPanelActive(tutorialFailedPanel, true);
+        SetPanelActive(tutorialFailedPanel, true);
 
-            if (pauseGameOnFailure)
-                Time.timeScale = 0f;
+        if (pauseGameOnFailure)
+            Time.timeScale = 0f;
 
-            if (GameManager.instance != null)
-                GameManager.instance.SetState(GameManager.GameState.InUI);
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.InUI);
 
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
-        });
+        Cursor.lockState = CursorLockMode.None;
+        Cursor.visible = true;
     }
 
     private void ShowDialog(DialogData _dialogData, Action _onFinished = null)
@@ -461,7 +558,34 @@ public class TutorialController : MonoBehaviour
             return;
         }
 
-        textCanvaManager.InitializeDialog(_dialogData, _onFinished);
+        textCanvaManager.InitializeDialog(GetFormattedDialog(_dialogData), _onFinished);
+    }
+
+    private DialogData GetFormattedDialog(DialogData _dialogData)
+    {
+        DialogData formattedDialog = new DialogData
+        {
+            speakerName = FormatTutorialText(_dialogData.speakerName),
+            senteces = new string[_dialogData.senteces.Length]
+        };
+
+        for (int i = 0; i < _dialogData.senteces.Length; i++)
+            formattedDialog.senteces[i] = FormatTutorialText(_dialogData.senteces[i]);
+
+        return formattedDialog;
+    }
+
+    private string FormatTutorialText(string _text)
+    {
+        if (string.IsNullOrEmpty(_text))
+            return _text;
+
+        return _text
+            .Replace("{fish}", GetRequestedFishName())
+            .Replace("{quantity}", requestedQuantity.ToString())
+            .Replace("{weight}", requestedTotalWeight.ToString())
+            .Replace("{owned}", GetOwnedRequestedFishCount().ToString())
+            .Replace("{ownedWeight}", GetCurrentOwnedFishWeight().ToString("0"));
     }
 
     private int GetOwnedRequestedFishCount()
@@ -470,6 +594,14 @@ public class TutorialController : MonoBehaviour
             return 0;
 
         return shipInventory.CountFish(requestedFish);
+    }
+
+    private float GetCurrentOwnedFishWeight()
+    {
+        if (shipInventory == null)
+            return 0f;
+
+        return shipInventory.GetCurrentWeight();
     }
 
     private string GetRequestedFishName()
@@ -490,6 +622,7 @@ public class TutorialController : MonoBehaviour
 
         string fishName = GetRequestedFishName();
         int ownedRequestedFish = GetOwnedRequestedFishCount();
+        float ownedWeight = GetCurrentOwnedFishWeight();
 
         switch (currentStep)
         {
@@ -502,7 +635,7 @@ public class TutorialController : MonoBehaviour
                 break;
 
             case TutorialStep.GoToBoat:
-                tutorialUI.SetObjectiveText($"Pegue o barco. Pedido: {requestedQuantity}x {fishName}.");
+                tutorialUI.SetObjectiveText($"Pegue o barco. Pedido: {requestedQuantity}x {fishName} e {requestedTotalWeight}kg no total.");
                 break;
 
             case TutorialStep.GoToFishingSpot:
@@ -510,7 +643,7 @@ public class TutorialController : MonoBehaviour
                 break;
 
             case TutorialStep.CatchRequiredFish:
-                tutorialUI.SetObjectiveText($"Pesque {requestedQuantity}x {fishName}. ({ownedRequestedFish}/{requestedQuantity})");
+                tutorialUI.SetObjectiveText($"Pesque {requestedQuantity}x {fishName} ({ownedRequestedFish}/{requestedQuantity}) e junte {requestedTotalWeight}kg ({ownedWeight:0}/{requestedTotalWeight}).");
                 break;
 
             case TutorialStep.ReturnToDock:
@@ -522,7 +655,7 @@ public class TutorialController : MonoBehaviour
                 break;
 
             case TutorialStep.DeliverFish:
-                tutorialUI.SetObjectiveText($"Entregue {requestedQuantity}x {fishName} ao agiota.");
+                tutorialUI.SetObjectiveText($"Entregue {requestedQuantity}x {fishName} e {requestedTotalWeight}kg ao agiota.");
                 break;
 
             case TutorialStep.Finished:
@@ -549,7 +682,10 @@ public class TutorialController : MonoBehaviour
                 break;
 
             case TutorialStep.GoToBoat:
-                SetMarkerActive(boatMarker, true);
+                if (boatMarker != null)
+                    SetMarkerActive(boatMarker, true);
+                else
+                    SetMarkerActive(dockMarker, true);
                 break;
 
             case TutorialStep.GoToFishingSpot:
@@ -623,11 +759,11 @@ public class TutorialController : MonoBehaviour
                 return moneyLenderCabinMarkerTarget;
 
             case TutorialStep.GoToBoat:
-                return boatMarkerTarget;
+                return boatMarkerTarget != null ? boatMarkerTarget : dockMarkerTarget;
 
             case TutorialStep.GoToFishingSpot:
             case TutorialStep.CatchRequiredFish:
-                return fishingSpotMarkerTarget;
+                return GetFishingSpotMarkerTarget();
 
             case TutorialStep.ReturnToDock:
                 return dockMarkerTarget;
@@ -639,6 +775,40 @@ public class TutorialController : MonoBehaviour
             default:
                 return null;
         }
+    }
+
+    private Transform GetFishingSpotMarkerTarget()
+    {
+        if (!autoTargetActiveFishingSpot)
+            return fishingSpotMarkerTarget;
+
+        if (fishingSpotSpawner == null)
+            fishingSpotSpawner = FindFirstObjectByType<FishingSpotSpawner>();
+
+        if (fishingSpotSpawner == null)
+            return fishingSpotMarkerTarget;
+
+        Vector3 referencePosition = GetFishingSpotMarkerReferencePosition();
+        FishingSpot activeSpot = fishingSpotSpawner.GetClosestActiveSpot(referencePosition);
+
+        if (activeSpot != null)
+            return activeSpot.transform;
+
+        return fishingSpotMarkerTarget;
+    }
+
+    private Vector3 GetFishingSpotMarkerReferencePosition()
+    {
+        if (fishingSpotMarkerReference != null)
+            return fishingSpotMarkerReference.position;
+
+        if (shipInventory != null)
+            return shipInventory.transform.position;
+
+        if (Camera.main != null)
+            return Camera.main.transform.position;
+
+        return transform.position;
     }
 
     private void SetMarkerActive(GameObject _marker, bool _active)

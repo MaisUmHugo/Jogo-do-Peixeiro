@@ -2,7 +2,7 @@ using System;
 
 public static class TutorialEvents
 {
-    public static event Func<MoneyLender, bool> MoneyLenderInteractionRequested;
+    public static event Func<MoneyLender, MoneyLenderUI, bool> MoneyLenderInteractionRequested;
     public static event Func<bool> BoatEntryBlockRequested;
     public static event Action BoatEntryBlocked;
     public static event Action BoatEntered;
@@ -10,12 +10,17 @@ public static class TutorialEvents
 
     public static bool TryHandleMoneyLenderInteraction(MoneyLender _moneyLender)
     {
+        return TryHandleMoneyLenderInteraction(_moneyLender, null);
+    }
+
+    public static bool TryHandleMoneyLenderInteraction(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
+    {
         if (MoneyLenderInteractionRequested == null)
             return false;
 
-        foreach (Func<MoneyLender, bool> handler in MoneyLenderInteractionRequested.GetInvocationList())
+        foreach (Func<MoneyLender, MoneyLenderUI, bool> handler in MoneyLenderInteractionRequested.GetInvocationList())
         {
-            if (handler != null && handler.Invoke(_moneyLender))
+            if (handler != null && handler.Invoke(_moneyLender, _moneyLenderUI))
                 return true;
         }
 

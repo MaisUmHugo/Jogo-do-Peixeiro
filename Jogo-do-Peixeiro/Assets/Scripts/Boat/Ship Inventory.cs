@@ -1,9 +1,11 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
 public class ShipInventory : MonoBehaviour
 {
     public List<FishData> ownedFish = new List<FishData>();
+    public List<FishData> OwnedFish => ownedFish;
 
     [SerializeField] private float maxFishCapacity;
 
@@ -15,6 +17,9 @@ public class ShipInventory : MonoBehaviour
     public DebugShipInventory debugShipInventory;
 
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
+
+    public delegate void OnFishListChangeDelegate(List<FishData> fishList, float fishWeight);
+    public event OnFishListChangeDelegate OnFishListChange;
 
 
     public bool TryAddFish(FishData fish)
@@ -47,6 +52,8 @@ public class ShipInventory : MonoBehaviour
     private void AddFish(FishData _fish)
     {
         ownedFish.Add(_fish);
+        ownedFish = MergeSort(ownedFish.ToArray()).ToList();
+        Debug.Log("Added fish: " + _fish.typeOfFish.name + " with price: " + _fish.price);
         AttFishWeight();
     }
 
@@ -71,9 +78,9 @@ public class ShipInventory : MonoBehaviour
         if (fishIndex != -1)
         {
             Debug.Log("conseguiu pagar o peixe");
-            AttFishWeight();
             SellHalfPriceFish(fishIndex);
-            SellRemainingFish(); 
+            SellRemainingFish();
+            AttFishWeight();
             return true;
         }
 
@@ -132,6 +139,7 @@ public class ShipInventory : MonoBehaviour
         }
 
         wasFullLastUpdate = isFullNow;
+        OnFishListChange?.Invoke(ownedFish, currentFishWeight);
     }
 
     public float GetCurrentWeight()
@@ -192,5 +200,71 @@ public class ShipInventory : MonoBehaviour
         }
 
         return false;
+    }
+
+    private FishData[] MergeSort(FishData[] _fishArray)
+    {
+        int length = _fishArray.Length;
+
+        if (length <= 1)
+            return _fishArray;
+
+        int middle = length / 2;
+        FishData[] leftArray = new FishData[middle];
+        FishData[] rightArray = new FishData[length - middle];
+
+        for (int i = 0; i < middle; i++)
+            leftArray[i] = _fishArray[i];
+
+        for (int i = middle; i < length; i++)
+            rightArray[i - middle] = _fishArray[i];
+
+        leftArray = MergeSort(leftArray);
+        rightArray = MergeSort(rightArray);
+
+        return Merge(leftArray, rightArray);
+    }
+
+    private FishData[] Merge(FishData[] _leftArray, FishData[] _rightArray)
+    {
+        int leftLength = _leftArray.Length;
+        int rightLength = _rightArray.Length;
+        int leftIndex = 0;
+        int rightIndex = 0;
+        int resultIndex = 0;
+
+        FishData[] result = new FishData[leftLength + rightLength];
+
+        while (leftIndex < leftLength && rightIndex < rightLength)
+        {
+            if (_leftArray[leftIndex].price <= _rightArray[rightIndex].price)
+            {
+                result[resultIndex] = _leftArray[leftIndex];
+                leftIndex++;
+            }
+            else
+            {
+                result[resultIndex] = _rightArray[rightIndex];
+                rightIndex++;
+            }
+
+            resultIndex++;
+        }
+
+        while (leftIndex < leftLength)
+        {
+            result[resultIndex] = _leftArray[leftIndex];
+            leftIndex++;
+            resultIndex++;
+        }
+
+        while (rightIndex < rightLength)
+        {
+            result[resultIndex] = _rightArray[rightIndex];
+            rightIndex++;
+            resultIndex++;
+        }
+
+        return result;
     }
 }
