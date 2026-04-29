@@ -14,7 +14,7 @@ public class PlayerMoneyManager : MonoBehaviour
 
         playerMoney -= _amount;
 
-        OnMoneyChangeEvent(playerMoney);
+        OnMoneyChangeEvent?.Invoke(playerMoney);
 
         Debug.Log($"gastou {_amount} dinheiros e agora é: {playerMoney}");
 
@@ -26,7 +26,7 @@ public class PlayerMoneyManager : MonoBehaviour
         if (_amount <= 0) return;
 
         playerMoney += _amount;
-        OnMoneyChangeEvent(playerMoney);
+        OnMoneyChangeEvent?.Invoke(playerMoney);
 
         Debug.Log($"recebeu {_amount} dinheiros e agora é: {playerMoney}");
 

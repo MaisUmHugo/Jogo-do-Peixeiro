@@ -1,11 +1,10 @@
-using System.Threading.Tasks;
+using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 
 public class DebugShipInventory : MonoBehaviour
-{
-    private TMP_Text shipInventoryText;
-    private TMP_Text fishesText;
+{    
+    [SerializeField] private TMP_Text fishesText;
 
     private ShipInventory shipInventory;
 
@@ -21,17 +20,13 @@ public class DebugShipInventory : MonoBehaviour
 
     private void Awake()
     {
-        shipInventoryText = transform.GetChild(0).transform.GetChild(1).GetComponent<TMP_Text>();
-        fishesText        = transform.GetChild(0).transform.GetChild(2).GetComponent<TMP_Text>();
-        shipInventory = GetComponent<ShipInventory>();
 
-        for(int i = 0; i < fish1Qtt; i++)
-        {
-            FishData newFish = new FishData(fish1);
-            shipInventory.TryAddFish(newFish);
-      
+        shipInventory = GetComponent<ShipInventory>();        
+        
+    }
 
-        }
+    private void Start()
+    {        
 
         for (int i = 0; i < fish2Qtt; i++)
         {
@@ -40,6 +35,15 @@ public class DebugShipInventory : MonoBehaviour
 
 
         }
+        
+        for(int i = 0; i < fish1Qtt; i++)
+        {
+            FishData newFish = new FishData(fish1);
+            shipInventory.TryAddFish(newFish);
+      
+
+        }
+
 
         for (int i = 0; i < fish3Qtt; i++)
         {
@@ -55,26 +59,7 @@ public class DebugShipInventory : MonoBehaviour
             shipInventory.TryAddFish(newFish);
 
 
-        }
-
-        AttFishDebugText();
-    }
-
-    public void AttFishDebugText()
-    {
-        fishesText.text = "";
-        foreach (FishData fish in shipInventory.ownedFish)
-        {
-            fishesText.text += $"{fish.typeOfFish.fishName}, weight: {fish.weight} \n \n";
-        }
-
-    }
-
-    private void Update()
-    {
-        shipInventoryText.text = $"Peso de peixe total: {shipInventory.GetCurrentWeight()} / {shipInventory.GetMaxCapacity()}";
-
-        
+        }     
     }
 
 }
