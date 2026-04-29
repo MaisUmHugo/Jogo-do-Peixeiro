@@ -131,7 +131,8 @@ public class DayCycle : MonoBehaviour
         if (hours12 == 0) hours12 = 12;
 
         if (HourText != null)
-            HourText.text = $"{hours12:00}:{minutes:00} {period}";
+            HourText.text = $"{hours12:00}:00 {period}";
+        //HourText.text = $"{hours12:00}:{minutes:00} {period}";
     }
 
     public void NextDay()

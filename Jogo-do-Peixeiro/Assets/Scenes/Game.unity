@@ -2776,7 +2776,7 @@ GameObject:
   - component: {fileID: 1711858605}
   - component: {fileID: 1711858604}
   m_Layer: 0
-  m_Name: Directional Light
+  m_Name: Sun
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -3359,7 +3359,7 @@ MonoBehaviour:
   sun: {fileID: 1711858605}
   moon: {fileID: 0}
   HourText: {fileID: 1496515638}
-  dayDuration: 160
+  dayDuration: 300
   currentTime: 0.25
   Clock: 0
   sunIntensity:
