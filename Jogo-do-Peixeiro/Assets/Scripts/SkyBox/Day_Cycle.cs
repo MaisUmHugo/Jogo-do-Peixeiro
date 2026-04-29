@@ -9,6 +9,7 @@ public class DayCycle : MonoBehaviour
     [Header("Referências")]
     [SerializeField] private Material skyboxMaterial;
     [SerializeField] private Light sun;
+    [SerializeField] private Light moon;
     [SerializeField] private TextMeshProUGUI HourText;
 
     [Header("Tempo")]
@@ -36,60 +37,67 @@ public class DayCycle : MonoBehaviour
     public int ElapsedDays => elapsedDays;
     public float NormalizedTime => currentTime;
 
+    void Start()
+    {
+        UpdateDayUI();
+    }
+
     void Update()
     {
         currentTime += Time.deltaTime / dayDuration;
         if (currentTime > 1f)
         {
             currentTime = 0f;
-            NextDay();
         }
 
         UpdateSun();
         UpdateSkybox();
         UpdateTime();
     }
+
     void UpdateDayUI()
     {
         if (DayText != null)
             DayText.text = $"Dia {currentDay}/{totalDays}";
     }
-    void Start()
-    {
-        UpdateDayUI();
-    }
 
     void UpdateSun()
     {
-        if (sun == null)
-            return;
+        if (sun == null) return;
 
         float sunAngle = currentTime * 360f - 90f;
+
         sun.transform.rotation = Quaternion.Euler(sunAngle, 170f, 0);
-        sun.intensity = sunIntensity.Evaluate(currentTime);
+        sun.intensity = Mathf.Max(0.2f, sunIntensity.Evaluate(currentTime));
+
+        if (moon != null)
+        {
+            moon.transform.rotation = Quaternion.Euler(sunAngle + 180f, 170f, 0);
+            moon.intensity = Mathf.Clamp01(1f - sun.intensity) * 0.3f;
+        }
     }
 
     void UpdateSkybox()
     {
         if (skyboxMaterial == null) return;
 
-        // Cor do céu
         Color sky = skyColor.Evaluate(currentTime);
         skyboxMaterial.SetColor("_SkyTint", sky);
 
-        // Cor do chão
         Color ground = groundColor.Evaluate(currentTime);
         skyboxMaterial.SetColor("_GroundColor", ground);
 
-        // Atmosfera
+        float dynamicExposure = Mathf.Lerp(exposure, 2.0f, 1f - sunIntensity.Evaluate(currentTime));
+        skyboxMaterial.SetFloat("_Exposure", dynamicExposure);
+
         skyboxMaterial.SetFloat("_AtmosphereThickness", atmosphereThickness);
 
-        // Exposição
-        skyboxMaterial.SetFloat("_Exposure", exposure);
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientLight = sky * 0.3f;
 
-        // Atualiza a iluminação global
         DynamicGI.UpdateEnvironment();
     }
+
     void UpdateTime()
     {
         Clock = currentTime * 24f;
@@ -105,6 +113,7 @@ public class DayCycle : MonoBehaviour
         if (HourText != null)
             HourText.text = $"{hours12:00}:{minutes:00} {period}";
     }
+
     public void NextDay()
     {
         currentDay++;
@@ -112,6 +121,7 @@ public class DayCycle : MonoBehaviour
 
         if (currentDay > totalDays)
             currentDay = 1;
+
         currentTime = 6f / 24f;
         Clock = 6f;
 

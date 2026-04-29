@@ -85,7 +85,7 @@ public class PlayerMove : MonoBehaviour
 
         if (moveDirection != Vector3.zero)
         {
-            Quaternion targetRotation = Quaternion.LookRotation(moveDirection) * Quaternion.Euler(0f, 180f, 0f);
+            Quaternion targetRotation = Quaternion.LookRotation(moveDirection) * Quaternion.Euler(0f, 0f, 0f);
 
             transform.rotation = Quaternion.Slerp(
                 transform.rotation,
