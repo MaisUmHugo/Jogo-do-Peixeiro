@@ -317,7 +317,7 @@ public class FishingManager : MonoBehaviour
             if (_fishingResultUI != null)
                 _fishingResultUI.ShowCatchResult(_pendingFish);
 
-            UpdateTutorialAfterFishCaught();
+            UpdateTutorialAfterFishCaught(_pendingFish);
         }
         else
         {
@@ -330,23 +330,9 @@ public class FishingManager : MonoBehaviour
         _pendingFish = null;
     }
 
-    private void UpdateTutorialAfterFishCaught()
+    private void UpdateTutorialAfterFishCaught(FishData _caughtFish)
     {
-        if (TutorialHandler.Instance == null || _currentShipInventory == null)
-            return;
-
-        float currentWeight = _currentShipInventory.GetCurrentWeight();
-        Debug.Log($"Peso atual após capturar peixe: {currentWeight}");
-
-        if (currentWeight >= 10f)
-        {
-            TutorialHandler.Instance.isFinishedFishing = true;
-            TutorialHandler.Instance.GoNextObjective();
-        }
-        else
-        {
-            TutorialHandler.Instance.AttFishWeightTutorialText();
-        }
+        TutorialEvents.NotifyFishCaught(_caughtFish, _currentShipInventory);
     }
 
     private void EndFishing(bool _success)
