@@ -256,6 +256,33 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 32865165}
   m_CullTransparentMesh: 1
+--- !u!1 &46886270 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 4535445818795117547, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+  m_PrefabInstance: {fileID: 283080264795552772}
+  m_PrefabAsset: {fileID: 0}
+--- !u!95 &46886271
+Animator:
+  serializedVersion: 7
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 46886270}
+  m_Enabled: 1
+  m_Avatar: {fileID: 9000000, guid: a21428e5833508a4a975d245ef71f1b7, type: 3}
+  m_Controller: {fileID: 9100000, guid: 3e8dfbad8b863ca4ea56a680ac9b1a77, type: 2}
+  m_CullingMode: 0
+  m_UpdateMode: 0
+  m_ApplyRootMotion: 0
+  m_LinearVelocityBlending: 0
+  m_StabilizeFeet: 0
+  m_AnimatePhysics: 0
+  m_WarningMessage: 
+  m_HasTransformHierarchy: 1
+  m_AllowConstantClipSamplingOptimization: 1
+  m_KeepAnimatorStateOnDisable: 0
+  m_WriteDefaultValuesOnDisable: 0
 --- !u!1 &78222591
 GameObject:
   m_ObjectHideFlags: 0
@@ -495,7 +522,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4297910758375476328, guid: 2072788958a94dc41a06f8a6e02d648c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.811
+      value: -0.055
       objectReference: {fileID: 0}
     - target: {fileID: 4297910758375476328, guid: 2072788958a94dc41a06f8a6e02d648c, type: 3}
       propertyPath: m_LocalPosition.z
@@ -553,6 +580,22 @@ PrefabInstance:
       propertyPath: interactionUI
       value: 
       objectReference: {fileID: 1912255055}
+    - target: {fileID: 7873721259151922706, guid: 2072788958a94dc41a06f8a6e02d648c, type: 3}
+      propertyPath: m_Enabled
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 7873721259151922706, guid: 2072788958a94dc41a06f8a6e02d648c, type: 3}
+      propertyPath: m_Controller
+      value: 
+      objectReference: {fileID: 9100000, guid: 3e8dfbad8b863ca4ea56a680ac9b1a77, type: 2}
+    - target: {fileID: 7873721259151922706, guid: 2072788958a94dc41a06f8a6e02d648c, type: 3}
+      propertyPath: m_WarningMessage
+      value: 
+      objectReference: {fileID: 0}
+    - target: {fileID: 7873721259151922706, guid: 2072788958a94dc41a06f8a6e02d648c, type: 3}
+      propertyPath: m_ApplyRootMotion
+      value: 0
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -688,14 +731,22 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 384819a8096c79d4fa86d3615e17e96f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  fishingArea: {fileID: 0}
   availableFish:
   - {fileID: 11400000, guid: 2ca48ec2910fc764a9a2790039651937, type: 2}
   - {fileID: 11400000, guid: 226c8121ca12d7240a0bad449842489a, type: 2}
   - {fileID: 11400000, guid: f07016660d91d444a91171159bfcf55e, type: 2}
+  deactivateAfterFishingStarts: 0
   minHorizontalDistance: 4
   ignoreEscapeForDebug: 0
   boatTag: Boat
   escapeWarningMessage: Os peixes fugiram
+  fadeOutByBoatDistance: 1
+  blockFishingWhileFading: 1
+  fadeStartDistance: 12
+  escapeDistance: 4
+  minimumFadeScale: 0.15
+  castTargetPoint: {fileID: 0}
 --- !u!136 &252890215
 CapsuleCollider:
   m_ObjectHideFlags: 0
@@ -1524,8 +1575,10 @@ MonoBehaviour:
   minDistance: 1
   maxDistance: 4
   height: 1
-  sensitivityX: 0.1
-  sensitivityY: 0.1
+  mouseSensitivity: 0.1
+  controllerSensitivity: 90
+  controllerDeadZone: 0.12
+  controllerResponseExponent: 1.25
   minPitch: -25
   maxPitch: 60
   followSpeed: 10
@@ -3754,6 +3807,66 @@ MonoBehaviour:
   canvasGroup: {fileID: 465105068}
   visibleTime: 1.2
   fadeSpeed: 10
+--- !u!1001 &283080264795552772
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 0}
+    m_Modifications:
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -38
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -68
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3871674413218795857, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4535445818795117547, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      propertyPath: m_Name
+      value: Personagem_ProtaMaoMIi animaco
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: 4535445818795117547, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 46886271}
+  m_SourcePrefab: {fileID: 100100000, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
 --- !u!1001 &1142137511662940873
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4269,3 +4382,4 @@ SceneRoots:
   - {fileID: 1142137511662940873}
   - {fileID: 5381522070422688945}
   - {fileID: 87602878}
+  - {fileID: 283080264795552772}
