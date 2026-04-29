@@ -16,7 +16,9 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float doorCloseSfxVolume = 1f;
 
     private MoneyLender currentMoneyLender;
+    private TutorialController tutorialController;
     private bool isOpen;
+    private bool isTutorialPayment;
 
     private void Awake()
     {
@@ -44,6 +46,23 @@ public class MoneyLenderUI : MonoBehaviour
     }
 
     public void Open(MoneyLender _moneyLender)
+    {
+        isTutorialPayment = false;
+        tutorialController = null;
+        OpenInternal(_moneyLender);
+    }
+
+    public void OpenForTutorial(MoneyLender _moneyLender, TutorialController _tutorialController)
+    {
+        if (_tutorialController == null)
+            return;
+
+        isTutorialPayment = true;
+        tutorialController = _tutorialController;
+        OpenInternal(_moneyLender);
+    }
+
+    private void OpenInternal(MoneyLender _moneyLender)
     {
         if (_moneyLender == null)
             return;
@@ -75,6 +94,19 @@ public class MoneyLenderUI : MonoBehaviour
     {
         if (currentMoneyLender == null)
             return;
+
+        if (isTutorialPayment && tutorialController != null)
+        {
+            bool tutorialSuccess = tutorialController.TryDeliverRequestedFishFromUI(currentMoneyLender, this);
+
+            if (statusText != null && !tutorialSuccess)
+                statusText.text = "Pedido incompleto.";
+
+            if (!tutorialSuccess)
+                Refresh();
+
+            return;
+        }
 
         bool success = currentMoneyLender.TryGetFishWeightPayment();
 
@@ -108,6 +140,17 @@ public class MoneyLenderUI : MonoBehaviour
         if (currentMoneyLender == null)
             return;
 
+        if (isTutorialPayment && tutorialController != null)
+        {
+            if (requiredWeightText != null)
+                requiredWeightText.text = $"Pedido: {tutorialController.RequestedQuantity}x {tutorialController.RequestedFishName} + {tutorialController.RequestedTotalWeight} kg";
+
+            if (currentWeightText != null)
+                currentWeightText.text = $"No barco: {tutorialController.OwnedRequestedFishCount}/{tutorialController.RequestedQuantity} peixes | {tutorialController.CurrentOwnedFishWeight:0}/{tutorialController.RequestedTotalWeight} kg";
+
+            return;
+        }
+
         if (requiredWeightText != null)
             requiredWeightText.text = $"Required: {currentMoneyLender.GetCurrentFishWeightPayment()} kg";
 
@@ -129,7 +172,7 @@ public class MoneyLenderUI : MonoBehaviour
         Cursor.visible = false;
     }
 
-    private void CloseForTutorialFinish()
+    public void CloseForTutorialFinish()
     {
         if (isOpen)
             PlayDoorSfx(doorCloseSfx, doorCloseSfxVolume);

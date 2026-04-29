@@ -23,6 +23,11 @@ public class MoneyLender : MonoBehaviour
     private int timesPaid = 0;
     private bool tutorialFinishFireworksStarted = false;
 
+    public int CurrentFishWeightPayment => currentFishWeightPayment;
+
+    public delegate void OnNewFishWeightPaymentDelegate(int fishWeightPayment);
+    public event OnNewFishWeightPaymentDelegate OnNewFishWeightPayment;
+
     private void Awake()
     {
         CalculateNewPayment();
@@ -55,6 +60,7 @@ public class MoneyLender : MonoBehaviour
     private void CalculateNewPayment()
     {
         currentFishWeightPayment = initialFishWeightPaid + fishWeightPaidIncremetion * timesPaid;
+        OnNewFishWeightPayment?.Invoke(currentFishWeightPayment);
     }
 
     public bool TryGetSpecificFishPayment()
@@ -155,5 +161,10 @@ public class MoneyLender : MonoBehaviour
     public int GetSpecificFishQuantity()
     {
         return qttSpecificFish;
+    }
+
+    public void TryPayButton()
+    {
+        TryGetFishWeightPayment();
     }
 }

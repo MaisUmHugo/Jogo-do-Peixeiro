@@ -89,6 +89,30 @@ public class FishingSpotSpawner : MonoBehaviour
             _respawnRoutine = StartCoroutine(RespawnAfterDelay());
     }
 
+    public FishingSpot GetClosestActiveSpot(Vector3 _referencePosition)
+    {
+        RemoveMissingSpots();
+
+        FishingSpot closestSpot = null;
+        float closestSqrDistance = float.MaxValue;
+
+        foreach (FishingSpot spot in _activeSpots)
+        {
+            if (spot == null || !spot.gameObject.activeSelf)
+                continue;
+
+            float sqrDistance = (spot.transform.position - _referencePosition).sqrMagnitude;
+
+            if (sqrDistance >= closestSqrDistance)
+                continue;
+
+            closestSqrDistance = sqrDistance;
+            closestSpot = spot;
+        }
+
+        return closestSpot;
+    }
+
     private IEnumerator RespawnAfterDelay()
     {
         yield return new WaitForSeconds(_respawnDelay);
