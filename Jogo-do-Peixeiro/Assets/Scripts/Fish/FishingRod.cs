@@ -524,6 +524,12 @@ public class FishingRod : MonoBehaviour
             return true;
         }
 
+        if (TryFindNearbyFishingSpot(targetPoint, out hitSpot))
+        {
+            targetPoint = hitSpot.GetCastTargetPosition(targetPoint);
+            return true;
+        }
+
         return false;
     }
 
@@ -559,7 +565,7 @@ public class FishingRod : MonoBehaviour
             if (!TryGetFishingSpotFromCollider(collider, out FishingSpot candidate))
                 continue;
 
-            float sqrDistance = (candidate.transform.position - _position).sqrMagnitude;
+            float sqrDistance = (candidate.GetCastTargetPosition(_position) - _position).sqrMagnitude;
 
             if (sqrDistance >= closestSqrDistance)
                 continue;
@@ -568,7 +574,34 @@ public class FishingRod : MonoBehaviour
             _spot = candidate;
         }
 
+        if (_spot == null)
+            _spot = FindClosestFishingSpotByPosition(_position, fishingSpotSnapRadius);
+
         return _spot != null;
+    }
+
+    private FishingSpot FindClosestFishingSpotByPosition(Vector3 _position, float _radius)
+    {
+        FishingSpot[] spots = FindObjectsByType<FishingSpot>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        FishingSpot closestSpot = null;
+        float closestSqrDistance = _radius * _radius;
+
+        foreach (FishingSpot spot in spots)
+        {
+            if (spot == null || !spot.isActiveAndEnabled || !spot.HasFishAvailable())
+                continue;
+
+            Vector3 castTarget = spot.GetCastTargetPosition(_position);
+            float sqrDistance = (castTarget - _position).sqrMagnitude;
+
+            if (sqrDistance > closestSqrDistance)
+                continue;
+
+            closestSqrDistance = sqrDistance;
+            closestSpot = spot;
+        }
+
+        return closestSpot;
     }
 
     private void PrepareHookForManualMovement(Transform _hook)
@@ -692,7 +725,7 @@ public class FishingRod : MonoBehaviour
             Vector3 dir = b - a;
             float dist = dir.magnitude;
 
-            if (Physics.Raycast(a, dir.normalized, out RaycastHit hit, dist, waterLayer))
+            if (Physics.Raycast(a, dir.normalized, out RaycastHit hit, dist, waterLayer, QueryTriggerInteraction.Collide))
             {
                 hitPoint = hit.point;
                 return true;

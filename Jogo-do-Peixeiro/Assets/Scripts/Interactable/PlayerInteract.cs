@@ -56,21 +56,12 @@ public class PlayerInteract : MonoBehaviour
 
     private void OnTriggerEnter(Collider _other)
     {
-        // Usa IsChildOf(playerRoot) em vez de transform.root para funcionar com qualquer hierarquia
-        if (playerRoot != null && _other.transform.IsChildOf(playerRoot))
-            return;
-
-        MonoBehaviour[] components = _other.GetComponentsInParent<MonoBehaviour>();
-
-        foreach (MonoBehaviour component in components)
-        {
-            if (component is IInteractable && !interactablesInRange.Contains(component))
-                interactablesInRange.Add(component);
-        }
+        TryAddInteractablesFromCollider(_other);
     }
 
     private void OnTriggerExit(Collider _other)
     {
+        // Usa IsChildOf(playerRoot) em vez de transform.root para funcionar com qualquer hierarquia
         if (playerRoot != null && _other.transform.IsChildOf(playerRoot))
             return;
 
@@ -83,6 +74,44 @@ public class PlayerInteract : MonoBehaviour
         }
 
         ClearCurrentInteractable();
+    }
+
+    public void RefreshInteractablesAfterTeleport()
+    {
+        interactablesInRange.Clear();
+        ClearCurrentInteractable();
+
+        Physics.SyncTransforms();
+
+        if (playerRoot == null)
+            return;
+
+        Collider[] nearbyColliders = Physics.OverlapSphere(
+            playerRoot.position,
+            maxInteractDistance,
+            ~0,
+            QueryTriggerInteraction.Collide
+        );
+
+        foreach (Collider nearbyCollider in nearbyColliders)
+            TryAddInteractablesFromCollider(nearbyCollider);
+    }
+
+    private void TryAddInteractablesFromCollider(Collider _other)
+    {
+        if (_other == null)
+            return;
+
+        if (playerRoot != null && _other.transform.IsChildOf(playerRoot))
+            return;
+
+        MonoBehaviour[] components = _other.GetComponentsInParent<MonoBehaviour>();
+
+        foreach (MonoBehaviour component in components)
+        {
+            if (component is IInteractable && !interactablesInRange.Contains(component))
+                interactablesInRange.Add(component);
+        }
     }
 
     private void Update()

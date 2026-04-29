@@ -25,6 +25,23 @@ public class BoatMotor : MonoBehaviour
         rb = GetComponent<Rigidbody>();
     }
 
+    public void ResetMotorState(bool _waitForNeutralInput = true)
+    {
+        if (rb == null)
+            rb = GetComponent<Rigidbody>();
+
+        input = Vector2.zero;
+        isAnchored = false;
+        isWaitingForNeutralInput = _waitForNeutralInput;
+
+        if (rb == null)
+            return;
+
+        rb.linearVelocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
+        rb.Sleep();
+    }
+
     void Update()
     {
         if (GameManager.instance == null || InputHandler.instance == null) return;

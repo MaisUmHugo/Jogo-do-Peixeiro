@@ -75,12 +75,12 @@ public class FishingSpot : MonoBehaviour
         if (GameManager.instance == null)
             return false;
 
-        Transform player = _inventory.transform.root;
+        Vector3 fishingReferencePosition = GetFishingReferencePosition(_inventory);
 
-        if (ShouldBlockFishingForBoatProximity(player.position))
+        if (ShouldBlockFishingForBoatProximity(fishingReferencePosition))
             return false;
 
-        Vector3 a = player.position;
+        Vector3 a = fishingReferencePosition;
         Vector3 b = transform.position;
 
         a.y = 0f;
@@ -122,6 +122,11 @@ public class FishingSpot : MonoBehaviour
             return castTargetPoint.position;
 
         return transform.position;
+    }
+
+    public Transform GetMarkerTarget()
+    {
+        return castTargetPoint != null ? castTargetPoint : transform;
     }
 
     private void OnTriggerEnter(Collider _other)
@@ -188,6 +193,17 @@ public class FishingSpot : MonoBehaviour
             return false;
 
         return isFadingByBoatDistance || GetHorizontalDistance(_playerPosition, transform.position) < fadeStartDistance;
+    }
+
+    private Vector3 GetFishingReferencePosition(ShipInventory _inventory)
+    {
+        if (boatTransform == null)
+            TryFindBoatTransform();
+
+        if (boatTransform != null)
+            return boatTransform.position;
+
+        return _inventory != null ? _inventory.transform.position : transform.position;
     }
 
     private bool TryFindBoatTransform()

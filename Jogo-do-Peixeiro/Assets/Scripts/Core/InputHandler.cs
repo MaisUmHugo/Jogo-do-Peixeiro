@@ -19,6 +19,9 @@ public class InputHandler : MonoBehaviour
     public Action onInventoryPressed;
     public Action onAnyButtonPressed;
 
+    [Header("Movement Input")]
+    [SerializeField, Range(0f, 0.5f)] private float moveDeadzone = 0.15f;
+
     [Header("Aim Input")]
     [SerializeField, Range(0f, 1f)] private float aimPressThreshold = 0.55f;
     [SerializeField, Range(0f, 1f)] private float aimReleaseThreshold = 0.35f;
@@ -29,6 +32,7 @@ public class InputHandler : MonoBehaviour
 
     private void OnValidate()
     {
+        moveDeadzone = Mathf.Clamp(moveDeadzone, 0f, 0.5f);
         aimPressThreshold = Mathf.Clamp01(aimPressThreshold);
         aimReleaseThreshold = Mathf.Clamp(aimReleaseThreshold, 0f, aimPressThreshold);
     }
@@ -57,7 +61,7 @@ public class InputHandler : MonoBehaviour
 
     private void Update()
     {
-        moveInput = inputActions.Player.Move.ReadValue<Vector2>();
+        moveInput = GetProcessedMoveInput(inputActions.Player.Move.ReadValue<Vector2>());
         lookInput = inputActions.Player.Look.ReadValue<Vector2>();
         UpdateAimInput();
 
@@ -112,5 +116,21 @@ public class InputHandler : MonoBehaviour
             return _zoomInput;
 
         return _zoomInput - Gamepad.current.rightTrigger.ReadValue();
+    }
+
+    private Vector2 GetProcessedMoveInput(Vector2 _moveInput)
+    {
+        if (_moveInput.magnitude < moveDeadzone)
+            return Vector2.zero;
+
+        return _moveInput;
+    }
+
+    public void ResetGameplayInput()
+    {
+        moveInput = Vector2.zero;
+        lookInput = Vector2.zero;
+        zoomInput = 0f;
+        IsAimHeld = false;
     }
 }

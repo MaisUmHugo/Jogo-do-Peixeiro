@@ -16,6 +16,14 @@ public class FishingSpotSpawner : MonoBehaviour
     [SerializeField] private float _minDistanceBetweenSpots = 8f;
     [SerializeField] private int _maxSpawnAttempts = 25;
 
+    [Header("Unfished Spot Lifetime")]
+    [SerializeField] private bool _replaceUnfishedSpots = true;
+    [SerializeField] private float _spotLifetime = 75f;
+    [SerializeField] private bool _forceNearReferenceAfterLongNoFishing = true;
+    [SerializeField] private float _longNoFishingTime = 120f;
+    [SerializeField] private float _nearReferenceMinDistance = 10f;
+    [SerializeField] private float _nearReferenceMaxDistance = 24f;
+
     [Header("Positions")]
     [SerializeField] private Transform[] _spawnPoints;
     [SerializeField] private float _spawnPointRadius = 0f;
@@ -40,6 +48,7 @@ public class FishingSpotSpawner : MonoBehaviour
 
     private readonly List<FishingSpot> _activeSpots = new();
     private Coroutine _respawnRoutine;
+    private float _lastSpotUseTime;
 
     private void OnValidate()
     {
@@ -52,6 +61,10 @@ public class FishingSpotSpawner : MonoBehaviour
         _maxSpawnAttempts = Mathf.Max(1, _maxSpawnAttempts);
         _minDistanceFromReference = Mathf.Max(0f, _minDistanceFromReference);
         _maxDistanceFromReference = Mathf.Max(_minDistanceFromReference, _maxDistanceFromReference);
+        _spotLifetime = Mathf.Max(0f, _spotLifetime);
+        _longNoFishingTime = Mathf.Max(0f, _longNoFishingTime);
+        _nearReferenceMinDistance = Mathf.Max(0f, _nearReferenceMinDistance);
+        _nearReferenceMaxDistance = Mathf.Max(_nearReferenceMinDistance, _nearReferenceMaxDistance);
         _projectionBoundsPadding = Mathf.Max(0f, _projectionBoundsPadding);
         _raycastHeight = Mathf.Max(0f, _raycastHeight);
         _raycastDistance = Mathf.Max(0.1f, _raycastDistance);
@@ -59,11 +72,18 @@ public class FishingSpotSpawner : MonoBehaviour
 
     private void Start()
     {
+        _lastSpotUseTime = Time.time;
+
         if (_spawnAtStart)
             SpawnMissingSpots();
     }
 
     public void SpawnMissingSpots()
+    {
+        SpawnMissingSpots(false);
+    }
+
+    private void SpawnMissingSpots(bool _forceNearReference)
     {
         if (_spotPrefab == null)
             return;
@@ -72,7 +92,7 @@ public class FishingSpotSpawner : MonoBehaviour
 
         while (_activeSpots.Count < _activeSpotCount)
         {
-            if (!TrySpawnSpot())
+            if (!TrySpawnSpot(_forceNearReference))
                 break;
         }
     }
@@ -81,6 +101,8 @@ public class FishingSpotSpawner : MonoBehaviour
     {
         if (_spot != null)
             _activeSpots.Remove(_spot);
+
+        _lastSpotUseTime = Time.time;
 
         if (!isActiveAndEnabled)
             return;
@@ -98,7 +120,7 @@ public class FishingSpotSpawner : MonoBehaviour
 
         foreach (FishingSpot spot in _activeSpots)
         {
-            if (spot == null || !spot.gameObject.activeSelf)
+            if (spot == null || !spot.gameObject.activeInHierarchy)
                 continue;
 
             float sqrDistance = (spot.transform.position - _referencePosition).sqrMagnitude;
@@ -121,11 +143,11 @@ public class FishingSpotSpawner : MonoBehaviour
         SpawnMissingSpots();
     }
 
-    private bool TrySpawnSpot()
+    private bool TrySpawnSpot(bool _forceNearReference)
     {
         for (int i = 0; i < _maxSpawnAttempts; i++)
         {
-            Vector3 spawnPosition = GetRandomSpawnPosition();
+            Vector3 spawnPosition = GetRandomSpawnPosition(_forceNearReference);
 
             if (!TryProjectToWater(spawnPosition, out Vector3 waterPosition))
                 continue;
@@ -136,6 +158,10 @@ public class FishingSpotSpawner : MonoBehaviour
             FishingSpot spot = Instantiate(_spotPrefab, waterPosition, _spotPrefab.transform.rotation, transform);
             spot.Initialize(_fishingArea, this, _spawnedSpotsDeactivateAfterFishingStarts);
             _activeSpots.Add(spot);
+
+            if (_replaceUnfishedSpots && _spotLifetime > 0f)
+                StartCoroutine(ExpireUnfishedSpotAfterLifetime(spot));
+
             return true;
         }
 
@@ -143,10 +169,10 @@ public class FishingSpotSpawner : MonoBehaviour
         return false;
     }
 
-    private Vector3 GetRandomSpawnPosition()
+    private Vector3 GetRandomSpawnPosition(bool _forceNearReference)
     {
-        if (_spawnNearReference)
-            return GetReferenceRelativeSpawnPosition();
+        if (_forceNearReference || _spawnNearReference)
+            return GetReferenceRelativeSpawnPosition(_forceNearReference);
 
         if (_spawnPoints != null && _spawnPoints.Length > 0)
         {
@@ -163,7 +189,7 @@ public class FishingSpotSpawner : MonoBehaviour
         return transform.position + new Vector3(areaOffset.x, 0f, areaOffset.y);
     }
 
-    private Vector3 GetReferenceRelativeSpawnPosition()
+    private Vector3 GetReferenceRelativeSpawnPosition(bool _forceNearReference)
     {
         Transform reference = GetSpawnReference();
         Vector3 forward = reference.forward;
@@ -176,9 +202,31 @@ public class FishingSpotSpawner : MonoBehaviour
 
         float angle = GetReferenceRelativeAngle();
         Vector3 direction = Quaternion.AngleAxis(angle, Vector3.up) * forward;
-        float distance = Random.Range(_minDistanceFromReference, _maxDistanceFromReference);
+        float minDistance = _forceNearReference ? _nearReferenceMinDistance : _minDistanceFromReference;
+        float maxDistance = _forceNearReference ? _nearReferenceMaxDistance : _maxDistanceFromReference;
+        float distance = Random.Range(minDistance, maxDistance);
 
         return reference.position + direction.normalized * distance;
+    }
+
+    private IEnumerator ExpireUnfishedSpotAfterLifetime(FishingSpot _spot)
+    {
+        yield return new WaitForSeconds(_spotLifetime);
+
+        if (_spot == null)
+            yield break;
+
+        if (!_activeSpots.Contains(_spot) || !_spot.gameObject.activeInHierarchy)
+            yield break;
+
+        _activeSpots.Remove(_spot);
+        Destroy(_spot.gameObject);
+
+        bool shouldForceNearReference =
+            _forceNearReferenceAfterLongNoFishing &&
+            Time.time - _lastSpotUseTime >= _longNoFishingTime;
+
+        SpawnMissingSpots(shouldForceNearReference);
     }
 
     private Transform GetSpawnReference()
@@ -283,7 +331,7 @@ public class FishingSpotSpawner : MonoBehaviour
     {
         for (int i = _activeSpots.Count - 1; i >= 0; i--)
         {
-            if (_activeSpots[i] == null || !_activeSpots[i].gameObject.activeSelf)
+            if (_activeSpots[i] == null || !_activeSpots[i].gameObject.activeInHierarchy)
                 _activeSpots.RemoveAt(i);
         }
     }

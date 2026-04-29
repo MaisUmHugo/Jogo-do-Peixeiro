@@ -79,21 +79,13 @@ public class FishDirectionPullUI : MonoBehaviour
 
     private void Awake()
     {
-        if (_directionPull == null)
-            _directionPull = FindFirstObjectByType<FishDirectionPull>();
-
-        if (_directionIcon == null)
-            _directionIcon = GetComponent<Image>();
-
-        if (_directionIcon == null)
-            _directionIcon = CreateDirectionIcon();
-
-        _directionIconRect = _directionIcon.rectTransform;
+        ResolveReferences();
         SetVisible(false);
     }
 
     private void OnEnable()
     {
+        ResolveReferences();
         SubscribeToEvents();
         RefreshDisplay();
     }
@@ -106,6 +98,8 @@ public class FishDirectionPullUI : MonoBehaviour
 
     private void SubscribeToEvents()
     {
+        ResolveReferences();
+
         if (_directionPull != null)
         {
             _directionPull.PullActiveChanged += HandlePullActiveChanged;
@@ -222,6 +216,8 @@ public class FishDirectionPullUI : MonoBehaviour
 
     private bool CanShowDirectionPull()
     {
+        ResolveReferences();
+
         return _directionPull != null &&
                _directionPull.UseDirectionalPull &&
                _directionPull.IsPullActive &&
@@ -391,7 +387,12 @@ public class FishDirectionPullUI : MonoBehaviour
     private void SetVisible(bool _visible)
     {
         if (_directionIcon != null)
-            _directionIcon.gameObject.SetActive(_visible);
+        {
+            if (_directionIcon.gameObject != gameObject)
+                _directionIcon.gameObject.SetActive(_visible);
+
+            _directionIcon.enabled = _visible;
+        }
 
         if (!_visible && _directionIconRect != null)
             _directionIconRect.localScale = Vector3.one;
@@ -408,6 +409,26 @@ public class FishDirectionPullUI : MonoBehaviour
         _hasIconTargetPosition = false;
         _lastPromptId = -1;
         RefreshDisplay();
+    }
+
+    private void ResolveReferences()
+    {
+        if (_directionPull == null)
+            _directionPull = FindFirstObjectByType<FishDirectionPull>(FindObjectsInactive.Include);
+
+        if (_iconDatabase == null)
+            _iconDatabase = FindFirstObjectByType<InputIconDatabase>(FindObjectsInactive.Include);
+
+        if (_directionIcon == null)
+            _directionIcon = GetComponentInChildren<Image>(true);
+
+        if (_directionIcon == null)
+            _directionIcon = GetComponent<Image>();
+
+        if (_directionIcon == null)
+            _directionIcon = CreateDirectionIcon();
+
+        _directionIconRect = _directionIcon.rectTransform;
     }
 
     [ContextMenu("Log Current Direction Pull UI Settings")]

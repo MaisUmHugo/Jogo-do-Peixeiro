@@ -127,9 +127,6 @@ public class ShipInventory : MonoBehaviour
             currentFishWeight += _fish.weight;
         }
 
-        if (debugShipInventory != null)
-            debugShipInventory.AttFishDebugText();
-
         bool isFullNow = IsFull;
 
         if (isFullNow && !wasFullLastUpdate)
@@ -200,6 +197,31 @@ public class ShipInventory : MonoBehaviour
         }
 
         return false;
+    }
+
+    public bool TryPayTutorialRequest(FishScriptableObject _wantedFish, int _wantedQtt, int _requiredTotalWeight)
+    {
+        if (_wantedFish == null || _wantedQtt <= 0)
+            return false;
+
+        if (CountFish(_wantedFish) < _wantedQtt)
+            return false;
+
+        if (currentFishWeight < _requiredTotalWeight)
+            return false;
+
+        for (int i = 0; i < _wantedQtt; i++)
+        {
+            int fishIndex = ownedFish.FindIndex(fish => fish.typeOfFish == _wantedFish);
+
+            if (fishIndex < 0)
+                return false;
+
+            ownedFish.RemoveAt(fishIndex);
+        }
+
+        AttFishWeight();
+        return true;
     }
 
     private FishData[] MergeSort(FishData[] _fishArray)

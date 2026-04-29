@@ -4,44 +4,105 @@ public class House : MonoBehaviour, IInteractable
 {
     [Header("Referências")]
     [SerializeField] private DayCycle dayCycle;
-    [SerializeField] private Transform exitPoint;
     [SerializeField] private GameObject sleepUI;
 
-    private Transform player;
+    private void OnEnable()
+    {
+        ResolveReferences();
+
+        if (dayCycle != null)
+            dayCycle.ForcedSleepRequested += HandleForcedSleepRequested;
+    }
+
+    private void OnDisable()
+    {
+        if (dayCycle != null)
+            dayCycle.ForcedSleepRequested -= HandleForcedSleepRequested;
+    }
+
+    // ── IInteractable ────────────────────────────────────────────────────────
+
     public void Interact()
     {
-        player = FindFirstObjectByType<PlayerInteract>().transform;
+        ResolveReferences();
 
-        sleepUI.SetActive(true);
+        if (sleepUI != null)
+            sleepUI.SetActive(true);
 
-        GameManager.instance.SetState(GameManager.GameState.InUI);
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.InUI);
     }
 
-    public bool CanInteract()
-    {
-        return true;
-    }
+    public bool CanInteract() => true;
 
-    public int GetInteractionPriority()
-    {
-        return 0;
-    }
+    public int GetInteractionPriority() => 0;
+
+    // ── Botões do sleepUI ────────────────────────────────────────────────────
+
     public void ConfirmSleep()
     {
-        sleepUI.SetActive(false);
+        if (sleepUI != null)
+            sleepUI.SetActive(false);
 
-        dayCycle.NextDay();
+        if (dayCycle != null)
+            dayCycle.NextDay();
 
-        player.position = exitPoint.position;
-        player.rotation = exitPoint.rotation;
-
-        GameManager.instance.SetState(GameManager.GameState.OnFoot);
+        // Sono voluntário: player sempre está em pé perto da casa
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
     }
 
     public void CancelSleep()
     {
-        sleepUI.SetActive(false);
+        if (sleepUI != null)
+            sleepUI.SetActive(false);
 
-        GameManager.instance.SetState(GameManager.GameState.OnFoot);
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
+    }
+
+    // ── Sono forçado (fim do dia) ─────────────────────────────────────────────
+
+    private void HandleForcedSleepRequested()
+    {
+        if (sleepUI != null)
+            sleepUI.SetActive(false);
+
+        // Cancela pescaria se estiver pescando
+        if (FishingManager.instance != null && FishingManager.instance.IsFishing)
+            FishingManager.instance.CancelFishing();
+
+        // Salva o estado atual antes de avançar o dia
+        // (pode ser OnFoot, OnBoat, etc.)
+        GameManager.GameState stateToRestore = GameManager.GameState.OnFoot;
+
+        if (GameManager.instance != null)
+        {
+            GameManager.GameState current = GameManager.instance.currentState;
+
+            // Preserva OnFoot e OnBoat; qualquer outro estado (InUI, Fishing, Paused)
+            // volta para OnFoot como fallback seguro
+            if (current == GameManager.GameState.OnFoot ||
+                current == GameManager.GameState.OnBoat)
+            {
+                stateToRestore = current;
+            }
+        }
+
+        // Avança o dia — o DayCycle reposiciona o horário para wakeUpHour
+        if (dayCycle != null)
+            dayCycle.NextDay();
+
+        // Restaura o estado correto para o player continuar se movendo
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(stateToRestore);
+    }
+
+    // ── Helpers ──────────────────────────────────────────────────────────────
+
+    private void ResolveReferences()
+    {
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<DayCycle>(FindObjectsInactive.Include);
     }
 }

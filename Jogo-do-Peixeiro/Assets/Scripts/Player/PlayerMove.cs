@@ -97,6 +97,14 @@ public class PlayerMove : MonoBehaviour
         HandleStepVFX(moveDirection);
     }
 
+    public void ResetMovementState()
+    {
+        verticalVelocity = 0f;
+        stepTimer = 0f;
+        posicaoInicial = transform.position;
+        ResetStepFeedback();
+    }
+
     private void HandleStepVFX(Vector3 _moveDirection)
     {
         if (stepVFXPrefab == null && footstepSfx == null)

@@ -71,6 +71,12 @@ public class PauseManager : MonoBehaviour
         if (GameManager.instance == null)
             return;
 
+        if (GameManager.instance.currentState != GameManager.GameState.Paused &&
+            InvertoryManager.TryCloseOpenInventory())
+        {
+            return;
+        }
+
         // se estiver na confirmação - cancela (volta pro pause)
         if (confirmPanel != null && confirmPanel.activeSelf)
         {

@@ -135,6 +135,11 @@ public class MoneyLender : MonoBehaviour
         instance.Play();
     }
 
+    public void PlayTutorialFinishFireworks()
+    {
+        StartTutorialFinishFireworks();
+    }
+
     public int GetCurrentFishWeightPayment()
     {
         return currentFishWeightPayment;
@@ -165,6 +170,13 @@ public class MoneyLender : MonoBehaviour
 
     public void TryPayButton()
     {
+        if (TutorialController.instance != null &&
+            TutorialController.instance.ShouldHandleMoneyLenderPayment(this))
+        {
+            TutorialController.instance.TryDeliverRequestedFish(this);
+            return;
+        }
+
         TryGetFishWeightPayment();
     }
 }

@@ -1,6 +1,8 @@
 using System;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class TutorialController : MonoBehaviour
 {
@@ -48,6 +50,8 @@ public class TutorialController : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject tutorialCompletePanel;
     [SerializeField] private GameObject tutorialFailedPanel;
+    [SerializeField] private Selectable tutorialCompleteFirstSelected;
+    [SerializeField] private Selectable tutorialFailedFirstSelected;
     [SerializeField] private bool pauseGameOnCompletion;
     [SerializeField] private bool pauseGameOnFailure = true;
 
@@ -85,6 +89,7 @@ public class TutorialController : MonoBehaviour
     private int tutorialStartDay = 1;
     private bool hasAcceptedRequest;
     private bool isFinishingDelivery;
+    private bool isShowingEndPanel;
 
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
@@ -101,6 +106,7 @@ public class TutorialController : MonoBehaviour
     public bool IsTutorialFailed { get; private set; }
     public bool IsTutorialEnabled => runTutorial;
     public bool IsTutorialRunning => runTutorial && !IsTutorialFinished && !IsTutorialFailed;
+    public bool IsHandlingPayment => IsTutorialRunning && handleMoneyLenderDuringTutorial && hasAcceptedRequest;
 
     private void Awake()
     {
@@ -131,6 +137,7 @@ public class TutorialController : MonoBehaviour
         TutorialEvents.BoatEntryBlockRequested += ShouldBlockBoatEntry;
         TutorialEvents.BoatEntryBlocked += HandleBoatEntryBlocked;
         TutorialEvents.BoatEntered += NotifyEnteredBoat;
+        TutorialEvents.BoatExited += NotifyExitedBoat;
         TutorialEvents.FishCaught += NotifyFishCaught;
 
         if (dayCycle != null)
@@ -143,6 +150,7 @@ public class TutorialController : MonoBehaviour
         TutorialEvents.BoatEntryBlockRequested -= ShouldBlockBoatEntry;
         TutorialEvents.BoatEntryBlocked -= HandleBoatEntryBlocked;
         TutorialEvents.BoatEntered -= NotifyEnteredBoat;
+        TutorialEvents.BoatExited -= NotifyExitedBoat;
         TutorialEvents.FishCaught -= NotifyFishCaught;
 
         if (dayCycle != null)
@@ -166,6 +174,12 @@ public class TutorialController : MonoBehaviour
 
     private void Update()
     {
+        if (isShowingEndPanel)
+        {
+            KeepEndPanelUiReady();
+            return;
+        }
+
         if (!IsTutorialRunning || !autoTargetActiveFishingSpot)
             return;
 
@@ -199,6 +213,24 @@ public class TutorialController : MonoBehaviour
 
         if (currentStep == TutorialStep.GoToBoat)
             SetStep(TutorialStep.GoToFishingSpot);
+    }
+
+    public void NotifyExitedBoat()
+    {
+        if (!IsTutorialRunning || !hasAcceptedRequest)
+            return;
+
+        if (HasCompletedDeliveryRequest)
+        {
+            SetStep(TutorialStep.TalkToMoneyLender);
+            return;
+        }
+
+        if (currentStep == TutorialStep.GoToFishingSpot ||
+            currentStep == TutorialStep.CatchRequiredFish)
+        {
+            SetStep(TutorialStep.GoToBoat);
+        }
     }
 
     public void NotifyReachedFishingSpot()
@@ -248,6 +280,7 @@ public class TutorialController : MonoBehaviour
 
     public void ContinueAfterTutorial()
     {
+        isShowingEndPanel = false;
         Time.timeScale = 1f;
         SetPanelActive(tutorialCompletePanel, false);
 
@@ -257,6 +290,7 @@ public class TutorialController : MonoBehaviour
 
     public void CloseTutorialFailedPanel()
     {
+        isShowingEndPanel = false;
         Time.timeScale = 1f;
         SetPanelActive(tutorialFailedPanel, false);
 
@@ -264,24 +298,24 @@ public class TutorialController : MonoBehaviour
             GameManager.instance.SetState(GameManager.GameState.OnFoot);
     }
 
-    private bool HandleMoneyLenderInteraction(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
+    private bool HandleMoneyLenderInteraction(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
         if (!IsTutorialRunning || !handleMoneyLenderDuringTutorial)
             return false;
 
         if (currentStep == TutorialStep.GoToMoneyLenderCabin)
         {
-            StartDeliveryRequest(_moneyLender, _moneyLenderUI);
+            StartDeliveryRequest(_moneyLender, _paymentUI, _moneyLenderUI);
             return true;
         }
 
         if (!hasAcceptedRequest)
         {
-            StartDeliveryRequest(_moneyLender, _moneyLenderUI);
+            StartDeliveryRequest(_moneyLender, _paymentUI, _moneyLenderUI);
             return true;
         }
 
-        OpenTutorialMoneyLenderUI(_moneyLender, _moneyLenderUI);
+        OpenTutorialPaymentUI(_moneyLender, _paymentUI, _moneyLenderUI);
         return true;
     }
 
@@ -324,7 +358,7 @@ public class TutorialController : MonoBehaviour
                 currentStep == TutorialStep.GoToFishingSpot ||
                 currentStep == TutorialStep.GoToBoat))
             {
-                SetStep(TutorialStep.ReturnToDock);
+                SetStep(TutorialStep.TalkToMoneyLender);
                 return;
             }
         }
@@ -351,7 +385,7 @@ public class TutorialController : MonoBehaviour
             FailTutorial();
     }
 
-    private void StartDeliveryRequest(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
+    private void StartDeliveryRequest(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
         PickRandomRequest(_moneyLender);
         hasAcceptedRequest = true;
@@ -365,25 +399,35 @@ public class TutorialController : MonoBehaviour
                 basicPanelSequence.Show(() =>
                 {
                     SetStep(TutorialStep.GoToBoat);
-                    OpenTutorialMoneyLenderUI(_moneyLender, _moneyLenderUI);
+                    OpenTutorialPaymentUI(_moneyLender, _paymentUI, _moneyLenderUI);
                 });
                 return;
             }
 
             SetStep(TutorialStep.GoToBoat);
-            OpenTutorialMoneyLenderUI(_moneyLender, _moneyLenderUI);
+            OpenTutorialPaymentUI(_moneyLender, _paymentUI, _moneyLenderUI);
         });
     }
 
-    private void OpenTutorialMoneyLenderUI(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
+    private void OpenTutorialPaymentUI(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
-        if (_moneyLenderUI == null)
+        if (_paymentUI != null)
+        {
+            _paymentUI.OpenForTutorial(_moneyLender, this);
+            return;
+        }
+
+        if (_moneyLenderUI != null)
+        {
+            _moneyLenderUI.OpenForTutorial(_moneyLender, this);
+            return;
+        }
+
+        if (_paymentUI == null && _moneyLenderUI == null)
         {
             ShowMissingRequestMessage(false);
             return;
         }
-
-        _moneyLenderUI.OpenForTutorial(_moneyLender, this);
     }
 
     private void PickRandomRequest(MoneyLender _moneyLender)
@@ -455,16 +499,41 @@ public class TutorialController : MonoBehaviour
 
     private bool TryPayRequestedFish(MoneyLender _moneyLender)
     {
-        if (_moneyLender != null)
-            return _moneyLender.TryGetSpecificFishPayment(requestedFish, requestedQuantity, true);
+        if (shipInventory == null)
+            shipInventory = FindFirstObjectByType<ShipInventory>(FindObjectsInactive.Include);
 
         if (shipInventory == null)
             return false;
 
-        return shipInventory.TryPaySpecificFish(requestedFish, requestedQuantity);
+        bool paid = shipInventory.TryPayTutorialRequest(requestedFish, requestedQuantity, requestedTotalWeight);
+
+        if (paid && _moneyLender != null)
+            _moneyLender.PlayTutorialFinishFireworks();
+
+        return paid;
+    }
+
+    public bool ShouldHandleMoneyLenderPayment(MoneyLender _moneyLender)
+    {
+        return IsHandlingPayment;
+    }
+
+    public bool TryDeliverRequestedFish(MoneyLender _moneyLender)
+    {
+        return TryDeliverRequestedFishInternal(_moneyLender, null, null);
+    }
+
+    public bool TryDeliverRequestedFishFromPaymentUI(MoneyLender _moneyLender, PaymentUI _paymentUI)
+    {
+        return TryDeliverRequestedFishInternal(_moneyLender, _paymentUI, null);
     }
 
     public bool TryDeliverRequestedFishFromUI(MoneyLender _moneyLender, MoneyLenderUI _moneyLenderUI)
+    {
+        return TryDeliverRequestedFishInternal(_moneyLender, null, _moneyLenderUI);
+    }
+
+    private bool TryDeliverRequestedFishInternal(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
         if (!IsTutorialRunning || !hasAcceptedRequest)
             return false;
@@ -484,6 +553,9 @@ public class TutorialController : MonoBehaviour
             ShowMissingRequestMessage(false);
             return false;
         }
+
+        if (_paymentUI != null)
+            _paymentUI.CloseForTutorialFinish();
 
         if (_moneyLenderUI != null)
             _moneyLenderUI.CloseForTutorialFinish();
@@ -515,16 +587,7 @@ public class TutorialController : MonoBehaviour
 
         ShowDialog(completedDialog, () =>
         {
-            SetPanelActive(tutorialCompletePanel, true);
-
-            if (pauseGameOnCompletion)
-                Time.timeScale = 0f;
-
-            if (GameManager.instance != null)
-                GameManager.instance.SetState(GameManager.GameState.InUI);
-
-            Cursor.lockState = CursorLockMode.None;
-            Cursor.visible = true;
+            ShowEndPanel(tutorialCompletePanel, tutorialCompleteFirstSelected, pauseGameOnCompletion);
             ShowWarning("Tutorial concluído!");
         });
     }
@@ -535,16 +598,84 @@ public class TutorialController : MonoBehaviour
         isFinishingDelivery = false;
         SetStep(TutorialStep.Failed);
 
-        SetPanelActive(tutorialFailedPanel, true);
+        ShowEndPanel(tutorialFailedPanel, tutorialFailedFirstSelected, pauseGameOnFailure);
+    }
 
-        if (pauseGameOnFailure)
-            Time.timeScale = 0f;
+    private void ShowEndPanel(GameObject _panel, Selectable _firstSelected, bool _pauseGame)
+    {
+        if (textCanvaManager != null)
+            textCanvaManager.CloseDialog();
+
+        SetPanelActive(_panel, true);
+        PreparePanelForInput(_panel);
+
+        Time.timeScale = _pauseGame ? 0f : 1f;
 
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.InUI);
 
+        UnlockCursorForUi();
+        SelectEndPanelButton(_panel, _firstSelected);
+        isShowingEndPanel = true;
+    }
+
+    private void KeepEndPanelUiReady()
+    {
+        if (!IsPanelActive(tutorialCompletePanel) && !IsPanelActive(tutorialFailedPanel))
+        {
+            isShowingEndPanel = false;
+            return;
+        }
+
+        UnlockCursorForUi();
+    }
+
+    private void UnlockCursorForUi()
+    {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
+    }
+
+    private void PreparePanelForInput(GameObject _panel)
+    {
+        if (_panel == null)
+            return;
+
+        CanvasGroup[] canvasGroups = _panel.GetComponentsInParent<CanvasGroup>(true);
+
+        foreach (CanvasGroup canvasGroup in canvasGroups)
+        {
+            canvasGroup.alpha = 1f;
+            canvasGroup.interactable = true;
+            canvasGroup.blocksRaycasts = true;
+        }
+
+        Selectable[] selectables = _panel.GetComponentsInChildren<Selectable>(true);
+
+        foreach (Selectable selectable in selectables)
+            selectable.interactable = true;
+    }
+
+    private void SelectEndPanelButton(GameObject _panel, Selectable _firstSelected)
+    {
+        if (EventSystem.current == null || _panel == null)
+            return;
+
+        Selectable target = _firstSelected;
+
+        if (target == null || !target.gameObject.activeInHierarchy)
+            target = _panel.GetComponentInChildren<Selectable>(true);
+
+        if (target == null)
+            return;
+
+        EventSystem.current.SetSelectedGameObject(null);
+        EventSystem.current.SetSelectedGameObject(target.gameObject);
+    }
+
+    private bool IsPanelActive(GameObject _panel)
+    {
+        return _panel != null && _panel.activeInHierarchy;
     }
 
     private void ShowDialog(DialogData _dialogData, Action _onFinished = null)
@@ -678,28 +809,27 @@ public class TutorialController : MonoBehaviour
         switch (currentStep)
         {
             case TutorialStep.GoToMoneyLenderCabin:
-                SetMarkerActive(moneyLenderCabinMarker, true);
+                SetLegacyMarkerTarget(moneyLenderCabinMarker, moneyLenderCabinMarkerTarget);
                 break;
 
             case TutorialStep.GoToBoat:
                 if (boatMarker != null)
-                    SetMarkerActive(boatMarker, true);
+                    SetLegacyMarkerTarget(boatMarker, boatMarkerTarget != null ? boatMarkerTarget : dockMarkerTarget);
                 else
-                    SetMarkerActive(dockMarker, true);
+                    SetLegacyMarkerTarget(dockMarker, dockMarkerTarget);
                 break;
 
             case TutorialStep.GoToFishingSpot:
             case TutorialStep.CatchRequiredFish:
-                SetMarkerActive(fishingSpotMarker, true);
                 break;
 
             case TutorialStep.ReturnToDock:
-                SetMarkerActive(dockMarker, true);
+                SetLegacyMarkerTarget(dockMarker, dockMarkerTarget);
                 break;
 
             case TutorialStep.TalkToMoneyLender:
             case TutorialStep.DeliverFish:
-                SetMarkerActive(moneyLenderMarker, true);
+                SetLegacyMarkerTarget(moneyLenderMarker, moneyLenderMarkerTarget);
                 break;
         }
     }
@@ -763,7 +893,7 @@ public class TutorialController : MonoBehaviour
 
             case TutorialStep.GoToFishingSpot:
             case TutorialStep.CatchRequiredFish:
-                return GetFishingSpotMarkerTarget();
+                return null;
 
             case TutorialStep.ReturnToDock:
                 return dockMarkerTarget;
@@ -783,18 +913,50 @@ public class TutorialController : MonoBehaviour
             return fishingSpotMarkerTarget;
 
         if (fishingSpotSpawner == null)
-            fishingSpotSpawner = FindFirstObjectByType<FishingSpotSpawner>();
-
-        if (fishingSpotSpawner == null)
-            return fishingSpotMarkerTarget;
+            fishingSpotSpawner = FindFirstObjectByType<FishingSpotSpawner>(FindObjectsInactive.Include);
 
         Vector3 referencePosition = GetFishingSpotMarkerReferencePosition();
+
+        if (fishingSpotSpawner == null)
+        {
+            Transform sceneFallbackTarget = GetFallbackFishingSpotMarkerTarget(referencePosition);
+            return sceneFallbackTarget != null ? sceneFallbackTarget : fishingSpotMarkerTarget;
+        }
+
         FishingSpot activeSpot = fishingSpotSpawner.GetClosestActiveSpot(referencePosition);
 
         if (activeSpot != null)
-            return activeSpot.transform;
+            return activeSpot.GetMarkerTarget();
+
+        Transform fallbackTarget = GetFallbackFishingSpotMarkerTarget(referencePosition);
+
+        if (fallbackTarget != null)
+            return fallbackTarget;
 
         return fishingSpotMarkerTarget;
+    }
+
+    private Transform GetFallbackFishingSpotMarkerTarget(Vector3 _referencePosition)
+    {
+        FishingSpot[] sceneSpots = FindObjectsByType<FishingSpot>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
+        FishingSpot closestSpot = null;
+        float closestSqrDistance = float.MaxValue;
+
+        foreach (FishingSpot spot in sceneSpots)
+        {
+            if (spot == null || !spot.gameObject.activeInHierarchy)
+                continue;
+
+            float sqrDistance = (spot.transform.position - _referencePosition).sqrMagnitude;
+
+            if (sqrDistance >= closestSqrDistance)
+                continue;
+
+            closestSqrDistance = sqrDistance;
+            closestSpot = spot;
+        }
+
+        return closestSpot != null ? closestSpot.GetMarkerTarget() : null;
     }
 
     private Vector3 GetFishingSpotMarkerReferencePosition()
@@ -815,6 +977,27 @@ public class TutorialController : MonoBehaviour
     {
         if (_marker != null)
             _marker.SetActive(_active);
+    }
+
+    private void SetLegacyMarkerTarget(GameObject _marker, Transform _target)
+    {
+        if (_marker == null)
+            return;
+
+        _marker.SetActive(_target != null);
+
+        if (_target == null)
+            return;
+
+        TutorialMarker marker = _marker.GetComponent<TutorialMarker>();
+
+        if (marker != null)
+        {
+            marker.SetTarget(_target);
+            return;
+        }
+
+        _marker.transform.position = _target.position;
     }
 
     private void SetPanelActive(GameObject _panel, bool _active)

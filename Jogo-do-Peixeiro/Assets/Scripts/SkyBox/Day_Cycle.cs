@@ -5,6 +5,7 @@ using UnityEngine;
 public class DayCycle : MonoBehaviour
 {
     public event Action<int> DayChanged;
+    public event Action ForcedSleepRequested;
 
     [Header("Referências")]
     [SerializeField] private Material skyboxMaterial;
@@ -32,6 +33,18 @@ public class DayCycle : MonoBehaviour
     [SerializeField] private TextMeshProUGUI DayText;
     [SerializeField] private int elapsedDays = 1;
 
+    [Header("Sono Obrigatório")]
+    [SerializeField] private bool forceSleepAfterDeadline = true;
+    [SerializeField, Range(0f, 24f)] private float bedtimeWarningHour = 0f;
+    [SerializeField, Range(0f, 24f)] private float forcedSleepHour = 1f;
+    [SerializeField, Range(0f, 24f)] private float wakeUpHour = 6f;
+    [SerializeField] private string bedtimeWarningMessage = "Está ficando tarde. Volte para dormir.";
+    [SerializeField] private string forcedSleepMessage = "Você apagou de sono e acordou às 6 AM.";
+
+    private bool hasShownBedtimeWarning;
+    private bool hasForcedSleepThisNight;
+    private bool hasAdvancedDaySinceLastWake;
+
     public int CurrentDay => currentDay;
     public int TotalDays => totalDays;
     public int ElapsedDays => elapsedDays;
@@ -44,12 +57,19 @@ public class DayCycle : MonoBehaviour
 
     void Update()
     {
+        float previousTime = currentTime;
         currentTime += Time.deltaTime / dayDuration;
-        if (currentTime > 1f)
+        bool wrappedDay = false;
+
+        while (currentTime >= 1f)
         {
-            currentTime = 0f;
+            currentTime -= 1f;
+            AdvanceDay(false);
+            hasAdvancedDaySinceLastWake = true;
+            wrappedDay = true;
         }
 
+        UpdateSleepDeadline(previousTime, currentTime, wrappedDay);
         UpdateSun();
         UpdateSkybox();
         UpdateTime();
@@ -116,19 +136,89 @@ public class DayCycle : MonoBehaviour
 
     public void NextDay()
     {
+        AdvanceDay(true);
+        ResetSleepDeadlineState();
+    }
+
+    private void AdvanceDay(bool _resetToMorning)
+    {
         currentDay++;
         elapsedDays++;
 
         if (currentDay > totalDays)
             currentDay = 1;
 
-        currentTime = 6f / 24f;
-        Clock = 6f;
+        if (_resetToMorning)
+        {
+            SetTimeToHour(wakeUpHour);
+        }
 
         UpdateSun();
         UpdateSkybox();
         UpdateTime();
         UpdateDayUI();
         DayChanged?.Invoke(elapsedDays);
+    }
+
+    private void UpdateSleepDeadline(float _previousTime, float _currentTime, bool _wrappedDay)
+    {
+        if (!forceSleepAfterDeadline)
+            return;
+
+        if (!hasShownBedtimeWarning && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, bedtimeWarningHour))
+        {
+            hasShownBedtimeWarning = true;
+
+            if (HUDWarningUI.Instance != null)
+                HUDWarningUI.Instance.ShowWarning(bedtimeWarningMessage);
+        }
+
+        if (!hasForcedSleepThisNight && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, forcedSleepHour))
+            ForceSleep();
+    }
+
+    private bool HasCrossedHour(float _previousTime, float _currentTime, bool _wrappedDay, float _targetHour)
+    {
+        float targetNormalized = Mathf.Repeat(_targetHour, 24f) / 24f;
+
+        if (!_wrappedDay)
+            return _previousTime < targetNormalized && _currentTime >= targetNormalized;
+
+        return _previousTime < targetNormalized || _currentTime >= targetNormalized;
+    }
+
+    private void ForceSleep()
+    {
+        hasForcedSleepThisNight = true;
+
+        if (!hasAdvancedDaySinceLastWake)
+            AdvanceDay(false);
+
+        SetTimeToHour(wakeUpHour);
+        ResetSleepDeadlineState();
+
+        UpdateSun();
+        UpdateSkybox();
+        UpdateTime();
+        UpdateDayUI();
+
+        if (HUDWarningUI.Instance != null)
+            HUDWarningUI.Instance.ShowWarning(forcedSleepMessage);
+
+        ForcedSleepRequested?.Invoke();
+    }
+
+    private void SetTimeToHour(float _hour)
+    {
+        float normalizedHour = Mathf.Repeat(_hour, 24f) / 24f;
+        currentTime = normalizedHour;
+        Clock = Mathf.Repeat(_hour, 24f);
+    }
+
+    private void ResetSleepDeadlineState()
+    {
+        hasShownBedtimeWarning = false;
+        hasForcedSleepThisNight = false;
+        hasAdvancedDaySinceLastWake = false;
     }
 }
