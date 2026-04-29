@@ -35,25 +35,12 @@ public class MoneyLender : MonoBehaviour
 
         if (!shipInventory.TryPayFishWeight(currentFishWeightPayment))
         {
-            Debug.Log("Não tem peso de peixe suficiente para pagar.");
+            Debug.Log("NÃ£o tem peso de peixe suficiente para pagar.");
             return false;
         }
 
-        bool tutorialWasActive = TutorialHandler.Instance != null && !TutorialHandler.Instance.IsTutorialFinished;
-
         GetFishWeightPayment();
-
-        if (TutorialHandler.Instance != null)
-            TutorialHandler.Instance.GoNextObjective();
-
-        bool tutorialFinishedNow = tutorialWasActive &&
-                                   TutorialHandler.Instance != null &&
-                                   TutorialHandler.Instance.IsTutorialFinished;
-
-        if (tutorialFinishedNow)
-            StartTutorialFinishFireworks();
-        else
-            PlayFireworkVFX();
+        PlayFireworkVFX();
 
         Debug.Log("Pagou o peso de peixe.");
         return true;
@@ -72,19 +59,28 @@ public class MoneyLender : MonoBehaviour
 
     public bool TryGetSpecificFishPayment()
     {
-        if (shipInventory == null || specificFish == null)
+        return TryGetSpecificFishPayment(specificFish, qttSpecificFish);
+    }
+
+    public bool TryGetSpecificFishPayment(FishScriptableObject _specificFish, int _specificFishQuantity, bool _useTutorialFireworks = false)
+    {
+        if (shipInventory == null || _specificFish == null)
             return false;
 
-        if (!shipInventory.TryPaySpecificFish(specificFish, qttSpecificFish))
+        if (!shipInventory.TryPaySpecificFish(_specificFish, _specificFishQuantity))
         {
-            Debug.Log($"Não tem quantidade suficiente de {specificFish.fishName}.");
+            Debug.Log($"NÃ£o tem quantidade suficiente de {_specificFish.fishName}.");
             return false;
         }
 
         GetSpecificFishPayment();
-        PlayFireworkVFX();
 
-        Debug.Log($"Pagou {specificFish.fishName}.");
+        if (_useTutorialFireworks)
+            StartTutorialFinishFireworks();
+        else
+            PlayFireworkVFX();
+
+        Debug.Log($"Pagou {_specificFish.fishName}.");
         return true;
     }
 
