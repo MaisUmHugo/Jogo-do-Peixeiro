@@ -1,4 +1,5 @@
 using System.Collections;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -7,8 +8,16 @@ public class FishingManager : MonoBehaviour
     public static FishingManager instance;
 
     [Header("UI")]
-    [FormerlySerializedAs("fishingResultUI")]
-    [SerializeField] private FishingResultUI _fishingResultUI;
+    [FormerlySerializedAs("fishingResultPanelUI")]
+    [FormerlySerializedAs("_fishResultPanelUI")]
+    [SerializeField] private FishResultUI _fishResultUI;
+
+    [Header("Fishing Visibility")]
+    [FormerlySerializedAs("_panelsToCloseOnFishingStart")]
+    [SerializeField] private GameObject[] _panelsToHideWhileFishing;
+    [SerializeField] private bool _restoreHiddenPanelsAfterFishing = true;
+    [SerializeField] private bool _hidePanelsWithCanvasGroup = true;
+    [SerializeField] private bool _closeInventoryOnFishingStart = true;
 
     [Header("Fishing Settings")]
     [FormerlySerializedAs("useSkillCheck")]
@@ -21,6 +30,15 @@ public class FishingManager : MonoBehaviour
     [SerializeField] private float _rarity1ProgressMultiplier = 1f;
     [SerializeField] private float _rarity2ProgressMultiplier = 0.85f;
     [SerializeField] private float _rarity3ProgressMultiplier = 0.7f;
+
+    [Header("Fish Selection")]
+    [SerializeField] private bool _avoidRepeatingSameFish = true;
+    [SerializeField, Min(1)] private int _maxSameFishInARow = 2;
+    [SerializeField] private bool _boostObjectiveFishChance = true;
+    [SerializeField] private bool _onlyBoostObjectiveFishWhileStillNeeded = true;
+    [SerializeField, Range(0f, 1f)] private float _objectiveFishBaseChance = 0.35f;
+    [SerializeField, Range(0f, 1f)] private float _objectiveFishChanceIncreasePerMiss = 0.15f;
+    [SerializeField, Min(0)] private int _objectiveFishGuaranteedAfterMisses = 4;
 
     [Header("References")]
     [FormerlySerializedAs("fishSkillCheck")]
@@ -35,11 +53,28 @@ public class FishingManager : MonoBehaviour
     public bool IsFishing { get; private set; }
     public bool HasFishBitten { get; private set; }
     public float ProgressNormalized { get; private set; }
+    public event System.Action<bool, bool> FishingEnded;
 
     private ShipInventory _currentShipInventory;
     private FishScriptableObject[] _currentAvailableFish;
     private FishScriptableObject _selectedFishType;
     private FishData _pendingFish;
+    private FishScriptableObject _lastBittenFishType;
+    private int _sameFishBiteStreak;
+    private int _objectiveFishMissStreak;
+    private HiddenPanelState[] _hiddenPanelStates;
+    private bool _waitForCatchResultClose;
+
+    private struct HiddenPanelState
+    {
+        public GameObject Panel;
+        public CanvasGroup CanvasGroup;
+        public bool WasActiveSelf;
+        public bool WasHiddenWithCanvasGroup;
+        public float OriginalAlpha;
+        public bool OriginalInteractable;
+        public bool OriginalBlocksRaycasts;
+    }
 
     private void Awake()
     {
@@ -58,6 +93,20 @@ public class FishingManager : MonoBehaviour
         AutoAssignMissingReferences();
     }
 
+    private void OnDisable()
+    {
+        UnsubscribeCatchResultPanel();
+        RestoreConfiguredPanelsAfterFishing();
+    }
+
+    private void OnValidate()
+    {
+        _maxSameFishInARow = Mathf.Max(1, _maxSameFishInARow);
+        _objectiveFishBaseChance = Mathf.Clamp01(_objectiveFishBaseChance);
+        _objectiveFishChanceIncreasePerMiss = Mathf.Clamp01(_objectiveFishChanceIncreasePerMiss);
+        _objectiveFishGuaranteedAfterMisses = Mathf.Max(0, _objectiveFishGuaranteedAfterMisses);
+    }
+
     private void AutoAssignMissingReferences()
     {
         if (_fishSkillCheck == null)
@@ -71,6 +120,9 @@ public class FishingManager : MonoBehaviour
 
         if (_fishingRod == null)
             _fishingRod = FindFirstObjectByType<FishingRod>(FindObjectsInactive.Include);
+
+        if (_fishResultUI == null)
+            _fishResultUI = FindFirstObjectByType<FishResultUI>(FindObjectsInactive.Include);
     }
 
     private void Update()
@@ -112,6 +164,7 @@ public class FishingManager : MonoBehaviour
 
         _currentShipInventory = _shipInventory;
         _currentAvailableFish = _availableFish;
+        _waitForCatchResultClose = false;
 
         _selectedFishType = PickRandomFishType();
 
@@ -132,6 +185,7 @@ public class FishingManager : MonoBehaviour
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.Fishing);
 
+        HideConfiguredPanelsForFishing();
         StartBiteWaiting();
         return true;
     }
@@ -142,6 +196,88 @@ public class FishingManager : MonoBehaviour
             return;
 
         EndFishing(false);
+    }
+
+    private void HideConfiguredPanelsForFishing()
+    {
+        if (_closeInventoryOnFishingStart)
+            InvertoryManager.TryCloseOpenInventory();
+
+        if (_panelsToHideWhileFishing == null || _panelsToHideWhileFishing.Length == 0)
+            return;
+
+        _hiddenPanelStates = new HiddenPanelState[_panelsToHideWhileFishing.Length];
+
+        for (int i = 0; i < _panelsToHideWhileFishing.Length; i++)
+        {
+            GameObject panel = _panelsToHideWhileFishing[i];
+
+            if (panel == null)
+                continue;
+
+            HiddenPanelState state = new HiddenPanelState
+            {
+                Panel = panel,
+                WasActiveSelf = panel.activeSelf
+            };
+
+            if (_hidePanelsWithCanvasGroup && _restoreHiddenPanelsAfterFishing && panel.activeInHierarchy)
+            {
+                CanvasGroup canvasGroup = panel.GetComponent<CanvasGroup>();
+
+                if (canvasGroup == null)
+                    canvasGroup = panel.AddComponent<CanvasGroup>();
+
+                state.CanvasGroup = canvasGroup;
+                state.WasHiddenWithCanvasGroup = true;
+                state.OriginalAlpha = canvasGroup.alpha;
+                state.OriginalInteractable = canvasGroup.interactable;
+                state.OriginalBlocksRaycasts = canvasGroup.blocksRaycasts;
+
+                canvasGroup.alpha = 0f;
+                canvasGroup.interactable = false;
+                canvasGroup.blocksRaycasts = false;
+            }
+            else
+            {
+                panel.SetActive(false);
+            }
+
+            _hiddenPanelStates[i] = state;
+        }
+    }
+
+    private void RestoreConfiguredPanelsAfterFishing()
+    {
+        if (_hiddenPanelStates == null)
+            return;
+
+        if (!_restoreHiddenPanelsAfterFishing)
+        {
+            _hiddenPanelStates = null;
+            return;
+        }
+
+        for (int i = 0; i < _hiddenPanelStates.Length; i++)
+        {
+            HiddenPanelState state = _hiddenPanelStates[i];
+            GameObject panel = state.Panel;
+
+            if (panel == null)
+                continue;
+
+            if (state.WasHiddenWithCanvasGroup && state.CanvasGroup != null)
+            {
+                state.CanvasGroup.alpha = state.OriginalAlpha;
+                state.CanvasGroup.interactable = state.OriginalInteractable;
+                state.CanvasGroup.blocksRaycasts = state.OriginalBlocksRaycasts;
+                continue;
+            }
+
+            panel.SetActive(state.WasActiveSelf);
+        }
+
+        _hiddenPanelStates = null;
     }
 
     private void StartBiteWaiting()
@@ -161,6 +297,7 @@ public class FishingManager : MonoBehaviour
             return;
 
         HasFishBitten = true;
+        RegisterBittenFish(_selectedFishType);
 
         if (_fishDirectionPull != null)
             _fishDirectionPull.StartPull(_selectedFishType);
@@ -270,8 +407,159 @@ public class FishingManager : MonoBehaviour
         if (_currentAvailableFish == null || _currentAvailableFish.Length == 0)
             return null;
 
-        int randomIndex = Random.Range(0, _currentAvailableFish.Length);
-        return _currentAvailableFish[randomIndex];
+        List<FishScriptableObject> candidates = BuildFishSelectionCandidates();
+
+        if (candidates.Count == 0)
+            return null;
+
+        FishScriptableObject objectiveFish = GetCurrentObjectiveFish();
+
+        if (objectiveFish != null &&
+            ContainsFish(candidates, objectiveFish) &&
+            ShouldPickObjectiveFish())
+        {
+            return objectiveFish;
+        }
+
+        int randomIndex = Random.Range(0, candidates.Count);
+        return candidates[randomIndex];
+    }
+
+    private List<FishScriptableObject> BuildFishSelectionCandidates()
+    {
+        List<FishScriptableObject> candidates = new List<FishScriptableObject>();
+
+        for (int i = 0; i < _currentAvailableFish.Length; i++)
+        {
+            FishScriptableObject fishType = _currentAvailableFish[i];
+
+            if (fishType != null)
+                candidates.Add(fishType);
+        }
+
+        if (!_avoidRepeatingSameFish ||
+            candidates.Count <= 1 ||
+            _lastBittenFishType == null ||
+            _sameFishBiteStreak < _maxSameFishInARow)
+        {
+            return candidates;
+        }
+
+        bool hasAlternativeFish = false;
+
+        for (int i = 0; i < candidates.Count; i++)
+        {
+            if (candidates[i] != _lastBittenFishType)
+            {
+                hasAlternativeFish = true;
+                break;
+            }
+        }
+
+        if (!hasAlternativeFish)
+            return candidates;
+
+        candidates.RemoveAll(fishType => fishType == _lastBittenFishType);
+        return candidates;
+    }
+
+    private bool ShouldPickObjectiveFish()
+    {
+        if (!_boostObjectiveFishChance)
+            return false;
+
+        if (_objectiveFishGuaranteedAfterMisses > 0 &&
+            _objectiveFishMissStreak >= _objectiveFishGuaranteedAfterMisses)
+        {
+            return true;
+        }
+
+        float chance = _objectiveFishBaseChance +
+                       _objectiveFishChanceIncreasePerMiss * _objectiveFishMissStreak;
+
+        return Random.value <= Mathf.Clamp01(chance);
+    }
+
+    private FishScriptableObject GetCurrentObjectiveFish()
+    {
+        TutorialController tutorialController = TutorialController.instance;
+
+        if (!_boostObjectiveFishChance ||
+            tutorialController == null ||
+            !tutorialController.IsTutorialRunning ||
+            !tutorialController.HasAcceptedRequest ||
+            tutorialController.RequestedFish == null)
+        {
+            return null;
+        }
+
+        if (_onlyBoostObjectiveFishWhileStillNeeded &&
+            tutorialController.HasEnoughRequestedFish)
+        {
+            return null;
+        }
+
+        return tutorialController.RequestedFish;
+    }
+
+    private bool ContainsFish(List<FishScriptableObject> _fishList, FishScriptableObject _fishType)
+    {
+        if (_fishList == null || _fishType == null)
+            return false;
+
+        for (int i = 0; i < _fishList.Count; i++)
+        {
+            if (_fishList[i] == _fishType)
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool ContainsFish(FishScriptableObject[] _fishList, FishScriptableObject _fishType)
+    {
+        if (_fishList == null || _fishType == null)
+            return false;
+
+        for (int i = 0; i < _fishList.Length; i++)
+        {
+            if (_fishList[i] == _fishType)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void RegisterBittenFish(FishScriptableObject _fishType)
+    {
+        if (_fishType == null)
+            return;
+
+        if (_fishType == _lastBittenFishType)
+        {
+            _sameFishBiteStreak++;
+        }
+        else
+        {
+            _lastBittenFishType = _fishType;
+            _sameFishBiteStreak = 1;
+        }
+
+        FishScriptableObject objectiveFish = GetCurrentObjectiveFish();
+
+        if (objectiveFish == null || !ContainsFish(_currentAvailableFish, objectiveFish))
+        {
+            _objectiveFishMissStreak = 0;
+            return;
+        }
+
+        if (_fishType == objectiveFish)
+        {
+            _objectiveFishMissStreak = 0;
+            return;
+        }
+
+        _objectiveFishMissStreak++;
     }
 
     private float GetProgressMultiplierByFish()
@@ -306,16 +594,15 @@ public class FishingManager : MonoBehaviour
         {
             Debug.Log($"Peixe capturado: {_pendingFish.typeOfFish.fishName} - {_pendingFish.weight}kg");
 
-            if (HUDFishInfoUI.Instance != null)
+            bool showedCatchResult = TryShowCatchResult(_pendingFish);
+
+            if (!showedCatchResult && HUDFishInfoUI.Instance != null)
             {
                 HUDFishInfoUI.Instance.ShowFishInfo(
                     _pendingFish.typeOfFish.fishName,
                     _pendingFish.weight
                 );
             }
-
-            if (_fishingResultUI != null)
-                _fishingResultUI.ShowCatchResult(_pendingFish);
 
             UpdateTutorialAfterFishCaught(_pendingFish);
         }
@@ -337,6 +624,8 @@ public class FishingManager : MonoBehaviour
 
     private void EndFishing(bool _success)
     {
+        bool hadFishBitten = HasFishBitten;
+
         IsFishing = false;
         HasFishBitten = false;
         ProgressNormalized = 0f;
@@ -351,12 +640,64 @@ public class FishingManager : MonoBehaviour
             _fishSkillCheck.StopSkillCheck();
 
         if (GameManager.instance != null)
-            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+            GameManager.instance.SetState(_waitForCatchResultClose ? GameManager.GameState.InUI : GameManager.GameState.OnBoat);
+
+        if (!_waitForCatchResultClose)
+            RestoreConfiguredPanelsAfterFishing();
 
         if (_fishingRod != null)
             _fishingRod.ReturnHookAfterFishing();
 
+        FishingEnded?.Invoke(_success, hadFishBitten);
         ClearFishingData();
+    }
+
+    private bool TryShowCatchResult(FishData _caughtFish)
+    {
+        if (_caughtFish == null || _caughtFish.typeOfFish == null)
+            return false;
+
+        AutoAssignMissingReferences();
+
+        if (_fishResultUI != null)
+        {
+            _fishResultUI.Closed -= HandleCatchResultClosed;
+            _fishResultUI.Closed += HandleCatchResultClosed;
+            _fishResultUI.ShowCatchResult(_caughtFish);
+
+            _waitForCatchResultClose = _fishResultUI.IsShowing && _fishResultUI.gameObject.activeInHierarchy;
+
+            if (!_waitForCatchResultClose)
+                UnsubscribeCatchResultPanel();
+
+            return _waitForCatchResultClose;
+        }
+
+        Debug.LogWarning("FishResultPanelUI não encontrado na cena.");
+        return false;
+    }
+
+    private void HandleCatchResultClosed()
+    {
+        if (!_waitForCatchResultClose)
+            return;
+
+        _waitForCatchResultClose = false;
+        UnsubscribeCatchResultPanel();
+
+        if (GameManager.instance != null &&
+            GameManager.instance.currentState == GameManager.GameState.InUI)
+        {
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+        }
+
+        RestoreConfiguredPanelsAfterFishing();
+    }
+
+    private void UnsubscribeCatchResultPanel()
+    {
+        if (_fishResultUI != null)
+            _fishResultUI.Closed -= HandleCatchResultClosed;
     }
 
     private void ClearFishingData()
