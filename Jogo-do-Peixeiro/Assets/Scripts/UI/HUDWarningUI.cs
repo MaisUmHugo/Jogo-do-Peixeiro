@@ -5,7 +5,19 @@ using UnityEngine;
 
 public class HUDWarningUI : MonoBehaviour
 {
-    public static HUDWarningUI Instance { get; private set; }
+    private static HUDWarningUI instance;
+
+    public static HUDWarningUI Instance
+    {
+        get
+        {
+            if (instance == null)
+                instance = FindFirstObjectByType<HUDWarningUI>(FindObjectsInactive.Include);
+
+            return instance;
+        }
+        private set => instance = value;
+    }
 
     [Header("References")]
     [SerializeField] private TMP_Text _messageText;
@@ -13,11 +25,19 @@ public class HUDWarningUI : MonoBehaviour
 
     [Header("Settings")]
     [SerializeField] private float _visibleTime = 1.5f;
-    [SerializeField] private float _fadeSpeed = 8f;
+    [SerializeField] private float _minimumVisibleTime = 2.5f;
+    [SerializeField] private float _visibleTimePerCharacter = 0.025f;
+    [SerializeField] private float _maxVisibleTime = 5f;
+    [SerializeField] private float _fadeSpeed = 4f;
+    [SerializeField] private bool _useUnscaledTime = true;
+    [SerializeField] private bool _activateHierarchyWhenShown = true;
+    [SerializeField] private bool _ignoreConsecutiveDuplicates = true;
 
     private readonly Queue<string> _messageQueue = new();
     private Coroutine _messageRoutine;
     private bool _isShowingMessage;
+    private string _currentMessage;
+    private string _lastQueuedMessage;
 
     private void Awake()
     {
@@ -28,7 +48,25 @@ public class HUDWarningUI : MonoBehaviour
         }
 
         Instance = this;
+        AutoAssignReferences();
         ClearVisual();
+    }
+
+    private void OnEnable()
+    {
+        if (Instance == null)
+            Instance = this;
+
+        AutoAssignReferences();
+    }
+
+    private void OnValidate()
+    {
+        _visibleTime = Mathf.Max(0f, _visibleTime);
+        _minimumVisibleTime = Mathf.Max(0f, _minimumVisibleTime);
+        _visibleTimePerCharacter = Mathf.Max(0f, _visibleTimePerCharacter);
+        _maxVisibleTime = Mathf.Max(_minimumVisibleTime, _maxVisibleTime);
+        _fadeSpeed = Mathf.Max(0.01f, _fadeSpeed);
     }
 
     public void ShowWarning(string _message)
@@ -36,7 +74,20 @@ public class HUDWarningUI : MonoBehaviour
         if (string.IsNullOrWhiteSpace(_message))
             return;
 
+        EnsureCanShow();
+        AutoAssignReferences();
+
+        if (_messageText == null)
+        {
+            Debug.LogWarning("HUDWarningUI sem TMP_Text configurado.");
+            return;
+        }
+
+        if (ShouldIgnoreDuplicate(_message))
+            return;
+
         _messageQueue.Enqueue(_message);
+        _lastQueuedMessage = _message;
 
         if (!_isShowingMessage)
             _messageRoutine = StartCoroutine(ProcessMessageQueue());
@@ -49,37 +100,36 @@ public class HUDWarningUI : MonoBehaviour
         while (_messageQueue.Count > 0)
         {
             string message = _messageQueue.Dequeue();
+            _currentMessage = message;
 
             yield return ShowMessageRoutine(message);
         }
 
+        _currentMessage = null;
+        _lastQueuedMessage = null;
         _isShowingMessage = false;
         _messageRoutine = null;
     }
 
     private IEnumerator ShowMessageRoutine(string _message)
     {
-        if (_messageText != null)
-            _messageText.text = _message;
+        _messageText.text = _message;
+        SetCanvasVisible(true);
 
-        if (_canvasGroup != null)
-            _canvasGroup.alpha = 1f;
-
-        yield return new WaitForSeconds(_visibleTime);
+        yield return WaitForSeconds(GetVisibleDuration(_message));
 
         if (_canvasGroup != null)
         {
             while (_canvasGroup.alpha > 0f)
             {
-                _canvasGroup.alpha -= _fadeSpeed * Time.deltaTime;
+                _canvasGroup.alpha -= _fadeSpeed * GetDeltaTime();
                 yield return null;
             }
 
             _canvasGroup.alpha = 0f;
         }
 
-        if (_messageText != null)
-            _messageText.text = string.Empty;
+        _messageText.text = string.Empty;
     }
 
     private void ClearVisual()
@@ -87,8 +137,7 @@ public class HUDWarningUI : MonoBehaviour
         if (_messageText != null)
             _messageText.text = string.Empty;
 
-        if (_canvasGroup != null)
-            _canvasGroup.alpha = 0f;
+        SetCanvasVisible(false);
     }
 
     public void ClearQueue()
@@ -100,7 +149,93 @@ public class HUDWarningUI : MonoBehaviour
 
         _messageRoutine = null;
         _isShowingMessage = false;
+        _currentMessage = null;
+        _lastQueuedMessage = null;
 
         ClearVisual();
+    }
+
+    private bool ShouldIgnoreDuplicate(string _message)
+    {
+        if (!_ignoreConsecutiveDuplicates)
+            return false;
+
+        return _message == _currentMessage || _message == _lastQueuedMessage;
+    }
+
+    private void EnsureCanShow()
+    {
+        if (!_activateHierarchyWhenShown)
+            return;
+
+        Transform current = transform;
+
+        while (current != null)
+        {
+            if (!current.gameObject.activeSelf)
+                current.gameObject.SetActive(true);
+
+            current = current.parent;
+        }
+
+        if (!enabled)
+            enabled = true;
+    }
+
+    private void AutoAssignReferences()
+    {
+        if (_messageText == null)
+            _messageText = GetComponentInChildren<TMP_Text>(true);
+
+        if (_canvasGroup == null)
+            _canvasGroup = GetComponent<CanvasGroup>();
+
+        if (_canvasGroup == null)
+            _canvasGroup = GetComponentInChildren<CanvasGroup>(true);
+
+        if (_canvasGroup == null)
+            _canvasGroup = gameObject.AddComponent<CanvasGroup>();
+
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+    }
+
+    private void SetCanvasVisible(bool _visible)
+    {
+        if (_canvasGroup == null)
+            return;
+
+        _canvasGroup.alpha = _visible ? 1f : 0f;
+        _canvasGroup.interactable = false;
+        _canvasGroup.blocksRaycasts = false;
+    }
+
+    private float GetVisibleDuration(string _message)
+    {
+        float messageDuration = _message.Length * _visibleTimePerCharacter;
+        float duration = Mathf.Max(_visibleTime, _minimumVisibleTime, messageDuration);
+        return Mathf.Min(duration, _maxVisibleTime);
+    }
+
+    private float GetDeltaTime()
+    {
+        return _useUnscaledTime ? Time.unscaledDeltaTime : Time.deltaTime;
+    }
+
+    private IEnumerator WaitForSeconds(float _duration)
+    {
+        if (!_useUnscaledTime)
+        {
+            yield return new WaitForSeconds(_duration);
+            yield break;
+        }
+
+        float elapsed = 0f;
+
+        while (elapsed < _duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            yield return null;
+        }
     }
 }
