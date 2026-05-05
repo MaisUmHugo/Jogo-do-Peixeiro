@@ -15,6 +15,12 @@ public class FishDirectionPullUI : MonoBehaviour
     [SerializeField] private Vector2 _iconAnchoredPosition = new Vector2(0f, 120f);
     [SerializeField] private Vector2 _iconSize = new Vector2(72f, 72f);
 
+    [Header("Backplate")]
+    [SerializeField] private bool _useDirectionBackplate = true;
+    [SerializeField] private Image _directionBackplate;
+    [SerializeField] private Vector2 _backplateSize = new Vector2(100f, 100f);
+    [SerializeField] private Color _backplateColor = new Color(0.03f, 0.04f, 0.05f, 0.72f);
+
     [Header("Position")]
     [SerializeField] private float _horizontalPullOffset = 260f;
     [FormerlySerializedAs("_verticalPullOffset")]
@@ -62,6 +68,7 @@ public class FishDirectionPullUI : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float _sidePullHeightCentering = 0.75f;
 
     private RectTransform _directionIconRect;
+    private RectTransform _directionBackplateRect;
     private RectTransform _holdHintRect;
     private Vector2 _currentIconTargetPosition;
     private int _lastPromptId = -1;
@@ -73,6 +80,8 @@ public class FishDirectionPullUI : MonoBehaviour
     {
         _iconSize.x = Mathf.Max(1f, _iconSize.x);
         _iconSize.y = Mathf.Max(1f, _iconSize.y);
+        _backplateSize.x = Mathf.Max(1f, _backplateSize.x);
+        _backplateSize.y = Mathf.Max(1f, _backplateSize.y);
         _horizontalPullOffset = Mathf.Max(0f, _horizontalPullOffset);
         _upPullOffset = Mathf.Max(0f, _upPullOffset);
         _downPullOffset = Mathf.Max(0f, _downPullOffset);
@@ -230,10 +239,23 @@ public class FishDirectionPullUI : MonoBehaviour
         );
         float pulseAmount = Mathf.Lerp(_idlePulseScale, _activePulseScale, inputAmount);
         _directionIconRect.localScale = Vector3.one * (timerScale + (pulseT * pulseAmount));
+        UpdateBackplateFeedback();
 
         Color color = Color.Lerp(_idleIconColor, _pressedIconColor, inputAmount);
         color.a = Mathf.Lerp(_idleAlpha, _activeAlpha, inputAmount);
         _directionIcon.color = color;
+    }
+
+    private void UpdateBackplateFeedback()
+    {
+        if (!_useDirectionBackplate || _directionBackplate == null || _directionBackplateRect == null || _directionIconRect == null)
+            return;
+
+        _directionBackplateRect.anchoredPosition = _directionIconRect.anchoredPosition;
+        _directionBackplateRect.localScale = _directionIconRect.localScale;
+        _directionBackplateRect.sizeDelta = _backplateSize;
+        _directionBackplate.color = _backplateColor;
+        PlaceBackplateBehindIcon();
     }
 
     private void UpdateHoldHintFeedback()
@@ -444,6 +466,16 @@ public class FishDirectionPullUI : MonoBehaviour
 
     private void SetVisible(bool _visible)
     {
+        if (_directionBackplate != null)
+        {
+            bool showBackplate = _visible && _useDirectionBackplate;
+
+            if (_directionBackplate.gameObject != gameObject)
+                _directionBackplate.gameObject.SetActive(showBackplate);
+
+            _directionBackplate.enabled = showBackplate;
+        }
+
         if (_directionIcon != null)
         {
             if (_directionIcon.gameObject != gameObject)
@@ -454,6 +486,9 @@ public class FishDirectionPullUI : MonoBehaviour
 
         if (!_visible && _directionIconRect != null)
             _directionIconRect.localScale = Vector3.one;
+
+        if (!_visible && _directionBackplateRect != null)
+            _directionBackplateRect.localScale = Vector3.one;
 
         SetHoldHintVisible(_visible && !_hasLearnedHoldInput);
 
@@ -481,16 +516,118 @@ public class FishDirectionPullUI : MonoBehaviour
             _iconDatabase = FindFirstObjectByType<InputIconDatabase>(FindObjectsInactive.Include);
 
         if (_directionIcon == null)
-            _directionIcon = GetComponentInChildren<Image>(true);
-
-        if (_directionIcon == null)
-            _directionIcon = GetComponent<Image>();
+            _directionIcon = FindDirectionIcon();
 
         if (_directionIcon == null)
             _directionIcon = CreateDirectionIcon();
 
         _directionIconRect = _directionIcon.rectTransform;
+        EnsureDirectionBackplate();
         EnsureHoldHintText();
+    }
+
+    private Image FindDirectionIcon()
+    {
+        Transform existingIcon = transform.Find("DirectionPullIcon");
+
+        if (existingIcon != null && existingIcon.TryGetComponent(out Image namedIcon))
+            return namedIcon;
+
+        Image selfImage = GetComponent<Image>();
+
+        if (IsValidDirectionIcon(selfImage))
+            return selfImage;
+
+        Image[] childImages = GetComponentsInChildren<Image>(true);
+
+        for (int i = 0; i < childImages.Length; i++)
+        {
+            if (IsValidDirectionIcon(childImages[i]))
+                return childImages[i];
+        }
+
+        return null;
+    }
+
+    private bool IsValidDirectionIcon(Image _image)
+    {
+        if (_image == null || _image == _directionBackplate)
+            return false;
+
+        string imageName = _image.name.ToLowerInvariant();
+
+        return _image != null &&
+               !imageName.Contains("backplate") &&
+               !imageName.Contains("background") &&
+               !imageName.Contains("fundo");
+    }
+
+    private void EnsureDirectionBackplate()
+    {
+        if (!_useDirectionBackplate)
+            return;
+
+        if (_directionBackplate == null)
+        {
+            Transform existingBackplate = transform.Find("DirectionPullBackplate");
+
+            if (existingBackplate != null)
+                _directionBackplate = existingBackplate.GetComponent<Image>();
+        }
+
+        if (_directionBackplate == null)
+            _directionBackplate = CreateDirectionBackplate();
+
+        if (_directionBackplate == null)
+            return;
+
+        _directionBackplateRect = _directionBackplate.rectTransform;
+        _directionBackplateRect.sizeDelta = _backplateSize;
+        _directionBackplate.raycastTarget = false;
+        _directionBackplate.color = _backplateColor;
+
+        PlaceBackplateBehindIcon();
+    }
+
+    private void PlaceBackplateBehindIcon()
+    {
+        if (_directionBackplateRect == null ||
+            _directionIconRect == null ||
+            _directionBackplateRect.parent != _directionIconRect.parent)
+        {
+            return;
+        }
+
+        _directionBackplateRect.SetSiblingIndex(_directionIconRect.GetSiblingIndex());
+        _directionIconRect.SetSiblingIndex(_directionBackplateRect.GetSiblingIndex() + 1);
+
+        if (_holdHintRect != null && _holdHintRect.parent == _directionIconRect.parent)
+            _holdHintRect.SetSiblingIndex(_directionIconRect.GetSiblingIndex() + 1);
+    }
+
+    private Image CreateDirectionBackplate()
+    {
+        Transform parent = _directionIconRect != null && _directionIconRect.parent != null
+            ? _directionIconRect.parent
+            : transform;
+
+        GameObject backplateObject = new GameObject("DirectionPullBackplate", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        backplateObject.transform.SetParent(parent, false);
+
+        RectTransform rectTransform = backplateObject.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchoredPosition = _iconAnchoredPosition;
+        rectTransform.sizeDelta = _backplateSize;
+
+        Image backplateImage = backplateObject.GetComponent<Image>();
+        backplateImage.raycastTarget = false;
+        backplateImage.preserveAspect = false;
+        backplateImage.color = _backplateColor;
+        backplateImage.enabled = true;
+
+        return backplateImage;
     }
 
     private void EnsureHoldHintText()
