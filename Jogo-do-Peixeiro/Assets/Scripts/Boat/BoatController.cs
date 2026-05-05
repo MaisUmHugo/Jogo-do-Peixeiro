@@ -129,6 +129,27 @@ public class BoatController : MonoBehaviour
         ExitBoatState();
     }
 
+    public void ReturnToParkPoint(Transform _parkPoint)
+    {
+        if (_parkPoint == null)
+            return;
+
+        SetBoatPhysics(false);
+
+        transform.position = _parkPoint.position;
+        transform.rotation = _parkPoint.rotation * Quaternion.Euler(OffsetRotacao);
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.Sleep();
+        }
+
+        if (boatMotor != null)
+            boatMotor.ResetMotorState();
+    }
+
     public void ExitBoatWithoutMovingPlayer()
     {
         if (!isPlayerOnBoat)
@@ -145,6 +166,16 @@ public class BoatController : MonoBehaviour
 
         Debug.Log("Player saiu do barco para teleporte.");
         ExitBoatState(false, false, false);
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.Sleep();
+        }
+
+        if (boatMotor != null)
+            boatMotor.ResetMotorState();
     }
 
     private void ExitBoatState(
