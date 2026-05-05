@@ -31,6 +31,11 @@ public class FishSkillCheck : MonoBehaviour
     [SerializeField] private float _timingDuration = 1.25f;
     [SerializeField, Range(0.25f, 2f)] private float _indicatorSpeedMultiplier = 0.65f;
 
+    [Header("Direction Inversion")]
+    [SerializeField] private bool _allowMidSkillCheckDirectionInvert = true;
+    [SerializeField, Range(0f, 1f)] private float _midSkillCheckDirectionInvertChance = 0.35f;
+    [SerializeField, Range(0.1f, 0.9f)] private float _midSkillCheckDirectionInvertAt = 0.5f;
+
     [Header("Fail Settings")]
     [FormerlySerializedAs("maxFails")]
     [SerializeField] private int _maxFails = 3;
@@ -110,7 +115,11 @@ public class FishSkillCheck : MonoBehaviour
     private float _currentIndicatorSpeed;
     private float _currentPerfectThreshold;
     private float _nextSkillCheckTimer;
+    private float _indicatorTravelNormalized;
+    private float _indicatorDirection = 1f;
     private bool _isSessionActive;
+    private bool _shouldInvertCurrentSkillCheck;
+    private bool _didInvertCurrentSkillCheck;
 
     private void OnValidate()
     {
@@ -122,6 +131,8 @@ public class FishSkillCheck : MonoBehaviour
         _rarity1IndicatorSpeed = Mathf.Max(0.01f, _rarity1IndicatorSpeed);
         _rarity2IndicatorSpeed = Mathf.Max(0.01f, _rarity2IndicatorSpeed);
         _rarity3IndicatorSpeed = Mathf.Max(0.01f, _rarity3IndicatorSpeed);
+        _midSkillCheckDirectionInvertChance = Mathf.Clamp01(_midSkillCheckDirectionInvertChance);
+        _midSkillCheckDirectionInvertAt = Mathf.Clamp(_midSkillCheckDirectionInvertAt, 0.1f, 0.9f);
         ClampAccuracySettings();
     }
 
@@ -134,7 +145,7 @@ public class FishSkillCheck : MonoBehaviour
         _currentFishType = _fishType;
 
         _currentFails = 0;
-        IndicatorNormalized = 0f;
+        ResetIndicatorState();
         IsSkillCheckActive = false;
         _isSessionActive = true;
 
@@ -149,7 +160,7 @@ public class FishSkillCheck : MonoBehaviour
     {
         _isSessionActive = false;
         IsSkillCheckActive = false;
-        IndicatorNormalized = 0f;
+        ResetIndicatorState();
         _currentFails = 0;
         _currentFishType = null;
 
@@ -210,16 +221,23 @@ public class FishSkillCheck : MonoBehaviour
     private void ActivateSkillCheck()
     {
         IsSkillCheckActive = true;
-        IndicatorNormalized = 0f;
+        ResetIndicatorState();
         GenerateNewZone();
+        PrepareSkillCheckDirectionInversion();
     }
 
     private void UpdateIndicator()
     {
         float effectiveIndicatorSpeed = _currentIndicatorSpeed * _indicatorSpeedMultiplier;
-        IndicatorNormalized += (effectiveIndicatorSpeed / Mathf.Max(0.25f, _timingDuration)) * Time.deltaTime;
+        float normalizedDelta = (effectiveIndicatorSpeed / Mathf.Max(0.25f, _timingDuration)) * Time.deltaTime;
+        float previousTravel = _indicatorTravelNormalized;
 
-        if (IndicatorNormalized >= 1f)
+        _indicatorTravelNormalized += normalizedDelta;
+        TryInvertIndicatorDirection(previousTravel);
+
+        IndicatorNormalized = Mathf.Repeat(IndicatorNormalized + (normalizedDelta * _indicatorDirection), 1f);
+
+        if (_indicatorTravelNormalized >= 1f)
             RegisterFail();
     }
 
@@ -282,8 +300,38 @@ public class FishSkillCheck : MonoBehaviour
     private void CloseCurrentSkillCheck()
     {
         IsSkillCheckActive = false;
-        IndicatorNormalized = 0f;
+        ResetIndicatorState();
         ScheduleNextSkillCheck();
+    }
+
+    private void ResetIndicatorState()
+    {
+        IndicatorNormalized = 0f;
+        _indicatorTravelNormalized = 0f;
+        _indicatorDirection = 1f;
+        _shouldInvertCurrentSkillCheck = false;
+        _didInvertCurrentSkillCheck = false;
+    }
+
+    private void PrepareSkillCheckDirectionInversion()
+    {
+        _shouldInvertCurrentSkillCheck = _allowMidSkillCheckDirectionInvert &&
+                                         UnityEngine.Random.value <= _midSkillCheckDirectionInvertChance;
+    }
+
+    private void TryInvertIndicatorDirection(float _previousTravel)
+    {
+        if (!_shouldInvertCurrentSkillCheck || _didInvertCurrentSkillCheck)
+            return;
+
+        if (_previousTravel >= _midSkillCheckDirectionInvertAt ||
+            _indicatorTravelNormalized < _midSkillCheckDirectionInvertAt)
+        {
+            return;
+        }
+
+        _indicatorDirection *= -1f;
+        _didInvertCurrentSkillCheck = true;
     }
 
     private void ScheduleNextSkillCheck()
@@ -311,7 +359,7 @@ public class FishSkillCheck : MonoBehaviour
         float center = (SuccessZoneStartNormalized + SuccessZoneEndNormalized) * 0.5f;
         float halfSize = (SuccessZoneEndNormalized - SuccessZoneStartNormalized) * 0.5f;
 
-        float distanceFromCenter = Mathf.Abs(IndicatorNormalized - center);
+        float distanceFromCenter = GetCircularNormalizedDistance(IndicatorNormalized, center);
         float normalizedDistance = halfSize > 0f ? distanceFromCenter / halfSize : 1f;
 
         if (normalizedDistance <= _currentPerfectThreshold)
@@ -327,7 +375,7 @@ public class FishSkillCheck : MonoBehaviour
     {
         float center = (SuccessZoneStartNormalized + SuccessZoneEndNormalized) * 0.5f;
 
-        float distance = Mathf.Abs(IndicatorNormalized - center);
+        float distance = GetCircularNormalizedDistance(IndicatorNormalized, center);
         float normalized = distance / 0.5f;
 
         if (normalized <= 0.25f)
@@ -337,6 +385,12 @@ public class FishSkillCheck : MonoBehaviour
             return FeedbackResult.Bad;
 
         return FeedbackResult.Terrible;
+    }
+
+    private float GetCircularNormalizedDistance(float _a, float _b)
+    {
+        float distance = Mathf.Abs(_a - _b);
+        return Mathf.Min(distance, 1f - distance);
     }
 
     private void GenerateNewZone()

@@ -120,6 +120,14 @@ public class FishingRod : MonoBehaviour
 
     private void Update()
     {
+        if (IsGameplayInputBlockedByUI())
+        {
+            if (isAiming)
+                CancelAim();
+
+            return;
+        }
+
         if (GameManager.instance == null)
             return;
 
@@ -363,12 +371,23 @@ public class FishingRod : MonoBehaviour
     // Expõe a posição do anzol para sistemas externos (ex: FishingDirectionVFX, câmera)
     private bool ShouldIgnoreAimInput()
     {
+        if (IsGameplayInputBlockedByUI())
+            return true;
+
         if (!ignoreAimInputWhileFishing)
             return false;
 
         return FishingManager.instance != null &&
                FishingManager.instance.IsFishing &&
                FishingManager.instance.HasFishBitten;
+    }
+
+    private bool IsGameplayInputBlockedByUI()
+    {
+        if (PlayerCamera.IsCameraLocked)
+            return true;
+
+        return GameManager.instance != null && GameManager.instance.IsGameplayBlocked();
     }
 
     public Vector3 GetHookWorldPosition()

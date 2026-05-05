@@ -21,7 +21,10 @@ public class FishResultUI : MonoBehaviour
     [SerializeField] private float fishRotationSpeed;
     [SerializeField] private float fishInputRotationSpeed = 180f;
     [SerializeField] private float fishMouseRotationSensitivity = 0.25f;
+    [SerializeField] private float minFishPitchAngle = -45f;
+    [SerializeField] private float maxFishPitchAngle = 45f;
     private float fishAngle;
+    private float fishPitchAngle;
 
     [Header("Display")]
     [SerializeField] private float minDisplayTime = 1f;
@@ -40,6 +43,11 @@ public class FishResultUI : MonoBehaviour
     private void OnValidate()
     {
         minDisplayTime = Mathf.Max(0f, minDisplayTime);
+        fishInputRotationSpeed = Mathf.Max(0f, fishInputRotationSpeed);
+        fishMouseRotationSensitivity = Mathf.Max(0f, fishMouseRotationSensitivity);
+
+        if (maxFishPitchAngle < minFishPitchAngle)
+            maxFishPitchAngle = minFishPitchAngle;
     }
 
     private void Awake()
@@ -84,6 +92,7 @@ public class FishResultUI : MonoBehaviour
 
         ShowRarityStars(fishRarity);
         fishAngle = 0f;
+        fishPitchAngle = 0f;
 
         if (!fishList.Contains(_fish.typeOfFish))
         {
@@ -174,6 +183,9 @@ public class FishResultUI : MonoBehaviour
         if (!isShowing || !canSkip)
             return;
 
+        if (IsMouseLeftButtonHeld())
+            return;
+
         gameObject.SetActive(false);
     }
 
@@ -225,44 +237,53 @@ public class FishResultUI : MonoBehaviour
 
         if (fishMesh == null || objectRenderer == null) return;
 
-        fishAngle += GetFishRotationDelta();
-        fishAngle %= 360f;
+        Vector2 rotationDelta = GetFishRotationDelta();
+        fishAngle = Mathf.Repeat(fishAngle + rotationDelta.x, 360f);
+        fishPitchAngle = Mathf.Clamp(fishPitchAngle + rotationDelta.y, minFishPitchAngle, maxFishPitchAngle);
 
-        objectRenderer.transform.rotation = Quaternion.Euler(90, fishAngle, 90);        
+        objectRenderer.transform.rotation = Quaternion.Euler(90f + fishPitchAngle, fishAngle, 90f);        
 
     }
 
-    private float GetFishRotationDelta()
+    private Vector2 GetFishRotationDelta()
     {
         if (InputHandler.instance != null)
         {
             if (InputDeviceDetector.CurrentDeviceType == InputDeviceType.GenericController)
-                return GetControllerFishRotationDelta(InputHandler.instance.lookInput.x);
+                return GetControllerFishRotationDelta(InputHandler.instance.lookInput);
 
-            return GetMouseFishRotationDelta(InputHandler.instance.lookInput.x);
+            return GetMouseFishRotationDelta();
         }
 
         float autoRotationSpeed = fishRotationSpeed > 0f ? fishRotationSpeed : rotationSpeed;
-        return autoRotationSpeed * Time.unscaledDeltaTime;
+        return new Vector2(autoRotationSpeed * Time.unscaledDeltaTime, 0f);
     }
 
-    private float GetControllerFishRotationDelta(float _lookInputX)
+    private Vector2 GetControllerFishRotationDelta(Vector2 _lookInput)
     {
-        if (Mathf.Abs(_lookInputX) <= 0.01f)
-            return 0f;
+        if (_lookInput.sqrMagnitude <= 0.0001f)
+            return Vector2.zero;
 
-        return _lookInputX * fishInputRotationSpeed * Time.unscaledDeltaTime;
+        return _lookInput * fishInputRotationSpeed * Time.unscaledDeltaTime;
     }
 
-    private float GetMouseFishRotationDelta(float _lookInputX)
+    private Vector2 GetMouseFishRotationDelta()
     {
         if (Mouse.current == null || !Mouse.current.leftButton.isPressed)
-            return 0f;
+            return Vector2.zero;
 
-        if (Mathf.Abs(_lookInputX) <= 0.01f)
-            return 0f;
+        Vector2 mouseDelta = Mouse.current.delta.ReadValue();
 
-        return _lookInputX * fishMouseRotationSensitivity;
+        if (mouseDelta.sqrMagnitude <= 0.0001f)
+            return Vector2.zero;
+
+        return mouseDelta * fishMouseRotationSensitivity;
+    }
+
+    private bool IsMouseLeftButtonHeld()
+    {
+        return Mouse.current != null &&
+               (Mouse.current.leftButton.isPressed || Mouse.current.leftButton.wasPressedThisFrame);
     }
 
     private void ShowRarityStars(int _fishRarity)

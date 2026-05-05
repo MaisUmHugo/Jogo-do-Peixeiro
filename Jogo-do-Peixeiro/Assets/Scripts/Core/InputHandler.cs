@@ -94,6 +94,12 @@ public class InputHandler : MonoBehaviour
 
     private void UpdateAimInput()
     {
+        if (IsGameplayInputBlocked())
+        {
+            ReleaseAimIfHeld();
+            return;
+        }
+
         float aimValue = inputActions.Player.Aim.ReadValue<float>();
 
         if (!IsAimHeld && aimValue >= aimPressThreshold)
@@ -108,6 +114,23 @@ public class InputHandler : MonoBehaviour
             IsAimHeld = false;
             onAimReleased?.Invoke();
         }
+    }
+
+    private void ReleaseAimIfHeld()
+    {
+        if (!IsAimHeld)
+            return;
+
+        IsAimHeld = false;
+        onAimReleased?.Invoke();
+    }
+
+    private bool IsGameplayInputBlocked()
+    {
+        if (PlayerCamera.IsCameraLocked)
+            return true;
+
+        return GameManager.instance != null && GameManager.instance.IsGameplayBlocked();
     }
 
     private float GetProcessedZoomInput(float _zoomInput)
