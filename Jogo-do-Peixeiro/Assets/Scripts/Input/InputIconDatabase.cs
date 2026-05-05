@@ -45,13 +45,13 @@ public class InputIconDatabase : ScriptableObject
     {
         bool changed = false;
 
-        changed |= AssignIfMissing(ref _keyboard.moveUp, "Assets/Artes/Icones/Keyboard & Mouse/Default/keyboard_w.png");
-        changed |= AssignIfMissing(ref _keyboard.moveDown, "Assets/Artes/Icones/Keyboard & Mouse/Default/keyboard_s.png");
-        changed |= AssignIfMissing(ref _keyboard.moveLeft, "Assets/Artes/Icones/Keyboard & Mouse/Default/keyboard_a.png");
-        changed |= AssignIfMissing(ref _keyboard.moveRight, "Assets/Artes/Icones/Keyboard & Mouse/Default/keyboard_d.png");
-        changed |= AssignIfMissing(ref _keyboard.interact, "Assets/Artes/Icones/Keyboard & Mouse/Default/keyboard_e.png");
-        changed |= AssignIfMissing(ref _keyboard.aim, "Assets/Artes/Icones/Keyboard & Mouse/Default/mouse_left.png");
-        changed |= AssignIfMissing(ref _keyboard.pause, "Assets/Artes/Icones/Keyboard & Mouse/Default/keyboard_escape.png");
+        changed |= AssignIfMissing(ref _keyboard.moveUp, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_w.png");
+        changed |= AssignIfMissing(ref _keyboard.moveDown, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_s.png");
+        changed |= AssignIfMissing(ref _keyboard.moveLeft, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_a.png");
+        changed |= AssignIfMissing(ref _keyboard.moveRight, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_d.png");
+        changed |= AssignIfMissing(ref _keyboard.interact, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_e.png");
+        changed |= AssignIfMissing(ref _keyboard.aim, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/mouse_left.png");
+        changed |= AssignIfMissing(ref _keyboard.pause, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_escape.png");
 
         return changed;
     }
@@ -60,13 +60,13 @@ public class InputIconDatabase : ScriptableObject
     {
         bool changed = false;
 
-        changed |= AssignIfMissing(ref _genericController.moveUp, "Assets/Artes/Icones/Xbox Series/Default/xbox_stick_l_up.png");
-        changed |= AssignIfMissing(ref _genericController.moveDown, "Assets/Artes/Icones/Xbox Series/Default/xbox_stick_l_down.png");
-        changed |= AssignIfMissing(ref _genericController.moveLeft, "Assets/Artes/Icones/Xbox Series/Default/xbox_stick_l_left.png");
-        changed |= AssignIfMissing(ref _genericController.moveRight, "Assets/Artes/Icones/Xbox Series/Default/xbox_stick_l_right.png");
-        changed |= AssignIfMissing(ref _genericController.interact, "Assets/Artes/Icones/Xbox Series/Default/xbox_button_a.png");
-        changed |= AssignIfMissing(ref _genericController.aim, "Assets/Artes/Icones/Xbox Series/Default/xbox_rt.png");
-        changed |= AssignIfMissing(ref _genericController.pause, "Assets/Artes/Icones/Xbox Series/Default/xbox_button_start.png");
+        changed |= AssignIfMissing(ref _genericController.moveUp, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_up.png");
+        changed |= AssignIfMissing(ref _genericController.moveDown, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_down.png");
+        changed |= AssignIfMissing(ref _genericController.moveLeft, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_left.png");
+        changed |= AssignIfMissing(ref _genericController.moveRight, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_right.png");
+        changed |= AssignIfMissing(ref _genericController.interact, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_button_a.png");
+        changed |= AssignIfMissing(ref _genericController.aim, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_rt.png");
+        changed |= AssignIfMissing(ref _genericController.pause, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_button_start.png");
 
         return changed;
     }
