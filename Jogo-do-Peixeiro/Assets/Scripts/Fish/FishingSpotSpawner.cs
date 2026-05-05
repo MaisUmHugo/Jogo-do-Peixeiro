@@ -12,6 +12,7 @@ public class FishingSpotSpawner : MonoBehaviour
     [SerializeField] private bool _spawnAtStart = true;
     [SerializeField] private int _activeSpotCount = 3;
     [SerializeField] private float _respawnDelay = 12f;
+    [Tooltip("Spots gerados somem depois de uma pescaria resolvida com mordida/captura. Cancelar antes da mordida nao consome o spot.")]
     [SerializeField] private bool _spawnedSpotsDeactivateAfterFishingStarts = true;
     [SerializeField] private float _minDistanceBetweenSpots = 8f;
     [SerializeField] private int _maxSpawnAttempts = 25;
