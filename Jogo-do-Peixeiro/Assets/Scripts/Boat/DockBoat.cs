@@ -13,6 +13,15 @@ public class Dock : MonoBehaviour, IInteractable
     [SerializeField] private Dock referenceDock;
     [SerializeField] private float dockRange = 6f;
 
+    public Transform BoatParkPoint
+    {
+        get
+        {
+            ResolveReferences();
+            return boatParkPoint;
+        }
+    }
+
     private void Awake()
     {
         ResolveReferences();
