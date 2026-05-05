@@ -49,6 +49,8 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private float noSpotWaitBeforeReturn = 1.2f;
     [SerializeField] private bool cancelAimOnQuickRelease = true;
     [SerializeField] private bool cancelAimOnSecondPress = true;
+    [Tooltip("Permite recolher/cancelar enquanto espera a mordida, mas ignora Aim depois que o peixe morde.")]
+    [SerializeField] private bool ignoreAimInputWhileFishing = true;
     [SerializeField] private float minAimHoldBeforeCast = 0.25f;
 
     private float currentForce;
@@ -131,6 +133,9 @@ public class FishingRod : MonoBehaviour
 
     private void HandleAimPressed()
     {
+        if (ShouldIgnoreAimInput())
+            return;
+
         if (isAiming && cancelAimOnSecondPress)
         {
             CancelAim();
@@ -163,6 +168,9 @@ public class FishingRod : MonoBehaviour
 
     private void HandleAimReleased()
     {
+        if (ShouldIgnoreAimInput())
+            return;
+
         if (!isAiming)
             return;
 
@@ -282,6 +290,9 @@ public class FishingRod : MonoBehaviour
         if (!hookWaitingInWater)
             return;
 
+        if (ShouldIgnoreAimInput())
+            return;
+
         if (FishingManager.instance != null && FishingManager.instance.IsFishing)
             FishingManager.instance.CancelFishing();
 
@@ -350,6 +361,16 @@ public class FishingRod : MonoBehaviour
     }
 
     // Expõe a posição do anzol para sistemas externos (ex: FishingDirectionVFX, câmera)
+    private bool ShouldIgnoreAimInput()
+    {
+        if (!ignoreAimInputWhileFishing)
+            return false;
+
+        return FishingManager.instance != null &&
+               FishingManager.instance.IsFishing &&
+               FishingManager.instance.HasFishBitten;
+    }
+
     public Vector3 GetHookWorldPosition()
     {
         return currentHook != null ? currentHook.position : rodTip.position;
