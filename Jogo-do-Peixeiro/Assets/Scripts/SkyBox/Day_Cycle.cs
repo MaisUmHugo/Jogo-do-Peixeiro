@@ -49,6 +49,8 @@ public class DayCycle : MonoBehaviour
     public int TotalDays => totalDays;
     public int ElapsedDays => elapsedDays;
     public float NormalizedTime => currentTime;
+    public bool IsHourTextVisible => HourText != null && HourText.gameObject.activeSelf;
+    public bool IsDayTextVisible => DayText != null && DayText.gameObject.activeSelf;
 
     void Start()
     {
@@ -79,6 +81,20 @@ public class DayCycle : MonoBehaviour
     {
         if (DayText != null)
             DayText.text = $"Dia {currentDay}/{totalDays}";
+    }
+
+    public void SetDayCycleHudVisible(bool _visible)
+    {
+        SetDayCycleHudVisible(_visible, _visible);
+    }
+
+    public void SetDayCycleHudVisible(bool _hourVisible, bool _dayVisible)
+    {
+        if (HourText != null)
+            HourText.gameObject.SetActive(_hourVisible);
+
+        if (DayText != null)
+            DayText.gameObject.SetActive(_dayVisible);
     }
 
     void UpdateSun()

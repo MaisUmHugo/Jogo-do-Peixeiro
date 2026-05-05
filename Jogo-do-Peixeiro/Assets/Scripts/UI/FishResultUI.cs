@@ -28,6 +28,8 @@ public class FishResultUI : MonoBehaviour
 
     [Header("Display")]
     [SerializeField] private float minDisplayTime = 1f;
+    [SerializeField] private bool hideDayCycleHudWhileShowing = true;
+    [SerializeField] private DayCycle dayCycle;
 
     private int fishRarity;
     private Mesh fishMesh;
@@ -36,6 +38,9 @@ public class FishResultUI : MonoBehaviour
     private bool canSkip;
     private bool isInputSubscribed;
     private bool hasCameraLock;
+    private bool hasStoredDayCycleHudVisibility;
+    private bool wasHourTextVisible;
+    private bool wasDayTextVisible;
 
     public bool IsShowing => isShowing;
     public event System.Action Closed;
@@ -72,7 +77,10 @@ public class FishResultUI : MonoBehaviour
         if (isShowing)
             NotifyClosed();
         else
+        {
+            RestoreDayCycleHud();
             ReleaseCameraLock();
+        }
     }
 
     public void SetNewFish(FishData _fish)
@@ -118,6 +126,7 @@ public class FishResultUI : MonoBehaviour
         isShowing = true;
         canSkip = false;
         AcquireCameraLock();
+        HideDayCycleHud();
 
         gameObject.SetActive(true);
         ResolveReferences();
@@ -134,6 +143,9 @@ public class FishResultUI : MonoBehaviour
     {
         if (resultText == null)
             resultText = FindChildComponentByName<TMP_Text>("ResultText");
+
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<DayCycle>(FindObjectsInactive.Include);
     }
 
     private T FindChildComponentByName<T>(string _childName) where T : Component
@@ -160,6 +172,7 @@ public class FishResultUI : MonoBehaviour
 
         InputHandler.instance.onInteractPressed += TryClose;
         InputHandler.instance.onPausePressed += TryClose;
+        InputHandler.instance.onAnyButtonPressed += TryClose;
         isInputSubscribed = true;
     }
 
@@ -170,6 +183,7 @@ public class FishResultUI : MonoBehaviour
 
         InputHandler.instance.onInteractPressed -= TryClose;
         InputHandler.instance.onPausePressed -= TryClose;
+        InputHandler.instance.onAnyButtonPressed -= TryClose;
         isInputSubscribed = false;
     }
 
@@ -200,8 +214,35 @@ public class FishResultUI : MonoBehaviour
     {
         isShowing = false;
         canSkip = false;
+        RestoreDayCycleHud();
         ReleaseCameraLock();
         Closed?.Invoke();
+    }
+
+    private void HideDayCycleHud()
+    {
+        if (!hideDayCycleHudWhileShowing)
+            return;
+
+        ResolveReferences();
+
+        if (dayCycle == null || hasStoredDayCycleHudVisibility)
+            return;
+
+        wasHourTextVisible = dayCycle.IsHourTextVisible;
+        wasDayTextVisible = dayCycle.IsDayTextVisible;
+        hasStoredDayCycleHudVisibility = true;
+
+        dayCycle.SetDayCycleHudVisible(false);
+    }
+
+    private void RestoreDayCycleHud()
+    {
+        if (!hasStoredDayCycleHudVisibility || dayCycle == null)
+            return;
+
+        dayCycle.SetDayCycleHudVisible(wasHourTextVisible, wasDayTextVisible);
+        hasStoredDayCycleHudVisibility = false;
     }
 
     private void AcquireCameraLock()
