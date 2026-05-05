@@ -73,3 +73,9 @@ crashlytics-build.properties
 # Temporary auto-generated Android Assets
 /[Aa]ssets/[Ss]treamingAssets/aa.meta
 /[Aa]ssets/[Ss]treamingAssets/aa/*
+
+# Unity/C# generated build cache
+Assembly-CSharp.csproj.AssemblyReference.cache
+Assembly-CSharp.csproj.CoreCompileInputs.cache
+Assembly-CSharp.csproj.FileListAbsolute.txt
+Assembly-CSharp.dll
