@@ -1,3 +1,4 @@
+using TMPro;
 using UnityEngine;
 using UnityEngine.Serialization;
 using UnityEngine.UI;
@@ -48,10 +49,25 @@ public class FishDirectionPullUI : MonoBehaviour
     [SerializeField] private Color _idleIconColor = Color.white;
     [SerializeField] private Color _pressedIconColor = new Color(0.25f, 1f, 0.35f, 1f);
 
+    [Header("First Pull Hint")]
+    [SerializeField] private TMP_Text _holdHintText;
+    [SerializeField] private string _holdHintMessage = "SEGURE";
+    [SerializeField] private Vector2 _holdHintOffset = new Vector2(0f, 58f);
+    [SerializeField] private float _holdHintCorrectHoldTime = 0.45f;
+    [SerializeField] private float _holdHintPulseSpeed = 6f;
+    [SerializeField] private float _holdHintPulseScale = 0.12f;
+    [SerializeField] private Color _holdHintColor = Color.white;
+
+    [Header("Side Prompt Height")]
+    [SerializeField, Range(0f, 1f)] private float _sidePullHeightCentering = 0.75f;
+
     private RectTransform _directionIconRect;
+    private RectTransform _holdHintRect;
     private Vector2 _currentIconTargetPosition;
     private int _lastPromptId = -1;
     private bool _hasIconTargetPosition;
+    private bool _hasLearnedHoldInput;
+    private float _correctHoldTimer;
 
     private void OnValidate()
     {
@@ -72,6 +88,10 @@ public class FishDirectionPullUI : MonoBehaviour
         _activeIconMinimumScale = Mathf.Clamp(_activeIconMinimumScale, 0.01f, _activeIconBaseScale);
         _idlePulseScale = Mathf.Max(0f, _idlePulseScale);
         _activePulseScale = Mathf.Max(_idlePulseScale, _activePulseScale);
+        _holdHintCorrectHoldTime = Mathf.Max(0.01f, _holdHintCorrectHoldTime);
+        _holdHintPulseSpeed = Mathf.Max(0f, _holdHintPulseSpeed);
+        _holdHintPulseScale = Mathf.Max(0f, _holdHintPulseScale);
+        _sidePullHeightCentering = Mathf.Clamp01(_sidePullHeightCentering);
 
         if (Application.isPlaying && isActiveAndEnabled)
             RefreshRuntimePosition();
@@ -138,6 +158,7 @@ public class FishDirectionPullUI : MonoBehaviour
     {
         _hasIconTargetPosition = false;
         _lastPromptId = -1;
+        _correctHoldTimer = 0f;
         RefreshDisplay();
     }
 
@@ -164,6 +185,7 @@ public class FishDirectionPullUI : MonoBehaviour
 
         SetVisible(true);
         UpdateIconFeedback();
+        UpdateHoldHintFeedback();
     }
 
     private bool UpdateIcon()
@@ -212,6 +234,40 @@ public class FishDirectionPullUI : MonoBehaviour
         Color color = Color.Lerp(_idleIconColor, _pressedIconColor, inputAmount);
         color.a = Mathf.Lerp(_idleAlpha, _activeAlpha, inputAmount);
         _directionIcon.color = color;
+    }
+
+    private void UpdateHoldHintFeedback()
+    {
+        if (_hasLearnedHoldInput || _holdHintText == null || _holdHintRect == null || _directionIconRect == null || _directionPull == null)
+        {
+            SetHoldHintVisible(false);
+            return;
+        }
+
+        if (_directionPull.IsCorrectPullInput)
+        {
+            _correctHoldTimer += Time.unscaledDeltaTime;
+
+            if (_correctHoldTimer >= _holdHintCorrectHoldTime)
+            {
+                _hasLearnedHoldInput = true;
+                SetHoldHintVisible(false);
+                return;
+            }
+        }
+        else
+        {
+            _correctHoldTimer = 0f;
+        }
+
+        float pulse = (Mathf.Sin(Time.unscaledTime * _holdHintPulseSpeed) * 0.5f) + 0.5f;
+
+        _holdHintText.text = _holdHintMessage;
+        _holdHintText.color = _holdHintColor;
+        _holdHintRect.anchoredPosition = _directionIconRect.anchoredPosition + _holdHintOffset;
+        _holdHintRect.localScale = Vector3.one * (1f + (pulse * _holdHintPulseScale));
+
+        SetHoldHintVisible(true);
     }
 
     private bool CanShowDirectionPull()
@@ -283,10 +339,12 @@ public class FishDirectionPullUI : MonoBehaviour
     {
         float sideJitter = _randomizePositionOnDirectionChange ? Random.Range(-_sideHorizontalJitter, _sideHorizontalJitter) : 0f;
         float verticalOffset = _randomizePositionOnDirectionChange ? Random.Range(0f, GetSideVerticalOffset()) : GetSideVerticalOffset();
+        float sideHeight = _iconAnchoredPosition.y + verticalOffset;
+        float centeredSideHeight = Mathf.Lerp(sideHeight, 0f, _sidePullHeightCentering);
 
         return new Vector2(
             _iconAnchoredPosition.x + (GetHorizontalOffset() * _side) + sideJitter,
-            _iconAnchoredPosition.y + verticalOffset
+            centeredSideHeight
         );
     }
 
@@ -397,10 +455,13 @@ public class FishDirectionPullUI : MonoBehaviour
         if (!_visible && _directionIconRect != null)
             _directionIconRect.localScale = Vector3.one;
 
+        SetHoldHintVisible(_visible && !_hasLearnedHoldInput);
+
         if (!_visible)
         {
             _hasIconTargetPosition = false;
             _lastPromptId = -1;
+            _correctHoldTimer = 0f;
         }
     }
 
@@ -429,6 +490,70 @@ public class FishDirectionPullUI : MonoBehaviour
             _directionIcon = CreateDirectionIcon();
 
         _directionIconRect = _directionIcon.rectTransform;
+        EnsureHoldHintText();
+    }
+
+    private void EnsureHoldHintText()
+    {
+        if (_holdHintText == null)
+        {
+            Transform existingHint = transform.Find("DirectionPullHoldHint");
+
+            if (existingHint != null)
+                _holdHintText = existingHint.GetComponent<TMP_Text>();
+        }
+
+        if (_holdHintText == null)
+            _holdHintText = CreateHoldHintText();
+
+        if (_holdHintText == null)
+            return;
+
+        _holdHintRect = _holdHintText.rectTransform;
+        _holdHintText.raycastTarget = false;
+        _holdHintText.text = _holdHintMessage;
+        _holdHintText.color = _holdHintColor;
+    }
+
+    private TMP_Text CreateHoldHintText()
+    {
+        Transform parent = _directionIconRect != null && _directionIconRect.parent != null
+            ? _directionIconRect.parent
+            : transform;
+
+        GameObject hintObject = new GameObject("DirectionPullHoldHint", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        hintObject.transform.SetParent(parent, false);
+
+        RectTransform rectTransform = hintObject.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchoredPosition = _iconAnchoredPosition + _holdHintOffset;
+        rectTransform.sizeDelta = new Vector2(160f, 40f);
+
+        TextMeshProUGUI hintText = hintObject.GetComponent<TextMeshProUGUI>();
+        hintText.alignment = TextAlignmentOptions.Center;
+        hintText.fontSize = 24f;
+        hintText.fontStyle = FontStyles.Bold;
+        hintText.raycastTarget = false;
+        hintText.text = _holdHintMessage;
+        hintText.color = _holdHintColor;
+
+        return hintText;
+    }
+
+    private void SetHoldHintVisible(bool _visible)
+    {
+        if (_holdHintText == null)
+            return;
+
+        _holdHintText.enabled = _visible;
+
+        if (_holdHintText.gameObject != gameObject)
+            _holdHintText.gameObject.SetActive(_visible);
+
+        if (!_visible && _holdHintRect != null)
+            _holdHintRect.localScale = Vector3.one;
     }
 
     [ContextMenu("Log Current Direction Pull UI Settings")]
@@ -438,7 +563,7 @@ public class FishDirectionPullUI : MonoBehaviour
             $"DirectionPullUI settings - Icon Anchored Position: {_iconAnchoredPosition}, " +
             $"Horizontal Pull Offset: {_horizontalPullOffset}, Up Pull Offset: {_upPullOffset}, " +
             $"Down Pull Offset: {_downPullOffset}, Side Vertical Offset: {_sideVerticalOffset}, " +
-            $"Side Button Height Multiplier: {_sideButtonHeightMultiplier}, " +
+            $"Side Button Height Multiplier: {_sideButtonHeightMultiplier}, Side Pull Height Centering: {_sidePullHeightCentering}, " +
             $"Use Canvas Relative Offsets: {_useCanvasRelativeOffsets}, Horizontal Canvas Offset: {_horizontalCanvasOffset}, " +
             $"Up Canvas Offset: {_upCanvasOffset}, Down Canvas Offset: {_downCanvasOffset}"
         );

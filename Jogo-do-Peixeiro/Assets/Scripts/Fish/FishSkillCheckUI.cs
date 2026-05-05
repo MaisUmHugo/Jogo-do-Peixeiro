@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class FishSkillCheckUI : MonoBehaviour
 {
@@ -22,6 +23,15 @@ public class FishSkillCheckUI : MonoBehaviour
     [SerializeField] private RectTransform timingBarArea;
     [SerializeField] private RectTransform successZone;
     [SerializeField] private RectTransform indicator;
+
+    [Header("First Skill Check Hint")]
+    [SerializeField] private InputIconDatabase _iconDatabase;
+    [SerializeField] private Image _skillCheckInteractIcon;
+    [SerializeField] private Vector2 _skillCheckIconSize = new Vector2(48f, 48f);
+    [SerializeField] private float _skillCheckIconRadiusOffset = 42f;
+    [SerializeField] private Vector2 _skillCheckIconOffset;
+    [SerializeField] private float _skillCheckIconPulseSpeed = 6f;
+    [SerializeField] private float _skillCheckIconPulseScale = 0.12f;
 
     [Header("Timing Display")]
     [SerializeField] private bool randomizeTimingPosition;
@@ -67,12 +77,19 @@ public class FishSkillCheckUI : MonoBehaviour
     private int lastHorizontalSide = 1;
     private bool hasRandomTimingPosition;
     private bool wasSkillCheckActive;
+    private bool hasLearnedSkillCheckInput;
+    private RectTransform skillCheckInteractIconRect;
 
     private void OnValidate()
     {
         feedbackDuration = Mathf.Max(0.8f, feedbackDuration);
         feedbackRiseDistance = Mathf.Max(0f, feedbackRiseDistance);
         circularFeedbackRadiusOffset = Mathf.Max(0f, circularFeedbackRadiusOffset);
+        _skillCheckIconSize.x = Mathf.Max(1f, _skillCheckIconSize.x);
+        _skillCheckIconSize.y = Mathf.Max(1f, _skillCheckIconSize.y);
+        _skillCheckIconRadiusOffset = Mathf.Max(0f, _skillCheckIconRadiusOffset);
+        _skillCheckIconPulseSpeed = Mathf.Max(0f, _skillCheckIconPulseSpeed);
+        _skillCheckIconPulseScale = Mathf.Max(0f, _skillCheckIconPulseScale);
         shakeDuration = Mathf.Max(0f, shakeDuration);
         shakeStrength = Mathf.Max(0f, shakeStrength);
         minRandomPositionDistance = Mathf.Max(0f, minRandomPositionDistance);
@@ -85,6 +102,18 @@ public class FishSkillCheckUI : MonoBehaviour
     private void Awake()
     {
         AutoAssignMissingReferences();
+    }
+
+    private void OnEnable()
+    {
+        InputDeviceDetector.DeviceTypeChanged += HandleDeviceTypeChanged;
+        UpdateSkillCheckHintIconSprite();
+    }
+
+    private void OnDisable()
+    {
+        InputDeviceDetector.DeviceTypeChanged -= HandleDeviceTypeChanged;
+        SetSkillCheckHintVisible(false);
     }
 
     private void Start()
@@ -109,6 +138,10 @@ public class FishSkillCheckUI : MonoBehaviour
             fishSkillCheck.OnFeedbackTriggered += HandleFeedback;
             fishSkillCheck.OnFailShake += HandleFailShake;
         }
+
+        EnsureSkillCheckHintIcon();
+        UpdateSkillCheckHintIconSprite();
+        SetSkillCheckHintVisible(false);
     }
 
     private void AutoAssignMissingReferences()
@@ -121,6 +154,9 @@ public class FishSkillCheckUI : MonoBehaviour
 
         if (fishingManager == null)
             fishingManager = FindFirstObjectByType<FishingManager>(FindObjectsInactive.Include);
+
+        if (_iconDatabase == null)
+            _iconDatabase = FindFirstObjectByType<InputIconDatabase>(FindObjectsInactive.Include);
     }
 
     private void OnDestroy()
@@ -217,6 +253,7 @@ public class FishSkillCheckUI : MonoBehaviour
         }
 
         UpdatePerfectZoneMarker();
+        UpdateSkillCheckHint(zoneCenter);
     }
 
     private void UpdatePerfectZoneMarker()
@@ -428,6 +465,14 @@ public class FishSkillCheckUI : MonoBehaviour
 
     private void HandleFeedback(FishSkillCheck.FeedbackResult resultado)
     {
+        if (resultado == FishSkillCheck.FeedbackResult.Good ||
+            resultado == FishSkillCheck.FeedbackResult.Great ||
+            resultado == FishSkillCheck.FeedbackResult.Perfect)
+        {
+            hasLearnedSkillCheckInput = true;
+            SetSkillCheckHintVisible(false);
+        }
+
         switch (resultado)
         {
             case FishSkillCheck.FeedbackResult.Terrible:
@@ -578,5 +623,90 @@ public class FishSkillCheckUI : MonoBehaviour
         Vector2 direction = new Vector2(Mathf.Sin(angleRadians), Mathf.Cos(angleRadians));
 
         return (direction * radius) + feedbackOffset;
+    }
+
+    private void HandleDeviceTypeChanged(InputDeviceType _deviceType)
+    {
+        UpdateSkillCheckHintIconSprite();
+    }
+
+    private void UpdateSkillCheckHint(float _zoneCenter)
+    {
+        if (hasLearnedSkillCheckInput ||
+            fishSkillCheck == null ||
+            !fishSkillCheck.IsSkillCheckActive ||
+            timingBarArea == null)
+        {
+            SetSkillCheckHintVisible(false);
+            return;
+        }
+
+        if (!EnsureSkillCheckHintIcon())
+            return;
+
+        UpdateSkillCheckHintIconSprite();
+
+        if (_skillCheckInteractIcon.sprite == null)
+        {
+            SetSkillCheckHintVisible(false);
+            return;
+        }
+
+        Rect timingRect = timingBarArea.rect;
+        float radius = (Mathf.Min(timingRect.width, timingRect.height) * 0.5f) + _skillCheckIconRadiusOffset;
+        float angleRadians = _zoneCenter * Mathf.PI * 2f;
+        Vector2 direction = new Vector2(Mathf.Sin(angleRadians), Mathf.Cos(angleRadians));
+        float pulse = (Mathf.Sin(Time.unscaledTime * _skillCheckIconPulseSpeed) * 0.5f) + 0.5f;
+
+        skillCheckInteractIconRect.anchoredPosition = (direction * radius) + _skillCheckIconOffset;
+        skillCheckInteractIconRect.localScale = Vector3.one * (1f + (pulse * _skillCheckIconPulseScale));
+
+        SetSkillCheckHintVisible(true);
+    }
+
+    private bool EnsureSkillCheckHintIcon()
+    {
+        if (_skillCheckInteractIcon != null)
+        {
+            skillCheckInteractIconRect = _skillCheckInteractIcon.rectTransform;
+            return true;
+        }
+
+        if (timingBarArea == null)
+            return false;
+
+        GameObject iconObject = new GameObject("SkillCheckInteractHintIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
+        iconObject.transform.SetParent(timingBarArea, false);
+
+        skillCheckInteractIconRect = iconObject.GetComponent<RectTransform>();
+        skillCheckInteractIconRect.anchorMin = new Vector2(0.5f, 0.5f);
+        skillCheckInteractIconRect.anchorMax = new Vector2(0.5f, 0.5f);
+        skillCheckInteractIconRect.pivot = new Vector2(0.5f, 0.5f);
+        skillCheckInteractIconRect.sizeDelta = _skillCheckIconSize;
+
+        _skillCheckInteractIcon = iconObject.GetComponent<Image>();
+        _skillCheckInteractIcon.raycastTarget = false;
+        _skillCheckInteractIcon.preserveAspect = true;
+
+        return true;
+    }
+
+    private void UpdateSkillCheckHintIconSprite()
+    {
+        if (_skillCheckInteractIcon == null || _iconDatabase == null)
+            return;
+
+        _skillCheckInteractIcon.sprite = _iconDatabase.GetIcon(InputDeviceDetector.CurrentDeviceType, InputIconAction.Interact);
+    }
+
+    private void SetSkillCheckHintVisible(bool _visible)
+    {
+        if (_skillCheckInteractIcon == null)
+            return;
+
+        _skillCheckInteractIcon.enabled = _visible;
+
+        if (_skillCheckInteractIcon.gameObject != gameObject)
+            _skillCheckInteractIcon.gameObject.SetActive(_visible);
     }
 }
