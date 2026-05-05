@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class PlayerCamera : MonoBehaviour
 {
+    private static int cameraLockCount;
+
     [SerializeField] private Transform target;
     [SerializeField] private Transform playerTransform;
 
@@ -30,6 +32,18 @@ public class PlayerCamera : MonoBehaviour
     private float yaw;
     private float pitch;
 
+    public static bool IsCameraLocked => cameraLockCount > 0;
+
+    public static void PushCameraLock()
+    {
+        cameraLockCount++;
+    }
+
+    public static void PopCameraLock()
+    {
+        cameraLockCount = Mathf.Max(0, cameraLockCount - 1);
+    }
+
     private void Start()
     {
         Vector3 currentRotation = transform.eulerAngles;
@@ -45,6 +59,9 @@ public class PlayerCamera : MonoBehaviour
     private void LateUpdate()
     {
         if (target == null || playerTransform == null || InputHandler.instance == null)
+            return;
+
+        if (IsCameraLocked)
             return;
 
         if (GameManager.instance != null)

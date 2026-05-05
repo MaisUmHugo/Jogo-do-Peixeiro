@@ -1,74 +1,36 @@
-using TMPro;
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class FishingResultUI : MonoBehaviour
 {
-    [Header("References")]
-    [SerializeField] private GameObject panel;
-    private FishResultPanelUI fishResultPanelUI;
-    [SerializeField] private TMP_Text resultText;
+    [FormerlySerializedAs("fishResultPanelUI")]
+    [SerializeField] private FishResultUI _fishResultUI;
 
-    [Header("Settings")]
-    [SerializeField] private float minDisplayTime = 1f;
-
-    private bool isShowing;
-    private bool canSkip;
+    [FormerlySerializedAs("panel")]
+    [SerializeField] private GameObject _legacyPanel;
 
     private void Awake()
     {
-        fishResultPanelUI = panel.GetComponent<FishResultPanelUI>();
-        HideImmediate();
-    }
-
-    private void Start()
-    {
-        if (InputHandler.instance != null)
-            InputHandler.instance.onAnyButtonPressed += TryClose;
-    }
-
-    private void OnDestroy()
-    {
-        if (InputHandler.instance != null)
-            InputHandler.instance.onAnyButtonPressed -= TryClose;
+        ResolveReferences();
     }
 
     public void ShowCatchResult(FishData _fish)
     {
-        if (panel != null)
-            panel.SetActive(true);
+        ResolveReferences();
 
-        if (fishResultPanelUI != null)
-            fishResultPanelUI.SetNewFish(_fish);
-
-        if (resultText != null)
-            resultText.text = $"{_fish.typeOfFish.name} - {_fish.weight} kg";
-
-        isShowing = true;
-        canSkip = false;
-
-        CancelInvoke();
-        Invoke(nameof(EnableSkip), minDisplayTime);
+        if (_fishResultUI != null)
+            _fishResultUI.ShowCatchResult(_fish);
     }
 
-    private void EnableSkip()
+    private void ResolveReferences()
     {
-        canSkip = true;
-    }
-
-    private void TryClose()
-    {
-        if (!isShowing || !canSkip)
+        if (_fishResultUI != null)
             return;
 
-        HideImmediate();
-    }
+        if (_legacyPanel != null)
+            _fishResultUI = _legacyPanel.GetComponent<FishResultUI>();
 
-    private void HideImmediate()
-    {
-        if (panel != null)
-            panel.SetActive(false);
-
-        isShowing = false;
-        canSkip = false;
+        if (_fishResultUI == null)
+            _fishResultUI = FindFirstObjectByType<FishResultUI>(FindObjectsInactive.Include);
     }
 }
