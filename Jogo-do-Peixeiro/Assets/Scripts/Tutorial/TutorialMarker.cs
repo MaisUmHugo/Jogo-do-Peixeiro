@@ -1,53 +1,39 @@
 using UnityEngine;
+using UnityEngine.Serialization;
 
 public class TutorialMarker : MonoBehaviour
 {
-    [Header("Target")]
-    [SerializeField] private Transform target;
-
-    [Header("Offset")]
-    [SerializeField] private float heightOffset = 1.5f;
-
     [Header("Animation")]
-    [SerializeField] private float rotateSpeed = 50f;
-    [SerializeField] private float floatAmplitude = 0.2f;
-    [SerializeField] private float floatSpeed = 2f;
+    [FormerlySerializedAs("rotateSpeed")]
+    [SerializeField] private float _rotateSpeed = 50f;
 
-    private Vector3 basePosition;
+    [FormerlySerializedAs("floatAmplitude")]
+    [SerializeField] private float _floatAmplitude = 0.2f;
 
-    private void Start()
+    [FormerlySerializedAs("floatSpeed")]
+    [SerializeField] private float _floatSpeed = 2f;
+
+    private Vector3 _basePosition;
+
+    private void OnEnable()
     {
-        if (target != null)
-            basePosition = target.position;
-        else
-            basePosition = transform.position;
+        _basePosition = transform.position;
     }
 
     private void Update()
     {
-        UpdatePosition();
-        Animate();
+        AnimateFloat();
+        AnimateRotation();
     }
 
-    private void UpdatePosition()
+    private void AnimateFloat()
     {
-        if (target != null)
-        {
-            basePosition = target.position;
-        }
-
-        float floatOffset = Mathf.Sin(Time.time * floatSpeed) * floatAmplitude;
-
-        transform.position = basePosition + Vector3.up * (heightOffset + floatOffset);
+        float floatOffset = Mathf.Sin(Time.time * _floatSpeed) * _floatAmplitude;
+        transform.position = _basePosition + Vector3.up * floatOffset;
     }
 
-    private void Animate()
+    private void AnimateRotation()
     {
-        transform.Rotate(Vector3.up, rotateSpeed * Time.deltaTime, Space.World);
-    }
-
-    public void SetTarget(Transform _target)
-    {
-        target = _target;
+        transform.Rotate(Vector3.up, _rotateSpeed * Time.deltaTime, Space.World);
     }
 }

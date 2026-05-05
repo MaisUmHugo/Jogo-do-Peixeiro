@@ -61,22 +61,8 @@ public class TutorialController : MonoBehaviour
     [SerializeField] private DialogData readyToDeliverDialog;
     [SerializeField] private DialogData completedDialog;
 
-    [Header("Single Marker")]
-    [SerializeField] private TutorialMarker tutorialMarker;
-    [SerializeField] private GameObject tutorialPointer;
-    [SerializeField] private bool autoTargetActiveFishingSpot = true;
-    [SerializeField] private FishingSpotSpawner fishingSpotSpawner;
-    [SerializeField] private Transform fishingSpotMarkerReference;
-    [SerializeField] private Transform moneyLenderCabinMarkerTarget;
-    [SerializeField] private Transform boatMarkerTarget;
-    [SerializeField] private Transform fishingSpotMarkerTarget;
-    [SerializeField] private Transform dockMarkerTarget;
-    [SerializeField] private Transform moneyLenderMarkerTarget;
-
-    [Header("Legacy Step Markers")]
+    [Header("Objective Markers")]
     [SerializeField] private GameObject moneyLenderCabinMarker;
-    [SerializeField] private GameObject boatMarker;
-    [SerializeField] private GameObject fishingSpotMarker;
     [SerializeField] private GameObject dockMarker;
     [SerializeField] private GameObject moneyLenderMarker;
 
@@ -127,8 +113,6 @@ public class TutorialController : MonoBehaviour
         if (textCanvaManager == null)
             textCanvaManager = FindFirstObjectByType<TextCanvaManager>();
 
-        if (fishingSpotSpawner == null)
-            fishingSpotSpawner = FindFirstObjectByType<FishingSpotSpawner>();
     }
 
     private void OnEnable()
@@ -175,16 +159,7 @@ public class TutorialController : MonoBehaviour
     private void Update()
     {
         if (isShowingEndPanel)
-        {
             KeepEndPanelUiReady();
-            return;
-        }
-
-        if (!IsTutorialRunning || !autoTargetActiveFishingSpot)
-            return;
-
-        if (currentStep == TutorialStep.GoToFishingSpot || currentStep == TutorialStep.CatchRequiredFish)
-            UpdateMarkers();
     }
 
     public void SetStep(TutorialStep _newStep)
@@ -336,7 +311,7 @@ public class TutorialController : MonoBehaviour
 
         string message = currentStep == TutorialStep.ReadBasicPanels
             ? "Leia as instruções antes de pegar o barco."
-            : "Fale com o agiota antes de pegar o barco.";
+            : "Fale com o cobrador antes de pegar o barco.";
 
         ShowWarning(message);
     }
@@ -758,7 +733,7 @@ public class TutorialController : MonoBehaviour
         switch (currentStep)
         {
             case TutorialStep.GoToMoneyLenderCabin:
-                tutorialUI.SetObjectiveText("Fale com o agiota.");
+                tutorialUI.SetObjectiveText("Fale com o cobrador.");
                 break;
 
             case TutorialStep.ReadBasicPanels:
@@ -782,11 +757,11 @@ public class TutorialController : MonoBehaviour
                 break;
 
             case TutorialStep.TalkToMoneyLender:
-                tutorialUI.SetObjectiveText("Fale com o agiota para entregar o pedido.");
+                tutorialUI.SetObjectiveText("Fale com o cobrador para entregar o pedido.");
                 break;
 
             case TutorialStep.DeliverFish:
-                tutorialUI.SetObjectiveText($"Entregue {requestedQuantity}x {fishName} e {requestedTotalWeight}kg ao agiota.");
+                tutorialUI.SetObjectiveText($"Entregue {requestedQuantity}x {fishName} e {requestedTotalWeight}kg ao cobrador.");
                 break;
 
             case TutorialStep.Finished:
@@ -803,20 +778,14 @@ public class TutorialController : MonoBehaviour
     {
         ClearMarkers();
 
-        if (TryUpdateSingleMarker())
-            return;
-
         switch (currentStep)
         {
             case TutorialStep.GoToMoneyLenderCabin:
-                SetLegacyMarkerTarget(moneyLenderCabinMarker, moneyLenderCabinMarkerTarget);
+                SetMarkerActive(moneyLenderCabinMarker, true);
                 break;
 
             case TutorialStep.GoToBoat:
-                if (boatMarker != null)
-                    SetLegacyMarkerTarget(boatMarker, boatMarkerTarget != null ? boatMarkerTarget : dockMarkerTarget);
-                else
-                    SetLegacyMarkerTarget(dockMarker, dockMarkerTarget);
+                SetMarkerActive(dockMarker, true);
                 break;
 
             case TutorialStep.GoToFishingSpot:
@@ -824,12 +793,12 @@ public class TutorialController : MonoBehaviour
                 break;
 
             case TutorialStep.ReturnToDock:
-                SetLegacyMarkerTarget(dockMarker, dockMarkerTarget);
+                SetMarkerActive(dockMarker, true);
                 break;
 
             case TutorialStep.TalkToMoneyLender:
             case TutorialStep.DeliverFish:
-                SetLegacyMarkerTarget(moneyLenderMarker, moneyLenderMarkerTarget);
+                SetMarkerActive(moneyLenderMarker, true);
                 break;
         }
     }
@@ -837,167 +806,14 @@ public class TutorialController : MonoBehaviour
     private void ClearMarkers()
     {
         SetMarkerActive(moneyLenderCabinMarker, false);
-        SetMarkerActive(boatMarker, false);
-        SetMarkerActive(fishingSpotMarker, false);
         SetMarkerActive(dockMarker, false);
         SetMarkerActive(moneyLenderMarker, false);
-
-        GameObject singleMarker = GetSingleMarkerObject();
-
-        if (singleMarker != null)
-            singleMarker.SetActive(false);
-    }
-
-    private bool TryUpdateSingleMarker()
-    {
-        GameObject markerObject = GetSingleMarkerObject();
-
-        if (markerObject == null)
-            return false;
-
-        Transform target = GetCurrentMarkerTarget();
-        markerObject.SetActive(target != null);
-
-        if (target == null)
-            return true;
-
-        if (tutorialMarker != null)
-        {
-            tutorialMarker.SetTarget(target);
-        }
-        else
-        {
-            markerObject.transform.position = target.position;
-        }
-
-        return true;
-    }
-
-    private GameObject GetSingleMarkerObject()
-    {
-        if (tutorialMarker != null)
-            return tutorialMarker.gameObject;
-
-        return tutorialPointer;
-    }
-
-    private Transform GetCurrentMarkerTarget()
-    {
-        switch (currentStep)
-        {
-            case TutorialStep.GoToMoneyLenderCabin:
-                return moneyLenderCabinMarkerTarget;
-
-            case TutorialStep.GoToBoat:
-                return boatMarkerTarget != null ? boatMarkerTarget : dockMarkerTarget;
-
-            case TutorialStep.GoToFishingSpot:
-            case TutorialStep.CatchRequiredFish:
-                return null;
-
-            case TutorialStep.ReturnToDock:
-                return dockMarkerTarget;
-
-            case TutorialStep.TalkToMoneyLender:
-            case TutorialStep.DeliverFish:
-                return moneyLenderMarkerTarget;
-
-            default:
-                return null;
-        }
-    }
-
-    private Transform GetFishingSpotMarkerTarget()
-    {
-        if (!autoTargetActiveFishingSpot)
-            return fishingSpotMarkerTarget;
-
-        if (fishingSpotSpawner == null)
-            fishingSpotSpawner = FindFirstObjectByType<FishingSpotSpawner>(FindObjectsInactive.Include);
-
-        Vector3 referencePosition = GetFishingSpotMarkerReferencePosition();
-
-        if (fishingSpotSpawner == null)
-        {
-            Transform sceneFallbackTarget = GetFallbackFishingSpotMarkerTarget(referencePosition);
-            return sceneFallbackTarget != null ? sceneFallbackTarget : fishingSpotMarkerTarget;
-        }
-
-        FishingSpot activeSpot = fishingSpotSpawner.GetClosestActiveSpot(referencePosition);
-
-        if (activeSpot != null)
-            return activeSpot.GetMarkerTarget();
-
-        Transform fallbackTarget = GetFallbackFishingSpotMarkerTarget(referencePosition);
-
-        if (fallbackTarget != null)
-            return fallbackTarget;
-
-        return fishingSpotMarkerTarget;
-    }
-
-    private Transform GetFallbackFishingSpotMarkerTarget(Vector3 _referencePosition)
-    {
-        FishingSpot[] sceneSpots = FindObjectsByType<FishingSpot>(FindObjectsInactive.Exclude, FindObjectsSortMode.None);
-        FishingSpot closestSpot = null;
-        float closestSqrDistance = float.MaxValue;
-
-        foreach (FishingSpot spot in sceneSpots)
-        {
-            if (spot == null || !spot.gameObject.activeInHierarchy)
-                continue;
-
-            float sqrDistance = (spot.transform.position - _referencePosition).sqrMagnitude;
-
-            if (sqrDistance >= closestSqrDistance)
-                continue;
-
-            closestSqrDistance = sqrDistance;
-            closestSpot = spot;
-        }
-
-        return closestSpot != null ? closestSpot.GetMarkerTarget() : null;
-    }
-
-    private Vector3 GetFishingSpotMarkerReferencePosition()
-    {
-        if (fishingSpotMarkerReference != null)
-            return fishingSpotMarkerReference.position;
-
-        if (shipInventory != null)
-            return shipInventory.transform.position;
-
-        if (Camera.main != null)
-            return Camera.main.transform.position;
-
-        return transform.position;
     }
 
     private void SetMarkerActive(GameObject _marker, bool _active)
     {
         if (_marker != null)
             _marker.SetActive(_active);
-    }
-
-    private void SetLegacyMarkerTarget(GameObject _marker, Transform _target)
-    {
-        if (_marker == null)
-            return;
-
-        _marker.SetActive(_target != null);
-
-        if (_target == null)
-            return;
-
-        TutorialMarker marker = _marker.GetComponent<TutorialMarker>();
-
-        if (marker != null)
-        {
-            marker.SetTarget(_target);
-            return;
-        }
-
-        _marker.transform.position = _target.position;
     }
 
     private void SetPanelActive(GameObject _panel, bool _active)
