@@ -61,18 +61,18 @@
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Aim",
+                    "name": "Inventory",
                     "type": "Button",
-                    "id": "7896dfe3-87ea-4667-afde-5e85a5ec50f7",
+                    "id": "35406d1c-032d-40fb-a515-4884a16da23a",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
                     "initialStateCheck": false
                 },
                 {
-                    "name": "Inventory",
+                    "name": "SkillCheck",
                     "type": "Button",
-                    "id": "35406d1c-032d-40fb-a515-4884a16da23a",
+                    "id": "7c03f018-f14e-429c-8f29-e1d9c52cc22b",
                     "expectedControlType": "",
                     "processors": "",
                     "interactions": "",
@@ -247,8 +247,8 @@
                 },
                 {
                     "name": "",
-                    "id": "1d098bc5-9e1c-45e9-8c3c-679fa396d27c",
-                    "path": "<Mouse>/leftButton",
+                    "id": "c8804b5e-f626-4c92-a61d-1b2e3ecf85d2",
+                    "path": "<Keyboard>/space",
                     "interactions": "",
                     "processors": "",
                     "groups": "",
@@ -500,28 +500,6 @@
                 },
                 {
                     "name": "",
-                    "id": "710d69fa-9371-4989-a921-5992499e4d45",
-                    "path": "<Mouse>/leftButton",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Aim",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
-                    "id": "7b61f697-0927-4f4d-9877-001ef9639e2b",
-                    "path": "<Gamepad>/rightTrigger",
-                    "interactions": "",
-                    "processors": "",
-                    "groups": "",
-                    "action": "Aim",
-                    "isComposite": false,
-                    "isPartOfComposite": false
-                },
-                {
-                    "name": "",
                     "id": "07df091a-e72e-4575-a904-71e82ef685f6",
                     "path": "<Gamepad>/buttonNorth",
                     "interactions": "",
@@ -539,6 +517,39 @@
                     "processors": "",
                     "groups": "",
                     "action": "Inventory",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "c4617290-829a-4f91-94dd-d48df75ef420",
+                    "path": "<Keyboard>/space",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SkillCheck",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "d43a1614-593e-4585-af27-9fea74518e12",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SkillCheck",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "f4b99e59-9b91-400a-bc71-32a5ce331d7e",
+                    "path": "<Gamepad>/rightShoulder",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "SkillCheck",
                     "isComposite": false,
                     "isPartOfComposite": false
                 }
