@@ -5,7 +5,6 @@ public enum InputIconAction
     MoveLeft,
     MoveRight,
     Interact,
-    Aim,
     Pause,
     SkillCheck
 }
