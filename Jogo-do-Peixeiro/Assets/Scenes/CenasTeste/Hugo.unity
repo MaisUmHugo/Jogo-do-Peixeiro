@@ -3310,10 +3310,6 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 8300000, guid: f656bf1ae368d074a91b41c88b2af95a, type: 3}
     - target: {fileID: 4962541124507078516, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
-      propertyPath: playerCamera
-      value: 
-      objectReference: {fileID: 574899194}
-    - target: {fileID: 4962541124507078516, guid: c4bfcd78657385943b7af92b2f7b0ec6, type: 3}
       propertyPath: shipInventory
       value: 
       objectReference: {fileID: 1785359118}
