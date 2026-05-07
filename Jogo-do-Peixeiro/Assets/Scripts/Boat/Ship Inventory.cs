@@ -21,6 +21,13 @@ public class ShipInventory : MonoBehaviour
     public delegate void OnFishListChangeDelegate(List<FishData> fishList, float fishWeight);
     public event OnFishListChangeDelegate OnFishListChange;
 
+    private void Awake()
+    {
+        if (playerMoneyManager == null)
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
+
+        AttFishWeight();
+    }
 
     public bool TryAddFish(FishData fish)
     {
@@ -55,6 +62,49 @@ public class ShipInventory : MonoBehaviour
         ownedFish = MergeSort(ownedFish.ToArray()).ToList();
         Debug.Log("Added fish: " + _fish.typeOfFish.name + " with price: " + _fish.price);
         AttFishWeight();
+    }
+
+    public bool TryRemoveFish(FishData fish)
+    {
+        if (fish == null || !ownedFish.Remove(fish))
+            return false;
+
+        AttFishWeight();
+        return true;
+    }
+
+    public bool TryRemoveFishAt(int index, out FishData fish)
+    {
+        fish = null;
+
+        if (index < 0 || index >= ownedFish.Count)
+            return false;
+
+        fish = ownedFish[index];
+        ownedFish.RemoveAt(index);
+        AttFishWeight();
+        return true;
+    }
+
+    public void ClearFish()
+    {
+        if (ownedFish.Count == 0)
+            return;
+
+        ownedFish.Clear();
+        AttFishWeight();
+    }
+
+    public int GetTotalFishValue()
+    {
+        int totalValue = 0;
+
+        foreach (FishData fish in ownedFish)
+        {
+            totalValue += FishPriceCalculator.CalculatePrice(fish);
+        }
+
+        return totalValue;
     }
 
     public bool TryPayFishWeight(int _weightFishPayment)
@@ -93,12 +143,12 @@ public class ShipInventory : MonoBehaviour
         float money = 0;
         foreach (FishData _fish in ownedFish)
         {
-            money += _fish.price;
+            money += FishPriceCalculator.CalculatePrice(_fish);
         }
 
         ownedFish.Clear();
         Debug.Log($"dinheiro a receber: {money}");
-        playerMoneyManager.ReciveMoney(money);
+        playerMoneyManager?.ReceiveMoney(money);
     }
 
     private void SellHalfPriceFish(int _fishIndex)
@@ -108,13 +158,13 @@ public class ShipInventory : MonoBehaviour
         for (int i = 0; i < _fishIndex; i++)
         {
 
-            money += ownedFish[i].price;
+            money += FishPriceCalculator.CalculatePrice(ownedFish[i]);
 
         }
 
         ownedFish.RemoveRange(0, _fishIndex + 1);
         money = money / 2;
-        playerMoneyManager.ReciveMoney(money);
+        playerMoneyManager?.ReceiveMoney(money);
 
     }
 
