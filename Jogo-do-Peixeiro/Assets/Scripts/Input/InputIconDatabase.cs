@@ -16,8 +16,8 @@ public class InputIconDatabase : ScriptableObject
         public Sprite moveLeft;
         public Sprite moveRight;
         public Sprite interact;
-        public Sprite aim;
         public Sprite pause;
+        public Sprite skillCheck;
     }
 
     [Header("Keyboard")]
@@ -50,8 +50,8 @@ public class InputIconDatabase : ScriptableObject
         changed |= AssignIfMissing(ref _keyboard.moveLeft, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_a.png");
         changed |= AssignIfMissing(ref _keyboard.moveRight, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_d.png");
         changed |= AssignIfMissing(ref _keyboard.interact, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_e.png");
-        changed |= AssignIfMissing(ref _keyboard.aim, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/mouse_left.png");
         changed |= AssignIfMissing(ref _keyboard.pause, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_escape.png");
+        changed |= AssignIfMissing(ref _keyboard.skillCheck, "Assets/Artes/Icones/Input/Keyboard & Mouse/Default/keyboard_space.png");
 
         return changed;
     }
@@ -65,8 +65,8 @@ public class InputIconDatabase : ScriptableObject
         changed |= AssignIfMissing(ref _genericController.moveLeft, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_left.png");
         changed |= AssignIfMissing(ref _genericController.moveRight, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_right.png");
         changed |= AssignIfMissing(ref _genericController.interact, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_button_a.png");
-        changed |= AssignIfMissing(ref _genericController.aim, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_rt.png");
         changed |= AssignIfMissing(ref _genericController.pause, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_button_start.png");
+        changed |= AssignIfMissing(ref _genericController.skillCheck, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_rb.png");
 
         return changed;
     }
@@ -107,11 +107,11 @@ public class InputIconDatabase : ScriptableObject
             case InputIconAction.Interact:
                 return iconSet.interact;
 
-            case InputIconAction.Aim:
-                return iconSet.aim;
-
             case InputIconAction.Pause:
                 return iconSet.pause;
+
+            case InputIconAction.SkillCheck:
+                return iconSet.skillCheck;
 
             default:
                 return null;
