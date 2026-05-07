@@ -696,7 +696,7 @@ public class FishSkillCheckUI : MonoBehaviour
         if (_skillCheckInteractIcon == null || _iconDatabase == null)
             return;
 
-        _skillCheckInteractIcon.sprite = _iconDatabase.GetIcon(InputDeviceDetector.CurrentDeviceType, InputIconAction.Interact);
+        _skillCheckInteractIcon.sprite = _iconDatabase.GetIcon(InputDeviceDetector.CurrentDeviceType, InputIconAction.SkillCheck);
     }
 
     private void SetSkillCheckHintVisible(bool _visible)

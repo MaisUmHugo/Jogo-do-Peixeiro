@@ -171,13 +171,13 @@ public class FishSkillCheck : MonoBehaviour
     private void OnEnable()
     {
         if (InputHandler.instance != null)
-            InputHandler.instance.onInteractPressed += CheckClick;
+            InputHandler.instance.onSkillCheckPressed += CheckClick;
     }
 
     private void OnDisable()
     {
         if (InputHandler.instance != null)
-            InputHandler.instance.onInteractPressed -= CheckClick;
+            InputHandler.instance.onSkillCheckPressed -= CheckClick;
     }
 
     private void Update()
