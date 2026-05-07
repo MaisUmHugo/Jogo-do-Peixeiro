@@ -9,7 +9,7 @@ public class FishData
     private int CalculatePrice()
     {
 
-        return weight * typeOfFish.pricePerWeight;
+        return FishPriceCalculator.CalculatePrice(typeOfFish, weight);
 
     }
 

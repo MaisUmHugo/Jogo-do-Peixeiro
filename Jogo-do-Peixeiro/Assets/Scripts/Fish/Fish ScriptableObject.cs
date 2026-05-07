@@ -9,9 +9,11 @@ public class FishScriptableObject : ScriptableObject
     public Mesh mesh;
     public Material material;
 
-    [Range(1, 3)] public int rarity;
+    [Range(1, 4)] public int rarity;
 
+    [Min(0)]
     public int pricePerWeight;
+    public int BasePrice => pricePerWeight;
 
     public string fishName;
     [TextArea] public string description;
