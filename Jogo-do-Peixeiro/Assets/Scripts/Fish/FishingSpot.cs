@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 using UnityEngine.VFX;
 
@@ -16,13 +17,14 @@ public class FishingSpot : MonoBehaviour
     [SerializeField] private string boatTag = "Boat";
     [SerializeField] private string escapeWarningMessage = "Os peixes fugiram";
 
-    [Header("Boat Proximity Fade")]
+    [Header("Boat Escape")]
     [SerializeField] private bool fadeOutByBoatDistance = true;
-    [Tooltip("Evita spot visivel mas impossivel de pescar: se chegar perto demais para pescar, os peixes fogem e o spot some.")]
+    [Tooltip("Evita spot visivel mas impossivel de pescar: se chegar perto demais, os peixes fogem e o spot some.")]
     [SerializeField] private bool blockFishingWhileFading = true;
-    [SerializeField] private float fadeStartDistance = 12f;
     [SerializeField] private float escapeDistance = 4f;
-    [SerializeField] private float minimumFadeScale = 0.15f;
+    [SerializeField] private float escapeFadeDuration = 0.35f;
+    [SerializeField, HideInInspector] private float fadeStartDistance = 12f;
+    [SerializeField, HideInInspector] private float minimumFadeScale = 0.15f;
 
     [Header("Cast Target")]
     [SerializeField] private Transform castTargetPoint;
@@ -38,10 +40,11 @@ public class FishingSpot : MonoBehaviour
     private FishingSpotSpawner spawner;
     private Transform boatTransform;
     private Vector3 originalScale;
-    private bool isFadingByBoatDistance;
     private bool hasDeactivated;
+    private bool isEscaping;
     private bool isWaitingFishingResult;
     private GameObject areaVFXInstance;
+    private Coroutine escapeFadeRoutine;
 
     private void Awake()
     {
@@ -52,14 +55,16 @@ public class FishingSpot : MonoBehaviour
     {
         minHorizontalDistance = Mathf.Max(0f, minHorizontalDistance);
         fadeStartDistance = Mathf.Max(0.1f, fadeStartDistance);
-        escapeDistance = Mathf.Clamp(escapeDistance, 0f, fadeStartDistance);
+        escapeDistance = Mathf.Max(0f, escapeDistance);
+        escapeFadeDuration = Mathf.Max(0f, escapeFadeDuration);
         minimumFadeScale = Mathf.Clamp(minimumFadeScale, 0f, 1f);
     }
 
     private void OnEnable()
     {
         hasDeactivated = false;
-        isFadingByBoatDistance = false;
+        isEscaping = false;
+        escapeFadeRoutine = null;
         transform.localScale = originalScale == Vector3.zero ? transform.localScale : originalScale;
         TryFindBoatTransform();
         SetAreaVFXVisible(playAreaVFXOnEnable);
@@ -73,7 +78,7 @@ public class FishingSpot : MonoBehaviour
 
     private void Update()
     {
-        UpdateBoatProximityFade();
+        UpdateBoatEscapeDistance();
     }
 
     public void Initialize(FishingAreaDefinition _fishingArea, FishingSpotSpawner _spawner, bool _deactivateAfterFishingStarts)
@@ -86,6 +91,28 @@ public class FishingSpot : MonoBehaviour
 
     public bool TryStartFishingFromRod(ShipInventory _inventory)
     {
+        if (!CanStartFishing(_inventory, true))
+            return false;
+
+        FishScriptableObject[] fishList = GetAvailableFish();
+        bool startedFishing = FishingManager.instance.StartFishing(_inventory, fishList);
+
+        if (startedFishing && deactivateAfterFishingStarts)
+            RegisterFishingResult();
+
+        return startedFishing;
+    }
+
+    public bool CanStartFishingFromInteraction(ShipInventory _inventory)
+    {
+        return CanStartFishing(_inventory, false);
+    }
+
+    private bool CanStartFishing(ShipInventory _inventory, bool _triggerEscapeIfBlocked)
+    {
+        if (hasDeactivated || isEscaping || !isActiveAndEnabled)
+            return false;
+
         if (FishingManager.instance == null)
             return false;
 
@@ -95,9 +122,12 @@ public class FishingSpot : MonoBehaviour
         if (GameManager.instance == null)
             return false;
 
+        if (!HasFishAvailable())
+            return false;
+
         Vector3 fishingReferencePosition = GetFishingReferencePosition(_inventory);
 
-        if (ShouldBlockFishingForBoatProximity(fishingReferencePosition))
+        if (ShouldBlockFishingForBoatProximity(fishingReferencePosition, _triggerEscapeIfBlocked))
             return false;
 
         Vector3 a = fishingReferencePosition;
@@ -110,17 +140,13 @@ public class FishingSpot : MonoBehaviour
 
         if (horizontalDistance < minHorizontalDistance)
         {
-            EscapeFishIfFishingWouldBeBlocked(horizontalDistance);
+            if (_triggerEscapeIfBlocked)
+                EscapeFishIfFishingWouldBeBlocked(horizontalDistance);
+
             return false;
         }
 
-        FishScriptableObject[] fishList = GetAvailableFish();
-        bool startedFishing = FishingManager.instance.StartFishing(_inventory, fishList);
-
-        if (startedFishing && deactivateAfterFishingStarts)
-            RegisterFishingResult();
-
-        return startedFishing;
+        return true;
     }
 
     public FishScriptableObject[] GetAvailableFish()
@@ -186,10 +212,13 @@ public class FishingSpot : MonoBehaviour
 
     private void EscapeFish()
     {
+        if (hasDeactivated || isEscaping)
+            return;
+
         if (HUDWarningUI.Instance != null)
             HUDWarningUI.Instance.ShowWarning(escapeWarningMessage);
 
-        DeactivateSpot();
+        StartEscapeFade();
     }
 
     private void RegisterFishingResult()
@@ -224,25 +253,21 @@ public class FishingSpot : MonoBehaviour
             DeactivateSpot();
     }
 
-    private void UpdateBoatProximityFade()
+    private void UpdateBoatEscapeDistance()
     {
-        if (!fadeOutByBoatDistance || ignoreEscapeForDebug || hasDeactivated)
+        if (!fadeOutByBoatDistance || ignoreEscapeForDebug || hasDeactivated || isEscaping)
             return;
 
         if (boatTransform == null && !TryFindBoatTransform())
             return;
 
         float horizontalDistance = GetHorizontalDistance(boatTransform.position, transform.position);
-        isFadingByBoatDistance = horizontalDistance < fadeStartDistance;
-        float fadeNormalized = Mathf.InverseLerp(escapeDistance, fadeStartDistance, horizontalDistance);
-        float scale = Mathf.Lerp(minimumFadeScale, 1f, fadeNormalized);
-        transform.localScale = originalScale * scale;
 
         if (horizontalDistance <= GetEffectiveEscapeDistance())
             EscapeFish();
     }
 
-    private bool ShouldBlockFishingForBoatProximity(Vector3 _playerPosition)
+    private bool ShouldBlockFishingForBoatProximity(Vector3 _playerPosition, bool _triggerEscapeIfBlocked)
     {
         if (!blockFishingWhileFading || !fadeOutByBoatDistance || ignoreEscapeForDebug)
             return false;
@@ -252,7 +277,9 @@ public class FishingSpot : MonoBehaviour
         if (horizontalDistance > GetEffectiveEscapeDistance())
             return false;
 
-        EscapeFish();
+        if (_triggerEscapeIfBlocked)
+            EscapeFish();
+
         return true;
     }
 
@@ -267,10 +294,41 @@ public class FishingSpot : MonoBehaviour
 
     private float GetEffectiveEscapeDistance()
     {
-        if (!blockFishingWhileFading)
-            return escapeDistance;
+        return escapeDistance;
+    }
 
-        return Mathf.Max(escapeDistance, minHorizontalDistance);
+    private void StartEscapeFade()
+    {
+        isEscaping = true;
+
+        if (escapeFadeDuration <= 0f)
+        {
+            DeactivateSpot();
+            return;
+        }
+
+        if (escapeFadeRoutine != null)
+            StopCoroutine(escapeFadeRoutine);
+
+        escapeFadeRoutine = StartCoroutine(EscapeFadeRoutine());
+    }
+
+    private IEnumerator EscapeFadeRoutine()
+    {
+        Vector3 startScale = transform.localScale;
+        float elapsed = 0f;
+
+        while (elapsed < escapeFadeDuration)
+        {
+            elapsed += Time.deltaTime;
+            float t = Mathf.Clamp01(elapsed / escapeFadeDuration);
+            transform.localScale = Vector3.Lerp(startScale, Vector3.zero, t);
+            yield return null;
+        }
+
+        transform.localScale = Vector3.zero;
+        escapeFadeRoutine = null;
+        DeactivateSpot();
     }
 
     private Vector3 GetFishingReferencePosition(ShipInventory _inventory)
@@ -369,7 +427,14 @@ public class FishingSpot : MonoBehaviour
             return;
 
         hasDeactivated = true;
+        isEscaping = false;
         UnregisterFishingResult();
+
+        if (escapeFadeRoutine != null)
+        {
+            StopCoroutine(escapeFadeRoutine);
+            escapeFadeRoutine = null;
+        }
 
         if (spawner != null)
             spawner.HandleSpotDeactivated(this);

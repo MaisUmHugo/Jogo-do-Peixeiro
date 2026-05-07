@@ -11,6 +11,10 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private LayerMask waterLayer;
     [SerializeField] private ShipInventory shipInventory;
 
+    [Header("Casting Mode")]
+    [SerializeField] private bool useAimCasting;
+    [SerializeField] private bool useInteractToRecallHook = true;
+
     [SerializeField] private Transform hookPrefab;
     [SerializeField] private float hookSpeed = 25f;
 
@@ -104,8 +108,8 @@ public class FishingRod : MonoBehaviour
     {
         if (InputHandler.instance != null)
         {
-            InputHandler.instance.onAimPressed += HandleAimPressed;
-            InputHandler.instance.onAimReleased += HandleAimReleased;
+            if (useInteractToRecallHook)
+                InputHandler.instance.onInteractPressed += HandleInteractPressed;
         }
     }
 
@@ -113,8 +117,7 @@ public class FishingRod : MonoBehaviour
     {
         if (InputHandler.instance != null)
         {
-            InputHandler.instance.onAimPressed -= HandleAimPressed;
-            InputHandler.instance.onAimReleased -= HandleAimReleased;
+            InputHandler.instance.onInteractPressed -= HandleInteractPressed;
         }
     }
 
@@ -139,8 +142,55 @@ public class FishingRod : MonoBehaviour
 
     }
 
+    public bool CanCastToSpot(FishingSpot _spot)
+    {
+        if (_spot == null || shipInventory == null)
+            return false;
+
+        if (IsGameplayInputBlockedByUI())
+            return false;
+
+        if (isAiming || hookTraveling || hookReturning || hookWaitingInWater)
+            return false;
+
+        if (GameManager.instance == null ||
+            GameManager.instance.currentState != GameManager.GameState.OnBoat)
+        {
+            return false;
+        }
+
+        return _spot.CanStartFishingFromInteraction(shipInventory);
+    }
+
+    public bool TryCastToSpot(FishingSpot _spot)
+    {
+        if (!CanCastToSpot(_spot))
+            return false;
+
+        Vector3 targetPoint = _spot.GetCastTargetPosition(_spot.transform.position);
+        currentTargetSpot = _spot;
+        currentForce = Mathf.Clamp(Vector3.Distance(rodTip.position, targetPoint), minCastDistance, maxCastDistance);
+        hasValidCastTarget = true;
+        isAiming = false;
+        hookTraveling = true;
+        arcCache = CalculateArcPoints(rodTip.position, targetPoint);
+
+        if (lineRenderer != null)
+            lineRenderer.enabled = false;
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.Fishing);
+
+        PlayCastSfx();
+        hookRoutine = StartCoroutine(AnimateHook());
+        return true;
+    }
+
     private void HandleAimPressed()
     {
+        if (!useAimCasting)
+            return;
+
         if (ShouldIgnoreAimInput())
             return;
 
@@ -176,6 +226,9 @@ public class FishingRod : MonoBehaviour
 
     private void HandleAimReleased()
     {
+        if (!useAimCasting)
+            return;
+
         if (ShouldIgnoreAimInput())
             return;
 
@@ -209,6 +262,17 @@ public class FishingRod : MonoBehaviour
 
         PlayCastSfx();
         hookRoutine = StartCoroutine(AnimateHook());
+    }
+
+    private void HandleInteractPressed()
+    {
+        if (!useInteractToRecallHook)
+            return;
+
+        if (!hookWaitingInWater)
+            return;
+
+        RecallHook();
     }
 
     private void UpdateAim()
@@ -662,8 +726,16 @@ public class FishingRod : MonoBehaviour
 
     private void DrawArc(Vector3 startPoint, Vector3 endPoint)
     {
-        lineRenderer.positionCount = arcPoints;
+        Vector3[] points = CalculateArcPoints(startPoint, endPoint);
+        lineRenderer.positionCount = points.Length;
 
+        for (int i = 0; i < points.Length; i++)
+            lineRenderer.SetPosition(i, points[i]);
+    }
+
+    private Vector3[] CalculateArcPoints(Vector3 startPoint, Vector3 endPoint)
+    {
+        Vector3[] points = new Vector3[arcPoints];
         float distance = Vector3.Distance(startPoint, endPoint);
         float height = distance * 0.5f;
 
@@ -674,8 +746,10 @@ public class FishingRod : MonoBehaviour
             Vector3 point = Vector3.Lerp(startPoint, endPoint, t);
             point.y += Mathf.Sin(t * Mathf.PI) * height;
 
-            lineRenderer.SetPosition(i, point);
+            points[i] = point;
         }
+
+        return points;
     }
     public void PlaySuccessSplash(FishSkillCheck.FeedbackResult result)
     {
