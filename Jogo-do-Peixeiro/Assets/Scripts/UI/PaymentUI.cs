@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+Ôªøusing System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -22,6 +22,9 @@ public class PaymentUI : MonoBehaviour
     [Header("Ship References")]
     [SerializeField] private ShipInventory shipInventory;
 
+    [Header("Money References")]
+    [SerializeField] private PlayerMoneyManager playerMoneyManager;
+
     [Header("Lender References")]
     [SerializeField] private MoneyLender moneyLender;
 
@@ -39,6 +42,8 @@ public class PaymentUI : MonoBehaviour
     private readonly List<FishData> ownedFish = new List<FishData>();
     private float fishWeight;
     private int currentFishWeightPayment;
+    private int currentDebtPayment;
+    private float playerMoney;
     private bool isOpen;
     private bool isSubscribed;
     private bool areButtonsBound;
@@ -102,8 +107,8 @@ public class PaymentUI : MonoBehaviour
         isOpen = true;
         PanelObject.SetActive(true);
 
-        // Fecha o di·logo invocando o callback pendente para n„o quebrar fluxos
-        // que dependem da conclus„o do di·logo (ex: tutorial ReadBasicPanels ? GoToBoat)
+        // Fecha o di√°logo invocando o callback pendente para n√£o quebrar fluxos
+        // que dependem da conclus√£o do di√°logo (ex: tutorial ReadBasicPanels ? GoToBoat)
         if (textCanvaManager != null)
             textCanvaManager.CloseDialog(true);
 
@@ -137,8 +142,8 @@ public class PaymentUI : MonoBehaviour
             return;
         }
 
-        bool success = moneyLender.TryGetFishWeightPayment();
-        SetStatus(success ? "Pagamento entregue." : "Peso de peixe insuficiente.");
+        bool success = moneyLender.TryPayDebt();
+        SetStatus(success ? "Divida paga." : "Dinheiro insuficiente.");
 
         if (success)
         {
@@ -195,6 +200,9 @@ public class PaymentUI : MonoBehaviour
         if (shipInventory == null)
             shipInventory = FindFirstObjectByType<ShipInventory>();
 
+        if (playerMoneyManager == null)
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
+
         if (moneyLender == null)
             moneyLender = FindFirstObjectByType<MoneyLender>();
 
@@ -216,7 +224,12 @@ public class PaymentUI : MonoBehaviour
             shipInventory.OnFishListChange += ChangeFishList;
 
         if (moneyLender != null)
+        {
             moneyLender.OnNewFishWeightPayment += ChangePayment;
+            moneyLender.OnNewDebtPayment += ChangeDebtPayment;
+        }
+
+        PlayerMoneyManager.OnMoneyChangeEvent += ChangeMoney;
 
         isSubscribed = true;
     }
@@ -230,7 +243,12 @@ public class PaymentUI : MonoBehaviour
             shipInventory.OnFishListChange -= ChangeFishList;
 
         if (moneyLender != null)
+        {
             moneyLender.OnNewFishWeightPayment -= ChangePayment;
+            moneyLender.OnNewDebtPayment -= ChangeDebtPayment;
+        }
+
+        PlayerMoneyManager.OnMoneyChangeEvent -= ChangeMoney;
 
         isSubscribed = false;
     }
@@ -295,6 +313,18 @@ public class PaymentUI : MonoBehaviour
         SetPaymentTexts();
     }
 
+    private void ChangeDebtPayment(int _amount)
+    {
+        currentDebtPayment = _amount;
+        SetPaymentTexts();
+    }
+
+    private void ChangeMoney(float _amount)
+    {
+        playerMoney = _amount;
+        SetPaymentTexts();
+    }
+
     private void ChangeFishList(List<FishData> _fishList, float _fishWeight)
     {
         ownedFish.Clear();
@@ -312,6 +342,8 @@ public class PaymentUI : MonoBehaviour
         ownedFish.Clear();
         fishWeight = 0f;
         currentFishWeightPayment = moneyLender != null ? moneyLender.CurrentFishWeightPayment : 0;
+        currentDebtPayment = moneyLender != null ? moneyLender.CurrentDebtPayment : 0;
+        playerMoney = playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f;
 
         if (shipInventory == null)
             return;
@@ -339,8 +371,10 @@ public class PaymentUI : MonoBehaviour
             return;
         }
 
-        string color = currentFishWeightPayment > fishWeight ? "red" : "green";
-        paymentText.text = $"Pagamento: <color={color}>{fishWeight:0}</color> / {currentFishWeightPayment} kg";
+        string moneyColor = playerMoney >= currentDebtPayment ? "green" : "red";
+        paymentText.text =
+            $"Divida: R$ {currentDebtPayment}\n" +
+            $"Dinheiro: <color={moneyColor}>R$ {playerMoney:0}</color>";
     }
 
     private void SetFishListText()
@@ -364,7 +398,8 @@ public class PaymentUI : MonoBehaviour
             builder.Append(fish.typeOfFish.fishName);
             builder.Append(", peso: ");
             builder.Append(fish.weight);
-            builder.AppendLine(" kg");
+            builder.Append(" kg, valor: R$ ");
+            builder.AppendLine(FishPriceCalculator.CalculatePrice(fish).ToString());
         }
 
         fishesText.text = builder.ToString();

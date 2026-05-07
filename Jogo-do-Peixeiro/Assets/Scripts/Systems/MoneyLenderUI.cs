@@ -8,6 +8,7 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField] private TMP_Text requiredWeightText;
     [SerializeField] private TMP_Text currentWeightText;
     [SerializeField] private TMP_Text statusText;
+    [SerializeField] private PlayerMoneyManager playerMoneyManager;
 
     [Header("Audio")]
     [SerializeField] private AudioClip doorOpenSfx;
@@ -70,6 +71,10 @@ public class MoneyLenderUI : MonoBehaviour
         bool wasOpen = isOpen;
 
         currentMoneyLender = _moneyLender;
+
+        if (playerMoneyManager == null)
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
+
         isOpen = true;
 
         if (panel != null)
@@ -108,10 +113,10 @@ public class MoneyLenderUI : MonoBehaviour
             return;
         }
 
-        bool success = currentMoneyLender.TryGetFishWeightPayment();
+        bool success = currentMoneyLender.TryPayDebt();
 
         if (statusText != null)
-            statusText.text = success ? "Pagamento entregue." : "Peso de peixe insuficiente.";
+            statusText.text = success ? "Divida paga." : "Dinheiro insuficiente.";
 
         if (success)
         {
@@ -151,11 +156,14 @@ public class MoneyLenderUI : MonoBehaviour
             return;
         }
 
+        if (playerMoneyManager == null)
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
+
         if (requiredWeightText != null)
-            requiredWeightText.text = $"Required: {currentMoneyLender.GetCurrentFishWeightPayment()} kg";
+            requiredWeightText.text = $"Divida: R$ {currentMoneyLender.GetCurrentDebtPayment()}";
 
         if (currentWeightText != null)
-            currentWeightText.text = $"Current: {currentMoneyLender.GetCurrentOwnedWeight()} kg";
+            currentWeightText.text = $"Dinheiro: R$ {(playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f):0}";
     }
 
     private void Close()

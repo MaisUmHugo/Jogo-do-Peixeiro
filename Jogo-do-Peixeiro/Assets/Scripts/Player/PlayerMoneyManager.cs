@@ -1,12 +1,24 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 public class PlayerMoneyManager : MonoBehaviour
 {
+    [SerializeField] private float initialMoney;
+
     private float playerMoney;
     public float PlayerMoney => playerMoney;
 
     public delegate void OnMoneyChangeDelegate(float playerMoney);
     public static event OnMoneyChangeDelegate OnMoneyChangeEvent;
+
+    private void Awake()
+    {
+        playerMoney = Mathf.Max(0f, initialMoney);
+    }
+
+    private void OnEnable()
+    {
+        NotifyMoneyChanged();
+    }
 
     public bool TrySpendMoney(float _amount)
     {
@@ -14,22 +26,37 @@ public class PlayerMoneyManager : MonoBehaviour
 
         playerMoney -= _amount;
 
-        OnMoneyChangeEvent?.Invoke(playerMoney);
+        NotifyMoneyChanged();
 
-        Debug.Log($"gastou {_amount} dinheiros e agora é: {playerMoney}");
+        Debug.Log($"gastou {_amount} dinheiros e agora Ã©: {playerMoney}");
 
         return true;
     }
 
-    public void ReciveMoney(float _amount)
+    public void ReceiveMoney(float _amount)
     {
         if (_amount <= 0) return;
 
         playerMoney += _amount;
+        NotifyMoneyChanged();
+
+        Debug.Log($"recebeu {_amount} dinheiros e agora Ã©: {playerMoney}");
+    }
+
+    public void ReciveMoney(float _amount)
+    {
+        ReceiveMoney(_amount);
+    }
+
+    public void SetMoney(float _amount)
+    {
+        playerMoney = Mathf.Max(0f, _amount);
+        NotifyMoneyChanged();
+    }
+
+    private void NotifyMoneyChanged()
+    {
         OnMoneyChangeEvent?.Invoke(playerMoney);
-
-        Debug.Log($"recebeu {_amount} dinheiros e agora é: {playerMoney}");
-
-
     }
 }
+

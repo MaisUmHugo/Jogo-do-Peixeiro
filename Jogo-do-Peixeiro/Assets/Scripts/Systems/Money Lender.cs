@@ -7,12 +7,17 @@ public class MoneyLender : MonoBehaviour
     [SerializeField] private int initialFishWeightPaid = 100;
     [SerializeField] private int fishWeightPaidIncremetion = 20;
 
+    [Header("Debt Payment")]
+    [SerializeField] private int initialDebtPayment = 150;
+    [SerializeField] private int debtPaymentIncremetion = 75;
+
     [Header("Specific Fish Payment")]
     [SerializeField] private int qttSpecificFish;
     [SerializeField] private FishScriptableObject specificFish;
 
     [Header("References")]
     [SerializeField] private ShipInventory shipInventory;
+    [SerializeField] private PlayerMoneyManager playerMoneyManager;
 
     [Header("Firework VFX")]
     [SerializeField] private VisualEffect fireworkVFXPrefab;
@@ -20,17 +25,24 @@ public class MoneyLender : MonoBehaviour
     [SerializeField] private float fireworkVFXLifetime = 3f;
 
     private int currentFishWeightPayment;
+    private int currentDebtPayment;
     private int timesPaid = 0;
     private bool tutorialFinishFireworksStarted = false;
 
     public int CurrentFishWeightPayment => currentFishWeightPayment;
+    public int CurrentDebtPayment => currentDebtPayment;
 
     public delegate void OnNewFishWeightPaymentDelegate(int fishWeightPayment);
     public event OnNewFishWeightPaymentDelegate OnNewFishWeightPayment;
 
+    public delegate void OnNewDebtPaymentDelegate(int debtPayment);
+    public event OnNewDebtPaymentDelegate OnNewDebtPayment;
+
     private void Awake()
     {
+        ResolveReferences();
         CalculateNewPayment();
+        CalculateNewDebtPayment();
     }
 
     public bool TryGetFishWeightPayment()
@@ -51,16 +63,41 @@ public class MoneyLender : MonoBehaviour
         return true;
     }
 
+    public bool TryPayDebt()
+    {
+        ResolveReferences();
+
+        if (playerMoneyManager == null)
+            return false;
+
+        if (!playerMoneyManager.TrySpendMoney(currentDebtPayment))
+        {
+            Debug.Log("Dinheiro insuficiente para pagar a divida.");
+            return false;
+        }
+
+        AdvancePaymentCycle();
+        PlayFireworkVFX();
+
+        Debug.Log("Pagou a divida em dinheiro.");
+        return true;
+    }
+
     private void GetFishWeightPayment()
     {
-        timesPaid++;
-        CalculateNewPayment();
+        AdvancePaymentCycle();
     }
 
     private void CalculateNewPayment()
     {
         currentFishWeightPayment = initialFishWeightPaid + fishWeightPaidIncremetion * timesPaid;
         OnNewFishWeightPayment?.Invoke(currentFishWeightPayment);
+    }
+
+    private void CalculateNewDebtPayment()
+    {
+        currentDebtPayment = initialDebtPayment + debtPaymentIncremetion * timesPaid;
+        OnNewDebtPayment?.Invoke(currentDebtPayment);
     }
 
     public bool TryGetSpecificFishPayment()
@@ -92,8 +129,23 @@ public class MoneyLender : MonoBehaviour
 
     private void GetSpecificFishPayment()
     {
+        AdvancePaymentCycle();
+    }
+
+    private void AdvancePaymentCycle()
+    {
         timesPaid++;
         CalculateNewPayment();
+        CalculateNewDebtPayment();
+    }
+
+    private void ResolveReferences()
+    {
+        if (shipInventory == null)
+            shipInventory = FindFirstObjectByType<ShipInventory>();
+
+        if (playerMoneyManager == null)
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
     }
 
     private void PlayFireworkVFX()
@@ -145,6 +197,11 @@ public class MoneyLender : MonoBehaviour
         return currentFishWeightPayment;
     }
 
+    public int GetCurrentDebtPayment()
+    {
+        return currentDebtPayment;
+    }
+
     public float GetCurrentOwnedWeight()
     {
         if (shipInventory == null)
@@ -177,6 +234,6 @@ public class MoneyLender : MonoBehaviour
             return;
         }
 
-        TryGetFishWeightPayment();
+        TryPayDebt();
     }
 }
