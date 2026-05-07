@@ -113,18 +113,33 @@ public class MoneyLenderUI : MonoBehaviour
             return;
         }
 
-        bool success = currentMoneyLender.TryPayDebt();
+        bool success = currentMoneyLender.TryPayDebt(out int paidAmount, out MoneyLender.DebtPaymentResult paymentResult);
 
         if (statusText != null)
-            statusText.text = success ? "Divida paga." : "Dinheiro insuficiente.";
+            statusText.text = GetDebtPaymentStatusText(success, paidAmount, paymentResult);
 
-        if (success)
+        if (paymentResult == MoneyLender.DebtPaymentResult.Completed ||
+            paymentResult == MoneyLender.DebtPaymentResult.PaidOff)
         {
             Close();
             return;
         }
 
         Refresh();
+    }
+
+    private string GetDebtPaymentStatusText(bool _success, int _paidAmount, MoneyLender.DebtPaymentResult _paymentResult)
+    {
+        if (!_success)
+            return "Dinheiro insuficiente.";
+
+        return _paymentResult switch
+        {
+            MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
+            MoneyLender.DebtPaymentResult.Completed => "Divida reduzida.",
+            MoneyLender.DebtPaymentResult.PaidOff => "Divida quitada.",
+            _ => "Dinheiro insuficiente."
+        };
     }
 
     public void OnClickClose()
@@ -159,8 +174,12 @@ public class MoneyLenderUI : MonoBehaviour
         if (playerMoneyManager == null)
             playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
 
+        int debtBalance = currentMoneyLender.GetCurrentDebtBalance();
+        int debtPayment = currentMoneyLender.GetCurrentPayableDebtPayment();
+        string debtValue = debtBalance > 0 ? $"-R$ {debtBalance}" : "R$ 0";
+
         if (requiredWeightText != null)
-            requiredWeightText.text = $"Divida: R$ {currentMoneyLender.GetCurrentDebtPayment()}";
+            requiredWeightText.text = $"Divida: {debtValue} | Pagamento: R$ {debtPayment}";
 
         if (currentWeightText != null)
             currentWeightText.text = $"Dinheiro: R$ {(playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f):0}";

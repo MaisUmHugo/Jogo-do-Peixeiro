@@ -54,7 +54,7 @@ public class PlayerMoneyManager : MonoBehaviour
         NotifyMoneyChanged();
     }
 
-    private void NotifyMoneyChanged()
+    public void NotifyMoneyChanged()
     {
         OnMoneyChangeEvent?.Invoke(playerMoney);
     }

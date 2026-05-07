@@ -24,6 +24,7 @@ public class PaymentUI : MonoBehaviour
 
     [Header("Money References")]
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
+    [SerializeField] private DebtSystem debtSystem;
 
     [Header("Lender References")]
     [SerializeField] private MoneyLender moneyLender;
@@ -43,6 +44,7 @@ public class PaymentUI : MonoBehaviour
     private float fishWeight;
     private int currentFishWeightPayment;
     private int currentDebtPayment;
+    private int currentDebtBalance;
     private float playerMoney;
     private bool isOpen;
     private bool isSubscribed;
@@ -142,16 +144,31 @@ public class PaymentUI : MonoBehaviour
             return;
         }
 
-        bool success = moneyLender.TryPayDebt();
-        SetStatus(success ? "Divida paga." : "Dinheiro insuficiente.");
+        bool success = moneyLender.TryPayDebt(out int paidAmount, out MoneyLender.DebtPaymentResult paymentResult);
+        SetStatus(GetDebtPaymentStatusText(success, paidAmount, paymentResult));
 
-        if (success)
+        if (paymentResult == MoneyLender.DebtPaymentResult.Completed ||
+            paymentResult == MoneyLender.DebtPaymentResult.PaidOff)
         {
             Close();
             return;
         }
 
         Refresh();
+    }
+
+    private string GetDebtPaymentStatusText(bool _success, int _paidAmount, MoneyLender.DebtPaymentResult _paymentResult)
+    {
+        if (!_success)
+            return "Dinheiro insuficiente.";
+
+        return _paymentResult switch
+        {
+            MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
+            MoneyLender.DebtPaymentResult.Completed => "Divida reduzida.",
+            MoneyLender.DebtPaymentResult.PaidOff => "Divida quitada.",
+            _ => "Dinheiro insuficiente."
+        };
     }
 
     public void OnClickPay()
@@ -203,6 +220,9 @@ public class PaymentUI : MonoBehaviour
         if (playerMoneyManager == null)
             playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
 
+        if (debtSystem == null)
+            debtSystem = DebtSystem.GetOrCreate();
+
         if (moneyLender == null)
             moneyLender = FindFirstObjectByType<MoneyLender>();
 
@@ -230,6 +250,7 @@ public class PaymentUI : MonoBehaviour
         }
 
         PlayerMoneyManager.OnMoneyChangeEvent += ChangeMoney;
+        DebtSystem.OnDebtChangedEvent += ChangeDebtBalance;
 
         isSubscribed = true;
     }
@@ -249,6 +270,7 @@ public class PaymentUI : MonoBehaviour
         }
 
         PlayerMoneyManager.OnMoneyChangeEvent -= ChangeMoney;
+        DebtSystem.OnDebtChangedEvent -= ChangeDebtBalance;
 
         isSubscribed = false;
     }
@@ -319,6 +341,16 @@ public class PaymentUI : MonoBehaviour
         SetPaymentTexts();
     }
 
+    private void ChangeDebtBalance(int _currentDebt, int _changeAmount)
+    {
+        currentDebtBalance = _currentDebt;
+
+        if (moneyLender != null)
+            currentDebtPayment = moneyLender.GetCurrentPayableDebtPayment();
+
+        SetPaymentTexts();
+    }
+
     private void ChangeMoney(float _amount)
     {
         playerMoney = _amount;
@@ -342,7 +374,8 @@ public class PaymentUI : MonoBehaviour
         ownedFish.Clear();
         fishWeight = 0f;
         currentFishWeightPayment = moneyLender != null ? moneyLender.CurrentFishWeightPayment : 0;
-        currentDebtPayment = moneyLender != null ? moneyLender.CurrentDebtPayment : 0;
+        currentDebtPayment = moneyLender != null ? moneyLender.GetCurrentPayableDebtPayment() : 0;
+        currentDebtBalance = debtSystem != null ? debtSystem.CurrentDebt : 0;
         playerMoney = playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f;
 
         if (shipInventory == null)
@@ -372,8 +405,11 @@ public class PaymentUI : MonoBehaviour
         }
 
         string moneyColor = playerMoney >= currentDebtPayment ? "green" : "red";
+        string debtColor = currentDebtBalance > 0 ? "red" : "green";
+        string debtValue = currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
         paymentText.text =
-            $"Divida: R$ {currentDebtPayment}\n" +
+            $"Divida total: <color={debtColor}>{debtValue}</color>\n" +
+            $"Pagamento: R$ {currentDebtPayment}\n" +
             $"Dinheiro: <color={moneyColor}>R$ {playerMoney:0}</color>";
     }
 
