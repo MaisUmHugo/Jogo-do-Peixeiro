@@ -234,4 +234,16 @@ public class PlayerMove : MonoBehaviour
         if (footstepAudioSource != null && footstepAudioSource.isPlaying)
             footstepAudioSource.Stop();
     }
+    private void OnControllerColliderHit(ControllerColliderHit hit)
+    {
+        if (hit.gameObject.layer == LayerMask.NameToLayer("Water"))
+        {
+            
+            characterController.enabled = false;
+            transform.position = posicaoInicial;
+            characterController.enabled = true;
+
+            verticalVelocity = 0f;
+        }
+    }
 }
