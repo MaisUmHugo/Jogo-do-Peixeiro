@@ -11,9 +11,11 @@ public class PlayerInteract : MonoBehaviour
     [SerializeField] private Transform playerRoot;
 
     [Header("Focus Settings")]
-    [SerializeField] private float maxInteractDistance = 4f;
     [SerializeField] private float minViewDot = 0.35f;
     [SerializeField] private float screenCenterWeight = 50f;
+
+    [Header("Refresh Settings")]
+    [SerializeField] private float teleportRefreshRadius = 8f;
 
     private IInteractable currentInteractable;
     private Transform currentInteractableTransform;
@@ -88,7 +90,7 @@ public class PlayerInteract : MonoBehaviour
 
         Collider[] nearbyColliders = Physics.OverlapSphere(
             playerRoot.position,
-            maxInteractDistance,
+            teleportRefreshRadius,
             ~0,
             QueryTriggerInteraction.Collide
         );
@@ -238,9 +240,6 @@ public class PlayerInteract : MonoBehaviour
             return false;
 
         float distance = Vector3.Distance(playerRoot.position, _worldPosition);
-
-        if (distance > maxInteractDistance)
-            return false;
 
         if (playerCamera == null)
         {

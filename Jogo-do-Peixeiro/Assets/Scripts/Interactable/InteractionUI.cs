@@ -11,7 +11,6 @@ public class InteractionUI : MonoBehaviour
 
     [SerializeField] private RectTransform interactButton;
     [SerializeField] private Vector3 worldOffset = new Vector3(0f, 2f, 0f);
-    [SerializeField] private float maxDistance = 4f;
 
     [Header("Screen Position")]
     [SerializeField] private PromptDisplayMode displayMode = PromptDisplayMode.WorldPoint;
@@ -73,14 +72,6 @@ public class InteractionUI : MonoBehaviour
         }
 
         Vector3 worldPosition = promptPoint != null ? promptPoint.position : target.position + worldOffset;
-        float distanceToTarget = Vector3.Distance(playerTransform.position, worldPosition);
-
-        if (distanceToTarget > maxDistance)
-        {
-            SetButtonVisible(false);
-            return;
-        }
-
         Vector3 screenPosition = mainCamera.WorldToScreenPoint(worldPosition);
 
         if (screenPosition.z <= 0f)
