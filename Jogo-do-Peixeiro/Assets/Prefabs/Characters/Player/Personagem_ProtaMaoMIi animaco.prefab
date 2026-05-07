@@ -324,18 +324,16 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   lineRenderer: {fileID: 7926447674949418506}
   rodTip: {fileID: 3879510056131731752}
-  playerCamera: {fileID: 0}
-  fishingSpotLayer:
-    serializedVersion: 2
-    m_Bits: 64
   waterLayer:
     serializedVersion: 2
     m_Bits: 16
   shipInventory: {fileID: 0}
+  useInteractToRecallHook: 1
   hookPrefab: {fileID: 1660917770477979820, guid: 72ba4fd3b6b151b469aa375d84eb4ec1, type: 3}
   hookSpeed: 10
   splashVFXPrefab: {fileID: 2267440588711215473, guid: 2bcff4dc608427b4ea072faf9ce2aef9, type: 3}
   splashLifetime: 3
+  splashIntensity: 1
   fishDirectionPull: {fileID: 0}
   moveHookWithFishPull: 1
   keepSplashWhileFishing: 1
@@ -350,18 +348,10 @@ MonoBehaviour:
   splashSfxVolume: 1
   fishPullSfxVolume: 0.65
   arcPoints: 25
-  raycastRadius: 0.5
-  fishingSpotSnapRadius: 2.5
   useFishingSpotFallbackHit: 1
   spotFallbackWaterProbeHeight: 8
   spotFallbackWaterProbeDistance: 24
-  minCastDistance: 10.1
-  maxCastDistance: 10.1
-  chargeSpeed: 10
   noSpotWaitBeforeReturn: 1.2
-  cancelAimOnQuickRelease: 1
-  cancelAimOnSecondPress: 1
-  minAimHoldBeforeCast: 0.25
 --- !u!1 &5719584106788181099
 GameObject:
   m_ObjectHideFlags: 0
