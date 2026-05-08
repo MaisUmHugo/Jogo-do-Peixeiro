@@ -183,7 +183,7 @@ public class MoneyLender : MonoBehaviour
 
     public bool TryGetSpecificFishPayment(FishScriptableObject _specificFish, int _specificFishQuantity, bool _useTutorialFireworks = false)
     {
-        if (shipInventory == null || _specificFish == null)
+        if (shipInventory == null || _specificFish == null || !_specificFish.CanBeRequestedByMoneyLender)
             return false;
 
         if (!shipInventory.TryPaySpecificFish(_specificFish, _specificFishQuantity))
@@ -321,6 +321,9 @@ public class MoneyLender : MonoBehaviour
 
     public FishScriptableObject GetSpecificFish()
     {
+        if (specificFish == null || !specificFish.CanBeRequestedByMoneyLender)
+            return null;
+
         return specificFish;
     }
 

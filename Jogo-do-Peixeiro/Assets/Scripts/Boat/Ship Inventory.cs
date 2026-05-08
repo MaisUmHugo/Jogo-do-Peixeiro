@@ -199,6 +199,20 @@ public class ShipInventory : MonoBehaviour
         return maxFishCapacity;
     }
 
+    public void SetMaxCapacity(float _capacity)
+    {
+        maxFishCapacity = Mathf.Max(0f, _capacity);
+        AttFishWeight();
+    }
+
+    public void AddMaxCapacity(float _amount)
+    {
+        if (_amount <= 0f)
+            return;
+
+        SetMaxCapacity(maxFishCapacity + _amount);
+    }
+
     public int CountFish(FishScriptableObject _wantedFish)
     {
         if (_wantedFish == null)

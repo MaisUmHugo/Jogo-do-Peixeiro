@@ -114,12 +114,23 @@ public class FishSkillCheck : MonoBehaviour
     private float _currentSuccessZoneSize;
     private float _currentIndicatorSpeed;
     private float _currentPerfectThreshold;
+    private float _indicatorSpeedUpgradeMultiplier = 1f;
+    private float _successZoneUpgradeMultiplier = 1f;
     private float _nextSkillCheckTimer;
     private float _indicatorTravelNormalized;
     private float _indicatorDirection = 1f;
     private bool _isSessionActive;
     private bool _shouldInvertCurrentSkillCheck;
     private bool _didInvertCurrentSkillCheck;
+
+    public void SetUpgradeModifiers(float _indicatorSpeedMultiplier, float _successZoneMultiplier)
+    {
+        _indicatorSpeedUpgradeMultiplier = Mathf.Max(0.01f, _indicatorSpeedMultiplier);
+        _successZoneUpgradeMultiplier = Mathf.Max(0.01f, _successZoneMultiplier);
+
+        if (_currentFishType != null)
+            ApplyDifficultyFromFish();
+    }
 
     private void OnValidate()
     {
@@ -456,6 +467,9 @@ public class FishSkillCheck : MonoBehaviour
                 _currentIndicatorSpeed = _defaultIndicatorSpeed;
                 break;
         }
+
+        _currentSuccessZoneSize = Mathf.Clamp(_currentSuccessZoneSize * _successZoneUpgradeMultiplier, 0.05f, 0.8f);
+        _currentIndicatorSpeed = Mathf.Max(0.01f, _currentIndicatorSpeed * _indicatorSpeedUpgradeMultiplier);
     }
 
     private void FailMinigame()

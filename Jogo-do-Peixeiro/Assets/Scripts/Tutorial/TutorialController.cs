@@ -427,12 +427,20 @@ public class TutorialController : MonoBehaviour
     private FishScriptableObject GetRandomAvailableFish()
     {
         if (tutorialFishingArea != null && tutorialFishingArea.HasFishAvailable)
-            return tutorialFishingArea.GetRandomFish();
+            return tutorialFishingArea.GetRandomFish(true);
 
         if (fallbackAvailableFish == null || fallbackAvailableFish.Length == 0)
             return null;
 
-        return fallbackAvailableFish[UnityEngine.Random.Range(0, fallbackAvailableFish.Length)];
+        FishScriptableObject[] requestableFish = System.Array.FindAll(
+            fallbackAvailableFish,
+            fish => fish != null && fish.CanBeRequestedByMoneyLender
+        );
+
+        if (requestableFish == null || requestableFish.Length == 0)
+            return null;
+
+        return requestableFish[UnityEngine.Random.Range(0, requestableFish.Length)];
     }
 
     private bool CanTryDeliverRequest()
