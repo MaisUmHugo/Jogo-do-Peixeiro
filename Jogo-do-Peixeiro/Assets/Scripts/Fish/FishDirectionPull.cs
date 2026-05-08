@@ -305,6 +305,11 @@ public class FishDirectionPull : MonoBehaviour
                 _currentDirectionIntervalMultiplier = _rarity3DirectionIntervalMultiplier;
                 break;
 
+            case 4:
+                _currentPullProgressMultiplier = _rarity3PullProgressMultiplier;
+                _currentDirectionIntervalMultiplier = _rarity3DirectionIntervalMultiplier;
+                break;
+
             default:
                 _currentPullProgressMultiplier = _rarity1PullProgressMultiplier;
                 _currentDirectionIntervalMultiplier = _rarity1DirectionIntervalMultiplier;

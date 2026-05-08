@@ -421,8 +421,7 @@ public class FishingManager : MonoBehaviour
             return objectiveFish;
         }
 
-        int randomIndex = Random.Range(0, candidates.Count);
-        return candidates[randomIndex];
+        return PickWeightedFish(candidates);
     }
 
     private List<FishScriptableObject> BuildFishSelectionCandidates()
@@ -433,7 +432,7 @@ public class FishingManager : MonoBehaviour
         {
             FishScriptableObject fishType = _currentAvailableFish[i];
 
-            if (fishType != null)
+            if (fishType != null && IsFishAvailableNow(fishType))
                 candidates.Add(fishType);
         }
 
@@ -478,6 +477,53 @@ public class FishingManager : MonoBehaviour
                        _objectiveFishChanceIncreasePerMiss * _objectiveFishMissStreak;
 
         return Random.value <= Mathf.Clamp01(chance);
+    }
+
+    private FishScriptableObject PickWeightedFish(List<FishScriptableObject> _candidates)
+    {
+        if (_candidates == null || _candidates.Count == 0)
+            return null;
+
+        float totalWeight = 0f;
+
+        for (int i = 0; i < _candidates.Count; i++)
+        {
+            if (_candidates[i] != null)
+                totalWeight += Mathf.Max(0f, _candidates[i].spawnWeight);
+        }
+
+        if (totalWeight <= 0f)
+            return _candidates[Random.Range(0, _candidates.Count)];
+
+        float randomWeight = Random.Range(0f, totalWeight);
+
+        for (int i = 0; i < _candidates.Count; i++)
+        {
+            FishScriptableObject candidate = _candidates[i];
+
+            if (candidate == null)
+                continue;
+
+            randomWeight -= Mathf.Max(0f, candidate.spawnWeight);
+
+            if (randomWeight <= 0f)
+                return candidate;
+        }
+
+        return _candidates[_candidates.Count - 1];
+    }
+
+    private bool IsFishAvailableNow(FishScriptableObject _fishType)
+    {
+        if (_fishType == null)
+            return false;
+
+        DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
+
+        if (dayCycle == null)
+            return true;
+
+        return _fishType.IsAvailableAtHour(dayCycle.NormalizedTime * 24f);
     }
 
     private FishScriptableObject GetCurrentObjectiveFish()
@@ -576,6 +622,9 @@ public class FishingManager : MonoBehaviour
                 return _rarity2ProgressMultiplier;
 
             case 3:
+                return _rarity3ProgressMultiplier;
+
+            case 4:
                 return _rarity3ProgressMultiplier;
 
             default:

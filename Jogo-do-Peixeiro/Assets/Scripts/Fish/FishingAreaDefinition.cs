@@ -15,11 +15,22 @@ public class FishingAreaDefinition : ScriptableObject
     public FishScriptableObject[] AvailableFish => _availableFish;
     public bool HasFishAvailable => _availableFish != null && _availableFish.Length > 0;
 
-    public FishScriptableObject GetRandomFish()
+    public FishScriptableObject GetRandomFish(bool _onlyMoneyLenderRequestable = false)
     {
         if (!HasFishAvailable)
             return null;
 
-        return _availableFish[Random.Range(0, _availableFish.Length)];
+        if (!_onlyMoneyLenderRequestable)
+            return _availableFish[Random.Range(0, _availableFish.Length)];
+
+        FishScriptableObject[] requestableFish = System.Array.FindAll(
+            _availableFish,
+            fish => fish != null && fish.CanBeRequestedByMoneyLender
+        );
+
+        if (requestableFish == null || requestableFish.Length == 0)
+            return null;
+
+        return requestableFish[Random.Range(0, requestableFish.Length)];
     }
 }

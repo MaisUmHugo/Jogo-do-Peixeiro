@@ -446,6 +446,11 @@ public class FishSkillCheck : MonoBehaviour
                 _currentIndicatorSpeed = _rarity3IndicatorSpeed;
                 break;
 
+            case 4:
+                _currentSuccessZoneSize = _rarity3SuccessZoneSize;
+                _currentIndicatorSpeed = _rarity3IndicatorSpeed;
+                break;
+
             default:
                 _currentSuccessZoneSize = _defaultSuccessZoneSize;
                 _currentIndicatorSpeed = _defaultIndicatorSpeed;
