@@ -3,8 +3,10 @@ using UnityEngine;
 public class FishMarketController : MonoBehaviour, IInteractable
 {
     [SerializeField] private FishMarket fishMarket;
+    [SerializeField] private DockOwnerUI dockOwnerUI;
     [SerializeField] private int interactionPriority = 45;
-    [SerializeField] private string promptText = "Vender peixes";
+    [SerializeField] private string promptText = "Falar";
+    [SerializeField] private bool sellDirectlyWhenNoUi = true;
 
     public string PromptText => promptText;
     public Transform PromptPoint => transform;
@@ -13,6 +15,9 @@ public class FishMarketController : MonoBehaviour, IInteractable
     {
         if (fishMarket == null)
             fishMarket = GetComponent<FishMarket>();
+
+        if (dockOwnerUI == null)
+            dockOwnerUI = FindFirstObjectByType<DockOwnerUI>(FindObjectsInactive.Include);
     }
 
     public bool CanInteract()
@@ -29,6 +34,18 @@ public class FishMarketController : MonoBehaviour, IInteractable
     {
         if (fishMarket == null)
             return;
+
+        if (dockOwnerUI != null)
+        {
+            dockOwnerUI.Open(fishMarket);
+            return;
+        }
+
+        if (!sellDirectlyWhenNoUi)
+        {
+            HUDWarningUI.Instance?.ShowWarning("Painel do dono da doca nao encontrado.");
+            return;
+        }
 
         if (fishMarket.TrySellAllFish(out int earnedMoney))
         {

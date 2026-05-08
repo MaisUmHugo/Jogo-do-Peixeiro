@@ -11,6 +11,23 @@ public class FishMarket : MonoBehaviour
     public event Action<int> OnSaleCompleted;
 
     public bool HasFishToSell => shipInventory != null && shipInventory.OwnedFish.Count > 0;
+    public ShipInventory ShipInventory
+    {
+        get
+        {
+            ResolveReferences();
+            return shipInventory;
+        }
+    }
+
+    public PlayerMoneyManager PlayerMoneyManager
+    {
+        get
+        {
+            ResolveReferences();
+            return playerMoneyManager;
+        }
+    }
 
     private void Awake()
     {

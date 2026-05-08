@@ -144,31 +144,18 @@ public class PaymentUI : MonoBehaviour
             return;
         }
 
-        bool success = moneyLender.TryPayDebt(out int paidAmount, out MoneyLender.DebtPaymentResult paymentResult);
-        SetStatus(GetDebtPaymentStatusText(success, paidAmount, paymentResult));
+        bool success = moneyLender.TryPayDebt();
+        SetStatus(success
+            ? (moneyLender.GetCurrentDebtBalance() <= 0 ? "Divida quitada." : "Divida reduzida.")
+            : "Dinheiro insuficiente.");
 
-        if (paymentResult == MoneyLender.DebtPaymentResult.Completed ||
-            paymentResult == MoneyLender.DebtPaymentResult.PaidOff)
+        if (success)
         {
             Close();
             return;
         }
 
         Refresh();
-    }
-
-    private string GetDebtPaymentStatusText(bool _success, int _paidAmount, MoneyLender.DebtPaymentResult _paymentResult)
-    {
-        if (!_success)
-            return "Dinheiro insuficiente.";
-
-        return _paymentResult switch
-        {
-            MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
-            MoneyLender.DebtPaymentResult.Completed => "Divida reduzida.",
-            MoneyLender.DebtPaymentResult.PaidOff => "Divida quitada.",
-            _ => "Dinheiro insuficiente."
-        };
     }
 
     public void OnClickPay()
