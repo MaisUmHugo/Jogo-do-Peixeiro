@@ -60,6 +60,7 @@ public class InvertoryManager : MonoBehaviour
 
         Instance = this;
         InitializeReferences();
+        EnsureRuntimeControls();
         BindButtons();
 
         if (closeOnAwake)
@@ -69,6 +70,7 @@ public class InvertoryManager : MonoBehaviour
     private void OnEnable()
     {
         InitializeReferences();
+        EnsureRuntimeControls();
         BindButtons();
         TrySubscribeInput();
 
@@ -293,6 +295,7 @@ public class InvertoryManager : MonoBehaviour
         SetObjectActive(baitsTabPanel, currentTab == InventoryTab.Baits);
         SetButtonInteractable(fishTabButton, currentTab != InventoryTab.Fish);
         SetButtonInteractable(baitsTabButton, currentTab != InventoryTab.Baits);
+        SetBaitControlsVisible(currentTab == InventoryTab.Baits);
         RefreshInventoryTexts();
     }
 
@@ -429,11 +432,18 @@ public class InvertoryManager : MonoBehaviour
                 baitEquipButtons[i].interactable = baitInventory != null &&
                                                    bait != null &&
                                                    baitInventory.HasBait(bait);
+                SetButtonText(
+                    baitEquipButtons[i],
+                    bait != null ? $"Equipar {bait.BaitName}" : "Equipar"
+                );
             }
         }
 
         if (clearBaitButton != null)
+        {
             clearBaitButton.interactable = baitInventory != null && baitInventory.EquippedBait != null;
+            SetButtonText(clearBaitButton, "Sem isca");
+        }
     }
 
     private BaitData GetBaitSlot(int _slotIndex)
@@ -485,6 +495,120 @@ public class InvertoryManager : MonoBehaviour
             GameManager.instance.SetState(stateBeforeInventory);
 
         hasStoredStateBeforeInventory = false;
+    }
+
+    private void EnsureRuntimeControls()
+    {
+        if (inventoryRoot == null)
+            return;
+
+        Transform parent = GetRuntimeControlsParent();
+
+        if (fishTabButton == null)
+            fishTabButton = CreateRuntimeButton("FishTabButton", parent, new Vector2(-170f, 325f), new Vector2(150f, 48f), "Peixes");
+
+        if (baitsTabButton == null)
+            baitsTabButton = CreateRuntimeButton("BaitsTabButton", parent, new Vector2(0f, 325f), new Vector2(150f, 48f), "Iscas");
+
+        if (baitEquipButtons == null || baitEquipButtons.Length < 3)
+        {
+            Button[] resizedButtons = new Button[3];
+
+            if (baitEquipButtons != null)
+            {
+                for (int i = 0; i < baitEquipButtons.Length && i < resizedButtons.Length; i++)
+                    resizedButtons[i] = baitEquipButtons[i];
+            }
+
+            baitEquipButtons = resizedButtons;
+        }
+
+        Vector2[] buttonPositions =
+        {
+            new Vector2(-250f, -255f),
+            new Vector2(0f, -255f),
+            new Vector2(250f, -255f)
+        };
+
+        for (int i = 0; i < baitEquipButtons.Length; i++)
+        {
+            if (baitEquipButtons[i] == null)
+            {
+                BaitData bait = GetBaitSlot(i);
+                string label = bait != null ? $"Equipar {bait.BaitName}" : "Equipar";
+                baitEquipButtons[i] = CreateRuntimeButton($"EquipBaitButton{i + 1}", parent, buttonPositions[i], new Vector2(220f, 46f), label);
+            }
+        }
+
+        if (clearBaitButton == null)
+            clearBaitButton = CreateRuntimeButton("ClearBaitButton", parent, new Vector2(250f, 325f), new Vector2(150f, 48f), "Sem isca");
+
+        if (baitInventoryText == null)
+            baitInventoryText = inventoryText;
+
+        if (equippedBaitText == null)
+            equippedBaitText = kilogramText;
+
+        SetBaitControlsVisible(currentTab == InventoryTab.Baits);
+    }
+
+    private Transform GetRuntimeControlsParent()
+    {
+        if (kilogramText != null)
+            return kilogramText.transform.parent;
+
+        if (inventoryText != null)
+            return inventoryText.transform.parent;
+
+        return inventoryRoot.transform;
+    }
+
+    private Button CreateRuntimeButton(string _name, Transform _parent, Vector2 _position, Vector2 _size, string _label)
+    {
+        GameObject buttonObject = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        buttonObject.transform.SetParent(_parent, false);
+
+        RectTransform rectTransform = buttonObject.GetComponent<RectTransform>();
+        rectTransform.anchorMin = new Vector2(0.5f, 0.5f);
+        rectTransform.anchorMax = new Vector2(0.5f, 0.5f);
+        rectTransform.pivot = new Vector2(0.5f, 0.5f);
+        rectTransform.anchoredPosition = _position;
+        rectTransform.sizeDelta = _size;
+
+        Image image = buttonObject.GetComponent<Image>();
+        image.color = new Color(0.08f, 0.08f, 0.08f, 0.85f);
+
+        GameObject textObject = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(buttonObject.transform, false);
+
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        TextMeshProUGUI buttonText = textObject.GetComponent<TextMeshProUGUI>();
+        buttonText.text = _label;
+        buttonText.fontSize = 22f;
+        buttonText.alignment = TextAlignmentOptions.Center;
+        buttonText.color = Color.white;
+
+        return buttonObject.GetComponent<Button>();
+    }
+
+    private void SetBaitControlsVisible(bool _visible)
+    {
+        if (baitEquipButtons != null)
+        {
+            for (int i = 0; i < baitEquipButtons.Length; i++)
+            {
+                if (baitEquipButtons[i] != null)
+                    baitEquipButtons[i].gameObject.SetActive(_visible);
+            }
+        }
+
+        if (clearBaitButton != null)
+            clearBaitButton.gameObject.SetActive(_visible);
     }
 
     private void BindButtons()
@@ -539,6 +663,17 @@ public class InvertoryManager : MonoBehaviour
     {
         if (_button != null)
             _button.interactable = _interactable;
+    }
+
+    private void SetButtonText(Button _button, string _text)
+    {
+        if (_button == null)
+            return;
+
+        TMP_Text buttonText = _button.GetComponentInChildren<TMP_Text>(true);
+
+        if (buttonText != null)
+            buttonText.text = _text;
     }
 
     private void BindBaitButton(int _index, UnityEngine.Events.UnityAction _action)

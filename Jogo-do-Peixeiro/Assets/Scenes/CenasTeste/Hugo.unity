@@ -1758,6 +1758,7 @@ GameObject:
   - component: {fileID: 762983089}
   - component: {fileID: 762983090}
   - component: {fileID: 762983091}
+  - component: {fileID: 762983093}
   - component: {fileID: 762983092}
   m_Layer: 0
   m_Name: Interaction
@@ -1817,7 +1818,7 @@ MonoBehaviour:
   fishMarket: {fileID: 762983091}
   dockOwnerUI: {fileID: 0}
   interactionPriority: 45
-  promptText: Vender peixes
+  promptText: Falar com dono da doca
   sellDirectlyWhenNoUi: 1
 --- !u!114 &762983091
 MonoBehaviour:
@@ -1833,6 +1834,21 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   shipInventory: {fileID: 1785359118}
   playerMoneyManager: {fileID: 1511727202}
+--- !u!114 &762983093
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 762983087}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33aa2f9814c94f0da826844d01e95c5b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  baitsForSale: []
+  playerMoneyManager: {fileID: 1511727202}
+  baitInventory: {fileID: 0}
 --- !u!54 &762983092
 Rigidbody:
   m_ObjectHideFlags: 0
@@ -3139,10 +3155,14 @@ MonoBehaviour:
   fireproofBoatUpgradeButton: {fileID: 0}
   upgradesPlaceholderText: {fileID: 1730922766}
   baitsPlaceholderText: {fileID: 1321579946}
+  baitTexts: []
+  baitBuyButtons: []
   statusText: {fileID: 606618202}
   closeButton: {fileID: 960467304}
-  fishMarket: {fileID: 0}
+  fishMarket: {fileID: 762983091}
   dockUpgradeSystem: {fileID: 0}
+  baitShop: {fileID: 762983093}
+  baitInventory: {fileID: 0}
   shipInventory: {fileID: 0}
   playerMoneyManager: {fileID: 0}
 --- !u!114 &1212908367 stripped

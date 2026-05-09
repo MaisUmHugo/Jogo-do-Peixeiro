@@ -644,7 +644,7 @@ public class DockOwnerUI : MonoBehaviour
 
     private void EnsureBaitControls()
     {
-        if (baitsTabPanel == null || capacityUpgradeText == null || capacityUpgradeButton == null)
+        if (baitsTabPanel == null)
             return;
 
         BaitData[] baits = GetBaitsForSale();
@@ -739,7 +739,10 @@ public class DockOwnerUI : MonoBehaviour
     {
         if (_text == null)
         {
-            GameObject textObject = Instantiate(capacityUpgradeText.gameObject, _parent);
+            GameObject textObject = capacityUpgradeText != null
+                ? Instantiate(capacityUpgradeText.gameObject, _parent)
+                : CreateRuntimeTextObject(_name, _parent);
+
             textObject.name = _name;
             _text = textObject.GetComponent<TMP_Text>();
         }
@@ -752,7 +755,10 @@ public class DockOwnerUI : MonoBehaviour
     {
         if (_button == null)
         {
-            GameObject buttonObject = Instantiate(capacityUpgradeButton.gameObject, _parent);
+            GameObject buttonObject = capacityUpgradeButton != null
+                ? Instantiate(capacityUpgradeButton.gameObject, _parent)
+                : CreateRuntimeButtonObject(_name, _parent);
+
             buttonObject.name = _name;
             _button = buttonObject.GetComponent<Button>();
         }
@@ -760,6 +766,44 @@ public class DockOwnerUI : MonoBehaviour
         ConfigureBaitButton(_button, _position);
         SetButtonText(_button, "Comprar");
         return _button;
+    }
+
+    private GameObject CreateRuntimeTextObject(string _name, Transform _parent)
+    {
+        GameObject textObject = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(_parent, false);
+
+        TMP_Text text = textObject.GetComponent<TMP_Text>();
+        text.color = Color.white;
+        text.text = string.Empty;
+
+        return textObject;
+    }
+
+    private GameObject CreateRuntimeButtonObject(string _name, Transform _parent)
+    {
+        GameObject buttonObject = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
+        buttonObject.transform.SetParent(_parent, false);
+
+        Image image = buttonObject.GetComponent<Image>();
+        image.color = new Color(0.08f, 0.08f, 0.08f, 0.85f);
+
+        GameObject textObject = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(buttonObject.transform, false);
+
+        RectTransform textRect = textObject.GetComponent<RectTransform>();
+        textRect.anchorMin = Vector2.zero;
+        textRect.anchorMax = Vector2.one;
+        textRect.offsetMin = Vector2.zero;
+        textRect.offsetMax = Vector2.zero;
+
+        TMP_Text text = textObject.GetComponent<TMP_Text>();
+        text.text = "Comprar";
+        text.fontSize = 28f;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.white;
+
+        return buttonObject;
     }
 
     private void ConfigureUpgradeText(TMP_Text _text, Vector2 _position)
