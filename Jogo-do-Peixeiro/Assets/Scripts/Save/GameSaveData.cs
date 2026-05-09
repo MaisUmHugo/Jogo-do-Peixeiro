@@ -20,6 +20,8 @@ public class GameSaveData
     public DayCycleSaveData dayCycle = new DayCycleSaveData();
     public CampaignSaveData campaign = new CampaignSaveData();
     public List<SavedFishData> shipFish = new List<SavedFishData>();
+    public string equippedBaitId;
+    public List<SavedBaitData> baits = new List<SavedBaitData>();
 }
 
 [Serializable]
@@ -61,4 +63,11 @@ public class SavedFishData
 {
     public string fishId;
     public int weight;
+}
+
+[Serializable]
+public class SavedBaitData
+{
+    public string baitId;
+    public int quantity;
 }

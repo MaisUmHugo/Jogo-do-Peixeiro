@@ -49,6 +49,7 @@ public class FishingManager : MonoBehaviour
     [SerializeField] private FishDirectionPull _fishDirectionPull;
     [FormerlySerializedAs("fishingRod")]
     [SerializeField] private FishingRod _fishingRod;
+    [SerializeField] private BaitInventory _baitInventory;
 
     public bool IsFishing { get; private set; }
     public bool HasFishBitten { get; private set; }
@@ -60,6 +61,7 @@ public class FishingManager : MonoBehaviour
     private FishScriptableObject _selectedFishType;
     private FishData _pendingFish;
     private FishScriptableObject _lastBittenFishType;
+    private BaitData _activeBait;
     private int _sameFishBiteStreak;
     private int _objectiveFishMissStreak;
     private HiddenPanelState[] _hiddenPanelStates;
@@ -123,6 +125,9 @@ public class FishingManager : MonoBehaviour
 
         if (_fishResultUI == null)
             _fishResultUI = FindFirstObjectByType<FishResultUI>(FindObjectsInactive.Include);
+
+        if (_baitInventory == null)
+            _baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
     }
 
     private void Update()
@@ -165,6 +170,7 @@ public class FishingManager : MonoBehaviour
         _currentShipInventory = _shipInventory;
         _currentAvailableFish = _availableFish;
         _waitForCatchResultClose = false;
+        _activeBait = GetUsableEquippedBait();
 
         _selectedFishType = PickRandomFishType();
 
@@ -284,7 +290,8 @@ public class FishingManager : MonoBehaviour
     {
         if (_fishBiteHandler != null)
         {
-            _fishBiteHandler.StartWaiting(OnFishBite);
+            float delayMultiplier = _activeBait != null ? _activeBait.BiteDelayMultiplier : 1f;
+            _fishBiteHandler.StartWaiting(OnFishBite, delayMultiplier);
             return;
         }
 
@@ -297,13 +304,17 @@ public class FishingManager : MonoBehaviour
             return;
 
         HasFishBitten = true;
+
+        if (_activeBait != null && (_baitInventory == null || !_baitInventory.TryConsumeEquippedBait()))
+            _activeBait = null;
+
         RegisterBittenFish(_selectedFishType);
 
         if (_fishDirectionPull != null)
-            _fishDirectionPull.StartPull(_selectedFishType);
+            _fishDirectionPull.StartPull(_selectedFishType, _activeBait);
 
         if (_useSkillCheck && _fishSkillCheck != null)
-            _fishSkillCheck.StartSkillCheck(this, _selectedFishType);
+            _fishSkillCheck.StartSkillCheck(this, _selectedFishType, _activeBait);
 
         Debug.Log("Peixe mordeu a isca.");
     }
@@ -311,6 +322,7 @@ public class FishingManager : MonoBehaviour
     private void UpdateFishingProgress()
     {
         float progressMultiplier = GetProgressMultiplierByFish();
+        progressMultiplier *= _activeBait != null ? _activeBait.CatchProgressMultiplier : 1f;
         float progressDelta = _baseProgressSpeed * progressMultiplier;
 
         if (_fishDirectionPull != null)
@@ -632,6 +644,19 @@ public class FishingManager : MonoBehaviour
         }
     }
 
+    private BaitData GetUsableEquippedBait()
+    {
+        if (_baitInventory == null)
+            _baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
+
+        if (_baitInventory == null || _baitInventory.EquippedBait == null)
+            return null;
+
+        return _baitInventory.HasBait(_baitInventory.EquippedBait)
+            ? _baitInventory.EquippedBait
+            : null;
+    }
+
     private void GivePendingFish()
     {
         if (_currentShipInventory == null || _pendingFish == null)
@@ -755,6 +780,7 @@ public class FishingManager : MonoBehaviour
         _currentAvailableFish = null;
         _selectedFishType = null;
         _pendingFish = null;
+        _activeBait = null;
     }
 
     private void ReturnToBoatState()

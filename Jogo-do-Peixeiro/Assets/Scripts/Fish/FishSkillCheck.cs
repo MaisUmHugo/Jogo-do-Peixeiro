@@ -109,6 +109,7 @@ public class FishSkillCheck : MonoBehaviour
 
     private FishingManager _fishingManager;
     private FishScriptableObject _currentFishType;
+    private BaitData _currentBait;
 
     private int _currentFails;
     private float _currentSuccessZoneSize;
@@ -149,11 +150,17 @@ public class FishSkillCheck : MonoBehaviour
 
     public void StartSkillCheck(FishingManager _fishingManagerReference, FishScriptableObject _fishType)
     {
+        StartSkillCheck(_fishingManagerReference, _fishType, null);
+    }
+
+    public void StartSkillCheck(FishingManager _fishingManagerReference, FishScriptableObject _fishType, BaitData _bait)
+    {
         ClampAccuracySettings();
         AutoAssignMissingReferences();
 
         _fishingManager = _fishingManagerReference;
         _currentFishType = _fishType;
+        _currentBait = _bait;
 
         _currentFails = 0;
         ResetIndicatorState();
@@ -174,6 +181,7 @@ public class FishSkillCheck : MonoBehaviour
         ResetIndicatorState();
         _currentFails = 0;
         _currentFishType = null;
+        _currentBait = null;
 
         enabled = false;
         gameObject.SetActive(false);
@@ -470,6 +478,19 @@ public class FishSkillCheck : MonoBehaviour
 
         _currentSuccessZoneSize = Mathf.Clamp(_currentSuccessZoneSize * _successZoneUpgradeMultiplier, 0.05f, 0.8f);
         _currentIndicatorSpeed = Mathf.Max(0.01f, _currentIndicatorSpeed * _indicatorSpeedUpgradeMultiplier);
+
+        if (_currentBait != null)
+        {
+            _currentSuccessZoneSize = Mathf.Clamp(
+                _currentSuccessZoneSize * _currentBait.SkillCheckSuccessZoneMultiplier,
+                0.05f,
+                0.8f
+            );
+            _currentIndicatorSpeed = Mathf.Max(
+                0.01f,
+                _currentIndicatorSpeed * _currentBait.SkillCheckIndicatorSpeedMultiplier
+            );
+        }
     }
 
     private void FailMinigame()

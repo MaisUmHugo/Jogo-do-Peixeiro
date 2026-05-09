@@ -137,6 +137,7 @@ public class GameSaveManager : MonoBehaviour
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
+        BaitInventory baitInventory = BaitInventory.GetOrCreate();
 
         data.playerMoney = moneyManager != null ? moneyManager.PlayerMoney : 0f;
         data.currentDebt = debtSystem != null ? debtSystem.CurrentDebt : 0;
@@ -147,6 +148,8 @@ public class GameSaveManager : MonoBehaviour
         data.dayCycle = CaptureDayCycleData(dayCycle);
         data.campaign = campaignProgress != null ? campaignProgress.CaptureSaveData() : new CampaignSaveData();
         data.shipFish = CaptureShipFishData(shipInventory);
+        data.equippedBaitId = baitInventory != null && baitInventory.EquippedBait != null ? baitInventory.EquippedBait.SaveId : string.Empty;
+        data.baits = CaptureBaitData(baitInventory);
 
         return data;
     }
@@ -163,6 +166,7 @@ public class GameSaveManager : MonoBehaviour
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
+        BaitInventory baitInventory = BaitInventory.GetOrCreate();
 
         if (moneyManager != null)
             moneyManager.SetMoney(_data.playerMoney);
@@ -193,6 +197,9 @@ public class GameSaveManager : MonoBehaviour
 
         if (shipInventory != null)
             shipInventory.ReplaceFish(RestoreShipFishData(_data.shipFish));
+
+        if (baitInventory != null)
+            baitInventory.ReplaceBaits(RestoreBaitData(_data.baits), BaitSaveResolver.FindBaitById(_data.equippedBaitId));
     }
 
     private DockUpgradeSaveData CaptureUpgradeData(DockUpgradeSystem _dockUpgradeSystem)
@@ -268,6 +275,54 @@ public class GameSaveManager : MonoBehaviour
         }
 
         return restoredFish;
+    }
+
+    private List<SavedBaitData> CaptureBaitData(BaitInventory _baitInventory)
+    {
+        List<SavedBaitData> savedBaits = new List<SavedBaitData>();
+
+        if (_baitInventory == null)
+            return savedBaits;
+
+        foreach (BaitStack stack in _baitInventory.BaitStacks)
+        {
+            if (stack == null || stack.bait == null || stack.quantity <= 0)
+                continue;
+
+            savedBaits.Add(new SavedBaitData
+            {
+                baitId = stack.bait.SaveId,
+                quantity = stack.quantity
+            });
+        }
+
+        return savedBaits;
+    }
+
+    private List<BaitStack> RestoreBaitData(List<SavedBaitData> _savedBaits)
+    {
+        List<BaitStack> restoredBaits = new List<BaitStack>();
+
+        if (_savedBaits == null)
+            return restoredBaits;
+
+        foreach (SavedBaitData savedBait in _savedBaits)
+        {
+            if (savedBait == null || savedBait.quantity <= 0)
+                continue;
+
+            BaitData bait = BaitSaveResolver.FindBaitById(savedBait.baitId);
+
+            if (bait == null)
+            {
+                Debug.LogWarning($"Isca salva nao encontrada: {savedBait.baitId}");
+                continue;
+            }
+
+            restoredBaits.Add(new BaitStack(bait, savedBait.quantity));
+        }
+
+        return restoredBaits;
     }
 
     private void HandleSceneLoaded(Scene _scene, LoadSceneMode _mode)

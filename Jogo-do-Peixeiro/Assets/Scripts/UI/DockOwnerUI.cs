@@ -45,6 +45,10 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private TMP_Text upgradesPlaceholderText;
     [SerializeField] private TMP_Text baitsPlaceholderText;
 
+    [Header("Baits")]
+    [SerializeField] private TMP_Text[] baitTexts;
+    [SerializeField] private Button[] baitBuyButtons;
+
     [Header("Common")]
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Button closeButton;
@@ -52,6 +56,8 @@ public class DockOwnerUI : MonoBehaviour
     [Header("References")]
     [SerializeField] private FishMarket fishMarket;
     [SerializeField] private DockUpgradeSystem dockUpgradeSystem;
+    [SerializeField] private BaitShop baitShop;
+    [SerializeField] private BaitInventory baitInventory;
     [SerializeField] private ShipInventory shipInventory;
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
 
@@ -69,6 +75,7 @@ public class DockOwnerUI : MonoBehaviour
     {
         TryResolveReferences();
         EnsureUpgradeControls();
+        EnsureBaitControls();
         BindButtons();
 
         if (closeOnAwake)
@@ -79,6 +86,7 @@ public class DockOwnerUI : MonoBehaviour
     {
         TryResolveReferences();
         EnsureUpgradeControls();
+        EnsureBaitControls();
         BindButtons();
         SubscribeToReferences();
         TrySubscribeInput();
@@ -163,6 +171,21 @@ public class DockOwnerUI : MonoBehaviour
         TryBuyUpgrade(DockUpgradeType.FireproofBoat);
     }
 
+    public void OnClickBuyBaitSlot0()
+    {
+        TryBuyBaitSlot(0);
+    }
+
+    public void OnClickBuyBaitSlot1()
+    {
+        TryBuyBaitSlot(1);
+    }
+
+    public void OnClickBuyBaitSlot2()
+    {
+        TryBuyBaitSlot(2);
+    }
+
     public void OnClickClose()
     {
         Close();
@@ -173,7 +196,7 @@ public class DockOwnerUI : MonoBehaviour
         RefreshInventorySnapshot();
         SetSellTexts();
         SetUpgradeTexts();
-        SetFutureTabTexts();
+        SetBaitTexts();
     }
 
     private void SetTab(DockOwnerTab _tab)
@@ -190,7 +213,7 @@ public class DockOwnerUI : MonoBehaviour
         if (currentTab == DockOwnerTab.Upgrades)
             SetStatus(string.Empty);
         else if (currentTab == DockOwnerTab.Baits)
-            SetStatus("Iscas em breve.");
+            SetStatus(string.Empty);
         else
             SetStatus(string.Empty);
 
@@ -205,6 +228,12 @@ public class DockOwnerUI : MonoBehaviour
         {
             shipInventory = fishMarket.ShipInventory;
             playerMoneyManager = fishMarket.PlayerMoneyManager;
+        }
+
+        if (baitShop != null)
+        {
+            baitInventory = baitShop.BaitInventory;
+            playerMoneyManager = baitShop.PlayerMoneyManager;
         }
 
         if (shipInventory != null)
@@ -259,6 +288,37 @@ public class DockOwnerUI : MonoBehaviour
 
         if (fireproofBoatUpgradeButton != null)
             fireproofBoatUpgradeButton.interactable = dockUpgradeSystem != null && dockUpgradeSystem.CanBuyFireproofBoatUpgrade;
+    }
+
+    private void SetBaitTexts()
+    {
+        if (baitsPlaceholderText != null)
+            baitsPlaceholderText.text = "Compre iscas por unidade.";
+
+        BaitData[] baits = GetBaitsForSale();
+
+        if (baits.Length == 0)
+        {
+            if (baitsPlaceholderText != null)
+                baitsPlaceholderText.text = "Nenhuma isca configurada.";
+
+            SetBaitControlsActive(0);
+            return;
+        }
+
+        int visibleCount = Mathf.Min(baits.Length, GetBaitControlCount());
+        SetBaitControlsActive(visibleCount);
+
+        for (int i = 0; i < visibleCount; i++)
+        {
+            BaitData bait = baits[i];
+
+            if (baitTexts != null && i < baitTexts.Length && baitTexts[i] != null)
+                baitTexts[i].text = GetBaitText(bait);
+
+            if (baitBuyButtons != null && i < baitBuyButtons.Length && baitBuyButtons[i] != null)
+                baitBuyButtons[i].interactable = baitShop != null && baitShop.CanBuyBait(bait);
+        }
     }
 
     private string GetCapacityUpgradeText()
@@ -357,13 +417,56 @@ public class DockOwnerUI : MonoBehaviour
         return builder.ToString();
     }
 
-    private void SetFutureTabTexts()
+    private string GetBaitText(BaitData _bait)
     {
-        if (upgradesPlaceholderText != null)
-            upgradesPlaceholderText.text = "Melhore peso, barco e vara.";
+        if (_bait == null)
+            return "Isca indisponivel.";
 
-        if (baitsPlaceholderText != null)
-            baitsPlaceholderText.text = "Iscas em breve.";
+        int ownedQuantity = baitInventory != null ? baitInventory.GetQuantity(_bait) : 0;
+        bool isEquipped = baitInventory != null &&
+                          baitInventory.EquippedBait != null &&
+                          BaitCatalog.BaitIdMatches(_bait, baitInventory.EquippedBait.SaveId);
+
+        int cost = baitShop != null ? baitShop.GetBaitPurchaseCost(_bait) : _bait.PurchasePrice;
+        string moneyColor = playerMoney >= cost ? "green" : "red";
+        string equippedText = isEquipped ? "\nEquipada" : string.Empty;
+        string description = string.IsNullOrWhiteSpace(_bait.Description) ? "Bonus de pesca." : _bait.Description;
+
+        return $"{_bait.BaitName}\n{description}\nQtd: {ownedQuantity}\nCusto: <color={moneyColor}>R$ {cost}</color>{equippedText}";
+    }
+
+    private BaitData[] GetBaitsForSale()
+    {
+        return baitShop != null ? baitShop.BaitsForSale : BaitCatalog.GetDefaultBaits();
+    }
+
+    private int GetBaitControlCount()
+    {
+        if (baitTexts == null || baitBuyButtons == null)
+            return 0;
+
+        return Mathf.Min(baitTexts.Length, baitBuyButtons.Length);
+    }
+
+    private void SetBaitControlsActive(int _visibleCount)
+    {
+        if (baitTexts != null)
+        {
+            for (int i = 0; i < baitTexts.Length; i++)
+            {
+                if (baitTexts[i] != null)
+                    baitTexts[i].gameObject.SetActive(i < _visibleCount);
+            }
+        }
+
+        if (baitBuyButtons != null)
+        {
+            for (int i = 0; i < baitBuyButtons.Length; i++)
+            {
+                if (baitBuyButtons[i] != null)
+                    baitBuyButtons[i].gameObject.SetActive(i < _visibleCount);
+            }
+        }
     }
 
     private void Close()
@@ -396,6 +499,7 @@ public class DockOwnerUI : MonoBehaviour
         playerMoney = _money;
         SetSellTexts();
         SetUpgradeTexts();
+        SetBaitTexts();
     }
 
     private void HandleSaleCompleted(int _earnedMoney)
@@ -404,6 +508,16 @@ public class DockOwnerUI : MonoBehaviour
     }
 
     private void HandleUpgradesChanged()
+    {
+        Refresh();
+    }
+
+    private void HandleBaitInventoryChanged()
+    {
+        Refresh();
+    }
+
+    private void HandleBaitPurchased(BaitData _bait, int _quantity)
     {
         Refresh();
     }
@@ -432,6 +546,30 @@ public class DockOwnerUI : MonoBehaviour
         Refresh();
     }
 
+    private void TryBuyBaitSlot(int _slotIndex)
+    {
+        TryResolveReferences();
+
+        BaitData[] baits = GetBaitsForSale();
+
+        if (_slotIndex < 0 || _slotIndex >= baits.Length)
+        {
+            SetStatus("Isca nao encontrada.");
+            return;
+        }
+
+        if (baitShop == null)
+        {
+            SetStatus("Loja de iscas nao encontrada.");
+            return;
+        }
+
+        BaitData bait = baits[_slotIndex];
+        bool success = baitShop.TryBuyBait(bait, out BaitPurchaseResult result);
+        SetStatus(success ? $"{bait.BaitName} comprada." : GetBaitPurchaseStatusText(result));
+        Refresh();
+    }
+
     private void TryResolveReferences()
     {
         if (fishMarket == null)
@@ -442,6 +580,15 @@ public class DockOwnerUI : MonoBehaviour
 
         if (dockUpgradeSystem == null)
             dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>();
+
+        if (baitShop == null)
+            baitShop = GetComponent<BaitShop>();
+
+        if (baitShop == null)
+            baitShop = FindFirstObjectByType<BaitShop>();
+
+        if (baitShop == null)
+            baitShop = gameObject.AddComponent<BaitShop>();
 
         if (fishMarket != null)
         {
@@ -454,6 +601,9 @@ public class DockOwnerUI : MonoBehaviour
 
         if (playerMoneyManager == null)
             playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
+
+        if (baitInventory == null)
+            baitInventory = baitShop != null ? baitShop.BaitInventory : BaitInventory.GetOrCreate();
     }
 
     private void EnsureUpgradeControls()
@@ -492,6 +642,72 @@ public class DockOwnerUI : MonoBehaviour
         }
     }
 
+    private void EnsureBaitControls()
+    {
+        if (baitsTabPanel == null || capacityUpgradeText == null || capacityUpgradeButton == null)
+            return;
+
+        BaitData[] baits = GetBaitsForSale();
+        int targetCount = Mathf.Clamp(baits.Length, 0, 3);
+
+        if (targetCount == 0)
+            targetCount = 3;
+
+        if (baitTexts == null || baitTexts.Length < targetCount)
+        {
+            TMP_Text[] resizedTexts = new TMP_Text[targetCount];
+
+            if (baitTexts != null)
+            {
+                for (int i = 0; i < baitTexts.Length && i < resizedTexts.Length; i++)
+                    resizedTexts[i] = baitTexts[i];
+            }
+
+            baitTexts = resizedTexts;
+        }
+
+        if (baitBuyButtons == null || baitBuyButtons.Length < targetCount)
+        {
+            Button[] resizedButtons = new Button[targetCount];
+
+            if (baitBuyButtons != null)
+            {
+                for (int i = 0; i < baitBuyButtons.Length && i < resizedButtons.Length; i++)
+                    resizedButtons[i] = baitBuyButtons[i];
+            }
+
+            baitBuyButtons = resizedButtons;
+        }
+
+        Transform baitsParent = baitsTabPanel.transform;
+        Vector2[] textPositions =
+        {
+            new Vector2(-310f, 55f),
+            new Vector2(0f, 55f),
+            new Vector2(310f, 55f)
+        };
+        Vector2[] buttonPositions =
+        {
+            new Vector2(-310f, -135f),
+            new Vector2(0f, -135f),
+            new Vector2(310f, -135f)
+        };
+
+        for (int i = 0; i < targetCount; i++)
+        {
+            baitTexts[i] = EnsureBaitText(baitTexts[i], $"BaitItemText{i + 1}", baitsParent, textPositions[i]);
+            baitBuyButtons[i] = EnsureBaitButton(baitBuyButtons[i], $"BaitBuyButton{i + 1}", baitsParent, buttonPositions[i]);
+        }
+
+        if (baitsPlaceholderText != null)
+        {
+            RectTransform placeholderRect = baitsPlaceholderText.rectTransform;
+            placeholderRect.anchoredPosition = new Vector2(0f, 235f);
+            placeholderRect.sizeDelta = new Vector2(820f, 60f);
+            baitsPlaceholderText.fontSize = 32f;
+        }
+    }
+
     private TMP_Text EnsureUpgradeText(TMP_Text _text, string _name, Transform _parent, Vector2 _position)
     {
         if (_text == null)
@@ -515,6 +731,33 @@ public class DockOwnerUI : MonoBehaviour
         }
 
         ConfigureUpgradeButton(_button, _position);
+        SetButtonText(_button, "Comprar");
+        return _button;
+    }
+
+    private TMP_Text EnsureBaitText(TMP_Text _text, string _name, Transform _parent, Vector2 _position)
+    {
+        if (_text == null)
+        {
+            GameObject textObject = Instantiate(capacityUpgradeText.gameObject, _parent);
+            textObject.name = _name;
+            _text = textObject.GetComponent<TMP_Text>();
+        }
+
+        ConfigureBaitText(_text, _position);
+        return _text;
+    }
+
+    private Button EnsureBaitButton(Button _button, string _name, Transform _parent, Vector2 _position)
+    {
+        if (_button == null)
+        {
+            GameObject buttonObject = Instantiate(capacityUpgradeButton.gameObject, _parent);
+            buttonObject.name = _name;
+            _button = buttonObject.GetComponent<Button>();
+        }
+
+        ConfigureBaitButton(_button, _position);
         SetButtonText(_button, "Comprar");
         return _button;
     }
@@ -544,6 +787,32 @@ public class DockOwnerUI : MonoBehaviour
         buttonRect.sizeDelta = new Vector2(220f, 58f);
     }
 
+    private void ConfigureBaitText(TMP_Text _text, Vector2 _position)
+    {
+        if (_text == null)
+            return;
+
+        RectTransform textRect = _text.rectTransform;
+        textRect.anchoredPosition = _position;
+        textRect.sizeDelta = new Vector2(290f, 170f);
+        _text.fontSize = 24f;
+        _text.alignment = TextAlignmentOptions.Center;
+    }
+
+    private void ConfigureBaitButton(Button _button, Vector2 _position)
+    {
+        if (_button == null)
+            return;
+
+        RectTransform buttonRect = _button.GetComponent<RectTransform>();
+
+        if (buttonRect == null)
+            return;
+
+        buttonRect.anchoredPosition = _position;
+        buttonRect.sizeDelta = new Vector2(200f, 58f);
+    }
+
     private void SetButtonText(Button _button, string _text)
     {
         if (_button == null)
@@ -571,6 +840,12 @@ public class DockOwnerUI : MonoBehaviour
         if (dockUpgradeSystem != null)
             dockUpgradeSystem.OnUpgradesChanged += HandleUpgradesChanged;
 
+        if (baitInventory != null)
+            baitInventory.OnBaitInventoryChanged += HandleBaitInventoryChanged;
+
+        if (baitShop != null)
+            baitShop.OnBaitPurchased += HandleBaitPurchased;
+
         PlayerMoneyManager.OnMoneyChangeEvent += ChangeMoney;
         isSubscribed = true;
     }
@@ -588,6 +863,12 @@ public class DockOwnerUI : MonoBehaviour
 
         if (dockUpgradeSystem != null)
             dockUpgradeSystem.OnUpgradesChanged -= HandleUpgradesChanged;
+
+        if (baitInventory != null)
+            baitInventory.OnBaitInventoryChanged -= HandleBaitInventoryChanged;
+
+        if (baitShop != null)
+            baitShop.OnBaitPurchased -= HandleBaitPurchased;
 
         PlayerMoneyManager.OnMoneyChangeEvent -= ChangeMoney;
         isSubscribed = false;
@@ -640,6 +921,10 @@ public class DockOwnerUI : MonoBehaviour
         if (fireproofBoatUpgradeButton != null)
             fireproofBoatUpgradeButton.onClick.AddListener(OnClickBuyFireproofBoatUpgrade);
 
+        BindBaitButton(0, OnClickBuyBaitSlot0);
+        BindBaitButton(1, OnClickBuyBaitSlot1);
+        BindBaitButton(2, OnClickBuyBaitSlot2);
+
         if (closeButton != null)
             closeButton.onClick.AddListener(OnClickClose);
 
@@ -675,6 +960,10 @@ public class DockOwnerUI : MonoBehaviour
         if (fireproofBoatUpgradeButton != null)
             fireproofBoatUpgradeButton.onClick.RemoveListener(OnClickBuyFireproofBoatUpgrade);
 
+        UnbindBaitButton(0, OnClickBuyBaitSlot0);
+        UnbindBaitButton(1, OnClickBuyBaitSlot1);
+        UnbindBaitButton(2, OnClickBuyBaitSlot2);
+
         if (closeButton != null)
             closeButton.onClick.RemoveListener(OnClickClose);
 
@@ -685,6 +974,22 @@ public class DockOwnerUI : MonoBehaviour
     {
         if (statusText != null)
             statusText.text = _message;
+    }
+
+    private void BindBaitButton(int _index, UnityEngine.Events.UnityAction _action)
+    {
+        if (baitBuyButtons == null || _index < 0 || _index >= baitBuyButtons.Length || baitBuyButtons[_index] == null)
+            return;
+
+        baitBuyButtons[_index].onClick.AddListener(_action);
+    }
+
+    private void UnbindBaitButton(int _index, UnityEngine.Events.UnityAction _action)
+    {
+        if (baitBuyButtons == null || _index < 0 || _index >= baitBuyButtons.Length || baitBuyButtons[_index] == null)
+            return;
+
+        baitBuyButtons[_index].onClick.RemoveListener(_action);
     }
 
     private void SetObjectActive(GameObject _target, bool _active)
@@ -720,6 +1025,17 @@ public class DockOwnerUI : MonoBehaviour
             DockUpgradeType.Rod => "Vara melhorada.",
             DockUpgradeType.FireproofBoat => "Barco a prova de fogo comprado.",
             _ => "Upgrade comprado."
+        };
+    }
+
+    private string GetBaitPurchaseStatusText(BaitPurchaseResult _purchaseResult)
+    {
+        return _purchaseResult switch
+        {
+            BaitPurchaseResult.MissingReferences => "Sistema de iscas incompleto.",
+            BaitPurchaseResult.InvalidBait => "Isca invalida.",
+            BaitPurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
+            _ => "Nao foi possivel comprar a isca."
         };
     }
 

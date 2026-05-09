@@ -17,6 +17,7 @@ public class GameBootstrap : MonoBehaviour
         //CreateIfMissing(PoolManager.Instance, _poolManagerPrefab);
         GameSaveManager.GetOrCreate();
         CampaignProgressSystem.GetOrCreate();
+        BaitInventory.GetOrCreate();
 
         if (FindFirstObjectByType<InputDeviceDetector>() == null && _inputDeviceDetectorPrefab != null)
         {
