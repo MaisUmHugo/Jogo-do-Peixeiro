@@ -10,7 +10,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 52551ffbcafa88c428476a6d2f5c776b, type: 3}
-  m_Name: PeixeMoicano
+  m_Name: PeixeFogo
   m_EditorClassIdentifier: 
   minWeight: 7
   maxWeight: 25
@@ -19,7 +19,7 @@ MonoBehaviour:
   rarity: 3
   basePrice: 60
   spawnWeight: 3
-  canBeRequestedByMoneyLender: 1
+  canBeRequestedByMoneyLender: 0
   availabilityPeriod: 0
-  fishName: Peixe Moicano
-  description: Peixe raro com visual marcante e bom valor de mercado.
+  fishName: Peixe de Fogo
+  description: Peixe raro da area de lava. Deve aparecer apenas nessa area quando ela existir.
