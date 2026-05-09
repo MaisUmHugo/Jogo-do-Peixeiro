@@ -3129,11 +3129,20 @@ MonoBehaviour:
   totalValueText: {fileID: 8967464416482299116}
   moneyText: {fileID: 1838800967}
   sellAllButton: {fileID: 6375362951879580819}
+  capacityUpgradeText: {fileID: 0}
+  capacityUpgradeButton: {fileID: 0}
+  boatSpeedUpgradeText: {fileID: 0}
+  boatSpeedUpgradeButton: {fileID: 0}
+  rodUpgradeText: {fileID: 0}
+  rodUpgradeButton: {fileID: 0}
+  fireproofBoatUpgradeText: {fileID: 0}
+  fireproofBoatUpgradeButton: {fileID: 0}
   upgradesPlaceholderText: {fileID: 1730922766}
   baitsPlaceholderText: {fileID: 1321579946}
   statusText: {fileID: 606618202}
   closeButton: {fileID: 960467304}
   fishMarket: {fileID: 0}
+  dockUpgradeSystem: {fileID: 0}
   shipInventory: {fileID: 0}
   playerMoneyManager: {fileID: 0}
 --- !u!114 &1212908367 stripped
@@ -5876,6 +5885,18 @@ PrefabInstance:
     - target: {fileID: 9001000000000000042, guid: defef818672a5df4da3d785180d02030, type: 3}
       propertyPath: m_AnchoredPosition.y
       value: 298
+      objectReference: {fileID: 0}
+    - target: {fileID: 9002000000000000001, guid: defef818672a5df4da3d785180d02030, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 9002000000000000011, guid: defef818672a5df4da3d785180d02030, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9002000000000000021, guid: defef818672a5df4da3d785180d02030, type: 3}
+      propertyPath: m_IsActive
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents:
     - {fileID: 5529181053320964012, guid: defef818672a5df4da3d785180d02030, type: 3}
