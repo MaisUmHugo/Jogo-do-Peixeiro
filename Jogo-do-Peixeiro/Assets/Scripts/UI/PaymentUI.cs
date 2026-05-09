@@ -25,6 +25,7 @@ public class PaymentUI : MonoBehaviour
     [Header("Money References")]
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
     [SerializeField] private DebtSystem debtSystem;
+    [SerializeField] private CampaignProgressSystem campaignProgress;
 
     [Header("Lender References")]
     [SerializeField] private MoneyLender moneyLender;
@@ -50,6 +51,7 @@ public class PaymentUI : MonoBehaviour
     private bool isSubscribed;
     private bool areButtonsBound;
     private bool isInputSubscribed;
+    private bool isCampaignSubscribed;
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
 
@@ -67,6 +69,7 @@ public class PaymentUI : MonoBehaviour
         BindButtons();
         TrySubscribeInput();
         SubscribeToReferences();
+        SubscribeCampaignProgress();
         Refresh();
     }
 
@@ -75,6 +78,7 @@ public class PaymentUI : MonoBehaviour
         UnbindButtons();
         UnsubscribeInput();
         UnsubscribeFromReferences();
+        UnsubscribeCampaignProgress();
     }
 
     public void Open(MoneyLender _moneyLender)
@@ -144,16 +148,35 @@ public class PaymentUI : MonoBehaviour
             return;
         }
 
-        bool success = moneyLender.TryPayDebt();
-        SetStatus(success
-            ? (moneyLender.GetCurrentDebtBalance() <= 0 ? "Divida quitada." : "Divida reduzida.")
-            : "Dinheiro insuficiente.");
+        if (TryHandleCampaignSpecialDelivery())
+            return;
 
-        if (success)
+        if (campaignProgress != null && campaignProgress.HasFailedCurrentQuest)
         {
-            Close();
+            SetStatus("Prazo da quest encerrado.");
+            Refresh();
             return;
         }
+
+        bool success = moneyLender.TryPayDebt(out int paidAmount, out MoneyLender.DebtPaymentResult paymentResult);
+        SetStatus(GetDebtPaymentStatusText(success, paidAmount, paymentResult));
+
+        bool shouldCloseAfterPayment = success &&
+            (paymentResult == MoneyLender.DebtPaymentResult.Completed ||
+             paymentResult == MoneyLender.DebtPaymentResult.PaidOff);
+
+        if (shouldCloseAfterPayment)
+        {
+            Close();
+
+            if (tutorialController != null)
+                tutorialController.NotifyMoneyLenderDebtPayment(success, paidAmount, paymentResult);
+
+            return;
+        }
+
+        if (tutorialController != null)
+            tutorialController.NotifyMoneyLenderDebtPayment(success, paidAmount, paymentResult);
 
         Refresh();
     }
@@ -173,6 +196,7 @@ public class PaymentUI : MonoBehaviour
         RefreshInventorySnapshot();
         SetPaymentTexts();
         SetFishListText();
+        SetPayButtonState();
     }
 
     public void CloseForTutorialFinish()
@@ -210,6 +234,9 @@ public class PaymentUI : MonoBehaviour
         if (debtSystem == null)
             debtSystem = DebtSystem.GetOrCreate();
 
+        if (campaignProgress == null)
+            campaignProgress = CampaignProgressSystem.GetOrCreate();
+
         if (moneyLender == null)
             moneyLender = FindFirstObjectByType<MoneyLender>();
 
@@ -238,6 +265,7 @@ public class PaymentUI : MonoBehaviour
 
         PlayerMoneyManager.OnMoneyChangeEvent += ChangeMoney;
         DebtSystem.OnDebtChangedEvent += ChangeDebtBalance;
+        SubscribeCampaignProgress();
 
         isSubscribed = true;
     }
@@ -258,6 +286,7 @@ public class PaymentUI : MonoBehaviour
 
         PlayerMoneyManager.OnMoneyChangeEvent -= ChangeMoney;
         DebtSystem.OnDebtChangedEvent -= ChangeDebtBalance;
+        UnsubscribeCampaignProgress();
 
         isSubscribed = false;
     }
@@ -320,12 +349,14 @@ public class PaymentUI : MonoBehaviour
     {
         currentFishWeightPayment = _amount;
         SetPaymentTexts();
+        SetPayButtonState();
     }
 
     private void ChangeDebtPayment(int _amount)
     {
         currentDebtPayment = _amount;
         SetPaymentTexts();
+        SetPayButtonState();
     }
 
     private void ChangeDebtBalance(int _currentDebt, int _changeAmount)
@@ -336,12 +367,14 @@ public class PaymentUI : MonoBehaviour
             currentDebtPayment = moneyLender.GetCurrentPayableDebtPayment();
 
         SetPaymentTexts();
+        SetPayButtonState();
     }
 
     private void ChangeMoney(float _amount)
     {
         playerMoney = _amount;
         SetPaymentTexts();
+        SetPayButtonState();
     }
 
     private void ChangeFishList(List<FishData> _fishList, float _fishWeight)
@@ -354,6 +387,7 @@ public class PaymentUI : MonoBehaviour
         fishWeight = _fishWeight;
         SetPaymentTexts();
         SetFishListText();
+        SetPayButtonState();
     }
 
     private void RefreshInventorySnapshot()
@@ -388,6 +422,18 @@ public class PaymentUI : MonoBehaviour
             paymentText.text =
                 $"Pedido: <color={fishColor}>{ownedRequestedFish}</color> / {requestedQuantity} {tutorialController.RequestedFishName}\n" +
                 $"Peso: <color={weightColor}>{fishWeight:0}</color> / {requestedWeight} kg";
+            return;
+        }
+
+        if (IsCampaignSpecialDeliveryActive())
+        {
+            paymentText.text = GetCampaignSpecialDeliveryText();
+            return;
+        }
+
+        if (IsCampaignPaymentActive())
+        {
+            paymentText.text = GetCampaignPaymentText();
             return;
         }
 
@@ -437,6 +483,182 @@ public class PaymentUI : MonoBehaviour
             tutorialController = TutorialController.instance;
 
         return tutorialController != null && tutorialController.ShouldHandleMoneyLenderPayment(moneyLender);
+    }
+
+    private bool TryHandleCampaignSpecialDelivery()
+    {
+        if (!IsCampaignSpecialDeliveryActive())
+            return false;
+
+        if (campaignProgress.HasFailedCurrentQuest)
+        {
+            SetStatus("Prazo da entrega encerrado.");
+            Refresh();
+            return true;
+        }
+
+        FishScriptableObject specialFish = campaignProgress.SpecialDeliveryFish;
+
+        if (specialFish == null || campaignProgress.SpecialDeliveryQuantity <= 0)
+        {
+            SetStatus("Entrega especial sem peixe configurado.");
+            Refresh();
+            return true;
+        }
+
+        bool success = moneyLender.TryGetSpecificFishPayment(specialFish, campaignProgress.SpecialDeliveryQuantity);
+        SetStatus(success ? "Entrega especial concluida." : "Peixe especial insuficiente.");
+
+        if (success)
+        {
+            Close();
+
+            if (tutorialController != null)
+                tutorialController.NotifyMoneyLenderSpecialDeliveryCompleted();
+
+            return true;
+        }
+
+        Refresh();
+        return true;
+    }
+
+    private string GetDebtPaymentStatusText(bool _success, int _paidAmount, MoneyLender.DebtPaymentResult _paymentResult)
+    {
+        if (!_success)
+            return "Dinheiro insuficiente.";
+
+        return _paymentResult switch
+        {
+            MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
+            MoneyLender.DebtPaymentResult.Completed => "Meta da quest paga.",
+            MoneyLender.DebtPaymentResult.PaidOff => "Divida quitada.",
+            _ => "Dinheiro insuficiente."
+        };
+    }
+
+    private bool IsCampaignPaymentActive()
+    {
+        return campaignProgress != null &&
+               campaignProgress.GameMode == GameProgressMode.Campaign &&
+               !campaignProgress.IsCampaignCompleted &&
+               !campaignProgress.CurrentQuestRequiresSpecialDelivery;
+    }
+
+    private bool IsCampaignSpecialDeliveryActive()
+    {
+        return campaignProgress != null &&
+               campaignProgress.GameMode == GameProgressMode.Campaign &&
+               !campaignProgress.IsCampaignCompleted &&
+               campaignProgress.CurrentQuestRequiresSpecialDelivery;
+    }
+
+    private string GetCampaignPaymentText()
+    {
+        if (campaignProgress.HasFailedCurrentQuest)
+            return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}\n<color=red>Prazo encerrado.</color>\nA quest falhou.";
+
+        string moneyColor = playerMoney > 0 ? "green" : "red";
+        string debtColor = currentDebtBalance > 0 ? "red" : "green";
+        string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? "#F2C94C" : "white";
+        string debtValue = currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
+        int questRemaining = campaignProgress.QuestDebtPaymentRemaining;
+
+        return
+            $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}: {campaignProgress.CurrentQuestName}\n" +
+            $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>\n" +
+            $"Meta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}\n" +
+            $"Falta na quest: R$ {questRemaining}\n" +
+            $"Pagamento agora: R$ {currentDebtPayment}\n" +
+            $"Divida total: <color={debtColor}>{debtValue}</color>\n" +
+            $"Dinheiro: <color={moneyColor}>R$ {playerMoney:0}</color>";
+    }
+
+    private string GetCampaignSpecialDeliveryText()
+    {
+        if (campaignProgress.HasFailedCurrentQuest)
+            return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}\n<color=red>Prazo encerrado.</color>\nA entrega falhou.";
+
+        FishScriptableObject specialFish = campaignProgress.SpecialDeliveryFish;
+        string fishName = specialFish != null ? specialFish.fishName : "peixe especial";
+        int requiredQuantity = campaignProgress.SpecialDeliveryQuantity;
+        int ownedQuantity = shipInventory != null && specialFish != null ? shipInventory.CountFish(specialFish) : 0;
+        string fishColor = ownedQuantity >= requiredQuantity && requiredQuantity > 0 ? "green" : "red";
+        string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? "#F2C94C" : "white";
+        string debtValue = currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
+
+        return
+            $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}: entrega especial\n" +
+            $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>\n" +
+            $"Entregue: <color={fishColor}>{ownedQuantity}</color>/{requiredQuantity} {fishName}\n" +
+            $"Divida total: <color=red>{debtValue}</color>";
+    }
+
+    private void SetPayButtonState()
+    {
+        if (payButton == null)
+            return;
+
+        if (ShouldUseTutorialPayment())
+        {
+            SetButtonText(payButton, "Entregar");
+            payButton.interactable = true;
+            return;
+        }
+
+        if (IsCampaignSpecialDeliveryActive())
+        {
+            SetButtonText(payButton, "Entregar");
+            FishScriptableObject specialFish = campaignProgress.SpecialDeliveryFish;
+            int requiredQuantity = campaignProgress.SpecialDeliveryQuantity;
+            int ownedQuantity = shipInventory != null && specialFish != null ? shipInventory.CountFish(specialFish) : 0;
+            payButton.interactable = !campaignProgress.HasFailedCurrentQuest &&
+                                     specialFish != null &&
+                                     requiredQuantity > 0 &&
+                                     ownedQuantity >= requiredQuantity;
+            return;
+        }
+
+        SetButtonText(payButton, "Pagar");
+        payButton.interactable = moneyLender != null &&
+                                 (campaignProgress == null || !campaignProgress.HasFailedCurrentQuest) &&
+                                 currentDebtPayment > 0 &&
+                                 playerMoney > 0;
+    }
+
+    private void SetButtonText(Button _button, string _text)
+    {
+        if (_button == null)
+            return;
+
+        TMP_Text buttonText = _button.GetComponentInChildren<TMP_Text>(true);
+
+        if (buttonText != null)
+            buttonText.text = _text;
+    }
+
+    private void SubscribeCampaignProgress()
+    {
+        if (isCampaignSubscribed || campaignProgress == null)
+            return;
+
+        campaignProgress.OnProgressChanged += Refresh;
+        campaignProgress.OnQuestAdvanced += Refresh;
+        campaignProgress.OnQuestDeadlineExpired += Refresh;
+        campaignProgress.OnCampaignCompleted += Refresh;
+        isCampaignSubscribed = true;
+    }
+
+    private void UnsubscribeCampaignProgress()
+    {
+        if (!isCampaignSubscribed || campaignProgress == null)
+            return;
+
+        campaignProgress.OnProgressChanged -= Refresh;
+        campaignProgress.OnQuestAdvanced -= Refresh;
+        campaignProgress.OnQuestDeadlineExpired -= Refresh;
+        campaignProgress.OnCampaignCompleted -= Refresh;
+        isCampaignSubscribed = false;
     }
 
     private void SetStatus(string _message)

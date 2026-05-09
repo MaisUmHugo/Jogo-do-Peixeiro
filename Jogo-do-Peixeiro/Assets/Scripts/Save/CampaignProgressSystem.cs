@@ -78,6 +78,7 @@ public class CampaignProgressSystem : MonoBehaviour
     public bool EndlessUnlocked => endlessUnlocked;
     public bool HasUnlockedFreePlay => hasUnlockedFreePlay;
     public bool IsCampaignCompleted => isCampaignCompleted;
+    public bool IsCampaignQuestRunning => IsCampaignRunning();
     public int CurrentQuestIndex => currentQuestIndex;
     public int MaxQuestCount => questDefinitions != null ? questDefinitions.Length : 0;
     public CampaignQuestDefinition CurrentQuestDefinition => GetQuestDefinition(currentQuestIndex);

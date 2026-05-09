@@ -1816,7 +1816,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   fishMarket: {fileID: 762983091}
-  dockOwnerUI: {fileID: 0}
+  dockOwnerUI: {fileID: 1183212007}
   interactionPriority: 45
   promptText: Falar com dono da doca
   sellDirectlyWhenNoUi: 1
@@ -5040,10 +5040,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   currentStep: 0
-  runTutorial: 0
-  blockBoatUntilMoneyLender: 0
-  handleMoneyLenderDuringTutorial: 0
+  runTutorial: 1
+  blockBoatUntilMoneyLender: 1
+  handleMoneyLenderDuringTutorial: 1
   failWhenDeadlineEnds: 0
+  useCampaignEconomyFlow: 1
   tutorialFishingArea: {fileID: 11400000, guid: 784ba0b353c166542a3ff14aa27b93cb, type: 2}
   fallbackAvailableFish: []
   minRequestedQuantity: 1
