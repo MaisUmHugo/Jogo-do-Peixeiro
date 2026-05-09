@@ -203,6 +203,7 @@ public class MoneyLender : MonoBehaviour
 
         ReduceDebt(specificFishDebtReduction);
         GetSpecificFishPayment();
+        TryCompleteCampaignSpecialDelivery(_specificFish);
 
         if (_useTutorialFireworks)
             StartTutorialFinishFireworks();
@@ -216,6 +217,21 @@ public class MoneyLender : MonoBehaviour
     private void GetSpecificFishPayment()
     {
         AdvancePaymentCycle();
+    }
+
+    private void TryCompleteCampaignSpecialDelivery(FishScriptableObject _deliveredFish)
+    {
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (campaignProgress == null ||
+            !campaignProgress.CurrentQuestRequiresSpecialDelivery ||
+            campaignProgress.SpecialDeliveryFish == null ||
+            campaignProgress.SpecialDeliveryFish != _deliveredFish)
+        {
+            return;
+        }
+
+        campaignProgress.CompleteSpecialDeliveryQuest();
     }
 
     private void AdvancePaymentCycle()

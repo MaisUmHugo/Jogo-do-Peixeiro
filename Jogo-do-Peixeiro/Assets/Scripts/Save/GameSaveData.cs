@@ -46,12 +46,16 @@ public class CampaignSaveData
 {
     public GameProgressMode gameMode = GameProgressMode.Campaign;
     public int currentQuestIndex = 1;
+    public int maxQuestCount = 5;
     public int questDurationDays = 3;
     public int daysElapsedInCurrentQuest;
     public int questDebtPaymentTarget = 150;
     public int questDebtPaidAmount;
     public bool hasFailedCurrentQuest;
+    public bool hasUnlockedFreePlay;
+    public bool isCampaignCompleted;
     public bool endlessUnlocked;
+    public int campaignCompletionDebtAmount = 999999;
     public bool isSpecialMoneyLenderDeliveryActive;
     public string specialDeliveryFishId;
     public int specialDeliveryQuantity;
