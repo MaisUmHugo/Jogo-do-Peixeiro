@@ -95,6 +95,23 @@ public class ShipInventory : MonoBehaviour
         AttFishWeight();
     }
 
+    public void ReplaceFish(IEnumerable<FishData> _fishList)
+    {
+        ownedFish.Clear();
+
+        if (_fishList != null)
+        {
+            foreach (FishData fish in _fishList)
+            {
+                if (fish != null && fish.typeOfFish != null)
+                    ownedFish.Add(fish);
+            }
+        }
+
+        ownedFish = MergeSort(ownedFish.ToArray()).ToList();
+        AttFishWeight();
+    }
+
     public int GetTotalFishValue()
     {
         int totalValue = 0;

@@ -233,6 +233,19 @@ public class DockUpgradeSystem : MonoBehaviour
         ApplyRodUpgrade();
     }
 
+    public void SetUpgradeState(int _capacityLevel, int _boatSpeedLevel, int _rodLevel, bool _hasFireproofBoatUpgrade)
+    {
+        EnsureCapacityTable();
+
+        capacityLevel = Mathf.Clamp(_capacityLevel, 0, MaxCapacityLevel);
+        boatSpeedLevel = Mathf.Clamp(_boatSpeedLevel, 0, MaxBoatSpeedLevel);
+        rodLevel = Mathf.Clamp(_rodLevel, 0, MaxRodLevel);
+        hasFireproofBoatUpgrade = _hasFireproofBoatUpgrade;
+
+        ApplyUpgrades();
+        OnUpgradesChanged?.Invoke();
+    }
+
     private void ResolveReferences()
     {
         if (shipInventory == null)

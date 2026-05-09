@@ -31,6 +31,7 @@ public class FishScriptableObject : ScriptableObject
     public string fishName;
     [TextArea] public string description;
 
+    public string SaveId => name;
     public bool CanBeRequestedByMoneyLender => canBeRequestedByMoneyLender;
 
     public bool IsAvailableAtHour(float _hour)

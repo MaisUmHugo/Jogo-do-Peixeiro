@@ -15,11 +15,19 @@ public class GameBootstrap : MonoBehaviour
         CreateIfMissing(InputHandler.instance, _inputHandlerPrefab);
         CreateIfMissing(AudioManager.Instance, _audioManagerPrefab);
         //CreateIfMissing(PoolManager.Instance, _poolManagerPrefab);
+        GameSaveManager.GetOrCreate();
+        CampaignProgressSystem.GetOrCreate();
 
         if (FindFirstObjectByType<InputDeviceDetector>() == null && _inputDeviceDetectorPrefab != null)
         {
             Instantiate(_inputDeviceDetectorPrefab);
         }
+    }
+
+    private void Start()
+    {
+        if (GameSaveManager.Instance != null)
+            GameSaveManager.Instance.LoadRequestedSaveIfNeeded();
     }
 
     private void CreateIfMissing<T>(T _instance, T _prefab) where T : MonoBehaviour

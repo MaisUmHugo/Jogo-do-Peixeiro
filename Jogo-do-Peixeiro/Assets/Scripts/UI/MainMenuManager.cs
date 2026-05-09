@@ -64,6 +64,13 @@ public class MainMenuManager : MonoBehaviour
     // BOTÃO PLAY
     public void PlayGame()
     {
+        GameSaveManager.ClearLoadRequest();
+        SceneManager.LoadScene(gameSceneName);
+    }
+
+    public void ContinueGame()
+    {
+        GameSaveManager.RequestLoadOnNextScene();
         SceneManager.LoadScene(gameSceneName);
     }
 
