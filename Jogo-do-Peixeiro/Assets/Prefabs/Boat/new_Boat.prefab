@@ -39,12 +39,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 667378924379339130}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5592895441417104453}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -79,7 +79,7 @@ Transform:
   m_GameObject: {fileID: 1005402624977269242}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.05, z: 1.2}
+  m_LocalPosition: {x: 0, y: -0.3, z: 1.2}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -124,12 +124,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1169680201123118324}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5592895441417104453}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -178,12 +178,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2034920670072617029}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5592895441417104453}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -232,12 +232,12 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3782572536525891796}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5592895441417104453}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -288,15 +288,15 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -42.3
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.y
-      value: -0.85
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.z
-      value: -64.83
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalRotation.w
@@ -413,7 +413,7 @@ Rigidbody:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3423520019956907}
   serializedVersion: 4
-  m_Mass: 10000
+  m_Mass: 100
   m_Drag: 0.4
   m_AngularDrag: 3
   m_CenterOfMass: {x: 0, y: 0, z: 0}
@@ -509,6 +509,7 @@ MonoBehaviour:
   requireNeutralInputAfterFishing: 1
   neutralInputThreshold: 0.15
   turnPoint: {fileID: 6792612977102255661}
+  rb: {fileID: 5592895441417104453}
 --- !u!114 &8267605470744541009
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -539,9 +540,10 @@ MonoBehaviour:
   player: {fileID: 0}
   boatCamera: {fileID: 0}
   seatPoint: {fileID: 7813331570128592577}
-  OffsetRotacao: {x: 0, y: 0, z: 0}
+  OffsetRotacao: {x: 90, y: 0, z: 0}
   playerController: {fileID: 0}
   characterController: {fileID: 0}
+  rb: {fileID: 5592895441417104453}
 --- !u!4 &812892039449124369 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}

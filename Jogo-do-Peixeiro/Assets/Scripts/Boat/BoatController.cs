@@ -14,15 +14,15 @@ public class BoatController : MonoBehaviour
 
     private bool isPlayerOnBoat;
     private Transform originalParent;
-    private Rigidbody rb;
+    [SerializeField] private Rigidbody rb;
     private BoatMotor boatMotor;
-    private Floater[] floaters;
+    private BoatFloat boatFloat;
 
     private void Awake()
     {
-        rb = GetComponent<Rigidbody>();
         boatMotor = GetComponent<BoatMotor>();
-        floaters = GetComponentsInChildren<Floater>();
+        boatFloat = GetComponent<BoatFloat>();
+        Debug.LogWarning(rb);
 
         bool isMainMenu = SceneManager.GetActiveScene().name == "Main Menu";
 
@@ -47,7 +47,6 @@ public class BoatController : MonoBehaviour
     {
         if (rb != null)
         {
-            // Trava o Rigidbody (isKinematic = true) quando o player NÃO está no barco
             rb.isKinematic = !active;
 
             if (!active)
@@ -58,17 +57,11 @@ public class BoatController : MonoBehaviour
             }
         }
 
-        // Avisa cada floater se ele deve calcular flutuação ou não
         if (!active && boatMotor != null)
             boatMotor.ResetMotorState();
 
-        if (floaters != null)
-        {
-            foreach (var f in floaters)
-            {
-                f.canFloat = active;
-            }
-        }
+        if (boatFloat != null)
+            boatFloat.enabled = active;
     }
 
     public void EnterBoat()

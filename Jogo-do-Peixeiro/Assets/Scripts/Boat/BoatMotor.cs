@@ -13,18 +13,13 @@ public class BoatMotor : MonoBehaviour
     [SerializeField] private float neutralInputThreshold = 0.15f;
     [SerializeField] private Transform turnPoint;
 
-    private Rigidbody rb;
+    [SerializeField] private Rigidbody rb;
     private Vector2 input;
     private Vector3 anchorPosition;
     private Quaternion anchorRotation;
     private bool wasKinematicBeforeAnchor;
     private bool isAnchored;
     private bool isWaitingForNeutralInput;
-
-    void Awake()
-    {
-        rb = GetComponent<Rigidbody>();
-    }
 
     public void ResetMotorState(bool _waitForNeutralInput = true)
     {
@@ -95,6 +90,9 @@ public class BoatMotor : MonoBehaviour
 
     private void ApplyMovement()
     {
+        if (rb == null || rb.isKinematic)
+            return;
+
         Vector3 forward = transform.forward;
 
         float moveInput = input.y;
@@ -105,14 +103,19 @@ public class BoatMotor : MonoBehaviour
             rb.AddForce(forward * moveInput * engineForce, ForceMode.Acceleration);
         }
 
-        float forwardSpeed = Vector3.Dot(rb.linearVelocity, forward);
-
         Vector3 turnDirection = transform.right * turnInput;
 
         rb.AddForceAtPosition(
             turnDirection * turnForce,
             turnPoint.position,
             ForceMode.Force
+        );
+
+        float turnForwardBoost = Mathf.Abs(turnInput) * 0.5f;
+
+        rb.AddForce(
+            transform.forward * turnForwardBoost,
+            ForceMode.Acceleration
         );
 
         Vector3 localVel = transform.InverseTransformDirection(rb.linearVelocity);
@@ -124,12 +127,22 @@ public class BoatMotor : MonoBehaviour
 
     private void ApplyStabilization()
     {
+        if (rb == null || rb.isKinematic)
+            return;
+
         Vector3 flatForward = Vector3.ProjectOnPlane(transform.forward, Vector3.up);
 
         if (flatForward.sqrMagnitude > 0.001f)
         {
             Quaternion targetRot = Quaternion.LookRotation(flatForward, Vector3.up);
-            rb.MoveRotation(Quaternion.Slerp(rb.rotation, targetRot, stabilization * Time.fixedDeltaTime));
+
+            rb.MoveRotation(
+                Quaternion.Slerp(
+                    rb.rotation,
+                    targetRot,
+                    stabilization * Time.fixedDeltaTime
+                )
+            );
         }
     }
 
@@ -178,11 +191,14 @@ public class BoatMotor : MonoBehaviour
         if (!isAnchored)
             return;
 
+        rb.isKinematic = false;
+
         rb.position = anchorPosition;
         rb.rotation = anchorRotation;
-        rb.isKinematic = wasKinematicBeforeAnchor;
+
         rb.linearVelocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
+
         input = Vector2.zero;
         isWaitingForNeutralInput = requireNeutralInputAfterFishing;
         isAnchored = false;
