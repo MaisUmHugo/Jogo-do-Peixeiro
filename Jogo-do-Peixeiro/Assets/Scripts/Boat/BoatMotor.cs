@@ -11,6 +11,7 @@ public class BoatMotor : MonoBehaviour
     [SerializeField] private bool anchorWhileFishing = true;
     [SerializeField] private bool requireNeutralInputAfterFishing = true;
     [SerializeField] private float neutralInputThreshold = 0.15f;
+    [SerializeField] private Transform turnPoint;
 
     private Rigidbody rb;
     private Vector2 input;
@@ -95,21 +96,29 @@ public class BoatMotor : MonoBehaviour
     private void ApplyMovement()
     {
         Vector3 forward = transform.forward;
+
         float moveInput = input.y;
         float turnInput = input.x;
 
-        // Força do motor com limite de velocidade
         if (rb.linearVelocity.magnitude < maxSpeed)
         {
             rb.AddForce(forward * moveInput * engineForce, ForceMode.Acceleration);
         }
 
-        // Giro
-        rb.AddTorque(Vector3.up * turnInput * turnForce, ForceMode.Acceleration);
+        float forwardSpeed = Vector3.Dot(rb.linearVelocity, forward);
 
-        // Reduz deslizamento lateral (Drift)
+        Vector3 turnDirection = transform.right * turnInput;
+
+        rb.AddForceAtPosition(
+            turnDirection * turnForce,
+            turnPoint.position,
+            ForceMode.Force
+        );
+
         Vector3 localVel = transform.InverseTransformDirection(rb.linearVelocity);
+
         localVel.x *= 1f / (1f + lateralDrag * Time.fixedDeltaTime);
+
         rb.linearVelocity = transform.TransformDirection(localVel);
     }
 

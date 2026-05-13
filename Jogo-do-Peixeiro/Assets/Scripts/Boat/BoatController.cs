@@ -73,10 +73,13 @@ public class BoatController : MonoBehaviour
 
     public void EnterBoat()
     {
+        Debug.Log(rb);
         if (isPlayerOnBoat) return;
 
         Debug.Log("Entrou no barco");
         isPlayerOnBoat = true;
+
+        rb.isKinematic = false;
 
         // 1. Liga a física e flutuação
         SetBoatPhysics(true);
