@@ -95,21 +95,33 @@ public class BoatMotor : MonoBehaviour
     private void ApplyMovement()
     {
         Vector3 forward = transform.forward;
+
         float moveInput = input.y;
         float turnInput = input.x;
 
-        // Força do motor com limite de velocidade
+        Vector3 localVel = transform.InverseTransformDirection(rb.linearVelocity);
+        float forwardSpeed = Mathf.Abs(localVel.z);
+
+        float speedPercent = Mathf.Clamp01(forwardSpeed / maxSpeed);
+
+        if (Mathf.Abs(turnInput) > 0.05f)
+        {
+            moveInput += Mathf.Abs(turnInput) * 0.35f;
+        }
+
+        moveInput = Mathf.Clamp(moveInput, -1f, 1f);
+
         if (rb.linearVelocity.magnitude < maxSpeed)
         {
             rb.AddForce(forward * moveInput * engineForce, ForceMode.Acceleration);
         }
 
-        // Giro
-        rb.AddTorque(Vector3.up * turnInput * turnForce, ForceMode.Acceleration);
+        float turnStrength = turnForce * Mathf.Lerp(0.2f, 1f, speedPercent);
 
-        // Reduz deslizamento lateral (Drift)
-        Vector3 localVel = transform.InverseTransformDirection(rb.linearVelocity);
+        rb.AddTorque(Vector3.up * turnInput * turnStrength, ForceMode.Acceleration);
+
         localVel.x *= 1f / (1f + lateralDrag * Time.fixedDeltaTime);
+
         rb.linearVelocity = transform.TransformDirection(localVel);
     }
 
