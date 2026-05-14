@@ -8,6 +8,9 @@ using UnityEngine.InputSystem;
 
 public class TextCanvaManager : MonoBehaviour
 {
+    public static event Action<DialogCameraFocusTarget> DialogStarted;
+    public static event Action DialogFinished;
+
     [Header("Dialog Componentes")]
     [SerializeField] private TMP_Text dialogTMPText;
     [SerializeField] private TMP_Text nameTMPtext;
@@ -19,6 +22,7 @@ public class TextCanvaManager : MonoBehaviour
     private int textIndex = 0;
     private bool isWritting = false;
     private Action onDialogFinished;
+    private DialogCameraFocusTarget currentCameraFocusTarget;
     private int dialogStartedFrame = -1;
     private bool isSubscribedToInput;
     public float TextSpeed;
@@ -73,10 +77,20 @@ public class TextCanvaManager : MonoBehaviour
 
     public void InitializeDialog(DialogData _dialog)
     {
-        InitializeDialog(_dialog, null);
+        InitializeDialog(_dialog, (Action)null);
     }
 
     public void InitializeDialog(DialogData _dialog, Action _onFinished)
+    {
+        InitializeDialog(_dialog, _onFinished, null);
+    }
+
+    public void InitializeDialog(DialogData _dialog, DialogCameraFocusTarget _cameraFocusTarget)
+    {
+        InitializeDialog(_dialog, (Action)null, _cameraFocusTarget);
+    }
+
+    public void InitializeDialog(DialogData _dialog, Action _onFinished, DialogCameraFocusTarget _cameraFocusTarget)
     {
         if (_dialog == null || _dialog.senteces == null || _dialog.senteces.Length == 0)
         {
@@ -84,18 +98,23 @@ public class TextCanvaManager : MonoBehaviour
             return;
         }
 
+        if (IsDialogActive)
+            NotifyDialogFinished();
+
         TrySubscribeInput();
         StopAllCoroutines();
         senteces.Clear();
         textIndex = 0;
         isWritting = false;
         onDialogFinished = _onFinished;
+        currentCameraFocusTarget = _cameraFocusTarget;
         dialogStartedFrame = Time.frameCount;
 
         if (nameTMPtext != null)
             nameTMPtext.text = _dialog.speakerName;
 
         SetDialogActive(true);
+        NotifyDialogStarted();
         senteces.AddRange(_dialog.senteces);
         StartCoroutine(TypeLineCourotine());
     }
@@ -118,6 +137,7 @@ public class TextCanvaManager : MonoBehaviour
         senteces.Clear();
         isWritting = false;
         SetDialogActive(false);
+        NotifyDialogFinished();
         callback?.Invoke();
     }
 
@@ -199,5 +219,16 @@ public class TextCanvaManager : MonoBehaviour
         if (nameBackGroundImage != null)
             nameBackGroundImage.gameObject.SetActive(_active);
 
+    }
+
+    private void NotifyDialogStarted()
+    {
+        DialogStarted?.Invoke(currentCameraFocusTarget);
+    }
+
+    private void NotifyDialogFinished()
+    {
+        DialogFinished?.Invoke();
+        currentCameraFocusTarget = null;
     }
 }

@@ -3,6 +3,7 @@ using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using TMPro;
+using UnityEngine.UI;
 
 public class MainMenuManager : MonoBehaviour
 {
@@ -15,6 +16,13 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private GameObject howToPlayPanel;
     [SerializeField] private GameObject confirmPanel;
     [SerializeField] private GameObject creditsPanel;
+
+    [Header("Navigation")]
+    [SerializeField] private Selectable menuFirstSelected;
+    [SerializeField] private Selectable optionsFirstSelected;
+    [SerializeField] private Selectable howToPlayFirstSelected;
+    [SerializeField] private Selectable creditsFirstSelected;
+    [SerializeField] private Selectable confirmFirstSelected;
 
     [Header("Confirm UI")]
     [SerializeField] private TMP_Text confirmText;
@@ -31,6 +39,7 @@ public class MainMenuManager : MonoBehaviour
     private string defaultConfirmMessage = "Tem certeza?";
 
     private Action confirmAction;
+    private Selectable menuLastSelected;
 
     // SPOOKY MODE 👻
     private int spookyClicks = 0;
@@ -147,12 +156,16 @@ public class MainMenuManager : MonoBehaviour
     // PAINÉIS
     public void OpenOptions()
     {
+        StoreMenuSelection();
         ShowOnly(optionsPanel);
+        UISelectionHelper.Select(optionsFirstSelected, optionsPanel);
     }
 
     public void OpenHowToPlay()
     {
+        StoreMenuSelection();
         ShowOnly(howToPlayPanel);
+        UISelectionHelper.Select(howToPlayFirstSelected, howToPlayPanel);
     }
 
     public void BackToMenu()
@@ -163,11 +176,14 @@ public class MainMenuManager : MonoBehaviour
     private void ShowMenu()
     {
         ShowOnly(menuPanel);
+        SelectMenuPanel();
     }
 
     public void OpenCredits()
     {
+        StoreMenuSelection();
         ShowOnly(creditsPanel);
+        UISelectionHelper.Select(creditsFirstSelected, creditsPanel);
     }
 
     private void ShowOnly(GameObject panel)
@@ -182,8 +198,10 @@ public class MainMenuManager : MonoBehaviour
     // CONFIRMAR
     public void ShowConfirmation(Action action)
     {
+        StoreMenuSelection();
         confirmAction = action;
         ShowOnly(confirmPanel);
+        UISelectionHelper.Select(confirmFirstSelected, confirmPanel);
     }
 
     public void ConfirmYes()
@@ -245,5 +263,19 @@ public class MainMenuManager : MonoBehaviour
 
         if (noButton != null)
             noButton.localPosition = noOriginalPos;
+    }
+
+    private void SelectMenuPanel()
+    {
+        Selectable target = menuLastSelected != null ? menuLastSelected : menuFirstSelected;
+        UISelectionHelper.Select(target, menuPanel);
+    }
+
+    private void StoreMenuSelection()
+    {
+        Selectable current = UISelectionHelper.CurrentSelectableInScope(menuPanel);
+
+        if (current != null)
+            menuLastSelected = current;
     }
 }

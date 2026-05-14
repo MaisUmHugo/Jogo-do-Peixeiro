@@ -53,6 +53,15 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private Button closeButton;
 
+    [Header("Navigation")]
+    [SerializeField] private Selectable sellFirstSelected;
+    [SerializeField] private Selectable upgradesFirstSelected;
+    [SerializeField] private Selectable baitsFirstSelected;
+
+    [Header("Runtime Fallback")]
+    [SerializeField] private bool allowRuntimeFallback;
+    [SerializeField] private bool logMissingReferences = true;
+
     [Header("References")]
     [SerializeField] private FishMarket fishMarket;
     [SerializeField] private DockUpgradeSystem dockUpgradeSystem;
@@ -68,6 +77,8 @@ public class DockOwnerUI : MonoBehaviour
     private bool isSubscribed;
     private bool areButtonsBound;
     private bool isInputSubscribed;
+    private bool hasLoggedMissingUpgradeControls;
+    private bool hasLoggedMissingBaitControls;
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
 
@@ -115,6 +126,7 @@ public class DockOwnerUI : MonoBehaviour
         SetStatus(string.Empty);
         SetTab(DockOwnerTab.Sell);
         Refresh();
+        SelectCurrentTabControl();
     }
 
     public void OnClickSellTab()
@@ -149,6 +161,9 @@ public class DockOwnerUI : MonoBehaviour
 
         SetStatus($"Peixes vendidos: R$ {earnedMoney}.");
         Refresh();
+
+        if (isOpen && PanelObject.activeInHierarchy)
+            SelectCurrentTabControl();
     }
 
     public void OnClickBuyCapacityUpgrade()
@@ -197,6 +212,7 @@ public class DockOwnerUI : MonoBehaviour
         SetSellTexts();
         SetUpgradeTexts();
         SetBaitTexts();
+        EnsureCurrentSelectionIsUsable();
     }
 
     private void SetTab(DockOwnerTab _tab)
@@ -477,6 +493,7 @@ public class DockOwnerUI : MonoBehaviour
 
     private void CloseImmediate()
     {
+        UISelectionHelper.ClearSelection(PanelObject);
         isOpen = false;
         PanelObject.SetActive(false);
     }
@@ -609,7 +626,10 @@ public class DockOwnerUI : MonoBehaviour
     private void EnsureUpgradeControls()
     {
         if (upgradesTabPanel == null || capacityUpgradeText == null || capacityUpgradeButton == null)
+        {
+            LogMissingUpgradeControls();
             return;
+        }
 
         bool needsRuntimeLayout = boatSpeedUpgradeText == null ||
                                   boatSpeedUpgradeButton == null ||
@@ -620,6 +640,12 @@ public class DockOwnerUI : MonoBehaviour
 
         if (!needsRuntimeLayout)
             return;
+
+        if (!allowRuntimeFallback)
+        {
+            LogMissingUpgradeControls();
+            return;
+        }
 
         Transform upgradesParent = upgradesTabPanel.transform;
 
@@ -644,8 +670,15 @@ public class DockOwnerUI : MonoBehaviour
 
     private void EnsureBaitControls()
     {
+        ResolveBaitTabReferences();
+
         if (baitsTabPanel == null)
+        {
+            LogMissingBaitControls(0);
             return;
+        }
+
+        ConfigureTabPanelRectIfDefault(baitsTabPanel);
 
         BaitData[] baits = GetBaitsForSale();
         int targetCount = Mathf.Clamp(baits.Length, 0, 3);
@@ -680,17 +713,29 @@ public class DockOwnerUI : MonoBehaviour
         }
 
         Transform baitsParent = baitsTabPanel.transform;
+        ResolveExistingBaitControls(baitsParent, targetCount);
+
+        if (HasMissingBaitControls(targetCount) && !allowRuntimeFallback)
+        {
+            LogMissingBaitControls(targetCount);
+            return;
+        }
+
+        if (baitsPlaceholderText == null && allowRuntimeFallback)
+            baitsPlaceholderText = EnsureBaitsHeader(baitsParent);
+
         Vector2[] textPositions =
         {
-            new Vector2(-310f, 55f),
-            new Vector2(0f, 55f),
-            new Vector2(310f, 55f)
+            new Vector2(-320f, 35f),
+            new Vector2(0f, 35f),
+            new Vector2(320f, 35f)
         };
+
         Vector2[] buttonPositions =
         {
-            new Vector2(-310f, -135f),
-            new Vector2(0f, -135f),
-            new Vector2(310f, -135f)
+            new Vector2(-320f, -165f),
+            new Vector2(0f, -165f),
+            new Vector2(320f, -165f)
         };
 
         for (int i = 0; i < targetCount; i++)
@@ -701,11 +746,181 @@ public class DockOwnerUI : MonoBehaviour
 
         if (baitsPlaceholderText != null)
         {
-            RectTransform placeholderRect = baitsPlaceholderText.rectTransform;
-            placeholderRect.anchoredPosition = new Vector2(0f, 235f);
-            placeholderRect.sizeDelta = new Vector2(820f, 60f);
-            baitsPlaceholderText.fontSize = 32f;
+            ConfigureBaitsHeaderIfDefault(baitsPlaceholderText);
         }
+    }
+
+    private void ResolveBaitTabReferences()
+    {
+        if (baitsTabPanel == null)
+            baitsTabPanel = FindChildGameObject("BaitsTabPanel", "BaitTabPanel", "IscasTabPanel", "IscasPanel");
+
+        if (baitsTabPanel != null && baitsPlaceholderText == null)
+            baitsPlaceholderText = FindChildText(baitsTabPanel.transform, "BaitsPlaceholderText", "BaitsTitleText", "IscasTitleText", "IscasHeaderText");
+    }
+
+    private void ConfigureTabPanelRectIfDefault(GameObject _panel)
+    {
+        if (_panel == null)
+            return;
+
+        RectTransform panelRect = _panel.GetComponent<RectTransform>();
+
+        if (panelRect == null)
+            return;
+
+        if (!IsDefaultSizedRect(panelRect, 120f, 120f))
+            return;
+
+        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
+        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
+        panelRect.pivot = new Vector2(0.5f, 0.5f);
+        panelRect.anchoredPosition = Vector2.zero;
+        panelRect.sizeDelta = new Vector2(920f, 520f);
+    }
+
+    private void ResolveExistingBaitControls(Transform _parent, int _targetCount)
+    {
+        TMP_Text[] existingTexts = GetExistingBaitItemTexts(_parent);
+        Button[] existingButtons = GetExistingBaitButtons(_parent);
+
+        for (int i = 0; i < _targetCount; i++)
+        {
+            if (baitTexts[i] == null)
+            {
+                baitTexts[i] = FindChildText(
+                    _parent,
+                    $"BaitItemText{i + 1}",
+                    $"BaitText{i + 1}",
+                    $"IscaText{i + 1}",
+                    $"IscaItemText{i + 1}"
+                );
+            }
+
+            if (baitTexts[i] == null && existingTexts != null && i < existingTexts.Length)
+                baitTexts[i] = existingTexts[i];
+
+            if (baitBuyButtons[i] == null)
+            {
+                baitBuyButtons[i] = FindChildButton(
+                    _parent,
+                    $"BaitBuyButton{i + 1}",
+                    $"BuyBaitButton{i + 1}",
+                    $"ComprarIscaButton{i + 1}"
+                );
+            }
+
+            if (baitBuyButtons[i] == null && existingButtons != null && i < existingButtons.Length)
+                baitBuyButtons[i] = existingButtons[i];
+        }
+    }
+
+    private bool HasMissingBaitControls(int _targetCount)
+    {
+        for (int i = 0; i < _targetCount; i++)
+        {
+            if (baitTexts == null || i >= baitTexts.Length || baitTexts[i] == null)
+                return true;
+
+            if (baitBuyButtons == null || i >= baitBuyButtons.Length || baitBuyButtons[i] == null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private void LogMissingUpgradeControls()
+    {
+        if (!logMissingReferences || hasLoggedMissingUpgradeControls)
+            return;
+
+        List<string> missingReferences = new List<string>();
+
+        if (upgradesTabPanel == null)
+            missingReferences.Add("UpgradesTabPanel");
+
+        if (capacityUpgradeText == null)
+            missingReferences.Add("CapacityUpgradeText");
+
+        if (capacityUpgradeButton == null)
+            missingReferences.Add("CapacityUpgradeButton");
+
+        if (boatSpeedUpgradeText == null)
+            missingReferences.Add("BoatSpeedUpgradeText");
+
+        if (boatSpeedUpgradeButton == null)
+            missingReferences.Add("BoatSpeedUpgradeButton");
+
+        if (rodUpgradeText == null)
+            missingReferences.Add("RodUpgradeText");
+
+        if (rodUpgradeButton == null)
+            missingReferences.Add("RodUpgradeButton");
+
+        if (fireproofBoatUpgradeText == null)
+            missingReferences.Add("FireproofBoatUpgradeText");
+
+        if (fireproofBoatUpgradeButton == null)
+            missingReferences.Add("FireproofBoatUpgradeButton");
+
+        if (missingReferences.Count == 0)
+            return;
+
+        Debug.LogWarning($"[DockOwnerUI] Referencias de upgrades faltando: {string.Join(", ", missingReferences)}. Crie os objetos na cena/prefab ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-los em runtime.", this);
+        hasLoggedMissingUpgradeControls = true;
+    }
+
+    private void LogMissingBaitControls(int _targetCount)
+    {
+        if (!logMissingReferences || hasLoggedMissingBaitControls)
+            return;
+
+        List<string> missingReferences = new List<string>();
+
+        if (baitsTabPanel == null)
+            missingReferences.Add("BaitsTabPanel");
+
+        for (int i = 0; i < _targetCount; i++)
+        {
+            if (baitTexts == null || i >= baitTexts.Length || baitTexts[i] == null)
+                missingReferences.Add($"BaitItemText{i + 1}");
+
+            if (baitBuyButtons == null || i >= baitBuyButtons.Length || baitBuyButtons[i] == null)
+                missingReferences.Add($"BaitBuyButton{i + 1}");
+        }
+
+        if (missingReferences.Count == 0)
+            return;
+
+        Debug.LogWarning($"[DockOwnerUI] Referencias de iscas faltando: {string.Join(", ", missingReferences)}. Crie os textos/botoes dentro do BaitsTabPanel ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-los em runtime.", this);
+        hasLoggedMissingBaitControls = true;
+    }
+
+    private TMP_Text EnsureBaitsHeader(Transform _parent)
+    {
+        if (baitsPlaceholderText != null)
+            return baitsPlaceholderText;
+
+        GameObject textObject = CreateRuntimeTextObject("BaitsPlaceholderText", _parent);
+        TMP_Text text = textObject.GetComponent<TMP_Text>();
+        text.text = "Compre iscas por unidade.";
+        return text;
+    }
+
+    private void ConfigureBaitsHeaderIfDefault(TMP_Text _text)
+    {
+        if (_text == null)
+            return;
+
+        RectTransform textRect = _text.rectTransform;
+
+        if (!IsDefaultSizedRect(textRect, 120f, 80f))
+            return;
+
+        textRect.anchoredPosition = new Vector2(0f, 235f);
+        textRect.sizeDelta = new Vector2(820f, 60f);
+        _text.fontSize = 32f;
+        _text.alignment = TextAlignmentOptions.Center;
     }
 
     private TMP_Text EnsureUpgradeText(TMP_Text _text, string _name, Transform _parent, Vector2 _position)
@@ -737,6 +952,8 @@ public class DockOwnerUI : MonoBehaviour
 
     private TMP_Text EnsureBaitText(TMP_Text _text, string _name, Transform _parent, Vector2 _position)
     {
+        bool wasCreated = false;
+
         if (_text == null)
         {
             GameObject textObject = capacityUpgradeText != null
@@ -745,14 +962,19 @@ public class DockOwnerUI : MonoBehaviour
 
             textObject.name = _name;
             _text = textObject.GetComponent<TMP_Text>();
+            wasCreated = true;
         }
 
-        ConfigureBaitText(_text, _position);
+        if (wasCreated)
+            ConfigureBaitText(_text, _position);
+
         return _text;
     }
 
     private Button EnsureBaitButton(Button _button, string _name, Transform _parent, Vector2 _position)
     {
+        bool wasCreated = false;
+
         if (_button == null)
         {
             GameObject buttonObject = capacityUpgradeButton != null
@@ -761,10 +983,15 @@ public class DockOwnerUI : MonoBehaviour
 
             buttonObject.name = _name;
             _button = buttonObject.GetComponent<Button>();
+            wasCreated = true;
         }
 
-        ConfigureBaitButton(_button, _position);
-        SetButtonText(_button, "Comprar");
+        if (wasCreated)
+        {
+            ConfigureBaitButton(_button, _position);
+            SetButtonText(_button, "Comprar");
+        }
+
         return _button;
     }
 
@@ -838,9 +1065,13 @@ public class DockOwnerUI : MonoBehaviour
 
         RectTransform textRect = _text.rectTransform;
         textRect.anchoredPosition = _position;
-        textRect.sizeDelta = new Vector2(290f, 170f);
-        _text.fontSize = 24f;
+        textRect.sizeDelta = new Vector2(300f, 190f);
+        _text.fontSize = 22f;
+        _text.enableAutoSizing = true;
+        _text.fontSizeMin = 14f;
+        _text.fontSizeMax = 22f;
         _text.alignment = TextAlignmentOptions.Center;
+        _text.overflowMode = TextOverflowModes.Ellipsis;
     }
 
     private void ConfigureBaitButton(Button _button, Vector2 _position)
@@ -1042,10 +1273,213 @@ public class DockOwnerUI : MonoBehaviour
             _target.SetActive(_active);
     }
 
+    private GameObject FindChildGameObject(params string[] _names)
+    {
+        if (_names == null)
+            return null;
+
+        Transform[] children = GetComponentsInChildren<Transform>(true);
+
+        for (int i = 0; i < children.Length; i++)
+        {
+            Transform child = children[i];
+
+            if (child == null)
+                continue;
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (string.Equals(child.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
+                    return child.gameObject;
+            }
+        }
+
+        return null;
+    }
+
+    private Button FindChildButton(Transform _root, params string[] _names)
+    {
+        if (_root == null || _names == null)
+            return null;
+
+        Button[] buttons = _root.GetComponentsInChildren<Button>(true);
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+
+            if (button == null)
+                continue;
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (string.Equals(button.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
+                    return button;
+            }
+        }
+
+        return null;
+    }
+
+    private TMP_Text FindChildText(Transform _root, params string[] _names)
+    {
+        if (_root == null || _names == null)
+            return null;
+
+        TMP_Text[] texts = _root.GetComponentsInChildren<TMP_Text>(true);
+
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text text = texts[i];
+
+            if (text == null)
+                continue;
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (string.Equals(text.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
+                    return text;
+            }
+        }
+
+        return null;
+    }
+
+    private TMP_Text[] GetExistingBaitItemTexts(Transform _root)
+    {
+        List<TMP_Text> texts = new List<TMP_Text>();
+
+        if (_root == null)
+            return texts.ToArray();
+
+        TMP_Text[] children = _root.GetComponentsInChildren<TMP_Text>(true);
+
+        for (int i = 0; i < children.Length; i++)
+        {
+            TMP_Text text = children[i];
+
+            if (text == null || text == baitsPlaceholderText)
+                continue;
+
+            if (text.GetComponentInParent<Button>(true) != null)
+                continue;
+
+            if (IsBaitHeaderText(text))
+                continue;
+
+            texts.Add(text);
+        }
+
+        return texts.ToArray();
+    }
+
+    private Button[] GetExistingBaitButtons(Transform _root)
+    {
+        if (_root == null)
+            return new Button[0];
+
+        return _root.GetComponentsInChildren<Button>(true);
+    }
+
+    private bool IsBaitHeaderText(TMP_Text _text)
+    {
+        if (_text == null)
+            return false;
+
+        string objectName = _text.gameObject.name;
+        return objectName.IndexOf("Placeholder", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+               objectName.IndexOf("Title", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+               objectName.IndexOf("Titulo", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
+               objectName.IndexOf("Header", System.StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private bool IsDefaultSizedRect(RectTransform _rectTransform, float _maxWidth, float _maxHeight)
+    {
+        if (_rectTransform == null)
+            return false;
+
+        return Mathf.Abs(_rectTransform.sizeDelta.x) <= _maxWidth &&
+               Mathf.Abs(_rectTransform.sizeDelta.y) <= _maxHeight;
+    }
+
     private void SetButtonInteractable(Button _button, bool _interactable)
     {
         if (_button != null)
             _button.interactable = _interactable;
+    }
+
+    private void SelectCurrentTabControl()
+    {
+        Selectable target = currentTab switch
+        {
+            DockOwnerTab.Sell => GetSellTabSelectable(),
+            DockOwnerTab.Upgrades => GetUpgradeTabSelectable(),
+            DockOwnerTab.Baits => GetBaitTabSelectable(),
+            _ => closeButton
+        };
+
+        UISelectionHelper.Select(target, PanelObject);
+    }
+
+    private void EnsureCurrentSelectionIsUsable()
+    {
+        if (!isOpen)
+            return;
+
+        Selectable current = UISelectionHelper.CurrentSelectableInScope(PanelObject);
+
+        if (UISelectionHelper.IsUsable(current))
+            return;
+
+        SelectCurrentTabControl();
+    }
+
+    private Selectable GetSellTabSelectable()
+    {
+        if (UISelectionHelper.IsUsable(sellFirstSelected))
+            return sellFirstSelected;
+
+        if (UISelectionHelper.IsUsable(sellAllButton))
+            return sellAllButton;
+
+        return closeButton;
+    }
+
+    private Selectable GetUpgradeTabSelectable()
+    {
+        if (UISelectionHelper.IsUsable(upgradesFirstSelected))
+            return upgradesFirstSelected;
+
+        if (UISelectionHelper.IsUsable(capacityUpgradeButton))
+            return capacityUpgradeButton;
+
+        if (UISelectionHelper.IsUsable(boatSpeedUpgradeButton))
+            return boatSpeedUpgradeButton;
+
+        if (UISelectionHelper.IsUsable(rodUpgradeButton))
+            return rodUpgradeButton;
+
+        if (UISelectionHelper.IsUsable(fireproofBoatUpgradeButton))
+            return fireproofBoatUpgradeButton;
+
+        return closeButton;
+    }
+
+    private Selectable GetBaitTabSelectable()
+    {
+        if (UISelectionHelper.IsUsable(baitsFirstSelected))
+            return baitsFirstSelected;
+
+        if (baitBuyButtons != null)
+        {
+            for (int i = 0; i < baitBuyButtons.Length; i++)
+            {
+                if (UISelectionHelper.IsUsable(baitBuyButtons[i]))
+                    return baitBuyButtons[i];
+            }
+        }
+
+        return closeButton;
     }
 
     private string GetUpgradePurchaseStatusText(DockUpgradePurchaseResult _purchaseResult)

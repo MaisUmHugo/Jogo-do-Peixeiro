@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
@@ -13,6 +13,9 @@ public class PaymentUI : MonoBehaviour
     [Header("Buttons")]
     [SerializeField] private Button payButton;
     [SerializeField] private Button closeButton;
+
+    [Header("Navigation")]
+    [SerializeField] private Selectable firstSelected;
 
     [Header("Texts References")]
     [SerializeField] private TMP_Text paymentText;
@@ -31,7 +34,7 @@ public class PaymentUI : MonoBehaviour
     [SerializeField] private MoneyLender moneyLender;
 
     [Header("Tutorial")]
-    [SerializeField] private TutorialController tutorialController;
+    [SerializeField] private CampaignQuestGuidanceController tutorialController;
     [SerializeField] private TextCanvaManager textCanvaManager;
     [SerializeField] private bool useTutorialPaymentWhenAvailable = true;
 
@@ -86,7 +89,7 @@ public class PaymentUI : MonoBehaviour
         OpenInternal(_moneyLender, null);
     }
 
-    public void OpenForTutorial(MoneyLender _moneyLender, TutorialController _tutorialController)
+    public void OpenForTutorial(MoneyLender _moneyLender, CampaignQuestGuidanceController _tutorialController)
     {
         if (_tutorialController == null)
             return;
@@ -94,7 +97,7 @@ public class PaymentUI : MonoBehaviour
         OpenInternal(_moneyLender, _tutorialController);
     }
 
-    private void OpenInternal(MoneyLender _moneyLender, TutorialController _tutorialController)
+    private void OpenInternal(MoneyLender _moneyLender, CampaignQuestGuidanceController _tutorialController)
     {
         bool wasOpen = isOpen;
 
@@ -125,6 +128,7 @@ public class PaymentUI : MonoBehaviour
             PlayDoorSfx(doorOpenSfx, doorOpenSfxVolume);
 
         Refresh();
+        SelectInitialControl();
     }
 
     public void TryPayButton()
@@ -197,6 +201,7 @@ public class PaymentUI : MonoBehaviour
         SetPaymentTexts();
         SetFishListText();
         SetPayButtonState();
+        EnsureSelectionIsUsable();
     }
 
     public void CloseForTutorialFinish()
@@ -219,6 +224,7 @@ public class PaymentUI : MonoBehaviour
 
     private void CloseImmediate()
     {
+        UISelectionHelper.ClearSelection(PanelObject);
         isOpen = false;
         PanelObject.SetActive(false);
     }
@@ -241,9 +247,9 @@ public class PaymentUI : MonoBehaviour
             moneyLender = FindFirstObjectByType<MoneyLender>();
 
         if (tutorialController == null)
-            tutorialController = TutorialController.instance != null
-                ? TutorialController.instance
-                : FindFirstObjectByType<TutorialController>();
+            tutorialController = CampaignQuestGuidanceController.instance != null
+                ? CampaignQuestGuidanceController.instance
+                : FindFirstObjectByType<CampaignQuestGuidanceController>();
 
         if (textCanvaManager == null)
             textCanvaManager = FindFirstObjectByType<TextCanvaManager>();
@@ -479,8 +485,8 @@ public class PaymentUI : MonoBehaviour
         if (!useTutorialPaymentWhenAvailable)
             return false;
 
-        if (tutorialController == null && TutorialController.instance != null)
-            tutorialController = TutorialController.instance;
+        if (tutorialController == null && CampaignQuestGuidanceController.instance != null)
+            tutorialController = CampaignQuestGuidanceController.instance;
 
         return tutorialController != null && tutorialController.ShouldHandleMoneyLenderPayment(moneyLender);
     }
@@ -624,6 +630,36 @@ public class PaymentUI : MonoBehaviour
                                  (campaignProgress == null || !campaignProgress.HasFailedCurrentQuest) &&
                                  currentDebtPayment > 0 &&
                                  playerMoney > 0;
+    }
+
+    private void SelectInitialControl()
+    {
+        Selectable target = firstSelected != null ? firstSelected : GetPreferredSelectable();
+        UISelectionHelper.Select(target, PanelObject);
+    }
+
+    private void EnsureSelectionIsUsable()
+    {
+        if (!isOpen)
+            return;
+
+        Selectable current = UISelectionHelper.CurrentSelectableInScope(PanelObject);
+
+        if (UISelectionHelper.IsUsable(current))
+            return;
+
+        SelectInitialControl();
+    }
+
+    private Selectable GetPreferredSelectable()
+    {
+        if (UISelectionHelper.IsUsable(payButton))
+            return payButton;
+
+        if (UISelectionHelper.IsUsable(closeButton))
+            return closeButton;
+
+        return null;
     }
 
     private void SetButtonText(Button _button, string _text)
