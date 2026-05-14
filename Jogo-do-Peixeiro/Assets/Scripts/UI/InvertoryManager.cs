@@ -28,6 +28,7 @@ public class InvertoryManager : MonoBehaviour
     [Header("Fish")]
     [SerializeField] private TMP_Text inventoryText;
     [SerializeField] private TMP_Text kilogramText;
+    [SerializeField] private InventoryFishSlotUI[] fishGridSlots;
 
     [Header("Baits")]
     [SerializeField] private TMP_Text baitInventoryText;
@@ -35,9 +36,16 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private Button[] baitEquipButtons;
     [SerializeField] private Button clearBaitButton;
     [SerializeField] private BaitData[] baitSlots;
+    [SerializeField] private InventoryBaitSlotUI[] baitGridSlots;
 
     [Header("Settings")]
     [SerializeField] private bool closeOnAwake = true;
+    [SerializeField] private bool allowRuntimeFallback;
+    [SerializeField] private bool logMissingReferences = true;
+
+    [Header("Navigation")]
+    [SerializeField] private Selectable fishFirstSelected;
+    [SerializeField] private Selectable baitsFirstSelected;
 
     private CanvasGroup inventoryCanvasGroup;
     private Coroutine inputSubscriptionRoutine;
@@ -49,6 +57,7 @@ public class InvertoryManager : MonoBehaviour
     private bool areButtonsBound;
     private GameManager.GameState stateBeforeInventory = GameManager.GameState.OnFoot;
     private bool hasStoredStateBeforeInventory;
+    private bool hasLoggedMissingRuntimeControls;
 
     private void Awake()
     {
@@ -132,6 +141,98 @@ public class InvertoryManager : MonoBehaviour
             baitInventory.OnBaitInventoryChanged += OnBaitInventoryChanged;
             isBaitInventorySubscribed = true;
         }
+
+        ResolveInventoryPanels();
+        EnsureGridSlotReferences();
+    }
+
+    private void ResolveInventoryPanels()
+    {
+        if (inventoryRoot == null)
+            return;
+
+        if (fishTabPanel == null)
+            fishTabPanel = FindChildGameObject("FishInventory", "FishInventoryPanel", "Fishes Scroll View", "FishGridPanel");
+
+        if (baitsTabPanel == null)
+            baitsTabPanel = FindChildGameObject("BaitInventory", "BaitInventoryPanel", "BaitsInventoryPanel", "BaitGridPanel");
+    }
+
+    private GameObject FindChildGameObject(params string[] _names)
+    {
+        if (inventoryRoot == null || _names == null)
+            return null;
+
+        Transform rootTransform = inventoryRoot.transform;
+
+        for (int i = 0; i < _names.Length; i++)
+        {
+            if (string.IsNullOrEmpty(_names[i]))
+                continue;
+
+            Transform found = FindChildRecursive(rootTransform, _names[i]);
+
+            if (found != null)
+                return found.gameObject;
+        }
+
+        return null;
+    }
+
+    private Transform FindChildRecursive(Transform _parent, string _name)
+    {
+        if (_parent == null)
+            return null;
+
+        if (_parent.name == _name)
+            return _parent;
+
+        for (int i = 0; i < _parent.childCount; i++)
+        {
+            Transform found = FindChildRecursive(_parent.GetChild(i), _name);
+
+            if (found != null)
+                return found;
+        }
+
+        return null;
+    }
+
+    private void EnsureGridSlotReferences()
+    {
+        if (!HasFishGridSlots() && fishTabPanel != null)
+            fishGridSlots = fishTabPanel.GetComponentsInChildren<InventoryFishSlotUI>(true);
+
+        if (!HasBaitGridSlots() && baitsTabPanel != null)
+            baitGridSlots = baitsTabPanel.GetComponentsInChildren<InventoryBaitSlotUI>(true);
+    }
+
+    private bool HasFishGridSlots()
+    {
+        if (fishGridSlots == null || fishGridSlots.Length == 0)
+            return false;
+
+        for (int i = 0; i < fishGridSlots.Length; i++)
+        {
+            if (fishGridSlots[i] != null)
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool HasBaitGridSlots()
+    {
+        if (baitGridSlots == null || baitGridSlots.Length == 0)
+            return false;
+
+        for (int i = 0; i < baitGridSlots.Length; i++)
+        {
+            if (baitGridSlots[i] != null)
+                return true;
+        }
+
+        return false;
     }
 
     private void TrySubscribeInput()
@@ -200,6 +301,7 @@ public class InvertoryManager : MonoBehaviour
         StoreGameStateBeforeInventory();
         SetInventoryTab(currentTab);
         SetInventoryVisible(true);
+        SelectCurrentTabControl();
     }
 
     public void OnClickFishTab()
@@ -235,12 +337,14 @@ public class InvertoryManager : MonoBehaviour
             baitInventory.ClearEquippedBait();
 
         RefreshInventoryTexts();
+        SelectCurrentTabControl();
     }
 
     public void CloseInventory()
     {
         bool wasVisible = IsInventoryVisible();
         SetInventoryVisible(false);
+        UISelectionHelper.ClearSelection(inventoryRoot);
 
         if (wasVisible)
             RestoreGameStateAfterInventory();
@@ -297,6 +401,9 @@ public class InvertoryManager : MonoBehaviour
         SetButtonInteractable(baitsTabButton, currentTab != InventoryTab.Baits);
         SetBaitControlsVisible(currentTab == InventoryTab.Baits);
         RefreshInventoryTexts();
+
+        if (IsInventoryVisible())
+            SelectCurrentTabControl();
     }
 
     private void RefreshInventoryTexts()
@@ -304,18 +411,19 @@ public class InvertoryManager : MonoBehaviour
         InitializeReferences();
 
         if (currentTab == InventoryTab.Baits)
-        {
             SetBaitInventoryTexts();
-            return;
-        }
+        else
+            SetFishInventoryTexts();
 
-        SetFishInventoryTexts();
+        EnsureCurrentSelectionIsUsable();
     }
 
     private void SetFishInventoryTexts()
     {
+        bool hasGridSlots = HasFishGridSlots();
+
         if (inventoryText != null)
-            inventoryText.text = GetFishInventoryText();
+            inventoryText.text = hasGridSlots ? string.Empty : GetFishInventoryText();
 
         if (kilogramText != null)
         {
@@ -328,14 +436,17 @@ public class InvertoryManager : MonoBehaviour
 
         if (equippedBaitText != null)
             equippedBaitText.text = string.Empty;
+
+        RefreshFishGrid();
     }
 
     private void SetBaitInventoryTexts()
     {
         TMP_Text targetText = baitInventoryText != null ? baitInventoryText : inventoryText;
+        bool hasGridSlots = HasBaitGridSlots();
 
         if (targetText != null)
-            targetText.text = GetBaitInventoryText();
+            targetText.text = hasGridSlots ? string.Empty : GetBaitInventoryText();
 
         string equippedText = GetEquippedBaitText();
 
@@ -345,6 +456,61 @@ public class InvertoryManager : MonoBehaviour
             kilogramText.text = equippedText;
 
         RefreshBaitButtons();
+        RefreshBaitGrid();
+    }
+
+    private void RefreshFishGrid()
+    {
+        if (!HasFishGridSlots())
+            return;
+
+        List<FishData> ownedFish = shipInventory != null ? shipInventory.OwnedFish : null;
+        int fishCount = ownedFish != null ? ownedFish.Count : 0;
+
+        for (int i = 0; i < fishGridSlots.Length; i++)
+        {
+            InventoryFishSlotUI slot = fishGridSlots[i];
+
+            if (slot == null)
+                continue;
+
+            if (i < fishCount)
+                slot.SetFish(ownedFish[i]);
+            else
+                slot.Clear();
+        }
+    }
+
+    private void RefreshBaitGrid()
+    {
+        if (!HasBaitGridSlots())
+            return;
+
+        IReadOnlyList<BaitStack> stacks = baitInventory != null ? baitInventory.BaitStacks : null;
+        int stackCount = stacks != null ? stacks.Count : 0;
+
+        for (int i = 0; i < baitGridSlots.Length; i++)
+        {
+            InventoryBaitSlotUI slot = baitGridSlots[i];
+
+            if (slot == null)
+                continue;
+
+            if (i >= stackCount)
+            {
+                slot.Clear();
+                continue;
+            }
+
+            BaitStack stack = stacks[i];
+            bool isEquipped = baitInventory != null &&
+                              stack != null &&
+                              stack.bait != null &&
+                              baitInventory.EquippedBait != null &&
+                              BaitCatalog.BaitIdMatches(stack.bait, baitInventory.EquippedBait.SaveId);
+
+            slot.SetBait(stack, isEquipped, TryEquipBait);
+        }
     }
 
     private string GetFishInventoryText()
@@ -415,6 +581,16 @@ public class InvertoryManager : MonoBehaviour
 
         if (baitInventory != null && bait != null)
             baitInventory.EquipBait(bait);
+
+        SetInventoryTab(InventoryTab.Baits);
+    }
+
+    private void TryEquipBait(BaitData _bait)
+    {
+        InitializeReferences();
+
+        if (baitInventory != null && _bait != null)
+            baitInventory.EquipBait(_bait);
 
         SetInventoryTab(InventoryTab.Baits);
     }
@@ -504,6 +680,20 @@ public class InvertoryManager : MonoBehaviour
 
         Transform parent = GetRuntimeControlsParent();
 
+        if (!allowRuntimeFallback)
+        {
+            LogMissingRuntimeControls();
+
+            if (baitInventoryText == null)
+                baitInventoryText = inventoryText;
+
+            if (equippedBaitText == null)
+                equippedBaitText = kilogramText;
+
+            SetBaitControlsVisible(currentTab == InventoryTab.Baits);
+            return;
+        }
+
         if (fishTabButton == null)
             fishTabButton = CreateRuntimeButton("FishTabButton", parent, new Vector2(-170f, 325f), new Vector2(150f, 48f), "Peixes");
 
@@ -552,6 +742,35 @@ public class InvertoryManager : MonoBehaviour
         SetBaitControlsVisible(currentTab == InventoryTab.Baits);
     }
 
+    private void LogMissingRuntimeControls()
+    {
+        if (!logMissingReferences || hasLoggedMissingRuntimeControls)
+            return;
+
+        List<string> missingReferences = new List<string>();
+
+        if (fishTabButton == null)
+            missingReferences.Add("FishTabButton");
+
+        if (baitsTabButton == null)
+            missingReferences.Add("BaitsTabButton");
+
+        if (clearBaitButton == null)
+            missingReferences.Add("ClearBaitButton");
+
+        for (int i = 0; i < 3; i++)
+        {
+            if (baitEquipButtons == null || i >= baitEquipButtons.Length || baitEquipButtons[i] == null)
+                missingReferences.Add($"EquipBaitButton{i + 1}");
+        }
+
+        if (missingReferences.Count == 0)
+            return;
+
+        Debug.LogWarning($"[InvertoryManager] Referencias de UI faltando: {string.Join(", ", missingReferences)}. Crie esses botoes na cena/prefab ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-los em runtime.", this);
+        hasLoggedMissingRuntimeControls = true;
+    }
+
     private Transform GetRuntimeControlsParent()
     {
         if (kilogramText != null)
@@ -598,12 +817,14 @@ public class InvertoryManager : MonoBehaviour
 
     private void SetBaitControlsVisible(bool _visible)
     {
+        bool showLegacyBaitControls = _visible && !HasBaitGridSlots();
+
         if (baitEquipButtons != null)
         {
             for (int i = 0; i < baitEquipButtons.Length; i++)
             {
                 if (baitEquipButtons[i] != null)
-                    baitEquipButtons[i].gameObject.SetActive(_visible);
+                    baitEquipButtons[i].gameObject.SetActive(showLegacyBaitControls);
             }
         }
 
@@ -663,6 +884,69 @@ public class InvertoryManager : MonoBehaviour
     {
         if (_button != null)
             _button.interactable = _interactable;
+    }
+
+    private void SelectCurrentTabControl()
+    {
+        Selectable target = currentTab switch
+        {
+            InventoryTab.Fish => GetFishTabSelectable(),
+            InventoryTab.Baits => GetBaitTabSelectable(),
+            _ => null
+        };
+
+        UISelectionHelper.Select(target, inventoryRoot);
+    }
+
+    private void EnsureCurrentSelectionIsUsable()
+    {
+        if (!IsInventoryVisible())
+            return;
+
+        Selectable current = UISelectionHelper.CurrentSelectableInScope(inventoryRoot);
+
+        if (UISelectionHelper.IsUsable(current))
+            return;
+
+        SelectCurrentTabControl();
+    }
+
+    private Selectable GetFishTabSelectable()
+    {
+        if (UISelectionHelper.IsUsable(fishFirstSelected))
+            return fishFirstSelected;
+
+        Selectable firstInPanel = UISelectionHelper.FirstUsable(fishTabPanel);
+
+        if (firstInPanel != null)
+            return firstInPanel;
+
+        return baitsTabButton;
+    }
+
+    private Selectable GetBaitTabSelectable()
+    {
+        if (UISelectionHelper.IsUsable(baitsFirstSelected))
+            return baitsFirstSelected;
+
+        Selectable firstInPanel = UISelectionHelper.FirstUsable(baitsTabPanel);
+
+        if (firstInPanel != null)
+            return firstInPanel;
+
+        if (baitEquipButtons != null)
+        {
+            for (int i = 0; i < baitEquipButtons.Length; i++)
+            {
+                if (UISelectionHelper.IsUsable(baitEquipButtons[i]))
+                    return baitEquipButtons[i];
+            }
+        }
+
+        if (UISelectionHelper.IsUsable(clearBaitButton))
+            return clearBaitButton;
+
+        return fishTabButton;
     }
 
     private void SetButtonText(Button _button, string _text)

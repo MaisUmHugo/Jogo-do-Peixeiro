@@ -6,6 +6,7 @@ public class BaitData : ScriptableObject
     [SerializeField] private string saveId;
     [SerializeField] private string baitName = "Isca";
     [TextArea, SerializeField] private string description;
+    [SerializeField] private Sprite inventoryIcon;
     [SerializeField, Min(0)] private int purchasePrice = 20;
     [SerializeField, Min(1)] private int purchaseQuantity = 1;
 
@@ -19,6 +20,7 @@ public class BaitData : ScriptableObject
     public string SaveId => string.IsNullOrWhiteSpace(saveId) ? name : saveId;
     public string BaitName => string.IsNullOrWhiteSpace(baitName) ? name : baitName;
     public string Description => description;
+    public Sprite InventoryIcon => inventoryIcon;
     public int PurchasePrice => purchasePrice;
     public int PurchaseQuantity => purchaseQuantity;
     public float BiteDelayMultiplier => biteDelayMultiplier;

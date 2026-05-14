@@ -382,10 +382,10 @@ public class MoneyLender : MonoBehaviour
 
     public void TryPayButton()
     {
-        if (TutorialController.instance != null &&
-            TutorialController.instance.ShouldHandleMoneyLenderPayment(this))
+        if (CampaignQuestGuidanceController.instance != null &&
+            CampaignQuestGuidanceController.instance.ShouldHandleMoneyLenderPayment(this))
         {
-            TutorialController.instance.TryDeliverRequestedFish(this);
+            CampaignQuestGuidanceController.instance.TryDeliverRequestedFish(this);
             return;
         }
 

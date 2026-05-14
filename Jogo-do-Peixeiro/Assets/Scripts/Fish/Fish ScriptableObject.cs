@@ -17,6 +17,9 @@ public class FishScriptableObject : ScriptableObject
     public Mesh mesh;
     public Material material;
 
+    [Header("Inventory UI")]
+    public Sprite inventoryIcon;
+
     [Range(1, 4)] public int rarity;
 
     [Min(0)]
@@ -32,6 +35,7 @@ public class FishScriptableObject : ScriptableObject
     [TextArea] public string description;
 
     public string SaveId => name;
+    public Sprite InventoryIcon => inventoryIcon;
     public bool CanBeRequestedByMoneyLender => canBeRequestedByMoneyLender;
 
     public bool IsAvailableAtHour(float _hour)

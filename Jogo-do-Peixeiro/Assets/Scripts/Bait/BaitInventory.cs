@@ -19,6 +19,7 @@ public class BaitInventory : MonoBehaviour
 {
     public static BaitInventory Instance { get; private set; }
 
+    [SerializeField] private bool persistAcrossScenes;
     [SerializeField] private List<BaitStack> startingBaits = new List<BaitStack>();
     [SerializeField] private BaitData startingEquippedBait;
 
@@ -53,8 +54,17 @@ public class BaitInventory : MonoBehaviour
         }
 
         Instance = this;
-        DontDestroyOnLoad(gameObject);
+
+        if (persistAcrossScenes)
+            DontDestroyOnLoad(gameObject);
+
         InitializeStartingBaits();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     public int GetQuantity(BaitData _bait)
