@@ -1172,7 +1172,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1927435706}
-        m_TargetAssemblyTypeName: TutorialController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CampaignQuestGuidanceController, Assembly-CSharp
         m_MethodName: RestartTutorialScene
         m_Mode: 1
         m_Arguments:
@@ -1405,7 +1405,7 @@ PrefabInstance:
       objectReference: {fileID: 211865286}
     - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: m_Name
-      value: Tutorial Manager
+      value: CampaignQuestGuidanceController
       objectReference: {fileID: 0}
     - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: m_IsActive
@@ -5113,7 +5113,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1927435706}
-        m_TargetAssemblyTypeName: TutorialController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CampaignQuestGuidanceController, Assembly-CSharp
         m_MethodName: GoToMainMenu
         m_Mode: 1
         m_Arguments:
@@ -8728,7 +8728,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1927435706}
-        m_TargetAssemblyTypeName: TutorialController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CampaignQuestGuidanceController, Assembly-CSharp
         m_MethodName: GoToMainMenu
         m_Mode: 1
         m_Arguments:

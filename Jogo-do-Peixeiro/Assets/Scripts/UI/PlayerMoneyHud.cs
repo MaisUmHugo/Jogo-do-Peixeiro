@@ -7,12 +7,21 @@ public class PlayerMoneyHud : MonoBehaviour
     [SerializeField] private TMP_Text moneyText;
     [SerializeField] private TMP_Text debtText;
     [SerializeField] private TMP_Text campaignText;
+    [SerializeField] private TMP_Text campaignQuestText;
+    [SerializeField] private TMP_Text campaignDeadlineText;
+    [SerializeField] private TMP_Text campaignGoalText;
+
+    [Header("References")]
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
     [SerializeField] private DebtSystem debtSystem;
     [SerializeField] private CampaignProgressSystem campaignProgress;
+
+    [Header("Settings")]
     [SerializeField] private bool showDebtWithMoneyWhenMissingText = true;
     [SerializeField] private bool showCampaignHud = true;
-    [SerializeField] private bool autoCreateCampaignHud = true;
+    [SerializeField] private bool autoResolveCampaignHudTexts = true;
+    [SerializeField] private bool allowRuntimeFallback;
+    [SerializeField] private bool logMissingReferences = true;
     [SerializeField] private string debtColor = "#D94A4A";
     [SerializeField] private string paidDebtColor = "#6CCB6C";
     [SerializeField] private string warningColor = "#F2C94C";
@@ -20,6 +29,7 @@ public class PlayerMoneyHud : MonoBehaviour
     private float currentMoney;
     private int currentDebt;
     private bool isCampaignSubscribed;
+    private bool hasLoggedMissingCampaignHud;
 
     private void OnEnable()
     {
@@ -27,8 +37,9 @@ public class PlayerMoneyHud : MonoBehaviour
         DebtSystem.OnDebtChangedEvent += UpdateDebtText;
 
         ResolveReferences();
-        SubscribeCampaignProgress();
+        ResolveCampaignHudTexts();
         EnsureCampaignHud();
+        SubscribeCampaignProgress();
 
         currentMoney = playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f;
         currentDebt = debtSystem != null ? debtSystem.CurrentDebt : 0;
@@ -43,7 +54,7 @@ public class PlayerMoneyHud : MonoBehaviour
         UnsubscribeCampaignProgress();
     }
 
-    private void UpdateMoneyText(float _money) 
+    private void UpdateMoneyText(float _money)
     {
         currentMoney = _money;
         RefreshHudText();
@@ -75,6 +86,10 @@ public class PlayerMoneyHud : MonoBehaviour
             campaignText.gameObject.SetActive(showCampaignHud);
             campaignText.text = GetCampaignLine();
         }
+
+        SetCampaignText(campaignQuestText, GetCampaignQuestLine());
+        SetCampaignText(campaignDeadlineText, GetCampaignDeadlineLine());
+        SetCampaignText(campaignGoalText, GetCampaignGoalLine());
     }
 
     private string GetDebtLine()
@@ -95,6 +110,47 @@ public class PlayerMoneyHud : MonoBehaviour
 
         if (campaignProgress == null)
             campaignProgress = CampaignProgressSystem.GetOrCreate();
+    }
+
+    private void ResolveCampaignHudTexts()
+    {
+        if (!autoResolveCampaignHudTexts)
+            return;
+
+        Transform searchRoot = transform.parent != null ? transform.parent : transform;
+
+        if (campaignQuestText == null)
+            campaignQuestText = FindTextByName(searchRoot, "QuestText", "Quest Text", "CampaignQuestText", "ObjectiveQuestText", "Quest");
+
+        if (campaignDeadlineText == null)
+            campaignDeadlineText = FindTextByName(searchRoot, "PrazoText", "Prazo Text", "DeadlineText", "CampaignDeadlineText", "ObjectiveDeadlineText", "Prazo");
+
+        if (campaignGoalText == null)
+            campaignGoalText = FindTextByName(searchRoot, "MetaText", "Meta Text", "GoalText", "CampaignGoalText", "ObjectiveGoalText", "Meta");
+    }
+
+    private TMP_Text FindTextByName(Transform _root, params string[] _names)
+    {
+        if (_root == null || _names == null)
+            return null;
+
+        TMP_Text[] texts = _root.GetComponentsInChildren<TMP_Text>(true);
+
+        for (int i = 0; i < texts.Length; i++)
+        {
+            TMP_Text text = texts[i];
+
+            if (text == null)
+                continue;
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (string.Equals(text.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
+                    return text;
+            }
+        }
+
+        return null;
     }
 
     private void SubscribeCampaignProgress()
@@ -123,9 +179,20 @@ public class PlayerMoneyHud : MonoBehaviour
 
     private void EnsureCampaignHud()
     {
-        if (!showCampaignHud || !autoCreateCampaignHud || campaignText != null)
+        if (!showCampaignHud || campaignText != null || HasSeparatedCampaignTexts())
             return;
 
+        if (!allowRuntimeFallback)
+        {
+            LogMissingCampaignHud();
+            return;
+        }
+
+        CreateCampaignHud();
+    }
+
+    private void CreateCampaignHud()
+    {
         GameObject panelObject = new GameObject("CampaignHUD", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         panelObject.transform.SetParent(transform, false);
 
@@ -140,26 +207,76 @@ public class PlayerMoneyHud : MonoBehaviour
         panelImage.color = new Color(0f, 0f, 0f, 0.55f);
         panelImage.raycastTarget = false;
 
-        GameObject textObject = new GameObject("CampaignText", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        textObject.transform.SetParent(panelObject.transform, false);
+        campaignQuestText = CreateCampaignHudText(panelObject.transform, "QuestText", new Vector2(16f, -10f), new Vector2(-16f, -48f));
+        campaignDeadlineText = CreateCampaignHudText(panelObject.transform, "PrazoText", new Vector2(16f, -52f), new Vector2(-16f, -90f));
+        campaignGoalText = CreateCampaignHudText(panelObject.transform, "MetaText", new Vector2(16f, -94f), new Vector2(-16f, -132f));
+    }
+
+    private TMP_Text CreateCampaignHudText(Transform _parent, string _name, Vector2 _offsetMin, Vector2 _offsetMax)
+    {
+        GameObject textObject = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
+        textObject.transform.SetParent(_parent, false);
 
         RectTransform textRect = textObject.GetComponent<RectTransform>();
         textRect.anchorMin = Vector2.zero;
         textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = new Vector2(16f, 10f);
-        textRect.offsetMax = new Vector2(-16f, -10f);
+        textRect.offsetMin = _offsetMin;
+        textRect.offsetMax = _offsetMax;
 
-        campaignText = textObject.GetComponent<TMP_Text>();
-        campaignText.fontSize = 26f;
-        campaignText.enableAutoSizing = true;
-        campaignText.fontSizeMin = 18f;
-        campaignText.fontSizeMax = 26f;
-        campaignText.alignment = TextAlignmentOptions.Left;
-        campaignText.color = Color.white;
-        campaignText.raycastTarget = false;
+        TMP_Text text = textObject.GetComponent<TMP_Text>();
+        text.fontSize = 24f;
+        text.enableAutoSizing = true;
+        text.fontSizeMin = 16f;
+        text.fontSizeMax = 24f;
+        text.alignment = TextAlignmentOptions.Left;
+        text.color = Color.white;
+        text.raycastTarget = false;
+        return text;
+    }
+
+    private void LogMissingCampaignHud()
+    {
+        if (!logMissingReferences || hasLoggedMissingCampaignHud)
+            return;
+
+        Debug.LogWarning("[PlayerMoneyHud] Falta HUD de campanha. Crie/arraste CampaignText ou os textos QuestText, PrazoText e MetaText. Ative Allow Runtime Fallback apenas se quiser criar essa UI em runtime.", this);
+        hasLoggedMissingCampaignHud = true;
+    }
+
+    private bool HasSeparatedCampaignTexts()
+    {
+        return campaignQuestText != null || campaignDeadlineText != null || campaignGoalText != null;
+    }
+
+    private void SetCampaignText(TMP_Text _text, string _value)
+    {
+        if (_text == null)
+            return;
+
+        bool hasText = showCampaignHud && !string.IsNullOrWhiteSpace(_value);
+        _text.gameObject.SetActive(hasText);
+        _text.text = hasText ? _value : string.Empty;
     }
 
     private string GetCampaignLine()
+    {
+        if (!showCampaignHud || campaignProgress == null)
+            return string.Empty;
+
+        string questLine = GetCampaignQuestLine();
+        string deadlineLine = GetCampaignDeadlineLine();
+        string goalLine = GetCampaignGoalLine();
+
+        if (string.IsNullOrWhiteSpace(deadlineLine))
+            return $"{questLine}\n{goalLine}".Trim();
+
+        if (string.IsNullOrWhiteSpace(goalLine))
+            return $"{questLine}\n{deadlineLine}".Trim();
+
+        return $"{questLine}\n{deadlineLine}\n{goalLine}".Trim();
+    }
+
+    private string GetCampaignQuestLine()
     {
         if (!showCampaignHud || campaignProgress == null)
             return string.Empty;
@@ -168,13 +285,49 @@ public class PlayerMoneyHud : MonoBehaviour
             return "Modo livre";
 
         if (campaignProgress.IsCampaignCompleted)
-            return $"Campanha concluida\n<color={debtColor}>Nova divida: -R$ {currentDebt}</color>\nModo livre liberado";
+            return "Campanha concluida";
+
+        string questLabel = $"Quest {campaignProgress.CurrentQuestIndex}";
+
+        if (campaignProgress.IsCurrentQuestTutorial)
+            return $"{questLabel} - Tutorial";
+
+        if (campaignProgress.IsCurrentQuestFinal)
+            return $"{questLabel} - Final";
+
+        return string.IsNullOrWhiteSpace(campaignProgress.CurrentQuestName)
+            ? questLabel
+            : $"{questLabel} - {campaignProgress.CurrentQuestName}";
+    }
+
+    private string GetCampaignDeadlineLine()
+    {
+        if (!showCampaignHud || campaignProgress == null)
+            return string.Empty;
+
+        if (campaignProgress.GameMode == GameProgressMode.Endless || campaignProgress.IsCampaignCompleted)
+            return string.Empty;
 
         if (campaignProgress.HasFailedCurrentQuest)
-            return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}\n<color={debtColor}>Prazo encerrado</color>\nVolte ao menu ou reinicie.";
+            return $"Prazo: <color={debtColor}>encerrado</color>";
 
         string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? warningColor : "#FFFFFF";
-        string deadline = $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
+        return $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
+    }
+
+    private string GetCampaignGoalLine()
+    {
+        if (!showCampaignHud || campaignProgress == null)
+            return string.Empty;
+
+        if (campaignProgress.GameMode == GameProgressMode.Endless)
+            return string.Empty;
+
+        if (campaignProgress.IsCampaignCompleted)
+            return $"<color={debtColor}>Nova divida: -R$ {currentDebt}</color>";
+
+        if (campaignProgress.HasFailedCurrentQuest)
+            return "<color=#D94A4A>Meta falhou</color>";
 
         if (campaignProgress.CurrentQuestRequiresSpecialDelivery)
         {
@@ -182,9 +335,13 @@ public class PlayerMoneyHud : MonoBehaviour
                 ? campaignProgress.SpecialDeliveryFish.fishName
                 : "peixe especial";
 
-            return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}: entrega especial\n{deadline}\nEntregue {campaignProgress.SpecialDeliveryQuantity}x {fishName}";
+            string weightText = campaignProgress.SpecialDeliveryRequiredWeight > 0
+                ? $" e {campaignProgress.SpecialDeliveryRequiredWeight}kg"
+                : string.Empty;
+
+            return $"Meta: entregar {campaignProgress.SpecialDeliveryQuantity}x {fishName}{weightText}";
         }
 
-        return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}: {campaignProgress.CurrentQuestName}\n{deadline}\nMeta: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
+        return $"Meta: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
     }
 }
