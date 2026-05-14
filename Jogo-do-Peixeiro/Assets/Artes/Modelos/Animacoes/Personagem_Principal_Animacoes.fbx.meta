@@ -43,12 +43,12 @@ ModelImporter:
       name: Armature|Idle
       takeName: Armature|Idle
       internalID: -8945691123924629249
-      firstFrame: 0
+      firstFrame: 1
       lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
-      cycleOffset: 0
+      cycleOffset: 1
       loop: 0
       hasAdditiveReferencePose: 0
       loopTime: 1
@@ -72,7 +72,7 @@ ModelImporter:
       name: Armature|Idle2
       takeName: Armature|Idle2
       internalID: 213856876459495052
-      firstFrame: 0
+      firstFrame: 1
       lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 0
@@ -101,7 +101,7 @@ ModelImporter:
       name: Armature|Idle2.5
       takeName: Armature|Idle2.5
       internalID: 1077149907125081134
-      firstFrame: 0
+      firstFrame: 2
       lastFrame: 25
       wrapMode: 0
       orientationOffsetY: 0
@@ -130,7 +130,7 @@ ModelImporter:
       name: Armature|Walking
       takeName: Armature|Walking
       internalID: -4274770991410265338
-      firstFrame: 0
+      firstFrame: 1
       lastFrame: 28
       wrapMode: 0
       orientationOffsetY: 0
