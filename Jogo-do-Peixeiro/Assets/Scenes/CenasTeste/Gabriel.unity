@@ -1022,6 +1022,37 @@ Transform:
   - {fileID: 43664751}
   m_Father: {fileID: 1118946912}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &376509853
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 376509854}
+  m_Layer: 0
+  m_Name: BoatReference
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &376509854
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 376509853}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: -40, y: 0, z: -65}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &395645081
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1996,79 +2027,6 @@ CanvasRenderer:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 964148384}
   m_CullTransparentMesh: 1
---- !u!1001 &995657631
-PrefabInstance:
-  m_ObjectHideFlags: 0
-  serializedVersion: 2
-  m_Modification:
-    serializedVersion: 3
-    m_TransformParent: {fileID: 0}
-    m_Modifications:
-    - target: {fileID: 1565644032950925850, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_Layer
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2070950142026600145, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_Layer
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 2390582619575256600, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_Enabled
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalPosition.x
-      value: -42.336502
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalPosition.y
-      value: 0.16891539
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalPosition.z
-      value: -69.724144
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalRotation.w
-      value: 1
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalRotation.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalRotation.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalRotation.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.y
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 7037369632783832848, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_LocalEulerAnglesHint.z
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 9054775735827746473, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_Name
-      value: FishingSpot
-      objectReference: {fileID: 0}
-    - target: {fileID: 9054775735827746473, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
-      propertyPath: m_Layer
-      value: 6
-      objectReference: {fileID: 0}
-    m_RemovedComponents: []
-    m_RemovedGameObjects: []
-    m_AddedGameObjects: []
-    m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: de776ca6877474545b5e3fe87c4b7bd3, type: 3}
 --- !u!1 &1006006413
 GameObject:
   m_ObjectHideFlags: 0
@@ -4494,6 +4452,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 1118946912}
     m_Modifications:
+    - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: referenceObject
+      value: 
+      objectReference: {fileID: 376509854}
+    - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: DarkWaterMaterial
+      value: 
+      objectReference: {fileID: 2100000, guid: de9ad4ad8500b94469c97b0861287942, type: 2}
+    - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: darkWaterMaterial
+      value: 
+      objectReference: {fileID: -876546973899608171, guid: aa7c340de0478fd4380568a41cdbc6f6, type: 3}
     - target: {fileID: 340691023402868448, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: m_LocalPosition.x
       value: -15.81
@@ -4538,18 +4508,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: Water
       objectReference: {fileID: 0}
-    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: speed
-      value: 0.4
+    - target: {fileID: 5914047214984535719, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 2
       objectReference: {fileID: 0}
-    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: length
-      value: 3
-      objectReference: {fileID: 0}
-    - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
-      propertyPath: amplitude
-      value: 0.2
-      objectReference: {fileID: 0}
+    - target: {fileID: 5914047214984535719, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: -876546973899608171, guid: da62d6bbf110d1e4bb17099e26569424, type: 3}
+    - target: {fileID: 5914047214984535719, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: -876546973899608171, guid: aa7c340de0478fd4380568a41cdbc6f6, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -5190,4 +5160,4 @@ SceneRoots:
   - {fileID: 32865166}
   - {fileID: 211865286}
   - {fileID: 874178875}
-  - {fileID: 995657631}
+  - {fileID: 376509854}
