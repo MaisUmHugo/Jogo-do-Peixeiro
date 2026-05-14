@@ -55,7 +55,7 @@ public class CampaignProgressSystem : MonoBehaviour
     [SerializeField, Min(1)] private int currentQuestIndex = 1;
     [SerializeField, Min(1)] private int questDurationDays = 3;
     [SerializeField, Min(0)] private int daysElapsedInCurrentQuest;
-    [SerializeField, Min(0)] private int questDebtPaymentTarget = 150;
+    [SerializeField, Min(0)] private int questDebtPaymentTarget = 50;
     [SerializeField, Min(0)] private int questDebtPaidAmount;
     [SerializeField] private bool hasFailedCurrentQuest;
     [SerializeField] private bool hasUnlockedFreePlay;
@@ -522,7 +522,7 @@ public class CampaignProgressSystem : MonoBehaviour
     {
         return new[]
         {
-            new CampaignQuestDefinition("Quest 1 - Tutorial", 3, 150, true, true, false, false),
+            new CampaignQuestDefinition("Quest 1 - Tutorial", 3, 50, true, true, false, false),
             new CampaignQuestDefinition("Quest 2", 3, 225, false, false, false, false),
             new CampaignQuestDefinition("Quest 3", 3, 300, false, false, false, false),
             new CampaignQuestDefinition("Quest 4", 3, 375, false, false, false, false),

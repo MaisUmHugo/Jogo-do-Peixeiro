@@ -137,7 +137,7 @@ public class GameSaveManager : MonoBehaviour
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
-        BaitInventory baitInventory = BaitInventory.GetOrCreate();
+        BaitInventory baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
 
         data.playerMoney = moneyManager != null ? moneyManager.PlayerMoney : 0f;
         data.currentDebt = debtSystem != null ? debtSystem.CurrentDebt : 0;
@@ -166,7 +166,7 @@ public class GameSaveManager : MonoBehaviour
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
-        BaitInventory baitInventory = BaitInventory.GetOrCreate();
+        BaitInventory baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
 
         if (moneyManager != null)
             moneyManager.SetMoney(_data.playerMoney);

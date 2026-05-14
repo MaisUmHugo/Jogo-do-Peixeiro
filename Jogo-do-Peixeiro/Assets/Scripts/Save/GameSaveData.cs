@@ -49,7 +49,7 @@ public class CampaignSaveData
     public int maxQuestCount = 5;
     public int questDurationDays = 3;
     public int daysElapsedInCurrentQuest;
-    public int questDebtPaymentTarget = 150;
+    public int questDebtPaymentTarget = 50;
     public int questDebtPaidAmount;
     public bool hasFailedCurrentQuest;
     public bool hasUnlockedFreePlay;
