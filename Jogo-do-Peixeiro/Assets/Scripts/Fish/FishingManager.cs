@@ -540,7 +540,7 @@ public class FishingManager : MonoBehaviour
 
     private FishScriptableObject GetCurrentObjectiveFish()
     {
-        TutorialController tutorialController = TutorialController.instance;
+        CampaignQuestGuidanceController tutorialController = CampaignQuestGuidanceController.instance;
 
         if (!_boostObjectiveFishChance ||
             tutorialController == null ||

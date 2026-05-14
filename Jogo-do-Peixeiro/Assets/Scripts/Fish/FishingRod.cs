@@ -10,6 +10,12 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private LayerMask waterLayer;
     [SerializeField] private ShipInventory shipInventory;
 
+    [Header("Visual")]
+    [SerializeField] private GameObject rodVisualRoot;
+    [SerializeField] private bool hideRodVisualOutsideFishing = true;
+    [SerializeField] private bool autoUseRodTipParentAsVisualRoot = true;
+    [SerializeField] private bool disableRodVisualColliders = true;
+
     [Header("Input")]
     [SerializeField] private bool useInteractToRecallHook = true;
 
@@ -79,6 +85,10 @@ public class FishingRod : MonoBehaviour
         if (fishDirectionPull == null)
             fishDirectionPull = FindFirstObjectByType<FishDirectionPull>(FindObjectsInactive.Include);
 
+        ResolveRodVisualRoot();
+        DisableRodVisualColliders();
+        SetRodVisualVisible(!hideRodVisualOutsideFishing);
+
         if (lineRenderer != null)
             lineRenderer.enabled = false;
     }
@@ -98,11 +108,18 @@ public class FishingRod : MonoBehaviour
     private void Update()
     {
         if (IsGameplayInputBlockedByUI())
+        {
+            UpdateRodVisualVisibility();
             return;
+        }
 
         if (GameManager.instance == null)
+        {
+            UpdateRodVisualVisibility();
             return;
+        }
 
+        UpdateRodVisualVisibility();
         UpdateFishMovementVisual();
         UpdateHookLine();
     }
@@ -144,6 +161,7 @@ public class FishingRod : MonoBehaviour
         Vector3 targetPoint = _spot.GetCastTargetPosition(_spot.transform.position);
         currentTargetSpot = _spot;
         hookTraveling = true;
+        SetRodVisualVisible(true);
         arcCache = CalculateArcPoints(rodTip.position, targetPoint);
 
         lineRenderer.enabled = false;
@@ -295,6 +313,7 @@ public class FishingRod : MonoBehaviour
         {
             DestroyCurrentSplash();
             ResetHookState();
+            UpdateRodVisualVisibility();
             yield break;
         }
 
@@ -316,6 +335,7 @@ public class FishingRod : MonoBehaviour
         lineRenderer.enabled = false;
 
         ResetHookState();
+        UpdateRodVisualVisibility();
 
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnBoat);
@@ -329,6 +349,52 @@ public class FishingRod : MonoBehaviour
         currentTargetSpot = null;
         lastFishMovementPromptId = -1;
         hookRoutine = null;
+    }
+
+    private void ResolveRodVisualRoot()
+    {
+        if (rodVisualRoot != null ||
+            !autoUseRodTipParentAsVisualRoot ||
+            rodTip == null ||
+            rodTip.parent == null ||
+            rodTip.parent == transform)
+        {
+            return;
+        }
+
+        rodVisualRoot = rodTip.parent.gameObject;
+    }
+
+    private void DisableRodVisualColliders()
+    {
+        if (!disableRodVisualColliders || rodVisualRoot == null)
+            return;
+
+        Collider[] colliders = rodVisualRoot.GetComponentsInChildren<Collider>(true);
+
+        foreach (Collider rodCollider in colliders)
+            rodCollider.enabled = false;
+    }
+
+    private void UpdateRodVisualVisibility()
+    {
+        if (!hideRodVisualOutsideFishing)
+            return;
+
+        bool shouldShowRod = hookTraveling ||
+                             hookReturning ||
+                             hookWaitingInWater ||
+                             (FishingManager.instance != null && FishingManager.instance.IsFishing);
+
+        SetRodVisualVisible(shouldShowRod);
+    }
+
+    private void SetRodVisualVisible(bool _visible)
+    {
+        if (rodVisualRoot == null || rodVisualRoot.activeSelf == _visible)
+            return;
+
+        rodVisualRoot.SetActive(_visible);
     }
 
     private bool ShouldBlockHookRecall()
