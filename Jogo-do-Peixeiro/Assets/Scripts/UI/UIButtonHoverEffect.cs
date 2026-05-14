@@ -17,6 +17,9 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     [SerializeField] private float tiltAmount = 5f;
     [SerializeField] private float tiltSpeed = 1f;
 
+    [Header("Selection")]
+    [SerializeField] private bool clearSelectionOnPointerExit;
+
     private bool isHovered;
 
     private void Update()
@@ -87,8 +90,8 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     {
         isHovered = false;
 
-        // Limpa a selecao se esse botao ainda estiver selecionado.
-        if (EventSystem.current != null &&
+        if (clearSelectionOnPointerExit &&
+            EventSystem.current != null &&
             EventSystem.current.currentSelectedGameObject == gameObject)
         {
             EventSystem.current.SetSelectedGameObject(null);

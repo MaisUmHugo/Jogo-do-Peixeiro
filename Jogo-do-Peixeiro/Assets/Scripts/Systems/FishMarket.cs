@@ -9,8 +9,26 @@ public class FishMarket : MonoBehaviour
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
 
     public event Action<int> OnSaleCompleted;
+    public static event Action<int> OnAnySaleCompleted;
 
     public bool HasFishToSell => shipInventory != null && shipInventory.OwnedFish.Count > 0;
+    public ShipInventory ShipInventory
+    {
+        get
+        {
+            ResolveReferences();
+            return shipInventory;
+        }
+    }
+
+    public PlayerMoneyManager PlayerMoneyManager
+    {
+        get
+        {
+            ResolveReferences();
+            return playerMoneyManager;
+        }
+    }
 
     private void Awake()
     {
@@ -35,6 +53,7 @@ public class FishMarket : MonoBehaviour
 
         playerMoneyManager.ReceiveMoney(earnedMoney);
         OnSaleCompleted?.Invoke(earnedMoney);
+        OnAnySaleCompleted?.Invoke(earnedMoney);
         return true;
     }
 
@@ -59,6 +78,7 @@ public class FishMarket : MonoBehaviour
         shipInventory.ClearFish();
         playerMoneyManager.ReceiveMoney(earnedMoney);
         OnSaleCompleted?.Invoke(earnedMoney);
+        OnAnySaleCompleted?.Invoke(earnedMoney);
         return true;
     }
 

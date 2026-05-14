@@ -33,6 +33,10 @@ public class FishSkillCheckUI : MonoBehaviour
     [SerializeField] private float _skillCheckIconPulseSpeed = 6f;
     [SerializeField] private float _skillCheckIconPulseScale = 0.12f;
 
+    [Header("Runtime Fallback")]
+    [SerializeField] private bool _allowRuntimeFallback;
+    [SerializeField] private bool _logMissingReferences = true;
+
     [Header("Timing Display")]
     [SerializeField] private bool randomizeTimingPosition;
     [SerializeField] private TimingPositionMode timingPositionMode = TimingPositionMode.FullArea;
@@ -79,6 +83,7 @@ public class FishSkillCheckUI : MonoBehaviour
     private bool wasSkillCheckActive;
     private bool hasLearnedSkillCheckInput;
     private RectTransform skillCheckInteractIconRect;
+    private bool hasLoggedMissingSkillCheckIcon;
 
     private void OnValidate()
     {
@@ -675,6 +680,12 @@ public class FishSkillCheckUI : MonoBehaviour
         if (timingBarArea == null)
             return false;
 
+        if (!_allowRuntimeFallback)
+        {
+            LogMissingReference("SkillCheckInteractHintIcon", ref hasLoggedMissingSkillCheckIcon);
+            return false;
+        }
+
         GameObject iconObject = new GameObject("SkillCheckInteractHintIcon", typeof(RectTransform), typeof(CanvasRenderer), typeof(Image));
         iconObject.transform.SetParent(timingBarArea, false);
 
@@ -689,6 +700,15 @@ public class FishSkillCheckUI : MonoBehaviour
         _skillCheckInteractIcon.preserveAspect = true;
 
         return true;
+    }
+
+    private void LogMissingReference(string _referenceName, ref bool _hasLogged)
+    {
+        if (!_logMissingReferences || _hasLogged)
+            return;
+
+        Debug.LogWarning($"[FishSkillCheckUI] Falta {_referenceName}. Crie esse Image como filho do timingBarArea ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-lo em runtime.", this);
+        _hasLogged = true;
     }
 
     private void UpdateSkillCheckHintIconSprite()

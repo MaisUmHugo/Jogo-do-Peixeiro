@@ -95,6 +95,23 @@ public class ShipInventory : MonoBehaviour
         AttFishWeight();
     }
 
+    public void ReplaceFish(IEnumerable<FishData> _fishList)
+    {
+        ownedFish.Clear();
+
+        if (_fishList != null)
+        {
+            foreach (FishData fish in _fishList)
+            {
+                if (fish != null && fish.typeOfFish != null)
+                    ownedFish.Add(fish);
+            }
+        }
+
+        ownedFish = MergeSort(ownedFish.ToArray()).ToList();
+        AttFishWeight();
+    }
+
     public int GetTotalFishValue()
     {
         int totalValue = 0;
@@ -197,6 +214,20 @@ public class ShipInventory : MonoBehaviour
     public float GetMaxCapacity()
     {
         return maxFishCapacity;
+    }
+
+    public void SetMaxCapacity(float _capacity)
+    {
+        maxFishCapacity = Mathf.Max(0f, _capacity);
+        AttFishWeight();
+    }
+
+    public void AddMaxCapacity(float _amount)
+    {
+        if (_amount <= 0f)
+            return;
+
+        SetMaxCapacity(maxFishCapacity + _amount);
     }
 
     public int CountFish(FishScriptableObject _wantedFish)

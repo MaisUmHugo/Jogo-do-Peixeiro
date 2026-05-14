@@ -1,0 +1,112 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8900485490490731918
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 3519204497681562973}
+  - component: {fileID: 333119004294954872}
+  m_Layer: 0
+  m_Name: CampaignProgressSystem
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &3519204497681562973
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8900485490490731918}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &333119004294954872
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8900485490490731918}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 3f06b59ab78c46f48cc5c22e9cc7cd03, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  gameMode: 0
+  endlessUnlocked: 0
+  questDefinitions:
+  - questName: Quest 1 - Tutorial
+    durationDays: 3
+    debtPaymentTarget: 50
+    isTutorialQuest: 1
+    unlocksFreePlayOnComplete: 1
+    requiresSpecialMoneyLenderDelivery: 0
+    specialDeliveryFish: {fileID: 0}
+    specialDeliveryQuantity: 0
+    specialDeliveryRequiredWeight: 0
+    completesCampaign: 0
+  - questName: Quest 2
+    durationDays: 3
+    debtPaymentTarget: 225
+    isTutorialQuest: 0
+    unlocksFreePlayOnComplete: 0
+    requiresSpecialMoneyLenderDelivery: 0
+    specialDeliveryFish: {fileID: 0}
+    specialDeliveryQuantity: 0
+    specialDeliveryRequiredWeight: 0
+    completesCampaign: 0
+  - questName: Quest 3
+    durationDays: 3
+    debtPaymentTarget: 300
+    isTutorialQuest: 0
+    unlocksFreePlayOnComplete: 0
+    requiresSpecialMoneyLenderDelivery: 0
+    specialDeliveryFish: {fileID: 0}
+    specialDeliveryQuantity: 0
+    specialDeliveryRequiredWeight: 0
+    completesCampaign: 0
+  - questName: Quest 4
+    durationDays: 3
+    debtPaymentTarget: 375
+    isTutorialQuest: 0
+    unlocksFreePlayOnComplete: 0
+    requiresSpecialMoneyLenderDelivery: 0
+    specialDeliveryFish: {fileID: 0}
+    specialDeliveryQuantity: 0
+    specialDeliveryRequiredWeight: 0
+    completesCampaign: 0
+  - questName: Quest 5 - Entrega especial
+    durationDays: 3
+    debtPaymentTarget: 0
+    isTutorialQuest: 0
+    unlocksFreePlayOnComplete: 0
+    requiresSpecialMoneyLenderDelivery: 1
+    specialDeliveryFish: {fileID: 0}
+    specialDeliveryQuantity: 0
+    specialDeliveryRequiredWeight: 0
+    completesCampaign: 1
+  campaignCompletionDebtAmount: 999999
+  currentQuestIndex: 1
+  questDurationDays: 3
+  daysElapsedInCurrentQuest: 0
+  questDebtPaymentTarget: 50
+  questDebtPaidAmount: 0
+  hasFailedCurrentQuest: 0
+  hasUnlockedFreePlay: 0
+  isCampaignCompleted: 0
+  isSpecialMoneyLenderDeliveryActive: 0
+  specialDeliveryFish: {fileID: 0}
+  specialDeliveryQuantity: 0
+  specialDeliveryRequiredWeight: 0

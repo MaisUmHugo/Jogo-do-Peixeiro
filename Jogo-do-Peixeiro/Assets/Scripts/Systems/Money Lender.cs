@@ -36,6 +36,7 @@ public class MoneyLender : MonoBehaviour
 
     private int currentFishWeightPayment;
     private int currentDebtPayment;
+    private int currentDebtPaymentPaidAmount;
     private int timesPaid = 0;
     private bool tutorialFinishFireworksStarted = false;
 
@@ -101,6 +102,7 @@ public class MoneyLender : MonoBehaviour
             return false;
 
         int paymentAmount = GetCurrentPayableDebtPayment();
+        int questTargetBeforePayment = currentDebtPayment;
 
         if (paymentAmount <= 0)
         {
@@ -126,14 +128,17 @@ public class MoneyLender : MonoBehaviour
         }
 
         ReduceDebt(paidAmount);
+        currentDebtPaymentPaidAmount += paidAmount;
 
-        bool completedPayment = paidAmount >= paymentAmount;
+        bool completedPayment = currentDebtPaymentPaidAmount >= currentDebtPayment;
         bool paidOff = debtSystem != null && !debtSystem.HasDebt;
 
         if (paidOff)
         {
             paymentResult = DebtPaymentResult.PaidOff;
+            currentDebtPaymentPaidAmount = 0;
             CalculateNewDebtPayment();
+            CampaignProgressSystem.GetOrCreate().RegisterDebtPayment(paidAmount, questTargetBeforePayment, currentDebtPayment);
             PlayFireworkVFX();
             Debug.Log($"Pagou R$ {paidAmount} e quitou a divida.");
             return true;
@@ -142,7 +147,9 @@ public class MoneyLender : MonoBehaviour
         if (completedPayment)
         {
             paymentResult = DebtPaymentResult.Completed;
+            currentDebtPaymentPaidAmount = 0;
             AdvancePaymentCycle();
+            CampaignProgressSystem.GetOrCreate().RegisterDebtPayment(paidAmount, questTargetBeforePayment, currentDebtPayment);
             PlayFireworkVFX();
             Debug.Log($"Pagou R$ {paidAmount} da divida.");
             return true;
@@ -150,6 +157,7 @@ public class MoneyLender : MonoBehaviour
 
         paymentResult = DebtPaymentResult.Partial;
         CalculateNewDebtPayment();
+        CampaignProgressSystem.GetOrCreate().RegisterDebtPayment(paidAmount, questTargetBeforePayment, currentDebtPayment);
         Debug.Log($"Pagamento parcial de R$ {paidAmount} da divida.");
         return true;
     }
@@ -173,7 +181,8 @@ public class MoneyLender : MonoBehaviour
         if (debtSystem != null)
             currentDebtPayment = debtSystem.HasDebt ? Mathf.Min(baseDebtPayment, debtSystem.CurrentDebt) : 0;
 
-        OnNewDebtPayment?.Invoke(currentDebtPayment);
+        currentDebtPaymentPaidAmount = Mathf.Clamp(currentDebtPaymentPaidAmount, 0, currentDebtPayment);
+        OnNewDebtPayment?.Invoke(GetCurrentPayableDebtPaymentWithoutRecalculate());
     }
 
     public bool TryGetSpecificFishPayment()
@@ -183,7 +192,7 @@ public class MoneyLender : MonoBehaviour
 
     public bool TryGetSpecificFishPayment(FishScriptableObject _specificFish, int _specificFishQuantity, bool _useTutorialFireworks = false)
     {
-        if (shipInventory == null || _specificFish == null)
+        if (shipInventory == null || _specificFish == null || !_specificFish.CanBeRequestedByMoneyLender)
             return false;
 
         if (!shipInventory.TryPaySpecificFish(_specificFish, _specificFishQuantity))
@@ -194,6 +203,7 @@ public class MoneyLender : MonoBehaviour
 
         ReduceDebt(specificFishDebtReduction);
         GetSpecificFishPayment();
+        TryCompleteCampaignSpecialDelivery(_specificFish);
 
         if (_useTutorialFireworks)
             StartTutorialFinishFireworks();
@@ -207,6 +217,21 @@ public class MoneyLender : MonoBehaviour
     private void GetSpecificFishPayment()
     {
         AdvancePaymentCycle();
+    }
+
+    private void TryCompleteCampaignSpecialDelivery(FishScriptableObject _deliveredFish)
+    {
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (campaignProgress == null ||
+            !campaignProgress.CurrentQuestRequiresSpecialDelivery ||
+            campaignProgress.SpecialDeliveryFish == null ||
+            campaignProgress.SpecialDeliveryFish != _deliveredFish)
+        {
+            return;
+        }
+
+        campaignProgress.CompleteSpecialDeliveryQuest();
     }
 
     private void AdvancePaymentCycle()
@@ -291,7 +316,7 @@ public class MoneyLender : MonoBehaviour
     {
         ResolveReferences();
         CalculateNewDebtPayment();
-        return currentDebtPayment;
+        return GetCurrentPayableDebtPaymentWithoutRecalculate();
     }
 
     public int GetCurrentDebtBalance()
@@ -319,8 +344,34 @@ public class MoneyLender : MonoBehaviour
         return timesPaid;
     }
 
+    public void SetPaymentCycle(int _timesPaid)
+    {
+        SetPaymentCycle(_timesPaid, 0);
+    }
+
+    public void SetPaymentCycle(int _timesPaid, int _currentDebtPaymentPaidAmount)
+    {
+        timesPaid = Mathf.Max(0, _timesPaid);
+        currentDebtPaymentPaidAmount = Mathf.Max(0, _currentDebtPaymentPaidAmount);
+        CalculateNewPayment();
+        CalculateNewDebtPayment();
+    }
+
+    public int GetCurrentDebtPaymentPaidAmount()
+    {
+        return currentDebtPaymentPaidAmount;
+    }
+
+    private int GetCurrentPayableDebtPaymentWithoutRecalculate()
+    {
+        return Mathf.Max(0, currentDebtPayment - currentDebtPaymentPaidAmount);
+    }
+
     public FishScriptableObject GetSpecificFish()
     {
+        if (specificFish == null || !specificFish.CanBeRequestedByMoneyLender)
+            return null;
+
         return specificFish;
     }
 
@@ -331,10 +382,10 @@ public class MoneyLender : MonoBehaviour
 
     public void TryPayButton()
     {
-        if (TutorialController.instance != null &&
-            TutorialController.instance.ShouldHandleMoneyLenderPayment(this))
+        if (CampaignQuestGuidanceController.instance != null &&
+            CampaignQuestGuidanceController.instance.ShouldHandleMoneyLenderPayment(this))
         {
-            TutorialController.instance.TryDeliverRequestedFish(this);
+            CampaignQuestGuidanceController.instance.TryDeliverRequestedFish(this);
             return;
         }
 

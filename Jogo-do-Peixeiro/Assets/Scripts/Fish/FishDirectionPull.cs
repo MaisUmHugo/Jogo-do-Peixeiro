@@ -72,6 +72,7 @@ public class FishDirectionPull : MonoBehaviour
     private float _directionIntervalUpgradeMultiplier = 1f;
     private float _currentPullProgressMultiplier = 1f;
     private float _currentDirectionIntervalMultiplier = 1f;
+    private BaitData _currentBait;
     private bool _isPullRunning;
     private float _lastNotifiedTimer = -1f;
 
@@ -96,7 +97,13 @@ public class FishDirectionPull : MonoBehaviour
 
     public void StartPull(FishScriptableObject _fishType = null)
     {
+        StartPull(_fishType, null);
+    }
+
+    public void StartPull(FishScriptableObject _fishType, BaitData _bait)
+    {
         _isPullRunning = true;
+        _currentBait = _bait;
         SetPullActive(false);
 
         ActiveDirectionTimeNormalized = 1f;
@@ -114,6 +121,7 @@ public class FishDirectionPull : MonoBehaviour
     public void StopPull()
     {
         _isPullRunning = false;
+        _currentBait = null;
         SetPullActive(false);
         _directionTimer = 0f;
         ActiveDirectionTimeNormalized = 1f;
@@ -305,11 +313,19 @@ public class FishDirectionPull : MonoBehaviour
                 _currentDirectionIntervalMultiplier = _rarity3DirectionIntervalMultiplier;
                 break;
 
+            case 4:
+                _currentPullProgressMultiplier = _rarity3PullProgressMultiplier;
+                _currentDirectionIntervalMultiplier = _rarity3DirectionIntervalMultiplier;
+                break;
+
             default:
                 _currentPullProgressMultiplier = _rarity1PullProgressMultiplier;
                 _currentDirectionIntervalMultiplier = _rarity1DirectionIntervalMultiplier;
                 break;
         }
+
+        if (_currentBait != null)
+            _currentDirectionIntervalMultiplier *= _currentBait.DirectionChangeIntervalMultiplier;
     }
 
     private FishForceDirection GetRandomAllowedDirection()

@@ -148,7 +148,7 @@ GameObject:
   - component: {fileID: 115033336240543459}
   - component: {fileID: 907600093194731295}
   m_Layer: 0
-  m_Name: Tutorial Manager
+  m_Name: CampaignQuestGuidanceController
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
