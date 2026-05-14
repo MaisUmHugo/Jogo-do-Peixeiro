@@ -29,8 +29,14 @@ public class PlayerCamera : MonoBehaviour
     [Header("Zoom")]
     [SerializeField] private float zoomSpeed = 30f;
 
+    [Header("Dialog Focus")]
+    [SerializeField] private bool focusDuringDialog = true;
+    [SerializeField, Min(0.01f)] private float dialogFocusSpeed = 8f;
+
     private float yaw;
     private float pitch;
+    private bool isDialogFocusActive;
+    private DialogCameraFocusTarget dialogFocusTarget;
 
     public static bool IsCameraLocked => cameraLockCount > 0;
 
@@ -46,19 +52,35 @@ public class PlayerCamera : MonoBehaviour
 
     private void Start()
     {
-        Vector3 currentRotation = transform.eulerAngles;
-        yaw = currentRotation.y;
-        pitch = currentRotation.x;
-
-        if (pitch > 180f)
-            pitch -= 360f;
+        SyncAnglesFromTransform();
 
         LoadSensitivity();
     }
 
+    private void OnEnable()
+    {
+        TextCanvaManager.DialogStarted += EnterDialogFocus;
+        TextCanvaManager.DialogFinished += ExitDialogFocus;
+    }
+
+    private void OnDisable()
+    {
+        TextCanvaManager.DialogStarted -= EnterDialogFocus;
+        TextCanvaManager.DialogFinished -= ExitDialogFocus;
+    }
+
     private void LateUpdate()
     {
-        if (target == null || playerTransform == null || InputHandler.instance == null)
+        if (target == null || playerTransform == null)
+            return;
+
+        if (isDialogFocusActive)
+        {
+            UpdateDialogFocusCamera();
+            return;
+        }
+
+        if (InputHandler.instance == null)
             return;
 
         if (IsCameraLocked)
@@ -136,5 +158,104 @@ public class PlayerCamera : MonoBehaviour
         float curvedMagnitude = Mathf.Pow(normalizedMagnitude, controllerResponseExponent);
 
         return direction * curvedMagnitude;
+    }
+
+    private void EnterDialogFocus(DialogCameraFocusTarget _focusTarget)
+    {
+        if (!focusDuringDialog)
+            return;
+
+        dialogFocusTarget = _focusTarget;
+        isDialogFocusActive = true;
+        SyncAnglesFromTransform();
+    }
+
+    private void ExitDialogFocus()
+    {
+        if (!isDialogFocusActive)
+            return;
+
+        isDialogFocusActive = false;
+        dialogFocusTarget = null;
+        SyncAnglesFromTransform();
+    }
+
+    private void UpdateDialogFocusCamera()
+    {
+        Vector3 cameraPivot = target.position + Vector3.up * height;
+        float targetYaw = yaw;
+        float targetPitch = pitch;
+        float transitionSpeed = dialogFocusTarget != null
+            ? dialogFocusTarget.TransitionSpeed
+            : dialogFocusSpeed;
+
+        if (dialogFocusTarget != null)
+        {
+            if (dialogFocusTarget.UseFixedAngles)
+            {
+                targetYaw = dialogFocusTarget.FixedYaw;
+                targetPitch = Mathf.Clamp(dialogFocusTarget.FixedPitch, minPitch, maxPitch);
+            }
+            else
+            {
+                GetFocusAngles(cameraPivot, dialogFocusTarget.FocusPosition, out targetYaw, out targetPitch);
+            }
+        }
+
+        float followT = 1f - Mathf.Exp(-transitionSpeed * Time.unscaledDeltaTime);
+        yaw = Mathf.LerpAngle(yaw, targetYaw, followT);
+        pitch = Mathf.Lerp(pitch, targetPitch, followT);
+        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
+
+        Quaternion orbitRotation = Quaternion.Euler(pitch, yaw, 0f);
+        Vector3 desiredPosition = cameraPivot + orbitRotation * new Vector3(0f, 0f, -distance);
+
+        transform.position = Vector3.Lerp(transform.position, desiredPosition, followT);
+
+        if (dialogFocusTarget != null && !dialogFocusTarget.UseFixedAngles)
+        {
+            Vector3 lookDirection = dialogFocusTarget.FocusPosition - transform.position;
+
+            if (lookDirection.sqrMagnitude > 0.001f)
+            {
+                Quaternion lookRotation = Quaternion.LookRotation(lookDirection.normalized, Vector3.up);
+                transform.rotation = Quaternion.Slerp(transform.rotation, lookRotation, followT);
+            }
+
+            return;
+        }
+
+        transform.rotation = Quaternion.Slerp(transform.rotation, orbitRotation, followT);
+    }
+
+    private void GetFocusAngles(Vector3 _cameraPivot, Vector3 _focusPosition, out float _targetYaw, out float _targetPitch)
+    {
+        Vector3 direction = _focusPosition - _cameraPivot;
+
+        if (direction.sqrMagnitude <= 0.001f)
+        {
+            _targetYaw = yaw;
+            _targetPitch = pitch;
+            return;
+        }
+
+        Vector2 horizontalDirection = new Vector2(direction.x, direction.z);
+        float horizontalMagnitude = Mathf.Max(0.001f, horizontalDirection.magnitude);
+
+        _targetYaw = Mathf.Atan2(direction.x, direction.z) * Mathf.Rad2Deg;
+        _targetPitch = -Mathf.Atan2(direction.y, horizontalMagnitude) * Mathf.Rad2Deg;
+        _targetPitch = Mathf.Clamp(_targetPitch, minPitch, maxPitch);
+    }
+
+    private void SyncAnglesFromTransform()
+    {
+        Vector3 currentRotation = transform.eulerAngles;
+        yaw = currentRotation.y;
+        pitch = currentRotation.x;
+
+        if (pitch > 180f)
+            pitch -= 360f;
+
+        pitch = Mathf.Clamp(pitch, minPitch, maxPitch);
     }
 }

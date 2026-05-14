@@ -755,5 +755,5 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 097ae6a14bb553749b46d1ba94ccbe05, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxFishCapacity: 10
+  maxFishCapacity: 25
   debugShipInventory: {fileID: 0}

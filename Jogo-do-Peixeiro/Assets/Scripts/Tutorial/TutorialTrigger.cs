@@ -16,21 +16,21 @@ public class TutorialTrigger : MonoBehaviour
         if (!other.CompareTag("Player"))
             return;
 
-        if (TutorialController.instance == null)
+        if (CampaignQuestGuidanceController.instance == null)
             return;
 
         switch (triggerType)
         {
             case TriggerType.MoneyLenderCabin:
-                TutorialController.instance.NotifyReachedMoneyLenderCabin();
+                CampaignQuestGuidanceController.instance.NotifyReachedMoneyLenderCabin();
                 break;
 
             case TriggerType.FishingSpot:
-                TutorialController.instance.NotifyReachedFishingSpot();
+                CampaignQuestGuidanceController.instance.NotifyReachedFishingSpot();
                 break;
 
             case TriggerType.Dock:
-                TutorialController.instance.NotifyReturnedToDock();
+                CampaignQuestGuidanceController.instance.NotifyReturnedToDock();
                 break;
         }
     }

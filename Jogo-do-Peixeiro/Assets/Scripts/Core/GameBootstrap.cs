@@ -6,6 +6,8 @@ public class GameBootstrap : MonoBehaviour
     [SerializeField] private GameManager _gameManagerPrefab;
     [SerializeField] private InputHandler _inputHandlerPrefab;
     [SerializeField] private AudioManager _audioManagerPrefab;
+    [SerializeField] private GameSaveManager _gameSaveManagerPrefab;
+    [SerializeField] private CampaignProgressSystem _campaignProgressSystemPrefab;
     //[SerializeField] private PoolManager _poolManagerPrefab;
     [SerializeField] private InputDeviceDetector _inputDeviceDetectorPrefab;
 
@@ -14,12 +16,22 @@ public class GameBootstrap : MonoBehaviour
         CreateIfMissing(GameManager.instance, _gameManagerPrefab);
         CreateIfMissing(InputHandler.instance, _inputHandlerPrefab);
         CreateIfMissing(AudioManager.Instance, _audioManagerPrefab);
+        CreateIfMissing(GameSaveManager.Instance, _gameSaveManagerPrefab);
+        CreateIfMissing(CampaignProgressSystem.Instance, _campaignProgressSystemPrefab);
         //CreateIfMissing(PoolManager.Instance, _poolManagerPrefab);
+        GameSaveManager.GetOrCreate();
+        CampaignProgressSystem.GetOrCreate();
 
         if (FindFirstObjectByType<InputDeviceDetector>() == null && _inputDeviceDetectorPrefab != null)
         {
             Instantiate(_inputDeviceDetectorPrefab);
         }
+    }
+
+    private void Start()
+    {
+        if (GameSaveManager.Instance != null)
+            GameSaveManager.Instance.LoadRequestedSaveIfNeeded();
     }
 
     private void CreateIfMissing<T>(T _instance, T _prefab) where T : MonoBehaviour

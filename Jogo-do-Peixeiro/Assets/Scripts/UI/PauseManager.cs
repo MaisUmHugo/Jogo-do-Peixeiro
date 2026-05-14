@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 using static GameManager;
 
 public class PauseManager : MonoBehaviour
@@ -17,12 +18,18 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private bool restoreHiddenPanelsOnResume = true;
     [SerializeField] private bool hidePanelsWithCanvasGroup = true;
 
+    [Header("Navigation")]
+    [SerializeField] private Selectable pauseFirstSelected;
+    [SerializeField] private Selectable confirmFirstSelected;
+    [SerializeField] private Selectable howToPlayFirstSelected;
+
     // guarda ação que será executada após confirmação 
     private Action confirmAction;
 
     // guarda estado antes do pause (OnFoot, OnBoat, etc)
     private GameManager.GameState stateBeforePause;
     private HiddenPanelState[] hiddenPanelStates;
+    private Selectable pauseLastSelected;
 
     private struct HiddenPanelState
     {
@@ -120,6 +127,8 @@ public class PauseManager : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(true);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+
+        SelectPausePanel();
     }
 
     // função para os botões abaixo
@@ -146,15 +155,21 @@ public class PauseManager : MonoBehaviour
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
 
         // limpa ação pendente
+        ClearPauseSelection();
+        pauseLastSelected = null;
         confirmAction = null;
     }
 
     public void OpenHowToPlayFromPause()
     {
         // abre painel "como jogar"
+        StorePauseSelection();
+
         if (pausePanel != null) pausePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(true);
+
+        SelectHowToPlayPanel();
     }
 
     public void CloseHowToPlayFromPause()
@@ -162,17 +177,22 @@ public class PauseManager : MonoBehaviour
         // volta para o pause
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
         if (pausePanel != null) pausePanel.SetActive(true);
+
+        SelectPausePanel();
     }
 
     public void ShowConfirmation(Action action)
     {
         // guarda ação que será executada ao confirmar
         confirmAction = action;
+        StorePauseSelection();
 
         // abre painel de confirmação
         if (pausePanel != null) pausePanel.SetActive(false);
         if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(true);
+
+        SelectConfirmPanel();
     }
 
     public void ConfirmYes()
@@ -189,6 +209,8 @@ public class PauseManager : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(true);
 
         confirmAction = null;
+
+        SelectPausePanel();
     }
 
     public void OnClickRestart()
@@ -298,5 +320,36 @@ public class PauseManager : MonoBehaviour
             return false;
 
         return candidate == child || child.transform.IsChildOf(candidate.transform);
+    }
+
+    private void SelectPausePanel()
+    {
+        Selectable target = pauseLastSelected != null ? pauseLastSelected : pauseFirstSelected;
+        UISelectionHelper.Select(target, pausePanel);
+    }
+
+    private void SelectConfirmPanel()
+    {
+        UISelectionHelper.Select(confirmFirstSelected, confirmPanel);
+    }
+
+    private void SelectHowToPlayPanel()
+    {
+        UISelectionHelper.Select(howToPlayFirstSelected, howToPlayPanel);
+    }
+
+    private void ClearPauseSelection()
+    {
+        UISelectionHelper.ClearSelection(pausePanel);
+        UISelectionHelper.ClearSelection(confirmPanel);
+        UISelectionHelper.ClearSelection(howToPlayPanel);
+    }
+
+    private void StorePauseSelection()
+    {
+        Selectable current = UISelectionHelper.CurrentSelectableInScope(pausePanel);
+
+        if (current != null)
+            pauseLastSelected = current;
     }
 }

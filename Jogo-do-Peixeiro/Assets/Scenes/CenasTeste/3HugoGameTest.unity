@@ -1575,7 +1575,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 6024507526838909261, guid: 3f9ff967e457c2349873fe1787e8c114, type: 3}
       propertyPath: fishingTime
-      value: 10
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 6024507526838909261, guid: 3f9ff967e457c2349873fe1787e8c114, type: 3}
       propertyPath: fishSkillCheck
@@ -4219,7 +4219,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1473987026800473671, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: maxFishCapacity
-      value: 10
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 2045394431756957250, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: player
@@ -5720,7 +5720,7 @@ PrefabInstance:
       objectReference: {fileID: 1926269265}
     - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: m_Name
-      value: Tutorial Manager
+      value: CampaignQuestGuidanceController
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

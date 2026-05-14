@@ -157,6 +157,19 @@ public class DayCycle : MonoBehaviour
         ResetSleepDeadlineState();
     }
 
+    public void SetCycleState(int _currentDay, int _elapsedDays, float _normalizedTime)
+    {
+        currentDay = Mathf.Clamp(_currentDay, 1, Mathf.Max(1, totalDays));
+        elapsedDays = Mathf.Max(1, _elapsedDays);
+        currentTime = Mathf.Repeat(_normalizedTime, 1f);
+        Clock = currentTime * 24f;
+        ResetSleepDeadlineState();
+        UpdateSun();
+        UpdateSkybox();
+        UpdateTime();
+        UpdateDayUI();
+    }
+
     private void AdvanceDay(bool _resetToMorning)
     {
         currentDay++;

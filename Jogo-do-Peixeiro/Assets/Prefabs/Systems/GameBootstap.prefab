@@ -47,4 +47,6 @@ MonoBehaviour:
   _gameManagerPrefab: {fileID: 5947768796171509317, guid: 6a2ae0d67797b874b93bad28b1feffc1, type: 3}
   _inputHandlerPrefab: {fileID: 399760556526364437, guid: ce3ac6af501ed3d4b8248805d8e1c815, type: 3}
   _audioManagerPrefab: {fileID: 5310746982374927217, guid: dbe2fcceaffa8c44988b29395e4e629e, type: 3}
+  _gameSaveManagerPrefab: {fileID: 0}
+  _campaignProgressSystemPrefab: {fileID: 0}
   _inputDeviceDetectorPrefab: {fileID: 3536155122831721329, guid: e53b764a878534e4390cbe6409bc1da5, type: 3}

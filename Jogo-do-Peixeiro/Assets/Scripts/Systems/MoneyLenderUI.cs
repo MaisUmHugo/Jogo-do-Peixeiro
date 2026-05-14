@@ -17,7 +17,7 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField, Range(0f, 1f)] private float doorCloseSfxVolume = 1f;
 
     private MoneyLender currentMoneyLender;
-    private TutorialController tutorialController;
+    private CampaignQuestGuidanceController tutorialController;
     private bool isOpen;
     private bool isTutorialPayment;
 
@@ -53,7 +53,7 @@ public class MoneyLenderUI : MonoBehaviour
         OpenInternal(_moneyLender);
     }
 
-    public void OpenForTutorial(MoneyLender _moneyLender, TutorialController _tutorialController)
+    public void OpenForTutorial(MoneyLender _moneyLender, CampaignQuestGuidanceController _tutorialController)
     {
         if (_tutorialController == null)
             return;

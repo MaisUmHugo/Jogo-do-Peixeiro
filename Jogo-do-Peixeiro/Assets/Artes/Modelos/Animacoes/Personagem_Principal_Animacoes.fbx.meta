@@ -17,31 +17,16 @@ ModelImporter:
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
-    animationImportWarnings: "\nClip 'Armature|Idle' has import animation warnings
+    animationImportWarnings: "\nClip 'Armature|Idle2' has import animation warnings
       that might lower retargeting quality:\nNote: Activate translation DOF on avatar
-      to improve retargeting quality.\n\t'RightUpperLeg.R' is inbetween humanoid
-      transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
-      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
-      'Armature|Idle2' has import animation warnings that might lower retargeting
-      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'Origin'
-      has scale animation that will be discarded.\n\t'RightUpperLeg.R' is inbetween
-      humanoid transforms and has rotation animation that will be discarded.\n\t'RightUpperLeg.R'
-      has scale animation that will be discarded.\n\t'RightLowerLeg.R' has scale
-      animation that will be discarded.\n\t'LeftUpperLeg.L' is inbetween humanoid
-      transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
-      has scale animation that will be discarded.\n\t'LeftLowerLeg.L' has scale animation
-      that will be discarded.\n\t'RightUpperArm.R' has scale animation that will
-      be discarded.\n\t'RightLowerArm.R' has scale animation that will be discarded.\n\t'LeftUpperArm.L'
-      has scale animation that will be discarded.\n\t'LeftLowerArm.L' has scale animation
-      that will be discarded.\n\nClip 'Armature|Idle2.5' has import animation warnings
-      that might lower retargeting quality:\nNote: Activate translation DOF on avatar
-      to improve retargeting quality.\n\t'RightUpperLeg.R' is inbetween humanoid
-      transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
-      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
-      'Armature|Walking' has import animation warnings that might lower retargeting
-      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg.R'
-      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
-      is inbetween humanoid transforms and has rotation animation that will be discarded.\n"
+      to improve retargeting quality.\n\t'Origin' has scale animation that will be
+      discarded.\n\t'RightUpperLeg.R' has scale animation that will be discarded.\n\t'RightLowerLeg.R'
+      has scale animation that will be discarded.\n\t'LeftUpperLeg.L' has scale animation
+      that will be discarded.\n\t'LeftLowerLeg.L' has scale animation that will be
+      discarded.\n\t'RightUpperArm.R' has scale animation that will be discarded.\n\t'RightLowerArm.R'
+      has scale animation that will be discarded.\n\t'LeftUpperArm.L' has scale animation
+      that will be discarded.\n\t'LeftLowerArm.L' has scale animation that will be
+      discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
@@ -53,7 +38,123 @@ ModelImporter:
     animationWrapMode: 0
     extraExposedTransformPaths: []
     extraUserProperties: []
-    clipAnimations: []
+    clipAnimations:
+    - serializedVersion: 16
+      name: Armature|Idle
+      takeName: Armature|Idle
+      internalID: -8945691123924629249
+      firstFrame: 1
+      lastFrame: 25
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 1
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Armature|Idle2
+      takeName: Armature|Idle2
+      internalID: 213856876459495052
+      firstFrame: 1
+      lastFrame: 30
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Armature|Idle2.5
+      takeName: Armature|Idle2.5
+      internalID: 1077149907125081134
+      firstFrame: 2
+      lastFrame: 25
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 0
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: Armature|Walking
+      takeName: Armature|Walking
+      internalID: -4274770991410265338
+      firstFrame: 1
+      lastFrame: 28
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 46.34
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 1
+      loopBlend: 1
+      loopBlendOrientation: 0
+      loopBlendPositionY: 0
+      loopBlendPositionXZ: 0
+      keepOriginalOrientation: 0
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 0
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
     isReadable: 0
   meshes:
     lODScreenPercentages: []

@@ -67,6 +67,10 @@ public class FishDirectionPullUI : MonoBehaviour
     [Header("Side Prompt Height")]
     [SerializeField, Range(0f, 1f)] private float _sidePullHeightCentering = 0.75f;
 
+    [Header("Runtime Fallback")]
+    [SerializeField] private bool _allowRuntimeFallback;
+    [SerializeField] private bool _logMissingReferences = true;
+
     private RectTransform _directionIconRect;
     private RectTransform _directionBackplateRect;
     private RectTransform _holdHintRect;
@@ -75,6 +79,9 @@ public class FishDirectionPullUI : MonoBehaviour
     private bool _hasIconTargetPosition;
     private bool _hasLearnedHoldInput;
     private float _correctHoldTimer;
+    private bool _hasLoggedMissingIcon;
+    private bool _hasLoggedMissingBackplate;
+    private bool _hasLoggedMissingHoldHint;
 
     private void OnValidate()
     {
@@ -518,8 +525,14 @@ public class FishDirectionPullUI : MonoBehaviour
         if (_directionIcon == null)
             _directionIcon = FindDirectionIcon();
 
-        if (_directionIcon == null)
+        if (_directionIcon == null && _allowRuntimeFallback)
             _directionIcon = CreateDirectionIcon();
+
+        if (_directionIcon == null)
+        {
+            LogMissingReference("DirectionPullIcon", ref _hasLoggedMissingIcon);
+            return;
+        }
 
         _directionIconRect = _directionIcon.rectTransform;
         EnsureDirectionBackplate();
@@ -575,8 +588,11 @@ public class FishDirectionPullUI : MonoBehaviour
                 _directionBackplate = existingBackplate.GetComponent<Image>();
         }
 
-        if (_directionBackplate == null)
+        if (_directionBackplate == null && _allowRuntimeFallback)
             _directionBackplate = CreateDirectionBackplate();
+
+        if (_directionBackplate == null)
+            LogMissingReference("DirectionPullBackplate", ref _hasLoggedMissingBackplate);
 
         if (_directionBackplate == null)
             return;
@@ -640,8 +656,11 @@ public class FishDirectionPullUI : MonoBehaviour
                 _holdHintText = existingHint.GetComponent<TMP_Text>();
         }
 
-        if (_holdHintText == null)
+        if (_holdHintText == null && _allowRuntimeFallback)
             _holdHintText = CreateHoldHintText();
+
+        if (_holdHintText == null)
+            LogMissingReference("DirectionPullHoldHint", ref _hasLoggedMissingHoldHint);
 
         if (_holdHintText == null)
             return;
@@ -724,5 +743,14 @@ public class FishDirectionPullUI : MonoBehaviour
         iconImage.enabled = true;
 
         return iconImage;
+    }
+
+    private void LogMissingReference(string _referenceName, ref bool _hasLogged)
+    {
+        if (!_logMissingReferences || _hasLogged)
+            return;
+
+        Debug.LogWarning($"[FishDirectionPullUI] Falta {_referenceName}. Crie esse objeto na cena/prefab ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-lo em runtime.", this);
+        _hasLogged = true;
     }
 }

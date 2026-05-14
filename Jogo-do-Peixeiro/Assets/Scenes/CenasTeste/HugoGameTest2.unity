@@ -1172,7 +1172,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1927435706}
-        m_TargetAssemblyTypeName: TutorialController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CampaignQuestGuidanceController, Assembly-CSharp
         m_MethodName: RestartTutorialScene
         m_Mode: 1
         m_Arguments:
@@ -1405,7 +1405,7 @@ PrefabInstance:
       objectReference: {fileID: 211865286}
     - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: m_Name
-      value: Tutorial Manager
+      value: CampaignQuestGuidanceController
       objectReference: {fileID: 0}
     - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: m_IsActive
@@ -2998,7 +2998,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1953318836323828524, guid: 1212fc627ccd7074f86f3b529abea568, type: 3}
       propertyPath: m_SizeDelta.x
-      value: 100
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 1953318836323828524, guid: 1212fc627ccd7074f86f3b529abea568, type: 3}
       propertyPath: m_SizeDelta.y
@@ -5113,7 +5113,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1927435706}
-        m_TargetAssemblyTypeName: TutorialController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CampaignQuestGuidanceController, Assembly-CSharp
         m_MethodName: GoToMainMenu
         m_Mode: 1
         m_Arguments:
@@ -5382,7 +5382,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 496d234ff9a219f41bbbdccb95d0b98e, type: 2}
     - target: {fileID: 1473987026800473671, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: maxFishCapacity
-      value: 100
+      value: 25
       objectReference: {fileID: 0}
     - target: {fileID: 1473987026800473671, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
       propertyPath: playerMoneyManager
@@ -8728,7 +8728,7 @@ MonoBehaviour:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 1927435706}
-        m_TargetAssemblyTypeName: TutorialController, Assembly-CSharp
+        m_TargetAssemblyTypeName: CampaignQuestGuidanceController, Assembly-CSharp
         m_MethodName: GoToMainMenu
         m_Mode: 1
         m_Arguments:

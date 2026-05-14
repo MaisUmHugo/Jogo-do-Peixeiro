@@ -14,12 +14,17 @@ public class FishBiteHandler : MonoBehaviour
 
     public void StartWaiting(Action _onBite)
     {
+        StartWaiting(_onBite, 1f);
+    }
+
+    public void StartWaiting(Action _onBite, float _delayMultiplier)
+    {
         StopWaiting();
 
         if (_onBite == null)
             return;
 
-        _biteRoutine = StartCoroutine(WaitForBiteRoutine(_onBite));
+        _biteRoutine = StartCoroutine(WaitForBiteRoutine(_onBite, _delayMultiplier));
     }
 
     public void StopWaiting()
@@ -33,11 +38,12 @@ public class FishBiteHandler : MonoBehaviour
         IsWaitingForBite = false;
     }
 
-    private IEnumerator WaitForBiteRoutine(Action _onBite)
+    private IEnumerator WaitForBiteRoutine(Action _onBite, float _delayMultiplier)
     {
         IsWaitingForBite = true;
 
         float delay = UnityEngine.Random.Range(_minBiteDelay, _maxBiteDelay);
+        delay *= Mathf.Max(0.1f, _delayMultiplier);
         yield return new WaitForSeconds(delay);
 
         IsWaitingForBite = false;

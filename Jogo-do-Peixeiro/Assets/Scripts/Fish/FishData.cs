@@ -17,7 +17,26 @@ public class FishData
     {
 
         typeOfFish = _typeOfFish;
-        weight = Random.Range(typeOfFish.minWeight, typeOfFish.maxWeight);
+        int minWeight = Mathf.Min(typeOfFish.minWeight, typeOfFish.maxWeight);
+        int maxWeight = Mathf.Max(typeOfFish.minWeight, typeOfFish.maxWeight);
+        weight = Random.Range(minWeight, maxWeight + 1);
+        price = CalculatePrice();
+    }
+
+    public FishData(FishScriptableObject _typeOfFish, int _weight)
+    {
+        typeOfFish = _typeOfFish;
+
+        if (typeOfFish == null)
+        {
+            weight = 0;
+            price = 0;
+            return;
+        }
+
+        int minWeight = Mathf.Min(typeOfFish.minWeight, typeOfFish.maxWeight);
+        int maxWeight = Mathf.Max(typeOfFish.minWeight, typeOfFish.maxWeight);
+        weight = Mathf.Clamp(_weight, minWeight, maxWeight);
         price = CalculatePrice();
     }
 }

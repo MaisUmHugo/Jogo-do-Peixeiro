@@ -1,4 +1,12 @@
 using UnityEngine;
+using UnityEngine.Serialization;
+
+public enum FishAvailabilityPeriod
+{
+    Any,
+    Morning,
+    Night
+}
 
 [CreateAssetMenu(fileName = "Fish", menuName = "New Fish")]
 public class FishScriptableObject : ScriptableObject
@@ -9,12 +17,36 @@ public class FishScriptableObject : ScriptableObject
     public Mesh mesh;
     public Material material;
 
+    [Header("Inventory UI")]
+    public Sprite inventoryIcon;
+
     [Range(1, 4)] public int rarity;
 
     [Min(0)]
-    public int pricePerWeight;
-    public int BasePrice => pricePerWeight;
+    [FormerlySerializedAs("pricePerWeight")]
+    public int basePrice;
+    public int BasePrice => basePrice;
+
+    [Min(0f)] public float spawnWeight = 1f;
+    public bool canBeRequestedByMoneyLender = true;
+    public FishAvailabilityPeriod availabilityPeriod = FishAvailabilityPeriod.Any;
 
     public string fishName;
     [TextArea] public string description;
+
+    public string SaveId => name;
+    public Sprite InventoryIcon => inventoryIcon;
+    public bool CanBeRequestedByMoneyLender => canBeRequestedByMoneyLender;
+
+    public bool IsAvailableAtHour(float _hour)
+    {
+        float hour = Mathf.Repeat(_hour, 24f);
+
+        return availabilityPeriod switch
+        {
+            FishAvailabilityPeriod.Morning => hour >= 5f && hour < 12f,
+            FishAvailabilityPeriod.Night => hour >= 18f || hour < 5f,
+            _ => true
+        };
+    }
 }

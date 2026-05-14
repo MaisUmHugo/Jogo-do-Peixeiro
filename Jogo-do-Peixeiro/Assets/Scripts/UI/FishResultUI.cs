@@ -99,8 +99,7 @@ public class FishResultUI : MonoBehaviour
             objectRenderer.material = fishMaterial;
 
         ShowRarityStars(fishRarity);
-        fishAngle = 0f;
-        fishPitchAngle = 0f;
+        ResetFishRotation();
 
         if (!fishList.Contains(_fish.typeOfFish))
         {
@@ -282,8 +281,23 @@ public class FishResultUI : MonoBehaviour
         fishAngle = Mathf.Repeat(fishAngle + rotationDelta.x, 360f);
         fishPitchAngle = Mathf.Clamp(fishPitchAngle + rotationDelta.y, minFishPitchAngle, maxFishPitchAngle);
 
-        objectRenderer.transform.rotation = Quaternion.Euler(90f + fishPitchAngle, fishAngle, 90f);        
+        ApplyFishRotation();
 
+    }
+
+    private void ResetFishRotation()
+    {
+        fishAngle = 0f;
+        fishPitchAngle = 0f;
+        ApplyFishRotation();
+    }
+
+    private void ApplyFishRotation()
+    {
+        if (objectRenderer == null)
+            return;
+
+        objectRenderer.transform.rotation = Quaternion.Euler(90f + fishPitchAngle, fishAngle, 90f);
     }
 
     private Vector2 GetFishRotationDelta()

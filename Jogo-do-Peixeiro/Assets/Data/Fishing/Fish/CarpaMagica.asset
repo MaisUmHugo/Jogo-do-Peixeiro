@@ -1,0 +1,25 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 52551ffbcafa88c428476a6d2f5c776b, type: 3}
+  m_Name: CarpaMagica
+  m_EditorClassIdentifier: 
+  minWeight: 5
+  maxWeight: 15
+  mesh: {fileID: -5445846601639715144, guid: 7b716456fa9fa2b459e2c838c8a53d5a, type: 3}
+  material: {fileID: 2100000, guid: 10f6a40284c691f43806202604c1fb61, type: 2}
+  rarity: 2
+  basePrice: 20
+  spawnWeight: 6
+  canBeRequestedByMoneyLender: 1
+  availabilityPeriod: 0
+  fishName: Carpa Magica
+  description: Uma carpa incomum, mais valiosa que os peixes basicos.

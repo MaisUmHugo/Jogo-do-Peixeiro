@@ -19,10 +19,23 @@ public class BoatMotor : MonoBehaviour
     private bool wasKinematicBeforeAnchor;
     private bool isAnchored;
     private bool isWaitingForNeutralInput;
+    private float baseEngineForce;
+    private float baseMaxSpeed;
+    private bool hasCapturedBaseSpeedValues;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
+        CaptureBaseSpeedValues();
+    }
+
+    public void SetSpeedUpgradeMultiplier(float _multiplier)
+    {
+        CaptureBaseSpeedValues();
+
+        float multiplier = Mathf.Max(0.01f, _multiplier);
+        engineForce = baseEngineForce * multiplier;
+        maxSpeed = baseMaxSpeed * multiplier;
     }
 
     public void ResetMotorState(bool _waitForNeutralInput = true)
@@ -144,6 +157,16 @@ public class BoatMotor : MonoBehaviour
             return true;
 
         return FishingManager.instance != null && FishingManager.instance.IsFishing;
+    }
+
+    private void CaptureBaseSpeedValues()
+    {
+        if (hasCapturedBaseSpeedValues)
+            return;
+
+        baseEngineForce = engineForce;
+        baseMaxSpeed = maxSpeed;
+        hasCapturedBaseSpeedValues = true;
     }
 
     private void AnchorBoat()

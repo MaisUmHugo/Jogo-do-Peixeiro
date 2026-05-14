@@ -49,6 +49,7 @@ public class FishingManager : MonoBehaviour
     [SerializeField] private FishDirectionPull _fishDirectionPull;
     [FormerlySerializedAs("fishingRod")]
     [SerializeField] private FishingRod _fishingRod;
+    [SerializeField] private BaitInventory _baitInventory;
 
     public bool IsFishing { get; private set; }
     public bool HasFishBitten { get; private set; }
@@ -60,6 +61,7 @@ public class FishingManager : MonoBehaviour
     private FishScriptableObject _selectedFishType;
     private FishData _pendingFish;
     private FishScriptableObject _lastBittenFishType;
+    private BaitData _activeBait;
     private int _sameFishBiteStreak;
     private int _objectiveFishMissStreak;
     private HiddenPanelState[] _hiddenPanelStates;
@@ -123,6 +125,9 @@ public class FishingManager : MonoBehaviour
 
         if (_fishResultUI == null)
             _fishResultUI = FindFirstObjectByType<FishResultUI>(FindObjectsInactive.Include);
+
+        if (_baitInventory == null)
+            _baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
     }
 
     private void Update()
@@ -165,6 +170,7 @@ public class FishingManager : MonoBehaviour
         _currentShipInventory = _shipInventory;
         _currentAvailableFish = _availableFish;
         _waitForCatchResultClose = false;
+        _activeBait = GetUsableEquippedBait();
 
         _selectedFishType = PickRandomFishType();
 
@@ -284,7 +290,8 @@ public class FishingManager : MonoBehaviour
     {
         if (_fishBiteHandler != null)
         {
-            _fishBiteHandler.StartWaiting(OnFishBite);
+            float delayMultiplier = _activeBait != null ? _activeBait.BiteDelayMultiplier : 1f;
+            _fishBiteHandler.StartWaiting(OnFishBite, delayMultiplier);
             return;
         }
 
@@ -297,13 +304,17 @@ public class FishingManager : MonoBehaviour
             return;
 
         HasFishBitten = true;
+
+        if (_activeBait != null && (_baitInventory == null || !_baitInventory.TryConsumeEquippedBait()))
+            _activeBait = null;
+
         RegisterBittenFish(_selectedFishType);
 
         if (_fishDirectionPull != null)
-            _fishDirectionPull.StartPull(_selectedFishType);
+            _fishDirectionPull.StartPull(_selectedFishType, _activeBait);
 
         if (_useSkillCheck && _fishSkillCheck != null)
-            _fishSkillCheck.StartSkillCheck(this, _selectedFishType);
+            _fishSkillCheck.StartSkillCheck(this, _selectedFishType, _activeBait);
 
         Debug.Log("Peixe mordeu a isca.");
     }
@@ -311,6 +322,7 @@ public class FishingManager : MonoBehaviour
     private void UpdateFishingProgress()
     {
         float progressMultiplier = GetProgressMultiplierByFish();
+        progressMultiplier *= _activeBait != null ? _activeBait.CatchProgressMultiplier : 1f;
         float progressDelta = _baseProgressSpeed * progressMultiplier;
 
         if (_fishDirectionPull != null)
@@ -421,8 +433,7 @@ public class FishingManager : MonoBehaviour
             return objectiveFish;
         }
 
-        int randomIndex = Random.Range(0, candidates.Count);
-        return candidates[randomIndex];
+        return PickWeightedFish(candidates);
     }
 
     private List<FishScriptableObject> BuildFishSelectionCandidates()
@@ -433,7 +444,7 @@ public class FishingManager : MonoBehaviour
         {
             FishScriptableObject fishType = _currentAvailableFish[i];
 
-            if (fishType != null)
+            if (fishType != null && IsFishAvailableNow(fishType))
                 candidates.Add(fishType);
         }
 
@@ -480,9 +491,56 @@ public class FishingManager : MonoBehaviour
         return Random.value <= Mathf.Clamp01(chance);
     }
 
+    private FishScriptableObject PickWeightedFish(List<FishScriptableObject> _candidates)
+    {
+        if (_candidates == null || _candidates.Count == 0)
+            return null;
+
+        float totalWeight = 0f;
+
+        for (int i = 0; i < _candidates.Count; i++)
+        {
+            if (_candidates[i] != null)
+                totalWeight += Mathf.Max(0f, _candidates[i].spawnWeight);
+        }
+
+        if (totalWeight <= 0f)
+            return _candidates[Random.Range(0, _candidates.Count)];
+
+        float randomWeight = Random.Range(0f, totalWeight);
+
+        for (int i = 0; i < _candidates.Count; i++)
+        {
+            FishScriptableObject candidate = _candidates[i];
+
+            if (candidate == null)
+                continue;
+
+            randomWeight -= Mathf.Max(0f, candidate.spawnWeight);
+
+            if (randomWeight <= 0f)
+                return candidate;
+        }
+
+        return _candidates[_candidates.Count - 1];
+    }
+
+    private bool IsFishAvailableNow(FishScriptableObject _fishType)
+    {
+        if (_fishType == null)
+            return false;
+
+        DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
+
+        if (dayCycle == null)
+            return true;
+
+        return _fishType.IsAvailableAtHour(dayCycle.NormalizedTime * 24f);
+    }
+
     private FishScriptableObject GetCurrentObjectiveFish()
     {
-        TutorialController tutorialController = TutorialController.instance;
+        CampaignQuestGuidanceController tutorialController = CampaignQuestGuidanceController.instance;
 
         if (!_boostObjectiveFishChance ||
             tutorialController == null ||
@@ -578,9 +636,25 @@ public class FishingManager : MonoBehaviour
             case 3:
                 return _rarity3ProgressMultiplier;
 
+            case 4:
+                return _rarity3ProgressMultiplier;
+
             default:
                 return 1f;
         }
+    }
+
+    private BaitData GetUsableEquippedBait()
+    {
+        if (_baitInventory == null)
+            _baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
+
+        if (_baitInventory == null || _baitInventory.EquippedBait == null)
+            return null;
+
+        return _baitInventory.HasBait(_baitInventory.EquippedBait)
+            ? _baitInventory.EquippedBait
+            : null;
     }
 
     private void GivePendingFish()
@@ -706,6 +780,7 @@ public class FishingManager : MonoBehaviour
         _currentAvailableFish = null;
         _selectedFishType = null;
         _pendingFish = null;
+        _activeBait = null;
     }
 
     private void ReturnToBoatState()
