@@ -187,7 +187,7 @@ Transform:
   m_GameObject: {fileID: 2969741457684812338}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: -0.7, z: 0.72}
+  m_LocalPosition: {x: 0, y: 0.05, z: 0.72}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -485,7 +485,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -16.850113
+      value: -42.29
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.y
@@ -493,7 +493,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.z
-      value: 17.08
+      value: 108.64
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalRotation.w
@@ -501,15 +501,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalRotation.x
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalRotation.y
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalRotation.z
-      value: 0
+      value: -0
       objectReference: {fileID: 0}
     - target: {fileID: -8679921383154817045, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
@@ -533,15 +533,15 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -5477749408508380018, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalScale.x
-      value: 50
+      value: 30
       objectReference: {fileID: 0}
     - target: {fileID: -5477749408508380018, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalScale.y
-      value: 50
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: -5477749408508380018, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalScale.z
-      value: 50
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: -5477749408508380018, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_LocalPosition.x
@@ -555,6 +555,10 @@ PrefabInstance:
       propertyPath: m_LocalPosition.z
       value: 0
       objectReference: {fileID: 0}
+    - target: {fileID: -4683669308469848369, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 496d234ff9a219f41bbbdccb95d0b98e, type: 2}
     - target: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       propertyPath: m_Name
       value: Boat
@@ -599,9 +603,6 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       insertIndex: -1
       addedObject: {fileID: 1614043984450894772}
-    - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
-      insertIndex: -1
-      addedObject: {fileID: 6083694497584935514}
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 17f1f575148b1e74aa804f04607b8803, type: 3}
       insertIndex: -1
       addedObject: {fileID: 8649050672369772335}
@@ -665,28 +666,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rb: {fileID: 5166821595822685571}
-  offset: {x: 0, y: 0, z: 0}
---- !u!114 &6083694497584935514
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4410049556211755480}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: a5d30aaeeb6f5d44bbec35d1e763fa45, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  floatPoints:
-  - {fileID: 5780599475151436130}
-  - {fileID: 3947144705379833139}
-  - {fileID: 4062526235739680415}
-  - {fileID: 6867431582908870011}
-  floatStrength: 3
-  waterDrag: 5
-  waterAngularDrag: 4
-  heightOffset: 0
+  offset: {x: 0, y: 0, z: 1}
 --- !u!65 &8649050672369772335
 BoxCollider:
   m_ObjectHideFlags: 0
@@ -720,11 +700,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: c4c87c578b8f1794383b07202754fa68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  engineForce: 30
-  turnForce: 5
-  maxSpeed: 12
+  engineForce: 10
+  turnForce: 8
+  maxSpeed: 15
   stabilization: 2
   lateralDrag: 2
+  anchorWhileFishing: 1
+  requireNeutralInputAfterFishing: 1
+  neutralInputThreshold: 0.15
 --- !u!114 &2045394431756957250
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -740,7 +723,7 @@ MonoBehaviour:
   player: {fileID: 0}
   boatCamera: {fileID: 0}
   seatPoint: {fileID: 2698527336920815991}
-  OffsetRotacao: {x: 90, y: 0, z: 0}
+  OffsetRotacao: {x: 0, y: 0, z: 0}
   playerController: {fileID: 0}
   characterController: {fileID: 0}
 --- !u!114 &1473987026800473671
@@ -757,3 +740,4 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   maxFishCapacity: 25
   debugShipInventory: {fileID: 0}
+  playerMoneyManager: {fileID: 0}
