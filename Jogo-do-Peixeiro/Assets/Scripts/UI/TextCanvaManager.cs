@@ -10,6 +10,8 @@ public class TextCanvaManager : MonoBehaviour
 {
     public static event Action<DialogCameraFocusTarget> DialogStarted;
     public static event Action DialogFinished;
+    public static event Action<DialogCameraFocusTarget> DialogCameraFocusRequested;
+    public static event Action DialogCameraFocusCleared;
 
     [Header("Dialog Componentes")]
     [SerializeField] private TMP_Text dialogTMPText;
@@ -27,6 +29,16 @@ public class TextCanvaManager : MonoBehaviour
     private bool isSubscribedToInput;
     public float TextSpeed;
     public bool IsDialogActive { get; private set; }
+
+    public static void RequestCameraFocus(DialogCameraFocusTarget _focusTarget)
+    {
+        DialogCameraFocusRequested?.Invoke(_focusTarget);
+    }
+
+    public static void ClearCameraFocus()
+    {
+        DialogCameraFocusCleared?.Invoke();
+    }
 
     private void OnEnable()
     {
