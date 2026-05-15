@@ -61,12 +61,16 @@ public class PlayerCamera : MonoBehaviour
     {
         TextCanvaManager.DialogStarted += EnterDialogFocus;
         TextCanvaManager.DialogFinished += ExitDialogFocus;
+        TextCanvaManager.DialogCameraFocusRequested += EnterDialogFocus;
+        TextCanvaManager.DialogCameraFocusCleared += ExitDialogFocus;
     }
 
     private void OnDisable()
     {
         TextCanvaManager.DialogStarted -= EnterDialogFocus;
         TextCanvaManager.DialogFinished -= ExitDialogFocus;
+        TextCanvaManager.DialogCameraFocusRequested -= EnterDialogFocus;
+        TextCanvaManager.DialogCameraFocusCleared -= ExitDialogFocus;
     }
 
     private void LateUpdate()
