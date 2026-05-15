@@ -17,6 +17,11 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private bool closeOnAwake = true;
 
+    [Header("Modal")]
+    [SerializeField] private bool pauseTimeWhileOpen = true;
+    [SerializeField] private bool hideHudWhileOpen = true;
+    [SerializeField] private bool blockPauseWhileOpen = true;
+
     [Header("Tabs")]
     [SerializeField] private Button sellTabButton;
     [SerializeField] private Button upgradesTabButton;
@@ -79,6 +84,7 @@ public class DockOwnerUI : MonoBehaviour
     private bool isInputSubscribed;
     private bool hasLoggedMissingUpgradeControls;
     private bool hasLoggedMissingBaitControls;
+    private int modalToken = UIModalManager.InvalidToken;
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
 
@@ -109,6 +115,7 @@ public class DockOwnerUI : MonoBehaviour
         UnsubscribeFromReferences();
         UnsubscribeInput();
         UnbindButtons();
+        UIModalManager.PopModal(ref modalToken);
     }
 
     public void Open(FishMarket _fishMarket)
@@ -122,6 +129,7 @@ public class DockOwnerUI : MonoBehaviour
 
         isOpen = true;
         PanelObject.SetActive(true);
+        PushModalState();
         SetGameUiState(GameManager.GameState.InUI, false, true);
         SetStatus(string.Empty);
         SetTab(DockOwnerTab.Sell);
@@ -495,7 +503,23 @@ public class DockOwnerUI : MonoBehaviour
     {
         UISelectionHelper.ClearSelection(PanelObject);
         isOpen = false;
+        UIModalManager.PopModal(ref modalToken);
         PanelObject.SetActive(false);
+    }
+
+    private void PushModalState()
+    {
+        if (modalToken != UIModalManager.InvalidToken)
+            return;
+
+        UIModalRequest request = UIModalRequest.Create(
+            this,
+            pauseTimeWhileOpen,
+            hideHudWhileOpen,
+            blockPauseWhileOpen
+        );
+
+        modalToken = UIModalManager.PushModal(request);
     }
 
     private void HandlePausePressed()

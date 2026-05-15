@@ -17,6 +17,8 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private GameObject[] panelsToHideWhilePaused;
     [SerializeField] private bool restoreHiddenPanelsOnResume = true;
     [SerializeField] private bool hidePanelsWithCanvasGroup = true;
+    [SerializeField] private bool hideHudWithModalManager = true;
+    [SerializeField] private bool pauseTimeWithModalManager = true;
 
     [Header("Navigation")]
     [SerializeField] private Selectable pauseFirstSelected;
@@ -30,6 +32,7 @@ public class PauseManager : MonoBehaviour
     private GameManager.GameState stateBeforePause;
     private HiddenPanelState[] hiddenPanelStates;
     private Selectable pauseLastSelected;
+    private int pauseModalToken = UIModalManager.InvalidToken;
 
     private struct HiddenPanelState
     {
@@ -84,6 +87,12 @@ public class PauseManager : MonoBehaviour
             return;
         }
 
+        if (GameManager.instance.currentState != GameManager.GameState.Paused &&
+            UIModalManager.IsPauseBlocked)
+        {
+            return;
+        }
+
         // se estiver na confirmação - cancela (volta pro pause)
         if (confirmPanel != null && confirmPanel.activeSelf)
         {
@@ -119,7 +128,21 @@ public class PauseManager : MonoBehaviour
 
         GameManager.instance.SetState(GameManager.GameState.Paused);
 
-        Time.timeScale = 0f;
+        if (pauseTimeWithModalManager || hideHudWithModalManager)
+        {
+            UIModalRequest modalRequest = UIModalRequest.Create(
+                this,
+                pauseTimeWithModalManager,
+                hideHudWithModalManager,
+                false
+            );
+
+            pauseModalToken = UIModalManager.PushModal(modalRequest);
+        }
+        else
+        {
+            Time.timeScale = 0f;
+        }
 
         HideConfiguredPanelsForPause();
 
@@ -142,7 +165,10 @@ public class PauseManager : MonoBehaviour
             return;
 
         // destrava o tempo
-        Time.timeScale = 1f;
+        if (pauseModalToken != UIModalManager.InvalidToken)
+            UIModalManager.PopModal(ref pauseModalToken);
+        else
+            Time.timeScale = 1f;
 
         // volta para estado anterior (OnFoot, OnBoat, etc)
         GameManager.instance.SetState(stateBeforePause);
@@ -217,6 +243,9 @@ public class PauseManager : MonoBehaviour
     {
         ShowConfirmation(() =>
         {
+            if (pauseModalToken != UIModalManager.InvalidToken)
+                UIModalManager.PopModal(ref pauseModalToken);
+
             Time.timeScale = 1f;
             SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
         });
@@ -226,6 +255,9 @@ public class PauseManager : MonoBehaviour
     {
         ShowConfirmation(() =>
         {
+            if (pauseModalToken != UIModalManager.InvalidToken)
+                UIModalManager.PopModal(ref pauseModalToken);
+
             Time.timeScale = 1f;
             SceneManager.LoadScene("Main Menu");
         });

@@ -10,6 +10,11 @@ public class PaymentUI : MonoBehaviour
     [SerializeField] private GameObject panel;
     [SerializeField] private bool closeOnAwake = true;
 
+    [Header("Modal")]
+    [SerializeField] private bool pauseTimeWhileOpen = true;
+    [SerializeField] private bool hideHudWhileOpen = true;
+    [SerializeField] private bool blockPauseWhileOpen = true;
+
     [Header("Buttons")]
     [SerializeField] private Button payButton;
     [SerializeField] private Button closeButton;
@@ -55,6 +60,7 @@ public class PaymentUI : MonoBehaviour
     private bool areButtonsBound;
     private bool isInputSubscribed;
     private bool isCampaignSubscribed;
+    private int modalToken = UIModalManager.InvalidToken;
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
 
@@ -82,6 +88,7 @@ public class PaymentUI : MonoBehaviour
         UnsubscribeInput();
         UnsubscribeFromReferences();
         UnsubscribeCampaignProgress();
+        UIModalManager.PopModal(ref modalToken);
     }
 
     public void Open(MoneyLender _moneyLender)
@@ -115,6 +122,7 @@ public class PaymentUI : MonoBehaviour
 
         isOpen = true;
         PanelObject.SetActive(true);
+        PushModalState();
 
         // Fecha o diálogo invocando o callback pendente para não quebrar fluxos
         // que dependem da conclusão do diálogo (ex: tutorial ReadBasicPanels ? GoToBoat)
@@ -226,7 +234,23 @@ public class PaymentUI : MonoBehaviour
     {
         UISelectionHelper.ClearSelection(PanelObject);
         isOpen = false;
+        UIModalManager.PopModal(ref modalToken);
         PanelObject.SetActive(false);
+    }
+
+    private void PushModalState()
+    {
+        if (modalToken != UIModalManager.InvalidToken)
+            return;
+
+        UIModalRequest request = UIModalRequest.Create(
+            this,
+            pauseTimeWhileOpen,
+            hideHudWhileOpen,
+            blockPauseWhileOpen
+        );
+
+        modalToken = UIModalManager.PushModal(request);
     }
 
     private void TryResolveReferences()

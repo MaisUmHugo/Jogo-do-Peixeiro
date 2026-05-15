@@ -61,6 +61,14 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private bool pauseGameOnCompletion;
     [SerializeField] private bool pauseGameOnFailure = true;
 
+    [Header("General Outcome Panel")]
+    [SerializeField] private GameOutcomePanelUI generalOutcomePanel;
+    [SerializeField] private bool useGeneralOutcomePanel = true;
+    [SerializeField] private string tutorialCompleteTitle = "Tutorial concluido";
+    [SerializeField] private string tutorialCompleteMessage = "Voce concluiu o tutorial.";
+    [SerializeField] private string tutorialFailureTitle = "Falha na quest";
+    [SerializeField] private string tutorialFailureMessage = "O prazo acabou antes de concluir a meta.";
+
     [Header("Dialogs")]
     [SerializeField] private DialogData firstTalkDialog;
     [SerializeField] private DialogData noDeliveryDialog;
@@ -308,6 +316,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         Time.timeScale = 1f;
         SetPanelActive(tutorialCompletePanel, false);
 
+        if (generalOutcomePanel != null)
+            generalOutcomePanel.Close();
+
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnFoot);
     }
@@ -317,6 +328,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         isShowingEndPanel = false;
         Time.timeScale = 1f;
         SetPanelActive(tutorialFailedPanel, false);
+
+        if (generalOutcomePanel != null)
+            generalOutcomePanel.Close();
 
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnFoot);
@@ -782,6 +796,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (textCanvaManager != null)
             textCanvaManager.CloseDialog();
 
+        if (TryShowGeneralOutcomePanel(_panel, _pauseGame))
+            return;
+
         SetPanelActive(_panel, true);
         PreparePanelForInput(_panel);
 
@@ -797,13 +814,31 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void KeepEndPanelUiReady()
     {
-        if (!IsPanelActive(tutorialCompletePanel) && !IsPanelActive(tutorialFailedPanel))
+        if (!IsPanelActive(tutorialCompletePanel) &&
+            !IsPanelActive(tutorialFailedPanel) &&
+            (generalOutcomePanel == null || !generalOutcomePanel.IsShowing))
         {
             isShowingEndPanel = false;
             return;
         }
 
         UnlockCursorForUi();
+    }
+
+    private bool TryShowGeneralOutcomePanel(GameObject _panel, bool _pauseGame)
+    {
+        if (!useGeneralOutcomePanel || generalOutcomePanel == null)
+            return false;
+
+        bool isFailurePanel = _panel == tutorialFailedPanel || currentStep == TutorialStep.Failed || IsTutorialFailed;
+
+        if (isFailurePanel)
+            generalOutcomePanel.ShowFailure(tutorialFailureTitle, tutorialFailureMessage, _pauseGame);
+        else
+            generalOutcomePanel.ShowCompletion(tutorialCompleteTitle, tutorialCompleteMessage, _pauseGame);
+
+        isShowingEndPanel = true;
+        return true;
     }
 
     private void UnlockCursorForUi()

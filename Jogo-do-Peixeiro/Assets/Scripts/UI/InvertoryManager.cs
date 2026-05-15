@@ -43,6 +43,11 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private bool allowRuntimeFallback;
     [SerializeField] private bool logMissingReferences = true;
 
+    [Header("Modal")]
+    [SerializeField] private bool pauseTimeWhileOpen = true;
+    [SerializeField] private bool hideHudWhileOpen = true;
+    [SerializeField] private bool blockPauseWhileOpen = true;
+
     [Header("Navigation")]
     [SerializeField] private Selectable fishFirstSelected;
     [SerializeField] private Selectable baitsFirstSelected;
@@ -58,6 +63,7 @@ public class InvertoryManager : MonoBehaviour
     private GameManager.GameState stateBeforeInventory = GameManager.GameState.OnFoot;
     private bool hasStoredStateBeforeInventory;
     private bool hasLoggedMissingRuntimeControls;
+    private int modalToken = UIModalManager.InvalidToken;
 
     private void Awake()
     {
@@ -97,6 +103,7 @@ public class InvertoryManager : MonoBehaviour
 
         UnsubscribeInput();
         UnbindButtons();
+        UIModalManager.PopModal(ref modalToken);
     }
 
     private void OnDestroy()
@@ -299,6 +306,7 @@ public class InvertoryManager : MonoBehaviour
             return;
 
         StoreGameStateBeforeInventory();
+        PushModalState();
         SetInventoryTab(currentTab);
         SetInventoryVisible(true);
         SelectCurrentTabControl();
@@ -345,6 +353,7 @@ public class InvertoryManager : MonoBehaviour
         bool wasVisible = IsInventoryVisible();
         SetInventoryVisible(false);
         UISelectionHelper.ClearSelection(inventoryRoot);
+        UIModalManager.PopModal(ref modalToken);
 
         if (wasVisible)
             RestoreGameStateAfterInventory();
@@ -660,6 +669,21 @@ public class InvertoryManager : MonoBehaviour
         stateBeforeInventory = GameManager.instance.currentState;
         hasStoredStateBeforeInventory = true;
         GameManager.instance.SetState(GameManager.GameState.InUI);
+    }
+
+    private void PushModalState()
+    {
+        if (modalToken != UIModalManager.InvalidToken)
+            return;
+
+        UIModalRequest request = UIModalRequest.Create(
+            this,
+            pauseTimeWhileOpen,
+            hideHudWhileOpen,
+            blockPauseWhileOpen
+        );
+
+        modalToken = UIModalManager.PushModal(request);
     }
 
     private void RestoreGameStateAfterInventory()

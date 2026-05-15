@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
@@ -31,6 +32,18 @@ public class FishResultUI : MonoBehaviour
     [SerializeField] private bool hideDayCycleHudWhileShowing = true;
     [SerializeField] private DayCycle dayCycle;
 
+    [Header("Modal")]
+    [SerializeField] private bool useModalManager = true;
+    [SerializeField] private bool pauseTimeWhileShowing = true;
+    [SerializeField] private bool hideHudWhileShowing = true;
+    [SerializeField] private bool blockPauseWhileShowing = true;
+    [SerializeField] private bool lockCameraWhileShowing = true;
+
+    [Header("Rotate Hint")]
+    [SerializeField] private TMP_Text rotateHintText;
+    [SerializeField] private string mouseRotateHint = "Segure o botao esquerdo do mouse para girar.";
+    [SerializeField] private string controllerRotateHint = "Use o analogico direito para girar.";
+
     private int fishRarity;
     private Mesh fishMesh;
     private Material fishMaterial;
@@ -41,6 +54,8 @@ public class FishResultUI : MonoBehaviour
     private bool hasStoredDayCycleHudVisibility;
     private bool wasHourTextVisible;
     private bool wasDayTextVisible;
+    private int modalToken = UIModalManager.InvalidToken;
+    private Coroutine enableSkipCoroutine;
 
     public bool IsShowing => isShowing;
     public event System.Action Closed;
@@ -72,12 +87,20 @@ public class FishResultUI : MonoBehaviour
     private void OnDisable()
     {
         CancelInvoke();
+
+        if (enableSkipCoroutine != null)
+        {
+            StopCoroutine(enableSkipCoroutine);
+            enableSkipCoroutine = null;
+        }
+
         UnsubscribeInput();
 
         if (isShowing)
             NotifyClosed();
         else
         {
+            PopModalState();
             RestoreDayCycleHud();
             ReleaseCameraLock();
         }
@@ -124,24 +147,47 @@ public class FishResultUI : MonoBehaviour
 
         isShowing = true;
         canSkip = false;
-        AcquireCameraLock();
-        HideDayCycleHud();
+        PushModalState();
+
+        if (!useModalManager)
+        {
+            AcquireCameraLock();
+            HideDayCycleHud();
+        }
 
         gameObject.SetActive(true);
         ResolveReferences();
         SetNewFish(_fish);
+        UpdateRotateHintText();
 
         if (resultText != null)
             resultText.text = $"{_fish.typeOfFish.fishName} - {_fish.weight} kg";
 
-        CancelInvoke();
-        Invoke(nameof(EnableSkip), minDisplayTime);
+        if (enableSkipCoroutine != null)
+            StopCoroutine(enableSkipCoroutine);
+
+        enableSkipCoroutine = StartCoroutine(EnableSkipAfterDelay());
+    }
+
+    private IEnumerator EnableSkipAfterDelay()
+    {
+        if (minDisplayTime > 0f)
+            yield return new WaitForSecondsRealtime(minDisplayTime);
+
+        canSkip = true;
+        enableSkipCoroutine = null;
     }
 
     private void ResolveReferences()
     {
         if (resultText == null)
             resultText = FindChildComponentByName<TMP_Text>("ResultText");
+
+        if (rotateHintText == null)
+            rotateHintText = FindChildComponentByName<TMP_Text>("RotateHintText");
+
+        if (rotateHintText == null)
+            rotateHintText = FindChildComponentByName<TMP_Text>("RotateHint");
 
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<DayCycle>(FindObjectsInactive.Include);
@@ -172,6 +218,7 @@ public class FishResultUI : MonoBehaviour
         InputHandler.instance.onInteractPressed += TryClose;
         InputHandler.instance.onPausePressed += TryClose;
         InputHandler.instance.onAnyButtonPressed += TryClose;
+        InputDeviceDetector.DeviceTypeChanged += HandleDeviceTypeChanged;
         isInputSubscribed = true;
     }
 
@@ -183,6 +230,7 @@ public class FishResultUI : MonoBehaviour
         InputHandler.instance.onInteractPressed -= TryClose;
         InputHandler.instance.onPausePressed -= TryClose;
         InputHandler.instance.onAnyButtonPressed -= TryClose;
+        InputDeviceDetector.DeviceTypeChanged -= HandleDeviceTypeChanged;
         isInputSubscribed = false;
     }
 
@@ -213,6 +261,7 @@ public class FishResultUI : MonoBehaviour
     {
         isShowing = false;
         canSkip = false;
+        PopModalState();
         RestoreDayCycleHud();
         ReleaseCameraLock();
         Closed?.Invoke();
@@ -260,6 +309,43 @@ public class FishResultUI : MonoBehaviour
 
         PlayerCamera.PopCameraLock();
         hasCameraLock = false;
+    }
+
+    private void PushModalState()
+    {
+        if (!useModalManager || modalToken != UIModalManager.InvalidToken)
+            return;
+
+        UIModalRequest request = UIModalRequest.Create(
+            this,
+            pauseTimeWhileShowing,
+            hideHudWhileShowing,
+            blockPauseWhileShowing,
+            lockCameraWhileShowing
+        );
+
+        modalToken = UIModalManager.PushModal(request);
+    }
+
+    private void PopModalState()
+    {
+        UIModalManager.PopModal(ref modalToken);
+    }
+
+    private void HandleDeviceTypeChanged(InputDeviceType _deviceType)
+    {
+        if (isShowing)
+            UpdateRotateHintText();
+    }
+
+    private void UpdateRotateHintText()
+    {
+        if (rotateHintText == null)
+            return;
+
+        rotateHintText.text = InputDeviceDetector.CurrentDeviceType == InputDeviceType.GenericController
+            ? controllerRotateHint
+            : mouseRotateHint;
     }
 
     private void RotateStarImage()
