@@ -566,6 +566,7 @@ MonoBehaviour:
   useTilt: 0
   tiltAmount: 5
   tiltSpeed: 1
+  clearSelectionOnPointerExit: 0
 --- !u!1 &8819875601737815549
 GameObject:
   m_ObjectHideFlags: 0
