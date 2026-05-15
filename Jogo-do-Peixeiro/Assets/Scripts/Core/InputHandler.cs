@@ -21,9 +21,6 @@ public class InputHandler : MonoBehaviour
     [Header("Movement Input")]
     [SerializeField, Range(0f, 0.5f)] private float moveDeadzone = 0.15f;
 
-    [Header("Zoom Input")]
-    [SerializeField] private bool ignoreRightTriggerForZoom = true;
-
     private void OnValidate()
     {
         moveDeadzone = Mathf.Clamp(moveDeadzone, 0f, 0.5f);
@@ -57,7 +54,6 @@ public class InputHandler : MonoBehaviour
         lookInput = inputActions.Player.Look.ReadValue<Vector2>();
 
         zoomInput = inputActions.Player.Zoom.ReadValue<float>();
-        zoomInput = GetProcessedZoomInput(zoomInput);
 
         if (inputActions.Player.Interact.WasPressedThisFrame())
         {
@@ -83,14 +79,6 @@ public class InputHandler : MonoBehaviour
         {
            onAnyButtonPressed?.Invoke();
         }
-    }
-
-    private float GetProcessedZoomInput(float _zoomInput)
-    {
-        if (!ignoreRightTriggerForZoom || Gamepad.current == null)
-            return _zoomInput;
-
-        return _zoomInput - Gamepad.current.rightTrigger.ReadValue();
     }
 
     private Vector2 GetProcessedMoveInput(Vector2 _moveInput)
