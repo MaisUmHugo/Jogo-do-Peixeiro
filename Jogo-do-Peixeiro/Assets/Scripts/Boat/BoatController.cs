@@ -11,6 +11,9 @@ public class BoatController : MonoBehaviour
     [Header("Player Components")]
     [SerializeField] private PlayerController playerController;
     [SerializeField] private CharacterController characterController;
+    [SerializeField] private PlayerMove playerMove;
+    [SerializeField] private Animator playerAnimator;
+    [SerializeField] private PlayerAnimationController playerAnimationController;
 
     private bool isPlayerOnBoat;
     private Transform originalParent;
@@ -23,6 +26,7 @@ public class BoatController : MonoBehaviour
         rb = GetComponent<Rigidbody>();
         boatMotor = GetComponent<BoatMotor>();
         floaters = GetComponentsInChildren<Floater>();
+        ResolvePlayerReferences();
 
         bool isMainMenu = SceneManager.GetActiveScene().name == "Main Menu";
 
@@ -77,6 +81,9 @@ public class BoatController : MonoBehaviour
 
         Debug.Log("Entrou no barco");
         isPlayerOnBoat = true;
+        ResolvePlayerReferences();
+        ResetPlayerRuntimeState();
+        EnsurePlayerAnimatorEnabled();
 
         // 1. Liga a física e flutuação
         SetBoatPhysics(true);
@@ -198,6 +205,12 @@ public class BoatController : MonoBehaviour
         if (characterController != null)
             characterController.enabled = _restorePlayerControl;
 
+        if (_restorePlayerControl)
+        {
+            ResetPlayerRuntimeState();
+            EnsurePlayerAnimatorEnabled();
+        }
+
         if (boatCamera != null)
             boatCamera.SetActive(false);
 
@@ -208,5 +221,41 @@ public class BoatController : MonoBehaviour
     public bool IsPlayerOnBoat()
     {
         return isPlayerOnBoat;
+    }
+
+    private void ResolvePlayerReferences()
+    {
+        if (player == null)
+            return;
+
+        if (playerController == null)
+            playerController = player.GetComponent<PlayerController>();
+
+        if (characterController == null)
+            characterController = player.GetComponent<CharacterController>();
+
+        if (playerMove == null)
+            playerMove = player.GetComponent<PlayerMove>();
+
+        if (playerAnimator == null)
+            playerAnimator = player.GetComponentInChildren<Animator>(true);
+
+        if (playerAnimationController == null)
+            playerAnimationController = player.GetComponentInChildren<PlayerAnimationController>(true);
+    }
+
+    private void ResetPlayerRuntimeState()
+    {
+        if (playerMove != null)
+            playerMove.ResetMovementState();
+
+        if (playerAnimationController != null)
+            playerAnimationController.ResetFishingAnimationState();
+    }
+
+    private void EnsurePlayerAnimatorEnabled()
+    {
+        if (playerAnimator != null && !playerAnimator.enabled)
+            playerAnimator.enabled = true;
     }
 }
