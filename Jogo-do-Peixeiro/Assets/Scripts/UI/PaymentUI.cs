@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class PaymentUI : MonoBehaviour
 {
+    #region Fields
+
     [Header("Panel")]
     [SerializeField] private GameObject panel;
     [SerializeField] private bool closeOnAwake = true;
@@ -64,6 +66,10 @@ public class PaymentUI : MonoBehaviour
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
 
+    #endregion
+
+    #region Unity Lifecycle
+
     private void Awake()
     {
         TryResolveReferences();
@@ -90,6 +96,10 @@ public class PaymentUI : MonoBehaviour
         UnsubscribeCampaignProgress();
         UIModalManager.PopModal(ref modalToken);
     }
+
+    #endregion
+
+    #region Public UI Actions
 
     public void Open(MoneyLender _moneyLender)
     {
@@ -221,6 +231,10 @@ public class PaymentUI : MonoBehaviour
         SetGameUiState(GameManager.GameState.InUI, false, true);
     }
 
+    #endregion
+
+    #region Panel State
+
     private void Close()
     {
         if (isOpen)
@@ -252,6 +266,10 @@ public class PaymentUI : MonoBehaviour
 
         modalToken = UIModalManager.PushModal(request);
     }
+
+    #endregion
+
+    #region Reference Resolution And Subscriptions
 
     private void TryResolveReferences()
     {
@@ -367,6 +385,10 @@ public class PaymentUI : MonoBehaviour
         areButtonsBound = false;
     }
 
+    #endregion
+
+    #region Input And Data Event Handlers
+
     private void HandlePausePressed()
     {
         if (!isOpen)
@@ -436,6 +458,10 @@ public class PaymentUI : MonoBehaviour
         fishWeight = shipInventory.GetCurrentWeight();
     }
 
+    #endregion
+
+    #region Payment Text Refresh
+
     private void SetPaymentTexts()
     {
         if (paymentText == null)
@@ -503,6 +529,10 @@ public class PaymentUI : MonoBehaviour
 
         fishesText.text = builder.ToString();
     }
+
+    #endregion
+
+    #region Payment Rules
 
     private bool ShouldUseTutorialPayment()
     {
@@ -656,6 +686,10 @@ public class PaymentUI : MonoBehaviour
                                  playerMoney > 0;
     }
 
+    #endregion
+
+    #region Selection And UI Helpers
+
     private void SelectInitialControl()
     {
         Selectable target = firstSelected != null ? firstSelected : GetPreferredSelectable();
@@ -727,6 +761,10 @@ public class PaymentUI : MonoBehaviour
             statusText.text = _message;
     }
 
+    #endregion
+
+    #region Game State And Audio
+
     private void SetGameUiState(GameManager.GameState _state, bool _lockCursor, bool _showCursor)
     {
         if (GameManager.instance != null)
@@ -743,4 +781,6 @@ public class PaymentUI : MonoBehaviour
 
         AudioManager.Instance.PlaySfx(_clip, _volume);
     }
+
+    #endregion
 }

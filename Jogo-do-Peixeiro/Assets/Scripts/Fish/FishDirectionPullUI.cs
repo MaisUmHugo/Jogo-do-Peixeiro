@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class FishDirectionPullUI : MonoBehaviour
 {
+    #region Fields
+
     [Header("References")]
     [FormerlySerializedAs("directionPull")]
     [SerializeField] private FishDirectionPull _directionPull;
@@ -83,6 +85,10 @@ public class FishDirectionPullUI : MonoBehaviour
     private bool _hasLoggedMissingBackplate;
     private bool _hasLoggedMissingHoldHint;
 
+    #endregion
+
+    #region Unity Lifecycle
+
     private void OnValidate()
     {
         _iconSize.x = Mathf.Max(1f, _iconSize.x);
@@ -132,6 +138,10 @@ public class FishDirectionPullUI : MonoBehaviour
         SetVisible(false);
     }
 
+    #endregion
+
+    #region Event Subscriptions
+
     private void SubscribeToEvents()
     {
         ResolveReferences();
@@ -160,6 +170,10 @@ public class FishDirectionPullUI : MonoBehaviour
         InputDeviceDetector.DeviceTypeChanged -= HandleDeviceTypeChanged;
     }
 
+    #endregion
+
+    #region Event Handlers
+
     private void HandlePullActiveChanged(bool _isActive)
     {
         RefreshDisplay();
@@ -187,6 +201,10 @@ public class FishDirectionPullUI : MonoBehaviour
     {
         RefreshDisplay();
     }
+
+    #endregion
+
+    #region Display Refresh
 
     private void RefreshDisplay()
     {
@@ -331,6 +349,10 @@ public class FishDirectionPullUI : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Direction Positioning
+
     private void UpdateIconTargetPosition()
     {
         int promptId = _directionPull.CurrentPromptId;
@@ -463,6 +485,10 @@ public class FishDirectionPullUI : MonoBehaviour
         );
     }
 
+    #endregion
+
+    #region Visibility And Runtime State
+
     private RectTransform GetParentRect()
     {
         if (_directionIconRect != null && _directionIconRect.parent is RectTransform iconParentRect)
@@ -513,6 +539,10 @@ public class FishDirectionPullUI : MonoBehaviour
         _lastPromptId = -1;
         RefreshDisplay();
     }
+
+    #endregion
+
+    #region Reference Resolution And Runtime UI
 
     private void ResolveReferences()
     {
@@ -698,6 +728,10 @@ public class FishDirectionPullUI : MonoBehaviour
         return hintText;
     }
 
+    #endregion
+
+    #region Runtime Helpers And Debug
+
     private void SetHoldHintVisible(bool _visible)
     {
         if (_holdHintText == null)
@@ -753,4 +787,6 @@ public class FishDirectionPullUI : MonoBehaviour
         Debug.LogWarning($"[FishDirectionPullUI] Falta {_referenceName}. Crie esse objeto na cena/prefab ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-lo em runtime.", this);
         _hasLogged = true;
     }
+
+    #endregion
 }

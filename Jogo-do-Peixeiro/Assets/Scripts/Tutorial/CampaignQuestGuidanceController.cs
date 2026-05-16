@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class CampaignQuestGuidanceController : MonoBehaviour
 {
+    #region Types And Fields
+
     public static CampaignQuestGuidanceController instance;
 
     public enum TutorialStep
@@ -110,6 +112,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     public bool IsTutorialRunning => runTutorial && !IsTutorialFinished && !IsTutorialFailed;
     public bool IsHandlingPayment => IsTutorialRunning && handleMoneyLenderDuringTutorial && hasAcceptedRequest;
 
+    #endregion
+
+    #region Unity Lifecycle
+
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -186,6 +192,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (isShowingEndPanel)
             KeepEndPanelUiReady();
     }
+
+    #endregion
+
+    #region Tutorial Notifications
 
     public void SetStep(TutorialStep _newStep)
     {
@@ -335,6 +345,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnFoot);
     }
+
+    #endregion
+
+    #region Interactions And Progression
 
     private bool HandleMoneyLenderInteraction(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
@@ -511,6 +525,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         FailTutorial();
     }
 
+    #endregion
+
+    #region Delivery Request Flow
+
     private void StartDeliveryRequest(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
         PickRandomRequest(_moneyLender);
@@ -654,6 +672,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         return paid;
     }
 
+    #endregion
+
+    #region Money Lender Payment API
+
     public bool ShouldHandleMoneyLenderPayment(MoneyLender _moneyLender)
     {
         if (IsCampaignEconomyFlowActive())
@@ -743,6 +765,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         FinishTutorial();
         return true;
     }
+
+    #endregion
+
+    #region Tutorial Completion And Panels
 
     private void ShowMissingRequestMessage(bool _showDialog = true)
     {
@@ -889,6 +915,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         return _panel != null && _panel.activeInHierarchy;
     }
 
+    #endregion
+
+    #region Dialogs And Text Formatting
+
     private void ShowDialog(DialogData _dialogData, Action _onFinished = null, DialogCameraFocusTarget _cameraFocusTarget = null)
     {
         if (textCanvaManager == null ||
@@ -937,6 +967,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             .Replace("{owned}", GetOwnedRequestedFishCount().ToString())
             .Replace("{ownedWeight}", GetCurrentOwnedFishWeight().ToString("0"));
     }
+
+    #endregion
+
+    #region Inventory And Objective Text
 
     private int GetOwnedRequestedFishCount()
     {
@@ -1125,6 +1159,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Markers And Campaign State
+
     private void UpdateMarkers()
     {
         ClearMarkers();
@@ -1246,4 +1284,6 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         else
             Debug.Log(_message);
     }
+
+    #endregion
 }

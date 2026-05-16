@@ -6,6 +6,8 @@ using UnityEngine.UI;
 
 public class DockOwnerUI : MonoBehaviour
 {
+    #region Types And Fields
+
     private enum DockOwnerTab
     {
         Sell,
@@ -88,6 +90,10 @@ public class DockOwnerUI : MonoBehaviour
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
 
+    #endregion
+
+    #region Unity Lifecycle
+
     private void Awake()
     {
         TryResolveReferences();
@@ -117,6 +123,10 @@ public class DockOwnerUI : MonoBehaviour
         UnbindButtons();
         UIModalManager.PopModal(ref modalToken);
     }
+
+    #endregion
+
+    #region Public UI Actions
 
     public void Open(FishMarket _fishMarket)
     {
@@ -222,6 +232,10 @@ public class DockOwnerUI : MonoBehaviour
         SetBaitTexts();
         EnsureCurrentSelectionIsUsable();
     }
+
+    #endregion
+
+    #region Tab Refresh
 
     private void SetTab(DockOwnerTab _tab)
     {
@@ -472,6 +486,10 @@ public class DockOwnerUI : MonoBehaviour
         return Mathf.Min(baitTexts.Length, baitBuyButtons.Length);
     }
 
+    #endregion
+
+    #region Panel State
+
     private void SetBaitControlsActive(int _visibleCount)
     {
         if (baitTexts != null)
@@ -529,6 +547,10 @@ public class DockOwnerUI : MonoBehaviour
 
         Close();
     }
+
+    #endregion
+
+    #region Event Handlers And Purchases
 
     private void ChangeFishList(List<FishData> _fishList, float _fishWeight)
     {
@@ -610,6 +632,10 @@ public class DockOwnerUI : MonoBehaviour
         SetStatus(success ? $"{bait.BaitName} comprada." : GetBaitPurchaseStatusText(result));
         Refresh();
     }
+
+    #endregion
+
+    #region Reference Resolution And Runtime UI
 
     private void TryResolveReferences()
     {
@@ -1125,6 +1151,10 @@ public class DockOwnerUI : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Subscriptions And Button Binding
+
     private void SubscribeToReferences()
     {
         if (isSubscribed)
@@ -1290,6 +1320,10 @@ public class DockOwnerUI : MonoBehaviour
 
         baitBuyButtons[_index].onClick.RemoveListener(_action);
     }
+
+    #endregion
+
+    #region Selection And Helpers
 
     private void SetObjectActive(GameObject _target, bool _active)
     {
@@ -1560,4 +1594,6 @@ public class DockOwnerUI : MonoBehaviour
         Cursor.lockState = _lockCursor ? CursorLockMode.Locked : CursorLockMode.None;
         Cursor.visible = _showCursor;
     }
+
+    #endregion
 }

@@ -5,6 +5,8 @@ using UnityEngine.UI;
 
 public class FishSkillCheckUI : MonoBehaviour
 {
+    #region Types And Fields
+
     public enum TimingPositionMode
     {
         FullArea,
@@ -84,6 +86,10 @@ public class FishSkillCheckUI : MonoBehaviour
     private bool hasLearnedSkillCheckInput;
     private RectTransform skillCheckInteractIconRect;
     private bool hasLoggedMissingSkillCheckIcon;
+
+    #endregion
+
+    #region Unity Lifecycle
 
     private void OnValidate()
     {
@@ -173,6 +179,10 @@ public class FishSkillCheckUI : MonoBehaviour
         }
     }
 
+    #endregion
+
+    #region Update And Progress Bar
+
     private void Update()
     {
         UpdateProgressBarVisibility();
@@ -232,6 +242,10 @@ public class FishSkillCheckUI : MonoBehaviour
         if (progressBarArea != null)
             progressBarArea.gameObject.SetActive(_visible);
     }
+
+    #endregion
+
+    #region Timing Display
 
     private void UpdateTimingBar()
     {
@@ -468,6 +482,10 @@ public class FishSkillCheckUI : MonoBehaviour
         return !hasRandomTimingPosition || skillChecksAtCurrentPosition >= skillChecksPerPosition;
     }
 
+    #endregion
+
+    #region Feedback And Shake
+
     private void HandleFeedback(FishSkillCheck.FeedbackResult resultado)
     {
         if (resultado == FishSkillCheck.FeedbackResult.Good ||
@@ -630,6 +648,10 @@ public class FishSkillCheckUI : MonoBehaviour
         return (direction * radius) + feedbackOffset;
     }
 
+    #endregion
+
+    #region Skill Check Hint
+
     private void HandleDeviceTypeChanged(InputDeviceType _deviceType)
     {
         UpdateSkillCheckHintIconSprite();
@@ -729,4 +751,6 @@ public class FishSkillCheckUI : MonoBehaviour
         if (_skillCheckInteractIcon.gameObject != gameObject)
             _skillCheckInteractIcon.gameObject.SetActive(_visible);
     }
+
+    #endregion
 }

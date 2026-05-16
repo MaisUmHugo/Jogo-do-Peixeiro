@@ -4,6 +4,8 @@ using UnityEngine.VFX;
 
 public class FishingRod : MonoBehaviour
 {
+    #region Fields
+
     [Header("References")]
     [SerializeField] private LineRenderer lineRenderer;
     [SerializeField] private Transform rodTip;
@@ -63,6 +65,10 @@ public class FishingRod : MonoBehaviour
     private int lastFishMovementPromptId = -1;
     private Vector3[] arcCache;
 
+    #endregion
+
+    #region Unity Lifecycle
+
     private void OnValidate()
     {
         hookSpeed = Mathf.Max(0.1f, hookSpeed);
@@ -104,6 +110,10 @@ public class FishingRod : MonoBehaviour
         if (InputHandler.instance != null)
             InputHandler.instance.onInteractPressed -= HandleInteractPressed;
     }
+
+    #endregion
+
+    #region Update And Public Fishing API
 
     private void Update()
     {
@@ -213,8 +223,12 @@ public class FishingRod : MonoBehaviour
                 break;
         }
 
-        SpawnScaledSplash(currentHook.position, intensityMultiplier);
+            SpawnScaledSplash(currentHook.position, intensityMultiplier);
     }
+
+    #endregion
+
+    #region Hook Travel And Recall
 
     private void HandleInteractPressed()
     {
@@ -351,6 +365,10 @@ public class FishingRod : MonoBehaviour
         hookRoutine = null;
     }
 
+    #endregion
+
+    #region Rod Visual State
+
     private void ResolveRodVisualRoot()
     {
         if (rodVisualRoot != null ||
@@ -414,6 +432,10 @@ public class FishingRod : MonoBehaviour
 
         return GameManager.instance != null && GameManager.instance.IsGameplayBlocked();
     }
+
+    #endregion
+
+    #region Hook Line And VFX
 
     private void UpdateHookLine()
     {
@@ -523,6 +545,10 @@ public class FishingRod : MonoBehaviour
         Destroy(instance.gameObject, fishPullVFXLifetime);
     }
 
+    #endregion
+
+    #region Audio
+
     private void PlayCastSfx()
     {
         if (AudioManager.Instance == null || castSfx == null)
@@ -546,6 +572,10 @@ public class FishingRod : MonoBehaviour
 
         AudioManager.Instance.PlaySfxAtPosition(fishPullSfx, _position, fishPullSfxVolume);
     }
+
+    #endregion
+
+    #region Hook Movement Helpers
 
     private void PrepareHookForManualMovement(Transform _hook)
     {
@@ -581,6 +611,10 @@ public class FishingRod : MonoBehaviour
 
         return points;
     }
+
+    #endregion
+
+    #region Success Splash Feedback
 
     private void SpawnScaledSplash(Vector3 _position, float _multiplier)
     {
@@ -625,6 +659,10 @@ public class FishingRod : MonoBehaviour
             yield return null;
         }
     }
+
+    #endregion
+
+    #region Water Detection
 
     private bool TryGetWaterHit(out Vector3 _hitPoint)
     {
@@ -680,4 +718,6 @@ public class FishingRod : MonoBehaviour
         _hitPoint = spotTargetPosition;
         return true;
     }
+
+    #endregion
 }

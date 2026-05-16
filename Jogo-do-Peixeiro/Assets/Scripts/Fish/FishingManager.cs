@@ -5,6 +5,8 @@ using UnityEngine.Serialization;
 
 public class FishingManager : MonoBehaviour
 {
+    #region Fields And Types
+
     public static FishingManager instance;
 
     [Header("UI")]
@@ -78,6 +80,10 @@ public class FishingManager : MonoBehaviour
         public bool OriginalBlocksRaycasts;
     }
 
+    #endregion
+
+    #region Unity Lifecycle
+
     private void Awake()
     {
         if (instance != null && instance != this)
@@ -129,6 +135,10 @@ public class FishingManager : MonoBehaviour
         if (_baitInventory == null)
             _baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
     }
+
+    #endregion
+
+    #region Fishing Flow
 
     private void Update()
     {
@@ -286,6 +296,10 @@ public class FishingManager : MonoBehaviour
         _hiddenPanelStates = null;
     }
 
+    #endregion
+
+    #region Bite And Progress
+
     private void StartBiteWaiting()
     {
         if (_fishBiteHandler != null)
@@ -386,6 +400,10 @@ public class FishingManager : MonoBehaviour
         Debug.Log("Falhou na pescaria.");
         EndFishing(false);
     }
+
+    #endregion
+
+    #region Completion And Fish Selection
 
     private void CompleteFishing()
     {
@@ -620,6 +638,10 @@ public class FishingManager : MonoBehaviour
         _objectiveFishMissStreak++;
     }
 
+    #endregion
+
+    #region Rewards And Bait
+
     private float GetProgressMultiplierByFish()
     {
         if (_selectedFishType == null)
@@ -695,6 +717,10 @@ public class FishingManager : MonoBehaviour
     {
         TutorialEvents.NotifyFishCaught(_caughtFish, _currentShipInventory);
     }
+
+    #endregion
+
+    #region End And Cleanup
 
     private void EndFishing(bool _success)
     {
@@ -788,4 +814,6 @@ public class FishingManager : MonoBehaviour
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnBoat);
     }
+
+    #endregion
 }
