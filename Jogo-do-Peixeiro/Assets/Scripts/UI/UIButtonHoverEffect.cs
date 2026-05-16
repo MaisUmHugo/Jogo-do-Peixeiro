@@ -3,6 +3,9 @@ using UnityEngine.EventSystems;
 
 public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
+    [Header("Target")]
+    [SerializeField] private Transform visualTarget;
+
     [Header("Scale")]
     [SerializeField] private float normalScale = 1f;
     [SerializeField] private float selectedScale = 1.1f;
@@ -25,19 +28,20 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     private void Update()
     {
         bool active = isHovered || IsCurrentlySelected();
+        Transform target = GetVisualTarget();
 
         if (!active)
         {
-            transform.localScale = Vector3.Lerp(
-                transform.localScale,
+            target.localScale = Vector3.Lerp(
+                target.localScale,
                 Vector3.one * normalScale,
                 Time.unscaledDeltaTime * 10f
             );
 
             if (useTilt)
             {
-                transform.rotation = Quaternion.Lerp(
-                    transform.rotation,
+                target.localRotation = Quaternion.Lerp(
+                    target.localRotation,
                     Quaternion.identity,
                     Time.unscaledDeltaTime * 10f
                 );
@@ -53,8 +57,8 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
             scale += Mathf.Sin(Time.unscaledTime * pulseSpeed) * pulseAmount;
         }
 
-        transform.localScale = Vector3.Lerp(
-            transform.localScale,
+        target.localScale = Vector3.Lerp(
+            target.localScale,
             Vector3.one * scale,
             Time.unscaledDeltaTime * 10f
         );
@@ -65,8 +69,8 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
 
             Quaternion targetRot = Quaternion.Euler(0f, 0f, tilt);
 
-            transform.rotation = Quaternion.Lerp(
-                transform.rotation,
+            target.localRotation = Quaternion.Lerp(
+                target.localRotation,
                 targetRot,
                 Time.unscaledDeltaTime * 10f
             );
@@ -79,6 +83,11 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
             return false;
 
         return EventSystem.current.currentSelectedGameObject == gameObject;
+    }
+
+    private Transform GetVisualTarget()
+    {
+        return visualTarget != null ? visualTarget : transform;
     }
 
     public void OnPointerEnter(PointerEventData eventData)
@@ -113,7 +122,8 @@ public class UIButtonHoverEffect : MonoBehaviour, IPointerEnterHandler, IPointer
     {
         isHovered = false;
 
-        transform.localScale = Vector3.one * normalScale;
-        transform.rotation = Quaternion.identity;
+        Transform target = GetVisualTarget();
+        target.localScale = Vector3.one * normalScale;
+        target.localRotation = Quaternion.identity;
     }
 }
