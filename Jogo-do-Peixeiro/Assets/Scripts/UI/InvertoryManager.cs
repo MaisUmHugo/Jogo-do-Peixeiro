@@ -32,6 +32,11 @@ public class InvertoryManager : MonoBehaviour
     [Header("Fish")]
     [SerializeField] private TMP_Text inventoryText;
     [SerializeField] private TMP_Text kilogramText;
+    [SerializeField] private Color weightNormalColor = Color.white;
+    [SerializeField] private Color weightAlmostFullColor = new Color(1f, 0.82f, 0.2f, 1f);
+    [SerializeField] private Color weightFullColor = new Color(1f, 0.25f, 0.25f, 1f);
+    [SerializeField, Range(0f, 1f)] private float almostFullWeightPercent = 0.75f;
+    [SerializeField, Range(0f, 1f)] private float fullWeightPercent = 0.95f;
     [SerializeField] private InventoryFishSlotUI[] fishGridSlots;
     [SerializeField] private Transform fishGridContent;
     [SerializeField] private InventoryFishSlotUI fishSlotTemplate;
@@ -49,12 +54,17 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private Button discardConfirmYesButton;
     [SerializeField] private Button discardConfirmNoButton;
     [SerializeField] private string discardConfirmTextFormat = "Descartar {0} peixe(s)?";
+    [SerializeField] private InventoryFishSlotUI[] discardFishGridSlots;
+    [SerializeField] private Transform discardFishGridContent;
+    [SerializeField] private InventoryFishSlotUI discardFishSlotTemplate;
+    [SerializeField] private bool autoCreateDiscardFishGridSlots = true;
 
     [Header("Baits")]
     [SerializeField] private TMP_Text baitInventoryText;
     [SerializeField] private TMP_Text equippedBaitText;
     [SerializeField] private Button[] baitEquipButtons;
     [SerializeField] private Button clearBaitButton;
+    [SerializeField] private bool showClearBaitButton;
     [SerializeField] private BaitData[] baitSlots;
     [SerializeField] private InventoryBaitSlotUI[] baitGridSlots;
     [SerializeField] private Transform baitGridContent;
@@ -74,6 +84,7 @@ public class InvertoryManager : MonoBehaviour
     [Header("Navigation")]
     [SerializeField] private Selectable fishFirstSelected;
     [SerializeField] private Selectable baitsFirstSelected;
+    [SerializeField, Range(0f, 1f)] private float selectionRecoveryMoveThreshold = 0.35f;
 
     private CanvasGroup inventoryCanvasGroup;
     private Coroutine inputSubscriptionRoutine;
@@ -86,9 +97,13 @@ public class InvertoryManager : MonoBehaviour
     private GameManager.GameState stateBeforeInventory = GameManager.GameState.OnFoot;
     private bool hasStoredStateBeforeInventory;
     private bool hasLoggedMissingRuntimeControls;
+    private bool hasStoredKilogramTextColor;
+    private bool wasSelectionRecoveryMoveHeld;
+    private Color kilogramTextDefaultColor = Color.white;
     private int modalToken = UIModalManager.InvalidToken;
     private readonly HashSet<int> selectedFishIndexes = new HashSet<int>();
     private bool isDiscardMode;
+    private bool isDiscardConfirmVisible;
 
     #endregion
 
@@ -152,6 +167,19 @@ public class InvertoryManager : MonoBehaviour
             baitInventory.OnBaitInventoryChanged -= OnBaitInventoryChanged;
     }
 
+    private void Update()
+    {
+        RecoverSelectionFromMoveInput();
+    }
+
+    private void OnValidate()
+    {
+        if (fullWeightPercent < almostFullWeightPercent)
+            fullWeightPercent = almostFullWeightPercent;
+
+        selectionRecoveryMoveThreshold = Mathf.Clamp01(selectionRecoveryMoveThreshold);
+    }
+
     #endregion
 
     #region Reference Resolution And Grid Setup
@@ -202,6 +230,9 @@ public class InvertoryManager : MonoBehaviour
 
         if (baitsTabPanel == null)
             baitsTabPanel = FindChildGameObject("BaitInventory", "BaitInventoryPanel", "BaitsInventoryPanel", "BaitGridPanel");
+
+        if (discardModePanel == null)
+            discardModePanel = FindChildGameObject("DiscardPanel", "DiscardModePanel", "FishDiscardPanel");
 
         fishTabPanel = ResolveTabPanelRoot(fishTabPanel, "FishInventory", "FishInventoryPanel");
         baitsTabPanel = ResolveTabPanelRoot(baitsTabPanel, "BaitInventory", "BaitInventoryPanel", "BaitsInventoryPanel");
@@ -321,11 +352,17 @@ public class InvertoryManager : MonoBehaviour
         if (!HasFishGridSlots() && fishTabPanel != null)
             fishGridSlots = fishTabPanel.GetComponentsInChildren<InventoryFishSlotUI>(true);
 
+        if (!HasDiscardFishGridSlots() && discardModePanel != null)
+            discardFishGridSlots = discardModePanel.GetComponentsInChildren<InventoryFishSlotUI>(true);
+
         if (!HasBaitGridSlots() && baitsTabPanel != null)
             baitGridSlots = baitsTabPanel.GetComponentsInChildren<InventoryBaitSlotUI>(true);
 
         if (fishSlotTemplate == null)
             fishSlotTemplate = GetFirstFishSlot();
+
+        if (discardFishSlotTemplate == null)
+            discardFishSlotTemplate = GetFirstDiscardFishSlot();
 
         if (baitSlotTemplate == null)
             baitSlotTemplate = GetFirstBaitSlot();
@@ -333,8 +370,13 @@ public class InvertoryManager : MonoBehaviour
         if (fishGridContent == null)
             fishGridContent = ResolveGridContent(fishTabPanel, fishSlotTemplate != null ? fishSlotTemplate.transform : null);
 
+        if (discardFishGridContent == null)
+            discardFishGridContent = ResolveGridContent(discardModePanel, GetDiscardTemplateTransformInsidePanel());
+
         if (baitGridContent == null)
             baitGridContent = ResolveGridContent(baitsTabPanel, baitSlotTemplate != null ? baitSlotTemplate.transform : null);
+
+        StoreKilogramTextColor();
     }
 
     private bool HasFishGridSlots()
@@ -365,6 +407,20 @@ public class InvertoryManager : MonoBehaviour
         return false;
     }
 
+    private bool HasDiscardFishGridSlots()
+    {
+        if (discardFishGridSlots == null || discardFishGridSlots.Length == 0)
+            return false;
+
+        for (int i = 0; i < discardFishGridSlots.Length; i++)
+        {
+            if (discardFishGridSlots[i] != null)
+                return true;
+        }
+
+        return false;
+    }
+
     private InventoryFishSlotUI GetFirstFishSlot()
     {
         if (fishGridSlots == null)
@@ -377,6 +433,20 @@ public class InvertoryManager : MonoBehaviour
         }
 
         return null;
+    }
+
+    private InventoryFishSlotUI GetFirstDiscardFishSlot()
+    {
+        if (discardFishGridSlots != null)
+        {
+            for (int i = 0; i < discardFishGridSlots.Length; i++)
+            {
+                if (discardFishGridSlots[i] != null)
+                    return discardFishGridSlots[i];
+            }
+        }
+
+        return fishSlotTemplate != null ? fishSlotTemplate : GetFirstFishSlot();
     }
 
     private InventoryBaitSlotUI GetFirstBaitSlot()
@@ -433,6 +503,30 @@ public class InvertoryManager : MonoBehaviour
         fishGridSlots = slots.ToArray();
     }
 
+    private void EnsureDiscardFishGridCapacity(int _requiredCount)
+    {
+        if (!autoCreateDiscardFishGridSlots || _requiredCount <= 0)
+            return;
+
+        InventoryFishSlotUI template = GetDiscardFishSlotTemplate();
+        Transform parent = GetDiscardFishGridContent();
+
+        if (template == null || parent == null)
+            return;
+
+        List<InventoryFishSlotUI> slots = CollectDiscardFishGridSlots(parent);
+
+        while (slots.Count < _requiredCount)
+        {
+            InventoryFishSlotUI slot = Instantiate(template, parent);
+            slot.name = $"{template.name}_{slots.Count + 1:00}";
+            slot.gameObject.SetActive(true);
+            slots.Add(slot);
+        }
+
+        discardFishGridSlots = slots.ToArray();
+    }
+
     private void EnsureBaitGridCapacity(int _requiredCount)
     {
         if (!autoCreateBaitGridSlots || _requiredCount <= 0)
@@ -466,6 +560,15 @@ public class InvertoryManager : MonoBehaviour
         return fishSlotTemplate;
     }
 
+    private InventoryFishSlotUI GetDiscardFishSlotTemplate()
+    {
+        if (discardFishSlotTemplate != null)
+            return discardFishSlotTemplate;
+
+        discardFishSlotTemplate = GetFirstDiscardFishSlot();
+        return discardFishSlotTemplate;
+    }
+
     private InventoryBaitSlotUI GetBaitSlotTemplate()
     {
         if (baitSlotTemplate != null)
@@ -482,6 +585,25 @@ public class InvertoryManager : MonoBehaviour
 
         fishGridContent = ResolveGridContent(fishTabPanel, fishSlotTemplate != null ? fishSlotTemplate.transform : null);
         return fishGridContent;
+    }
+
+    private Transform GetDiscardFishGridContent()
+    {
+        if (discardFishGridContent != null)
+            return discardFishGridContent;
+
+        discardFishGridContent = ResolveGridContent(discardModePanel, GetDiscardTemplateTransformInsidePanel());
+        return discardFishGridContent;
+    }
+
+    private Transform GetDiscardTemplateTransformInsidePanel()
+    {
+        if (discardFishSlotTemplate == null || discardModePanel == null)
+            return null;
+
+        return discardFishSlotTemplate.transform.IsChildOf(discardModePanel.transform)
+            ? discardFishSlotTemplate.transform
+            : null;
     }
 
     private Transform GetBaitGridContent()
@@ -502,6 +624,28 @@ public class InvertoryManager : MonoBehaviour
         {
             for (int i = 0; i < fishGridSlots.Length; i++)
                 AddUniqueFishSlot(slots, fishGridSlots[i], _parent);
+        }
+
+        if (_parent != null)
+        {
+            InventoryFishSlotUI[] childSlots = _parent.GetComponentsInChildren<InventoryFishSlotUI>(true);
+
+            for (int i = 0; i < childSlots.Length; i++)
+                AddUniqueFishSlot(slots, childSlots[i], _parent);
+        }
+
+        return slots;
+    }
+
+    private List<InventoryFishSlotUI> CollectDiscardFishGridSlots(Transform _parent)
+    {
+        List<InventoryFishSlotUI> slots = new List<InventoryFishSlotUI>();
+        AddUniqueFishSlot(slots, discardFishSlotTemplate, _parent);
+
+        if (discardFishGridSlots != null)
+        {
+            for (int i = 0; i < discardFishGridSlots.Length; i++)
+                AddUniqueFishSlot(slots, discardFishGridSlots[i], _parent);
         }
 
         if (_parent != null)
@@ -728,12 +872,35 @@ public class InvertoryManager : MonoBehaviour
         return true;
     }
 
+    public bool TryHandlePauseInput()
+    {
+        if (!IsInventoryVisible())
+            return false;
+
+        if (discardConfirmPanel != null && discardConfirmPanel.activeInHierarchy)
+        {
+            OnClickCancelDiscardConfirm();
+            return true;
+        }
+
+        CloseInventory();
+        return true;
+    }
+
     public static bool TryCloseOpenInventory()
     {
         if (Instance == null)
             Instance = FindFirstObjectByType<InvertoryManager>(FindObjectsInactive.Include);
 
         return Instance != null && Instance.TryCloseInventory();
+    }
+
+    public static bool TryHandleOpenInventoryPauseInput()
+    {
+        if (Instance == null)
+            Instance = FindFirstObjectByType<InvertoryManager>(FindObjectsInactive.Include);
+
+        return Instance != null && Instance.TryHandlePauseInput();
     }
 
     #endregion
@@ -808,7 +975,11 @@ public class InvertoryManager : MonoBehaviour
         if (kilogramText != null)
         {
             float currentWeight = shipInventory != null ? shipInventory.GetCurrentWeight() : 0f;
-            kilogramText.text = $"kilos de peixe: {currentWeight:0.#} Kg";
+            float maxWeight = shipInventory != null ? shipInventory.GetMaxCapacity() : 0f;
+            kilogramText.text = maxWeight > 0f
+                ? $"Peixes: {currentWeight:0.#}/{maxWeight:0.#} kg"
+                : $"Peixes: {currentWeight:0.#} kg";
+            kilogramText.color = GetWeightTextColor(currentWeight, maxWeight);
         }
 
         if (baitInventoryText != null)
@@ -834,6 +1005,9 @@ public class InvertoryManager : MonoBehaviour
 
         string equippedText = GetEquippedBaitText();
 
+        if (kilogramText != null && hasStoredKilogramTextColor)
+            kilogramText.color = kilogramTextDefaultColor;
+
         if (equippedBaitText != null)
             equippedBaitText.text = equippedText;
         else if (kilogramText != null)
@@ -850,7 +1024,10 @@ public class InvertoryManager : MonoBehaviour
         EnsureFishGridCapacity(fishCount);
 
         if (!HasFishGridSlots())
+        {
+            RefreshDiscardFishGrid();
             return;
+        }
 
         for (int i = 0; i < fishGridSlots.Length; i++)
         {
@@ -867,6 +1044,46 @@ public class InvertoryManager : MonoBehaviour
                 slot.SetFish(ownedFish[i], i, HandleFishSlotSubmitted, isDiscardMode, selectedFishIndexes.Contains(i));
             }
             else if (autoCreateFishGridSlots && fishSlotTemplate != null)
+            {
+                slot.Clear();
+                slot.gameObject.SetActive(false);
+            }
+            else
+            {
+                slot.Clear();
+            }
+        }
+
+        RefreshDiscardFishGrid();
+    }
+
+    private void RefreshDiscardFishGrid()
+    {
+        if (!isDiscardMode)
+            return;
+
+        List<FishData> ownedFish = shipInventory != null ? shipInventory.OwnedFish : null;
+        int fishCount = ownedFish != null ? ownedFish.Count : 0;
+        EnsureDiscardFishGridCapacity(fishCount);
+
+        if (!HasDiscardFishGridSlots())
+            return;
+
+        for (int i = 0; i < discardFishGridSlots.Length; i++)
+        {
+            InventoryFishSlotUI slot = discardFishGridSlots[i];
+
+            if (slot == null)
+                continue;
+
+            if (i < fishCount)
+            {
+                if (!slot.gameObject.activeSelf)
+                    slot.gameObject.SetActive(true);
+
+                slot.SetFish(ownedFish[i], i, HandleFishSlotSubmitted, true, selectedFishIndexes.Contains(i));
+            }
+            else if (autoCreateDiscardFishGridSlots && discardFishSlotTemplate != null)
             {
                 slot.Clear();
                 slot.gameObject.SetActive(false);
@@ -978,6 +1195,31 @@ public class InvertoryManager : MonoBehaviour
         return $"Isca equipada: {baitInventory.EquippedBait.BaitName}";
     }
 
+    private void StoreKilogramTextColor()
+    {
+        if (hasStoredKilogramTextColor || kilogramText == null)
+            return;
+
+        kilogramTextDefaultColor = kilogramText.color;
+        hasStoredKilogramTextColor = true;
+    }
+
+    private Color GetWeightTextColor(float _currentWeight, float _maxWeight)
+    {
+        if (_maxWeight <= 0f)
+            return hasStoredKilogramTextColor ? kilogramTextDefaultColor : weightNormalColor;
+
+        float fillPercent = Mathf.Clamp01(_currentWeight / _maxWeight);
+
+        if (fillPercent >= fullWeightPercent)
+            return weightFullColor;
+
+        if (fillPercent >= almostFullWeightPercent)
+            return weightAlmostFullColor;
+
+        return weightNormalColor;
+    }
+
     #endregion
 
     #region Discard Flow
@@ -1074,16 +1316,17 @@ public class InvertoryManager : MonoBehaviour
     {
         bool isFishTab = currentTab == InventoryTab.Fish;
         bool hasFish = shipInventory != null && shipInventory.OwnedFish != null && shipInventory.OwnedFish.Count > 0;
-        bool showDiscardMode = isFishTab && isDiscardMode;
+        bool isDiscardFlowActive = isFishTab && isDiscardMode;
+        bool showDiscardMode = isDiscardFlowActive && !isDiscardConfirmVisible;
 
         SetButtonVisible(discardModeButton, isFishTab && !isDiscardMode);
-        SetButtonVisible(confirmDiscardButton, isFishTab && isDiscardMode);
-        SetButtonVisible(cancelDiscardButton, isFishTab && isDiscardMode);
+        SetButtonVisible(confirmDiscardButton, showDiscardMode);
+        SetButtonVisible(cancelDiscardButton, showDiscardMode);
         SetObjectActive(discardModePanel, showDiscardMode);
 
         if (isFishTab)
         {
-            SetObjectsActive(hideWhileDiscardMode, !showDiscardMode);
+            SetObjectsActive(hideWhileDiscardMode, !isDiscardFlowActive);
             SetObjectsActive(showWhileDiscardMode, showDiscardMode);
         }
         else
@@ -1101,7 +1344,9 @@ public class InvertoryManager : MonoBehaviour
 
     private void SetDiscardConfirmPanelVisible(bool _visible)
     {
+        isDiscardConfirmVisible = _visible;
         SetObjectActive(discardConfirmPanel, _visible);
+        UpdateDiscardControls();
 
         if (!_visible)
             return;
@@ -1194,7 +1439,7 @@ public class InvertoryManager : MonoBehaviour
         BaitData bait = GetBaitSlot(_slotIndex);
 
         if (baitInventory != null && bait != null)
-            baitInventory.EquipBait(bait);
+            ToggleEquippedBait(bait);
 
         SetInventoryTab(InventoryTab.Baits);
     }
@@ -1204,7 +1449,7 @@ public class InvertoryManager : MonoBehaviour
         InitializeReferences();
 
         if (baitInventory != null && _bait != null)
-            baitInventory.EquipBait(_bait);
+            ToggleEquippedBait(_bait);
 
         SetInventoryTab(InventoryTab.Baits);
     }
@@ -1219,12 +1464,15 @@ public class InvertoryManager : MonoBehaviour
                     continue;
 
                 BaitData bait = GetBaitSlot(i);
+                bool isEquipped = IsBaitEquipped(bait);
                 baitEquipButtons[i].interactable = baitInventory != null &&
                                                    bait != null &&
                                                    baitInventory.HasBait(bait);
                 SetButtonText(
                     baitEquipButtons[i],
-                    bait != null ? $"Equipar {bait.BaitName}" : "Equipar"
+                    bait != null
+                        ? $"{(isEquipped ? "Remover" : "Equipar")} {bait.BaitName}"
+                        : "Equipar"
                 );
             }
         }
@@ -1244,6 +1492,28 @@ public class InvertoryManager : MonoBehaviour
             return null;
 
         return slots[_slotIndex];
+    }
+
+    private void ToggleEquippedBait(BaitData _bait)
+    {
+        if (baitInventory == null || _bait == null)
+            return;
+
+        if (IsBaitEquipped(_bait))
+        {
+            baitInventory.ClearEquippedBait();
+            return;
+        }
+
+        baitInventory.EquipBait(_bait);
+    }
+
+    private bool IsBaitEquipped(BaitData _bait)
+    {
+        return baitInventory != null &&
+               baitInventory.EquippedBait != null &&
+               _bait != null &&
+               BaitCatalog.BaitIdMatches(_bait, baitInventory.EquippedBait.SaveId);
     }
 
     #endregion
@@ -1459,7 +1729,7 @@ public class InvertoryManager : MonoBehaviour
         }
 
         if (HasDedicatedClearBaitButton())
-            clearBaitButton.gameObject.SetActive(_visible);
+            clearBaitButton.gameObject.SetActive(_visible && showClearBaitButton);
     }
 
     #endregion
@@ -1567,7 +1837,7 @@ public class InvertoryManager : MonoBehaviour
         if (!IsInventoryVisible())
             return;
 
-        Selectable current = UISelectionHelper.CurrentSelectableInScope(inventoryRoot);
+        Selectable current = UISelectionHelper.CurrentSelectableInScope(GetActiveSelectionScope());
 
         if (UISelectionHelper.IsUsable(current))
             return;
@@ -1575,8 +1845,59 @@ public class InvertoryManager : MonoBehaviour
         SelectCurrentTabControl();
     }
 
+    private void RecoverSelectionFromMoveInput()
+    {
+        if (!IsInventoryVisible() || InputHandler.instance == null)
+        {
+            wasSelectionRecoveryMoveHeld = false;
+            return;
+        }
+
+        bool isMovePressed = InputHandler.instance.moveInput.sqrMagnitude >= selectionRecoveryMoveThreshold * selectionRecoveryMoveThreshold;
+
+        if (!isMovePressed)
+        {
+            wasSelectionRecoveryMoveHeld = false;
+            return;
+        }
+
+        if (wasSelectionRecoveryMoveHeld)
+            return;
+
+        wasSelectionRecoveryMoveHeld = true;
+
+        Selectable current = UISelectionHelper.CurrentSelectableInScope(GetActiveSelectionScope());
+
+        if (UISelectionHelper.IsUsable(current))
+            return;
+
+        SelectCurrentTabControl();
+    }
+
+    private GameObject GetActiveSelectionScope()
+    {
+        if (discardConfirmPanel != null && discardConfirmPanel.activeInHierarchy)
+            return discardConfirmPanel;
+
+        if (isDiscardMode && discardModePanel != null && discardModePanel.activeInHierarchy)
+            return discardModePanel;
+
+        return inventoryRoot;
+    }
+
     private Selectable GetFishTabSelectable()
     {
+        if (discardConfirmPanel != null && discardConfirmPanel.activeInHierarchy)
+            return UISelectionHelper.IsUsable(discardConfirmYesButton) ? discardConfirmYesButton : discardConfirmNoButton;
+
+        if (isDiscardMode && discardModePanel != null && discardModePanel.activeInHierarchy)
+        {
+            Selectable firstInDiscardPanel = UISelectionHelper.FirstUsable(discardModePanel);
+
+            if (firstInDiscardPanel != null)
+                return firstInDiscardPanel;
+        }
+
         if (UISelectionHelper.IsUsable(fishFirstSelected))
             return fishFirstSelected;
 

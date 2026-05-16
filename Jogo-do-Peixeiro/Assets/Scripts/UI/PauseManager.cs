@@ -82,7 +82,7 @@ public class PauseManager : MonoBehaviour
             return;
 
         if (GameManager.instance.currentState != GameManager.GameState.Paused &&
-            InvertoryManager.TryCloseOpenInventory())
+            InvertoryManager.TryHandleOpenInventoryPauseInput())
         {
             return;
         }
