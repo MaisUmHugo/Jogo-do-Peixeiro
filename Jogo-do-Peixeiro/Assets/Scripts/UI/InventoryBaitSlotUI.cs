@@ -54,7 +54,7 @@ public class InventoryBaitSlotUI : MonoBehaviour
             equippedText.text = _isEquipped ? "Equipada" : string.Empty;
 
         if (equipButton != null)
-            equipButton.interactable = !_isEquipped;
+            equipButton.interactable = hasBait;
 
         if (iconImage != null)
         {
@@ -69,6 +69,10 @@ public class InventoryBaitSlotUI : MonoBehaviour
         InitializeReferences();
         currentBait = null;
         onEquipClicked = null;
+
+        if (equipButton != null)
+            equipButton.interactable = false;
+
         SetContentVisible(false);
     }
 
@@ -78,7 +82,10 @@ public class InventoryBaitSlotUI : MonoBehaviour
             contentRoot = gameObject;
 
         if (iconImage == null)
-            iconImage = GetComponentInChildren<Image>(true);
+            iconImage = FindIconImage();
+
+        if (equipButton == null)
+            equipButton = GetComponent<Button>();
 
         if (equipButton == null)
             equipButton = GetComponentInChildren<Button>(true);
@@ -93,6 +100,32 @@ public class InventoryBaitSlotUI : MonoBehaviour
 
         if (equippedText == null && texts.Length > 2)
             equippedText = texts[2];
+    }
+
+    private Image FindIconImage()
+    {
+        Image[] images = GetComponentsInChildren<Image>(true);
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            string imageName = images[i].name.ToLowerInvariant();
+
+            if (imageName.Contains("icon") ||
+                imageName.Contains("icone") ||
+                imageName.Contains("bait") ||
+                imageName.Contains("isca"))
+            {
+                return images[i];
+            }
+        }
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            if (images[i].gameObject != gameObject)
+                return images[i];
+        }
+
+        return images.Length > 0 ? images[0] : null;
     }
 
     private void BindButton()
