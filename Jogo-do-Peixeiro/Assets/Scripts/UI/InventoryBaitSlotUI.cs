@@ -15,6 +15,17 @@ public class InventoryBaitSlotUI : MonoBehaviour
     private BaitData currentBait;
     private Action<BaitData> onEquipClicked;
 
+    public BaitData CurrentBait => currentBait;
+
+    public Selectable SlotSelectable
+    {
+        get
+        {
+            InitializeReferences();
+            return equipButton;
+        }
+    }
+
     private void Awake()
     {
         InitializeReferences();

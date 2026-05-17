@@ -20,6 +20,15 @@ public class InventoryFishSlotUI : MonoBehaviour, ISelectHandler, IDeselectHandl
     private Action<int> onSlotSubmitted;
     private bool hasFish;
 
+    public Selectable SlotSelectable
+    {
+        get
+        {
+            InitializeReferences();
+            return slotButton;
+        }
+    }
+
     private void Awake()
     {
         InitializeReferences();
@@ -106,8 +115,11 @@ public class InventoryFishSlotUI : MonoBehaviour, ISelectHandler, IDeselectHandl
 
     private void InitializeReferences()
     {
-        if (contentRoot == null)
-            contentRoot = gameObject;
+        if (contentRoot == null || contentRoot == gameObject)
+        {
+            GameObject contentChild = FindChildObject("Content", "SlotContent", "FishSlotContent");
+            contentRoot = contentChild != null ? contentChild : gameObject;
+        }
 
         if (iconImage == null)
             iconImage = FindIconImage();
@@ -186,7 +198,22 @@ public class InventoryFishSlotUI : MonoBehaviour, ISelectHandler, IDeselectHandl
 
         for (int i = 0; i < images.Length; i++)
         {
-            if (images[i].gameObject != gameObject)
+            if (images[i].gameObject == gameObject)
+                continue;
+
+            string imageName = images[i].name.ToLowerInvariant();
+
+            if (imageName.Contains("background") ||
+                imageName.Contains("frame") ||
+                imageName.Contains("selected") ||
+                imageName.Contains("selection") ||
+                imageName.Contains("toggle") ||
+                imageName.Contains("checkmark"))
+            {
+                continue;
+            }
+
+            if (images[i].sprite != null || images[i].color.a < 1f)
                 return images[i];
         }
 
@@ -268,13 +295,22 @@ public class InventoryFishSlotUI : MonoBehaviour, ISelectHandler, IDeselectHandl
 
     private void SetContentVisible(bool _visible)
     {
+        CanvasGroup rootCanvasGroup = GetComponent<CanvasGroup>();
+
+        if (_visible && rootCanvasGroup != null)
+        {
+            rootCanvasGroup.alpha = 1f;
+            rootCanvasGroup.interactable = true;
+            rootCanvasGroup.blocksRaycasts = true;
+        }
+
         if (contentRoot != null && contentRoot != gameObject)
         {
             contentRoot.SetActive(_visible);
             return;
         }
 
-        CanvasGroup canvasGroup = GetComponent<CanvasGroup>();
+        CanvasGroup canvasGroup = rootCanvasGroup;
 
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
