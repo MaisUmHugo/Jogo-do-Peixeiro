@@ -82,6 +82,53 @@ public class FishMarket : MonoBehaviour
         return true;
     }
 
+    public bool TrySellFishList(IEnumerable<FishData> fishToSell, out int earnedMoney)
+    {
+        earnedMoney = 0;
+        ResolveReferences();
+
+        if (fishToSell == null || shipInventory == null || playerMoneyManager == null)
+            return false;
+
+        List<FishData> validFish = new List<FishData>();
+
+        foreach (FishData fish in fishToSell)
+        {
+            if (fish == null || !shipInventory.OwnedFish.Contains(fish) || validFish.Contains(fish))
+                continue;
+
+            validFish.Add(fish);
+            earnedMoney += FishPriceCalculator.CalculatePrice(fish);
+        }
+
+        if (validFish.Count == 0)
+        {
+            earnedMoney = 0;
+            return false;
+        }
+
+        int soldCount = 0;
+
+        foreach (FishData fish in validFish)
+        {
+            if (shipInventory.TryRemoveFish(fish))
+                soldCount++;
+        }
+
+        if (soldCount == 0)
+        {
+            earnedMoney = 0;
+            return false;
+        }
+
+        if (earnedMoney > 0)
+            playerMoneyManager.ReceiveMoney(earnedMoney);
+
+        OnSaleCompleted?.Invoke(earnedMoney);
+        OnAnySaleCompleted?.Invoke(earnedMoney);
+        return true;
+    }
+
     public int GetInventorySaleValue()
     {
         ResolveReferences();

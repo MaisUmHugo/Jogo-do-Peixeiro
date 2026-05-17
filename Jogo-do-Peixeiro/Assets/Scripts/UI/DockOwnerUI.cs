@@ -1,7 +1,9 @@
+using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class DockOwnerUI : MonoBehaviour
@@ -13,6 +15,97 @@ public class DockOwnerUI : MonoBehaviour
         Sell,
         Upgrades,
         Baits
+    }
+
+    [Serializable]
+    private class BaitShopCard
+    {
+        [SerializeField] private GameObject root;
+        [SerializeField] private Image iconImage;
+        [SerializeField] private TMP_Text nameText;
+        [SerializeField] private TMP_Text descriptionText;
+        [SerializeField] private TMP_Text ownedQuantityText;
+        [SerializeField] private TMP_Text priceText;
+        [SerializeField] private TMP_Text maxQuantityText;
+        [SerializeField] private Button buyButton;
+
+        public Button BuyButton => buyButton;
+        public TMP_Text FeedbackText => maxQuantityText != null ? maxQuantityText : priceText;
+
+        public void SetBait(BaitData _bait, int _ownedQuantity, int _maxQuantity, int _unitCost)
+        {
+            bool hasBait = _bait != null;
+            SetVisible(hasBait);
+
+            if (buyButton != null)
+                buyButton.interactable = hasBait && _maxQuantity > 0;
+
+            if (!hasBait)
+                return;
+
+            if (nameText != null)
+                nameText.text = _bait.BaitName;
+
+            if (descriptionText != null)
+            {
+                descriptionText.text = string.IsNullOrWhiteSpace(_bait.Description)
+                    ? "Bonus de pesca."
+                    : _bait.Description;
+            }
+
+            if (ownedQuantityText != null)
+                ownedQuantityText.text = $"No inventario: {_ownedQuantity}";
+
+            if (priceText != null)
+                priceText.text = _unitCost > 0 ? $"Preco: R$ {_unitCost}" : "Gratis";
+
+            if (maxQuantityText != null)
+                maxQuantityText.text = _maxQuantity > 0 ? $"Max: {_maxQuantity}" : "Sem dinheiro";
+
+            if (iconImage != null)
+            {
+                iconImage.sprite = _bait.InventoryIcon;
+                iconImage.enabled = _bait.InventoryIcon != null;
+                iconImage.preserveAspect = true;
+            }
+        }
+
+        public void Clear()
+        {
+            if (buyButton != null)
+                buyButton.interactable = false;
+
+            SetVisible(false);
+        }
+
+        public bool Contains(GameObject _target)
+        {
+            GameObject rootObject = GetRootObject();
+            return _target != null &&
+                   rootObject != null &&
+                   (_target == rootObject || _target.transform.IsChildOf(rootObject.transform));
+        }
+
+        public Selectable GetSelectable()
+        {
+            return buyButton;
+        }
+
+        private void SetVisible(bool _visible)
+        {
+            GameObject rootObject = GetRootObject();
+
+            if (rootObject != null)
+                rootObject.SetActive(_visible);
+        }
+
+        private GameObject GetRootObject()
+        {
+            if (root != null)
+                return root;
+
+            return buyButton != null ? buyButton.gameObject : null;
+        }
     }
 
     [Header("Panel")]
@@ -33,28 +126,50 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private GameObject baitsTabPanel;
 
     [Header("Sell")]
-    [SerializeField] private TMP_Text fishListText;
-    [SerializeField] private TMP_Text totalValueText;
+    [SerializeField] private InventoryFishSlotUI[] sellFishSlots;
+    [SerializeField] private Transform sellFishGridContent;
+    [SerializeField] private InventoryFishSlotUI sellFishSlotTemplate;
+    [SerializeField] private bool autoCreateSellFishSlots;
+    [SerializeField] private bool keepSellSelectionVisibleInScroll = true;
+    [SerializeField] private ScrollRect sellFishScrollRect;
+    [SerializeField, Min(0f)] private float sellSelectionScrollPadding = 24f;
+    [SerializeField] private Toggle selectAllFishToggle;
+    [SerializeField] private TMP_Text selectedSaleValueText;
     [SerializeField] private TMP_Text moneyText;
-    [SerializeField] private Button sellAllButton;
+    [SerializeField] private Button sellSelectedButton;
 
-    [Header("Upgrades")]
-    [SerializeField] private TMP_Text capacityUpgradeText;
-    [SerializeField] private Button capacityUpgradeButton;
-    [SerializeField] private TMP_Text boatSpeedUpgradeText;
-    [SerializeField] private Button boatSpeedUpgradeButton;
-    [SerializeField] private TMP_Text rodUpgradeText;
-    [SerializeField] private Button rodUpgradeButton;
-    [SerializeField] private TMP_Text fireproofBoatUpgradeText;
-    [SerializeField] private Button fireproofBoatUpgradeButton;
+    [Header("Upgrade Rows")]
+    [SerializeField] private DockOwnerUpgradeRowUI capacityUpgradeRow;
+    [SerializeField] private DockOwnerUpgradeRowUI boatSpeedUpgradeRow;
+    [SerializeField] private DockOwnerUpgradeRowUI rodUpgradeRow;
+    [SerializeField] private DockOwnerUpgradeRowUI fireproofBoatUpgradeRow;
 
-    [Header("Future Tabs")]
-    [SerializeField] private TMP_Text upgradesPlaceholderText;
-    [SerializeField] private TMP_Text baitsPlaceholderText;
+    [Header("Bait Shop Cards")]
+    [SerializeField] private BaitShopCard[] baitShopCards;
+    [SerializeField] private int maxBaitPurchaseQuantity = 99;
+    [SerializeField, Range(0.1f, 1f)] private float baitQuantityMoveThreshold = 0.65f;
+    [SerializeField, Min(0.05f)] private float baitQuantityMoveRepeatDelay = 0.22f;
 
-    [Header("Baits")]
-    [SerializeField] private TMP_Text[] baitTexts;
-    [SerializeField] private Button[] baitBuyButtons;
+    [Header("Bait Quantity Popup")]
+    [SerializeField] private GameObject baitQuantityPanel;
+    [SerializeField] private TMP_Text baitQuantityTitleText;
+    [SerializeField] private TMP_Text baitQuantityText;
+    [SerializeField] private TMP_Text baitQuantityPriceText;
+    [SerializeField] private TMP_Text baitQuantityOwnedText;
+    [SerializeField] private TMP_Text baitQuantityMaxText;
+    [SerializeField] private Button baitQuantityDecreaseButton;
+    [SerializeField] private Button baitQuantityIncreaseButton;
+    [SerializeField] private Button baitQuantityConfirmButton;
+    [SerializeField] private Button baitQuantityCancelButton;
+    [SerializeField] private Selectable baitQuantityFirstSelected;
+
+    [Header("Purchase Confirmation")]
+    [SerializeField] private GameObject purchaseConfirmPanel;
+    [SerializeField] private TMP_Text purchaseConfirmTitleText;
+    [SerializeField] private TMP_Text purchaseConfirmMessageText;
+    [SerializeField] private Button purchaseConfirmYesButton;
+    [SerializeField] private Button purchaseConfirmNoButton;
+    [SerializeField] private Selectable purchaseConfirmFirstSelected;
 
     [Header("Common")]
     [SerializeField] private TMP_Text statusText;
@@ -65,10 +180,6 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private Selectable upgradesFirstSelected;
     [SerializeField] private Selectable baitsFirstSelected;
 
-    [Header("Runtime Fallback")]
-    [SerializeField] private bool allowRuntimeFallback;
-    [SerializeField] private bool logMissingReferences = true;
-
     [Header("References")]
     [SerializeField] private FishMarket fishMarket;
     [SerializeField] private DockUpgradeSystem dockUpgradeSystem;
@@ -78,14 +189,23 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
 
     private readonly List<FishData> ownedFish = new List<FishData>();
+    private readonly HashSet<FishData> selectedFishForSale = new HashSet<FishData>();
     private DockOwnerTab currentTab = DockOwnerTab.Sell;
     private float playerMoney;
     private bool isOpen;
     private bool isSubscribed;
     private bool areButtonsBound;
     private bool isInputSubscribed;
-    private bool hasLoggedMissingUpgradeControls;
-    private bool hasLoggedMissingBaitControls;
+    private bool suppressSelectAllFishToggle;
+    private int[] baitPurchaseQuantities;
+    private int pendingBaitSlotIndex = -1;
+    private float nextBaitQuantityMoveTime;
+    private int lastBaitQuantityMoveDirection;
+    private GameObject lastScrolledSellSelection;
+    private Action pendingPurchaseAction;
+    private Selectable selectionBeforePopup;
+    private Coroutine baitQuantityFeedbackRoutine;
+    private UnityEngine.Events.UnityAction[] baitCardBuyActions;
     private int modalToken = UIModalManager.InvalidToken;
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
@@ -97,8 +217,6 @@ public class DockOwnerUI : MonoBehaviour
     private void Awake()
     {
         TryResolveReferences();
-        EnsureUpgradeControls();
-        EnsureBaitControls();
         BindButtons();
 
         if (closeOnAwake)
@@ -108,8 +226,6 @@ public class DockOwnerUI : MonoBehaviour
     private void OnEnable()
     {
         TryResolveReferences();
-        EnsureUpgradeControls();
-        EnsureBaitControls();
         BindButtons();
         SubscribeToReferences();
         TrySubscribeInput();
@@ -122,6 +238,12 @@ public class DockOwnerUI : MonoBehaviour
         UnsubscribeInput();
         UnbindButtons();
         UIModalManager.PopModal(ref modalToken);
+    }
+
+    private void Update()
+    {
+        HandleBaitQuantityMoveInput();
+        KeepSellSelectionVisible();
     }
 
     #endregion
@@ -164,24 +286,56 @@ public class DockOwnerUI : MonoBehaviour
 
     public void OnClickSellAll()
     {
+        OnClickSellSelected();
+    }
+
+    public void OnClickSellSelected()
+    {
         if (fishMarket == null)
         {
             SetStatus("Mercado nao encontrado.");
             return;
         }
 
-        if (!fishMarket.TrySellAllFish(out int earnedMoney))
+        PruneSelectedFishForSale();
+
+        if (selectedFishForSale.Count == 0)
         {
-            SetStatus("Nenhum peixe no barco.");
+            SetStatus("Selecione pelo menos um peixe.");
             Refresh();
             return;
         }
 
+        if (!fishMarket.TrySellFishList(selectedFishForSale, out int earnedMoney))
+        {
+            SetStatus("Nao foi possivel vender os peixes selecionados.");
+            Refresh();
+            return;
+        }
+
+        selectedFishForSale.Clear();
         SetStatus($"Peixes vendidos: R$ {earnedMoney}.");
         Refresh();
+        SelectCurrentTabControl();
+    }
 
-        if (isOpen && PanelObject.activeInHierarchy)
-            SelectCurrentTabControl();
+    public void OnSelectAllFishChanged(bool _isOn)
+    {
+        if (suppressSelectAllFishToggle)
+            return;
+
+        selectedFishForSale.Clear();
+
+        if (_isOn)
+        {
+            for (int i = 0; i < ownedFish.Count; i++)
+            {
+                if (ownedFish[i] != null)
+                    selectedFishForSale.Add(ownedFish[i]);
+            }
+        }
+
+        SetSellUI();
     }
 
     public void OnClickBuyCapacityUpgrade()
@@ -219,6 +373,81 @@ public class DockOwnerUI : MonoBehaviour
         TryBuyBaitSlot(2);
     }
 
+    public void OnClickBuyBaitSlot3()
+    {
+        TryBuyBaitSlot(3);
+    }
+
+    public void OnClickIncreasePendingBaitQuantity()
+    {
+        ChangePendingBaitQuantity(1);
+    }
+
+    public void OnClickDecreasePendingBaitQuantity()
+    {
+        ChangePendingBaitQuantity(-1);
+    }
+
+    public void OnClickConfirmBaitQuantity()
+    {
+        ConfirmPendingBaitQuantity();
+    }
+
+    public void OnClickCancelBaitQuantity()
+    {
+        CloseBaitQuantityPopup(true);
+    }
+
+    public void OnClickConfirmPurchase()
+    {
+        ConfirmPendingPurchase();
+    }
+
+    public void OnClickCancelPurchase()
+    {
+        ClosePurchaseConfirmation(true);
+    }
+
+    public void OnClickIncreaseBaitSlot0()
+    {
+        ChangeBaitQuantity(0, 1);
+    }
+
+    public void OnClickDecreaseBaitSlot0()
+    {
+        ChangeBaitQuantity(0, -1);
+    }
+
+    public void OnClickIncreaseBaitSlot1()
+    {
+        ChangeBaitQuantity(1, 1);
+    }
+
+    public void OnClickDecreaseBaitSlot1()
+    {
+        ChangeBaitQuantity(1, -1);
+    }
+
+    public void OnClickIncreaseBaitSlot2()
+    {
+        ChangeBaitQuantity(2, 1);
+    }
+
+    public void OnClickDecreaseBaitSlot2()
+    {
+        ChangeBaitQuantity(2, -1);
+    }
+
+    public void OnClickIncreaseBaitSlot3()
+    {
+        ChangeBaitQuantity(3, 1);
+    }
+
+    public void OnClickDecreaseBaitSlot3()
+    {
+        ChangeBaitQuantity(3, -1);
+    }
+
     public void OnClickClose()
     {
         Close();
@@ -227,9 +456,9 @@ public class DockOwnerUI : MonoBehaviour
     public void Refresh()
     {
         RefreshInventorySnapshot();
-        SetSellTexts();
-        SetUpgradeTexts();
-        SetBaitTexts();
+        SetSellUI();
+        SetUpgradeUI();
+        SetBaitUI();
         EnsureCurrentSelectionIsUsable();
     }
 
@@ -239,6 +468,8 @@ public class DockOwnerUI : MonoBehaviour
 
     private void SetTab(DockOwnerTab _tab)
     {
+        CloseBaitQuantityPopup(false);
+        ClosePurchaseConfirmation(false);
         currentTab = _tab;
 
         SetObjectActive(sellTabPanel, currentTab == DockOwnerTab.Sell);
@@ -247,14 +478,7 @@ public class DockOwnerUI : MonoBehaviour
         SetButtonInteractable(sellTabButton, currentTab != DockOwnerTab.Sell);
         SetButtonInteractable(upgradesTabButton, currentTab != DockOwnerTab.Upgrades);
         SetButtonInteractable(baitsTabButton, currentTab != DockOwnerTab.Baits);
-
-        if (currentTab == DockOwnerTab.Upgrades)
-            SetStatus(string.Empty);
-        else if (currentTab == DockOwnerTab.Baits)
-            SetStatus(string.Empty);
-        else
-            SetStatus(string.Empty);
-
+        SetStatus(string.Empty);
         Refresh();
     }
 
@@ -271,7 +495,9 @@ public class DockOwnerUI : MonoBehaviour
         if (baitShop != null)
         {
             baitInventory = baitShop.BaitInventory;
-            playerMoneyManager = baitShop.PlayerMoneyManager;
+
+            if (playerMoneyManager == null)
+                playerMoneyManager = baitShop.PlayerMoneyManager;
         }
 
         if (shipInventory != null)
@@ -280,312 +506,439 @@ public class DockOwnerUI : MonoBehaviour
         playerMoney = playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f;
     }
 
-    private void SetSellTexts()
+    private void SetSellUI()
     {
-        if (fishListText != null)
-            fishListText.text = GetFishListText();
+        PruneSelectedFishForSale();
+        RefreshSellFishSlots();
 
-        if (totalValueText != null)
-        {
-            int totalValue = fishMarket != null ? fishMarket.GetInventorySaleValue() : 0;
-            string totalText = $"Total: R$ {totalValue}";
-            totalValueText.text = moneyText == null
-                ? $"{totalText}\nDinheiro: R$ {playerMoney:0}"
-                : totalText;
-        }
+        if (selectedSaleValueText != null)
+            selectedSaleValueText.text = $"Selecionado: R$ {GetSelectedFishSaleValue()}";
 
         if (moneyText != null)
             moneyText.text = $"Dinheiro: R$ {playerMoney:0}";
+
+        if (sellSelectedButton != null)
+            sellSelectedButton.interactable = selectedFishForSale.Count > 0;
+
+        SetSelectAllFishToggleState();
     }
 
-    private void SetUpgradeTexts()
-    {
-        if (upgradesPlaceholderText != null)
-            upgradesPlaceholderText.text = "Melhore peso, barco e vara.";
-
-        if (capacityUpgradeText != null)
-            capacityUpgradeText.text = GetCapacityUpgradeText();
-
-        if (capacityUpgradeButton != null)
-            capacityUpgradeButton.interactable = dockUpgradeSystem != null && dockUpgradeSystem.CanBuyCapacityUpgrade;
-
-        if (boatSpeedUpgradeText != null)
-            boatSpeedUpgradeText.text = GetBoatSpeedUpgradeText();
-
-        if (boatSpeedUpgradeButton != null)
-            boatSpeedUpgradeButton.interactable = dockUpgradeSystem != null && dockUpgradeSystem.CanBuyBoatSpeedUpgrade;
-
-        if (rodUpgradeText != null)
-            rodUpgradeText.text = GetRodUpgradeText();
-
-        if (rodUpgradeButton != null)
-            rodUpgradeButton.interactable = dockUpgradeSystem != null && dockUpgradeSystem.CanBuyRodUpgrade;
-
-        if (fireproofBoatUpgradeText != null)
-            fireproofBoatUpgradeText.text = GetFireproofBoatUpgradeText();
-
-        if (fireproofBoatUpgradeButton != null)
-            fireproofBoatUpgradeButton.interactable = dockUpgradeSystem != null && dockUpgradeSystem.CanBuyFireproofBoatUpgrade;
-    }
-
-    private void SetBaitTexts()
-    {
-        if (baitsPlaceholderText != null)
-            baitsPlaceholderText.text = "Compre iscas por unidade.";
-
-        BaitData[] baits = GetBaitsForSale();
-
-        if (baits.Length == 0)
-        {
-            if (baitsPlaceholderText != null)
-                baitsPlaceholderText.text = "Nenhuma isca configurada.";
-
-            SetBaitControlsActive(0);
-            return;
-        }
-
-        int visibleCount = Mathf.Min(baits.Length, GetBaitControlCount());
-        SetBaitControlsActive(visibleCount);
-
-        for (int i = 0; i < visibleCount; i++)
-        {
-            BaitData bait = baits[i];
-
-            if (baitTexts != null && i < baitTexts.Length && baitTexts[i] != null)
-                baitTexts[i].text = GetBaitText(bait);
-
-            if (baitBuyButtons != null && i < baitBuyButtons.Length && baitBuyButtons[i] != null)
-                baitBuyButtons[i].interactable = baitShop != null && baitShop.CanBuyBait(bait);
-        }
-    }
-
-    private string GetCapacityUpgradeText()
+    private void SetUpgradeUI()
     {
         if (dockUpgradeSystem == null)
-            return "Upgrade de capacidade indisponivel.";
+            return;
 
         ShipInventory targetInventory = dockUpgradeSystem.ShipInventory != null
             ? dockUpgradeSystem.ShipInventory
             : shipInventory;
 
         float currentCapacity = targetInventory != null ? targetInventory.GetMaxCapacity() : dockUpgradeSystem.CurrentCapacity;
-        int currentLevel = dockUpgradeSystem.CapacityLevel;
-        int maxLevel = dockUpgradeSystem.MaxCapacityLevel;
 
-        if (dockUpgradeSystem.IsCapacityUpgradeMaxed)
-        {
-            return $"Capacidade do barco\nNivel {currentLevel}/{maxLevel}\nCapacidade: {currentCapacity:0} kg\nUpgrade maximo.";
-        }
-
-        int cost = dockUpgradeSystem.CurrentCapacityUpgradeCost;
-        string moneyColor = playerMoney >= cost ? "green" : "red";
-
-        return $"Peso\nNivel {currentLevel}/{maxLevel}\nCapacidade: {currentCapacity:0} kg -> {dockUpgradeSystem.NextCapacity:0} kg\nCusto: <color={moneyColor}>R$ {cost}</color>";
-    }
-
-    private string GetBoatSpeedUpgradeText()
-    {
-        if (dockUpgradeSystem == null)
-            return "Upgrade de barco indisponivel.";
-
-        int currentLevel = dockUpgradeSystem.BoatSpeedLevel;
-        int maxLevel = dockUpgradeSystem.MaxBoatSpeedLevel;
-
-        if (dockUpgradeSystem.IsBoatSpeedUpgradeMaxed)
-            return $"Barco\nNivel {currentLevel}/{maxLevel}\nVelocidade: +{GetPercent(dockUpgradeSystem.BoatSpeedMultiplier - 1f)}%\nUpgrade maximo.";
-
-        int cost = dockUpgradeSystem.CurrentBoatSpeedUpgradeCost;
-        string moneyColor = playerMoney >= cost ? "green" : "red";
-
-        return $"Barco\nNivel {currentLevel}/{maxLevel}\nVelocidade: +{GetPercent(dockUpgradeSystem.BoatSpeedMultiplier - 1f)}% -> +{GetPercent(dockUpgradeSystem.NextBoatSpeedMultiplier - 1f)}%\nCusto: <color={moneyColor}>R$ {cost}</color>";
-    }
-
-    private string GetRodUpgradeText()
-    {
-        if (dockUpgradeSystem == null)
-            return "Upgrade de vara indisponivel.";
-
-        int currentLevel = dockUpgradeSystem.RodLevel;
-        int maxLevel = dockUpgradeSystem.MaxRodLevel;
-
-        if (dockUpgradeSystem.IsRodUpgradeMaxed)
-        {
-            return $"Vara\nNivel {currentLevel}/{maxLevel}\nIndicador: -{GetPercent(1f - dockUpgradeSystem.RodIndicatorSpeedMultiplier)}%\nZona: +{GetPercent(dockUpgradeSystem.RodSuccessZoneMultiplier - 1f)}%\nUpgrade maximo.";
-        }
-
-        int cost = dockUpgradeSystem.CurrentRodUpgradeCost;
-        string moneyColor = playerMoney >= cost ? "green" : "red";
-
-        return $"Vara\nNivel {currentLevel}/{maxLevel}\nIndicador: -{GetPercent(1f - dockUpgradeSystem.RodIndicatorSpeedMultiplier)}% -> -{GetPercent(1f - dockUpgradeSystem.NextRodIndicatorSpeedMultiplier)}%\nZona: +{GetPercent(dockUpgradeSystem.RodSuccessZoneMultiplier - 1f)}% -> +{GetPercent(dockUpgradeSystem.NextRodSuccessZoneMultiplier - 1f)}%\nCusto: <color={moneyColor}>R$ {cost}</color>";
-    }
-
-    private string GetFireproofBoatUpgradeText()
-    {
-        if (dockUpgradeSystem == null)
-            return "Upgrade especial indisponivel.";
-
-        if (dockUpgradeSystem.HasFireproofBoatUpgrade)
-            return "Barco a prova de fogo\nPermite navegar na lava.\nComprado.";
-
-        int cost = dockUpgradeSystem.FireproofBoatUpgradeCost;
-        string moneyColor = playerMoney >= cost ? "green" : "red";
-
-        return $"Barco a prova de fogo\nPermite navegar na lava.\nCusto: <color={moneyColor}>R$ {cost}</color>";
-    }
-
-    private string GetFishListText()
-    {
-        if (ownedFish.Count == 0)
-            return "Nenhum peixe no barco.";
-
-        StringBuilder builder = new StringBuilder();
-
-        foreach (FishData fish in ownedFish)
-        {
-            if (fish == null || fish.typeOfFish == null)
-                continue;
-
-            builder.Append(fish.typeOfFish.fishName);
-            builder.Append(" | ");
-            builder.Append(fish.weight);
-            builder.Append(" kg | R$ ");
-            builder.AppendLine(FishPriceCalculator.CalculatePrice(fish).ToString());
-        }
-
-        return builder.ToString();
-    }
-
-    private string GetBaitText(BaitData _bait)
-    {
-        if (_bait == null)
-            return "Isca indisponivel.";
-
-        int ownedQuantity = baitInventory != null ? baitInventory.GetQuantity(_bait) : 0;
-        bool isEquipped = baitInventory != null &&
-                          baitInventory.EquippedBait != null &&
-                          BaitCatalog.BaitIdMatches(_bait, baitInventory.EquippedBait.SaveId);
-
-        int cost = baitShop != null ? baitShop.GetBaitPurchaseCost(_bait) : _bait.PurchasePrice;
-        string moneyColor = playerMoney >= cost ? "green" : "red";
-        string equippedText = isEquipped ? "\nEquipada" : string.Empty;
-        string description = string.IsNullOrWhiteSpace(_bait.Description) ? "Bonus de pesca." : _bait.Description;
-
-        return $"{_bait.BaitName}\n{description}\nQtd: {ownedQuantity}\nCusto: <color={moneyColor}>R$ {cost}</color>{equippedText}";
-    }
-
-    private BaitData[] GetBaitsForSale()
-    {
-        return baitShop != null ? baitShop.BaitsForSale : BaitCatalog.GetDefaultBaits();
-    }
-
-    private int GetBaitControlCount()
-    {
-        if (baitTexts == null || baitBuyButtons == null)
-            return 0;
-
-        return Mathf.Min(baitTexts.Length, baitBuyButtons.Length);
-    }
-
-    #endregion
-
-    #region Panel State
-
-    private void SetBaitControlsActive(int _visibleCount)
-    {
-        if (baitTexts != null)
-        {
-            for (int i = 0; i < baitTexts.Length; i++)
-            {
-                if (baitTexts[i] != null)
-                    baitTexts[i].gameObject.SetActive(i < _visibleCount);
-            }
-        }
-
-        if (baitBuyButtons != null)
-        {
-            for (int i = 0; i < baitBuyButtons.Length; i++)
-            {
-                if (baitBuyButtons[i] != null)
-                    baitBuyButtons[i].gameObject.SetActive(i < _visibleCount);
-            }
-        }
-    }
-
-    private void Close()
-    {
-        CloseImmediate();
-        SetGameUiState(GameManager.GameState.OnFoot, true, false);
-    }
-
-    private void CloseImmediate()
-    {
-        UISelectionHelper.ClearSelection(PanelObject);
-        isOpen = false;
-        UIModalManager.PopModal(ref modalToken);
-        PanelObject.SetActive(false);
-    }
-
-    private void PushModalState()
-    {
-        if (modalToken != UIModalManager.InvalidToken)
-            return;
-
-        UIModalRequest request = UIModalRequest.Create(
-            this,
-            pauseTimeWhileOpen,
-            hideHudWhileOpen,
-            blockPauseWhileOpen
+        SetUpgradeRow(
+            capacityUpgradeRow,
+            "Peso",
+            "Aumenta o peso maximo do barco.",
+            $"Nivel {dockUpgradeSystem.CapacityLevel}/{dockUpgradeSystem.MaxCapacityLevel}",
+            dockUpgradeSystem.IsCapacityUpgradeMaxed
+                ? $"Capacidade: {currentCapacity:0} kg"
+                : $"{currentCapacity:0} kg -> {dockUpgradeSystem.NextCapacity:0} kg",
+            GetUpgradeCostText(dockUpgradeSystem.CurrentCapacityUpgradeCost, dockUpgradeSystem.IsCapacityUpgradeMaxed),
+            dockUpgradeSystem.CapacityLevel,
+            dockUpgradeSystem.MaxCapacityLevel,
+            dockUpgradeSystem.CanBuyCapacityUpgrade
         );
 
-        modalToken = UIModalManager.PushModal(request);
+        SetUpgradeRow(
+            boatSpeedUpgradeRow,
+            "Barco",
+            "Aumenta a velocidade do barco em 15%.",
+            $"Nivel {dockUpgradeSystem.BoatSpeedLevel}/{dockUpgradeSystem.MaxBoatSpeedLevel}",
+            dockUpgradeSystem.IsBoatSpeedUpgradeMaxed
+                ? $"Velocidade: +{GetPercent(dockUpgradeSystem.BoatSpeedMultiplier - 1f)}%"
+                : $"+{GetPercent(dockUpgradeSystem.BoatSpeedMultiplier - 1f)}% -> +{GetPercent(dockUpgradeSystem.NextBoatSpeedMultiplier - 1f)}%",
+            GetUpgradeCostText(dockUpgradeSystem.CurrentBoatSpeedUpgradeCost, dockUpgradeSystem.IsBoatSpeedUpgradeMaxed),
+            dockUpgradeSystem.BoatSpeedLevel,
+            dockUpgradeSystem.MaxBoatSpeedLevel,
+            dockUpgradeSystem.CanBuyBoatSpeedUpgrade
+        );
+
+        SetUpgradeRow(
+            rodUpgradeRow,
+            "Vara",
+            "Facilita o skill check da pescaria.",
+            $"Nivel {dockUpgradeSystem.RodLevel}/{dockUpgradeSystem.MaxRodLevel}",
+            dockUpgradeSystem.IsRodUpgradeMaxed
+                ? $"Indicador -{GetPercent(1f - dockUpgradeSystem.RodIndicatorSpeedMultiplier)}% | Zona +{GetPercent(dockUpgradeSystem.RodSuccessZoneMultiplier - 1f)}%"
+                : $"Indicador -{GetPercent(1f - dockUpgradeSystem.NextRodIndicatorSpeedMultiplier)}% | Zona +{GetPercent(dockUpgradeSystem.NextRodSuccessZoneMultiplier - 1f)}%",
+            GetUpgradeCostText(dockUpgradeSystem.CurrentRodUpgradeCost, dockUpgradeSystem.IsRodUpgradeMaxed),
+            dockUpgradeSystem.RodLevel,
+            dockUpgradeSystem.MaxRodLevel,
+            dockUpgradeSystem.CanBuyRodUpgrade
+        );
+
+        SetUpgradeRow(
+            fireproofBoatUpgradeRow,
+            "Barco a prova de fogo",
+            "Permite navegar pelo lago de lava.",
+            dockUpgradeSystem.HasFireproofBoatUpgrade ? "Comprado" : "Especial",
+            dockUpgradeSystem.HasFireproofBoatUpgrade ? "Liberado" : "Necessario para a lava",
+            GetUpgradeCostText(dockUpgradeSystem.FireproofBoatUpgradeCost, dockUpgradeSystem.HasFireproofBoatUpgrade),
+            dockUpgradeSystem.HasFireproofBoatUpgrade ? 1 : 0,
+            1,
+            dockUpgradeSystem.CanBuyFireproofBoatUpgrade
+        );
     }
 
-    private void HandlePausePressed()
+    private void SetBaitUI()
     {
-        if (!isOpen)
-            return;
+        BaitData[] baits = GetBaitsForSale();
+        int visibleCount = Mathf.Min(baits.Length, GetBaitShopCardCount());
+        EnsureBaitQuantityArray(visibleCount);
 
-        Close();
+        for (int i = 0; i < GetBaitShopCardCount(); i++)
+        {
+            BaitShopCard card = baitShopCards[i];
+
+            if (card == null)
+                continue;
+
+            bool hasBait = i < visibleCount && baits[i] != null;
+
+            if (!hasBait)
+            {
+                card.Clear();
+                continue;
+            }
+
+            BaitData bait = baits[i];
+            int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
+            int ownedQuantity = baitInventory != null ? baitInventory.GetQuantity(bait) : 0;
+
+            card.SetBait(
+                bait,
+                ownedQuantity,
+                maxQuantity,
+                Mathf.Max(0, bait.PurchasePrice)
+            );
+        }
+
+        RefreshBaitQuantityPopup();
     }
 
     #endregion
 
-    #region Event Handlers And Purchases
+    #region Sell
 
-    private void ChangeFishList(List<FishData> _fishList, float _fishWeight)
+    private void RefreshSellFishSlots()
     {
-        Refresh();
+        ResolveSellFishSlots();
+        EnsureSellFishSlotCapacity(ownedFish.Count);
+
+        if (sellFishSlots == null || sellFishSlots.Length == 0)
+            return;
+
+        for (int i = 0; i < sellFishSlots.Length; i++)
+        {
+            InventoryFishSlotUI slot = sellFishSlots[i];
+
+            if (slot == null)
+                continue;
+
+            bool hasFish = i < ownedFish.Count && ownedFish[i] != null;
+            slot.gameObject.SetActive(hasFish);
+
+            if (hasFish)
+            {
+                FishData fish = ownedFish[i];
+                slot.SetFish(fish, i, HandleSellFishSlotSubmitted, true, selectedFishForSale.Contains(fish));
+            }
+            else
+            {
+                slot.Clear();
+            }
+        }
     }
 
-    private void ChangeMoney(float _money)
+    private void ResolveSellFishSlots()
     {
-        playerMoney = _money;
-        SetSellTexts();
-        SetUpgradeTexts();
-        SetBaitTexts();
+        if (sellFishSlots != null && sellFishSlots.Length > 0)
+            return;
+
+        if (sellFishGridContent == null)
+            return;
+
+        InventoryFishSlotUI[] foundSlots = sellFishGridContent.GetComponentsInChildren<InventoryFishSlotUI>(true);
+        List<InventoryFishSlotUI> usableSlots = new List<InventoryFishSlotUI>();
+
+        for (int i = 0; i < foundSlots.Length; i++)
+        {
+            if (foundSlots[i] != null)
+                usableSlots.Add(foundSlots[i]);
+        }
+
+        sellFishSlots = usableSlots.ToArray();
+
+        if (sellFishSlotTemplate == null && sellFishSlots != null && sellFishSlots.Length > 0)
+            sellFishSlotTemplate = sellFishSlots[0];
     }
 
-    private void HandleSaleCompleted(int _earnedMoney)
+    private void EnsureSellFishSlotCapacity(int _requiredCount)
     {
-        Refresh();
+        if (_requiredCount <= 0)
+            return;
+
+        if (sellFishGridContent == null)
+            return;
+
+        ResolveSellFishSlots();
+
+        if (sellFishSlotTemplate == null && sellFishSlots != null && sellFishSlots.Length > 0)
+            sellFishSlotTemplate = sellFishSlots[0];
+
+        if (sellFishSlotTemplate == null)
+            return;
+
+        bool shouldAutoCreate = autoCreateSellFishSlots ||
+                                sellFishSlots == null ||
+                                sellFishSlots.Length <= 1;
+
+        if (!shouldAutoCreate)
+            return;
+
+        List<InventoryFishSlotUI> slots = new List<InventoryFishSlotUI>();
+
+        if (sellFishSlots != null)
+        {
+            for (int i = 0; i < sellFishSlots.Length; i++)
+            {
+                if (sellFishSlots[i] != null && !slots.Contains(sellFishSlots[i]))
+                    slots.Add(sellFishSlots[i]);
+            }
+        }
+
+        while (slots.Count < _requiredCount)
+        {
+            InventoryFishSlotUI slot = Instantiate(sellFishSlotTemplate, sellFishGridContent);
+            slot.gameObject.name = $"SellFishSlot{slots.Count + 1}";
+            slot.gameObject.SetActive(true);
+            slots.Add(slot);
+        }
+
+        sellFishSlots = slots.ToArray();
     }
 
-    private void HandleUpgradesChanged()
+    private void ClearExtraSellFishSlots(int _firstExtraIndex)
     {
-        Refresh();
+        if (sellFishSlots == null)
+            return;
+
+        for (int i = _firstExtraIndex; i < sellFishSlots.Length; i++)
+        {
+            InventoryFishSlotUI slot = sellFishSlots[i];
+
+            if (slot == null)
+                continue;
+
+            slot.Clear();
+
+            if (autoCreateSellFishSlots)
+            {
+                slot.gameObject.SetActive(false);
+            }
+        }
     }
 
-    private void HandleBaitInventoryChanged()
+    private void HandleSellFishSlotSubmitted(int _index)
     {
-        Refresh();
+        if (_index < 0 || _index >= ownedFish.Count)
+            return;
+
+        FishData fish = ownedFish[_index];
+
+        if (fish == null)
+            return;
+
+        if (selectedFishForSale.Contains(fish))
+            selectedFishForSale.Remove(fish);
+        else
+            selectedFishForSale.Add(fish);
+
+        SetSellUI();
     }
 
-    private void HandleBaitPurchased(BaitData _bait, int _quantity)
+    private void PruneSelectedFishForSale()
     {
-        Refresh();
+        if (selectedFishForSale.Count == 0)
+            return;
+
+        List<FishData> toRemove = new List<FishData>();
+
+        foreach (FishData fish in selectedFishForSale)
+        {
+            if (fish == null || !ownedFish.Contains(fish))
+                toRemove.Add(fish);
+        }
+
+        for (int i = 0; i < toRemove.Count; i++)
+            selectedFishForSale.Remove(toRemove[i]);
     }
+
+    private int GetSelectedFishSaleValue()
+    {
+        int totalValue = 0;
+
+        foreach (FishData fish in selectedFishForSale)
+        {
+            if (fish != null)
+                totalValue += FishPriceCalculator.CalculatePrice(fish);
+        }
+
+        return totalValue;
+    }
+
+    private void SetSelectAllFishToggleState()
+    {
+        if (selectAllFishToggle == null)
+            return;
+
+        suppressSelectAllFishToggle = true;
+        selectAllFishToggle.SetIsOnWithoutNotify(ownedFish.Count > 0 && selectedFishForSale.Count == ownedFish.Count);
+        selectAllFishToggle.interactable = ownedFish.Count > 0;
+        suppressSelectAllFishToggle = false;
+    }
+
+    private void KeepSellSelectionVisible()
+    {
+        if (!keepSellSelectionVisibleInScroll ||
+            !isOpen ||
+            currentTab != DockOwnerTab.Sell ||
+            EventSystem.current == null)
+        {
+            lastScrolledSellSelection = null;
+            return;
+        }
+
+        ResolveSellFishScrollRect();
+
+        if (sellFishScrollRect == null || sellFishScrollRect.content == null)
+            return;
+
+        GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
+
+        if (selectedObject == null || !selectedObject.transform.IsChildOf(sellFishScrollRect.transform))
+        {
+            lastScrolledSellSelection = null;
+            return;
+        }
+
+        RectTransform selectedRect = selectedObject.GetComponent<RectTransform>();
+
+        if (selectedRect == null || !selectedRect.IsChildOf(sellFishScrollRect.content))
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        ScrollRectToChild(sellFishScrollRect, selectedRect, selectedObject != lastScrolledSellSelection);
+        lastScrolledSellSelection = selectedObject;
+    }
+
+    private void ScrollRectToChild(ScrollRect _scrollRect, RectTransform _child, bool _selectionChanged)
+    {
+        RectTransform viewport = _scrollRect.viewport != null ? _scrollRect.viewport : _scrollRect.GetComponent<RectTransform>();
+        RectTransform content = _scrollRect.content;
+
+        if (viewport == null || content == null || _child == null)
+            return;
+
+        if (_scrollRect.vertical)
+            ScrollVerticallyToChild(_scrollRect, viewport, content, _child, _selectionChanged);
+
+        if (_scrollRect.horizontal)
+            ScrollHorizontallyToChild(_scrollRect, viewport, content, _child, _selectionChanged);
+    }
+
+    private void ScrollVerticallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged)
+    {
+        float hiddenHeight = _content.rect.height - _viewport.rect.height;
+
+        if (hiddenHeight <= 0f)
+            return;
+
+        Bounds childBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(_viewport, _child);
+        Rect viewportRect = _viewport.rect;
+        float offset = 0f;
+
+        if (childBounds.max.y > viewportRect.yMax - sellSelectionScrollPadding)
+            offset = childBounds.max.y - (viewportRect.yMax - sellSelectionScrollPadding);
+        else if (childBounds.min.y < viewportRect.yMin + sellSelectionScrollPadding)
+            offset = childBounds.min.y - (viewportRect.yMin + sellSelectionScrollPadding);
+
+        if (Mathf.Abs(offset) <= 0.01f)
+            return;
+
+        float target = Mathf.Clamp01(_scrollRect.verticalNormalizedPosition + offset / hiddenHeight);
+        _scrollRect.verticalNormalizedPosition = _selectionChanged
+            ? target
+            : Mathf.MoveTowards(_scrollRect.verticalNormalizedPosition, target, Time.unscaledDeltaTime * 12f);
+    }
+
+    private void ScrollHorizontallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged)
+    {
+        float hiddenWidth = _content.rect.width - _viewport.rect.width;
+
+        if (hiddenWidth <= 0f)
+            return;
+
+        Bounds childBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(_viewport, _child);
+        Rect viewportRect = _viewport.rect;
+        float offset = 0f;
+
+        if (childBounds.max.x > viewportRect.xMax - sellSelectionScrollPadding)
+            offset = childBounds.max.x - (viewportRect.xMax - sellSelectionScrollPadding);
+        else if (childBounds.min.x < viewportRect.xMin + sellSelectionScrollPadding)
+            offset = childBounds.min.x - (viewportRect.xMin + sellSelectionScrollPadding);
+
+        if (Mathf.Abs(offset) <= 0.01f)
+            return;
+
+        float target = Mathf.Clamp01(_scrollRect.horizontalNormalizedPosition + offset / hiddenWidth);
+        _scrollRect.horizontalNormalizedPosition = _selectionChanged
+            ? target
+            : Mathf.MoveTowards(_scrollRect.horizontalNormalizedPosition, target, Time.unscaledDeltaTime * 12f);
+    }
+
+    #endregion
+
+    #region Upgrades
 
     private void TryBuyUpgrade(DockUpgradeType _upgradeType)
+    {
+        TryResolveReferences();
+
+        if (dockUpgradeSystem == null)
+        {
+            SetStatus("Sistema de upgrades nao encontrado.");
+            return;
+        }
+
+        int cost = GetUpgradeCost(_upgradeType);
+
+        if (cost <= 0 || !CanBuyUpgrade(_upgradeType))
+        {
+            DockUpgradePurchaseResult previewResult = GetUpgradePreviewFailure(_upgradeType);
+            SetStatus(GetUpgradePurchaseStatusText(previewResult));
+            Refresh();
+            return;
+        }
+
+        string upgradeName = GetUpgradeDisplayName(_upgradeType);
+        OpenPurchaseConfirmation(
+            "Confirmar upgrade",
+            $"Comprar {upgradeName} por R$ {cost}?",
+            () => CompleteBuyUpgrade(_upgradeType)
+        );
+    }
+
+    private void CompleteBuyUpgrade(DockUpgradeType _upgradeType)
     {
         TryResolveReferences();
 
@@ -609,6 +962,245 @@ public class DockOwnerUI : MonoBehaviour
         Refresh();
     }
 
+    private int GetUpgradeCost(DockUpgradeType _upgradeType)
+    {
+        if (dockUpgradeSystem == null)
+            return 0;
+
+        return _upgradeType switch
+        {
+            DockUpgradeType.Capacity => dockUpgradeSystem.CurrentCapacityUpgradeCost,
+            DockUpgradeType.BoatSpeed => dockUpgradeSystem.CurrentBoatSpeedUpgradeCost,
+            DockUpgradeType.Rod => dockUpgradeSystem.CurrentRodUpgradeCost,
+            DockUpgradeType.FireproofBoat => dockUpgradeSystem.FireproofBoatUpgradeCost,
+            _ => 0
+        };
+    }
+
+    private bool CanBuyUpgrade(DockUpgradeType _upgradeType)
+    {
+        if (dockUpgradeSystem == null)
+            return false;
+
+        return _upgradeType switch
+        {
+            DockUpgradeType.Capacity => dockUpgradeSystem.CanBuyCapacityUpgrade,
+            DockUpgradeType.BoatSpeed => dockUpgradeSystem.CanBuyBoatSpeedUpgrade,
+            DockUpgradeType.Rod => dockUpgradeSystem.CanBuyRodUpgrade,
+            DockUpgradeType.FireproofBoat => dockUpgradeSystem.CanBuyFireproofBoatUpgrade,
+            _ => false
+        };
+    }
+
+    private DockUpgradePurchaseResult GetUpgradePreviewFailure(DockUpgradeType _upgradeType)
+    {
+        if (dockUpgradeSystem == null)
+            return DockUpgradePurchaseResult.MissingReferences;
+
+        bool isMaxed = _upgradeType switch
+        {
+            DockUpgradeType.Capacity => dockUpgradeSystem.IsCapacityUpgradeMaxed,
+            DockUpgradeType.BoatSpeed => dockUpgradeSystem.IsBoatSpeedUpgradeMaxed,
+            DockUpgradeType.Rod => dockUpgradeSystem.IsRodUpgradeMaxed,
+            DockUpgradeType.FireproofBoat => dockUpgradeSystem.HasFireproofBoatUpgrade,
+            _ => true
+        };
+
+        if (isMaxed)
+            return _upgradeType == DockUpgradeType.FireproofBoat
+                ? DockUpgradePurchaseResult.AlreadyOwned
+                : DockUpgradePurchaseResult.MaxLevel;
+
+        int cost = GetUpgradeCost(_upgradeType);
+        return playerMoney >= cost
+            ? DockUpgradePurchaseResult.MissingReferences
+            : DockUpgradePurchaseResult.NotEnoughMoney;
+    }
+
+    private void SetUpgradeRow(
+        DockOwnerUpgradeRowUI _row,
+        string _name,
+        string _description,
+        string _level,
+        string _value,
+        string _cost,
+        int _currentLevel,
+        int _maxLevel,
+        bool _canBuy)
+    {
+        if (_row == null)
+            return;
+
+        _row.SetUpgrade(_name, _description, _level, _value, _cost, _currentLevel, _maxLevel, _canBuy);
+    }
+
+    private string GetUpgradeCostText(int _cost, bool _isMaxed)
+    {
+        if (_isMaxed)
+            return "Maximo";
+
+        string moneyColor = playerMoney >= _cost ? "green" : "red";
+        return $"<color={moneyColor}>R$ {_cost}</color>";
+    }
+
+    private string GetUpgradePurchaseStatusText(DockUpgradePurchaseResult _purchaseResult)
+    {
+        return _purchaseResult switch
+        {
+            DockUpgradePurchaseResult.MissingReferences => "Sistema de upgrades incompleto.",
+            DockUpgradePurchaseResult.MaxLevel => "Upgrade maximo atingido.",
+            DockUpgradePurchaseResult.AlreadyOwned => "Upgrade ja comprado.",
+            DockUpgradePurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
+            _ => "Nao foi possivel comprar o upgrade."
+        };
+    }
+
+    private string GetUpgradeSuccessText(DockUpgradeType _upgradeType)
+    {
+        return _upgradeType switch
+        {
+            DockUpgradeType.Capacity => "Capacidade aumentada.",
+            DockUpgradeType.BoatSpeed => "Velocidade do barco aumentada.",
+            DockUpgradeType.Rod => "Vara melhorada.",
+            DockUpgradeType.FireproofBoat => "Barco a prova de fogo comprado.",
+            _ => "Upgrade comprado."
+        };
+    }
+
+    private string GetUpgradeDisplayName(DockUpgradeType _upgradeType)
+    {
+        return _upgradeType switch
+        {
+            DockUpgradeType.Capacity => "Peso",
+            DockUpgradeType.BoatSpeed => "Barco",
+            DockUpgradeType.Rod => "Vara",
+            DockUpgradeType.FireproofBoat => "Barco a prova de fogo",
+            _ => "Upgrade"
+        };
+    }
+
+    private bool TryFailPurchase(out DockUpgradePurchaseResult _result)
+    {
+        _result = DockUpgradePurchaseResult.MissingReferences;
+        return false;
+    }
+
+    private int GetPercent(float _value)
+    {
+        return Mathf.RoundToInt(_value * 100f);
+    }
+
+    #endregion
+
+    #region Baits
+
+    private BaitData[] GetBaitsForSale()
+    {
+        return baitShop != null ? baitShop.BaitsForSale : BaitCatalog.GetDefaultBaits();
+    }
+
+    private void EnsureBaitQuantityArray(int _count)
+    {
+        int safeCount = Mathf.Max(0, _count);
+
+        if (baitPurchaseQuantities != null && baitPurchaseQuantities.Length >= safeCount)
+            return;
+
+        int[] resizedQuantities = new int[safeCount];
+
+        for (int i = 0; i < resizedQuantities.Length; i++)
+            resizedQuantities[i] = 1;
+
+        if (baitPurchaseQuantities != null)
+        {
+            for (int i = 0; i < baitPurchaseQuantities.Length && i < resizedQuantities.Length; i++)
+                resizedQuantities[i] = Mathf.Max(1, baitPurchaseQuantities[i]);
+        }
+
+        baitPurchaseQuantities = resizedQuantities;
+    }
+
+    private int GetBaitPurchaseQuantity(int _slotIndex, BaitData _bait)
+    {
+        EnsureBaitQuantityArray(GetBaitShopCardCount());
+
+        if (_slotIndex < 0 || baitPurchaseQuantities == null || _slotIndex >= baitPurchaseQuantities.Length)
+            return GetMaxBaitPurchaseQuantity(_bait) > 0 ? 1 : 0;
+
+        int maxQuantity = GetMaxBaitPurchaseQuantity(_bait);
+        int minQuantity = maxQuantity > 0 ? 1 : 0;
+        baitPurchaseQuantities[_slotIndex] = Mathf.Clamp(baitPurchaseQuantities[_slotIndex], minQuantity, Mathf.Max(1, maxQuantity));
+        return baitPurchaseQuantities[_slotIndex];
+    }
+
+    private int GetMaxBaitPurchaseQuantity(BaitData _bait)
+    {
+        int limit = Mathf.Max(1, maxBaitPurchaseQuantity);
+
+        if (baitShop != null)
+            return baitShop.GetMaxAffordableQuantity(_bait, limit);
+
+        if (_bait == null)
+            return 0;
+
+        int unitCost = Mathf.Max(0, _bait.PurchasePrice);
+
+        if (unitCost == 0)
+            return limit;
+
+        int affordable = Mathf.FloorToInt(playerMoney / unitCost);
+        return Mathf.Clamp(affordable, 0, limit);
+    }
+
+    private int GetBaitPurchaseCost(BaitData _bait, int _quantity)
+    {
+        if (_bait == null || _quantity <= 0)
+            return 0;
+
+        if (baitShop != null)
+            return baitShop.GetBaitPurchaseCost(_bait, _quantity);
+
+        return Mathf.Max(0, _bait.PurchasePrice * _quantity);
+    }
+
+    private void SetBaitQuantityFromSlot(int _slotIndex, int _quantity)
+    {
+        BaitData[] baits = GetBaitsForSale();
+
+        if (_slotIndex < 0 || _slotIndex >= baits.Length)
+            return;
+
+        EnsureBaitQuantityArray(GetBaitShopCardCount());
+        baitPurchaseQuantities[_slotIndex] = Mathf.Clamp(_quantity, 0, Mathf.Max(1, GetMaxBaitPurchaseQuantity(baits[_slotIndex])));
+        SetBaitUI();
+        RefreshBaitQuantityPopup();
+    }
+
+    private void ChangeBaitQuantity(int _slotIndex, int _delta)
+    {
+        BaitData[] baits = GetBaitsForSale();
+
+        if (_slotIndex < 0 || _slotIndex >= baits.Length || _delta == 0)
+            return;
+
+        BaitData bait = baits[_slotIndex];
+        EnsureBaitQuantityArray(GetBaitShopCardCount());
+
+        int currentQuantity = GetBaitPurchaseQuantity(_slotIndex, bait);
+        int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
+        int minQuantity = maxQuantity > 0 ? 1 : 0;
+        int nextQuantity = Mathf.Clamp(currentQuantity + _delta, minQuantity, Mathf.Max(1, maxQuantity));
+
+        if (nextQuantity == currentQuantity)
+        {
+            ShakeBaitQuantity(_slotIndex);
+            return;
+        }
+
+        baitPurchaseQuantities[_slotIndex] = nextQuantity;
+        SetBaitUI();
+    }
+
     private void TryBuyBaitSlot(int _slotIndex)
     {
         TryResolveReferences();
@@ -628,14 +1220,396 @@ public class DockOwnerUI : MonoBehaviour
         }
 
         BaitData bait = baits[_slotIndex];
-        bool success = baitShop.TryBuyBait(bait, out BaitPurchaseResult result);
-        SetStatus(success ? $"{bait.BaitName} comprada." : GetBaitPurchaseStatusText(result));
+        int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
+
+        if (maxQuantity <= 0)
+        {
+            ShakeBaitQuantity(_slotIndex);
+            SetStatus("Dinheiro insuficiente.");
+            return;
+        }
+
+        pendingBaitSlotIndex = _slotIndex;
+        int quantity = GetBaitPurchaseQuantity(_slotIndex, bait);
+
+        if (baitQuantityPanel != null)
+        {
+            OpenBaitQuantityPopup(_slotIndex);
+            return;
+        }
+
+        OpenBaitPurchaseConfirmation(_slotIndex, quantity);
+    }
+
+    private void ExecuteBaitPurchase(int _slotIndex)
+    {
+        BaitData[] baits = GetBaitsForSale();
+
+        if (_slotIndex < 0 || _slotIndex >= baits.Length)
+        {
+            SetStatus("Isca nao encontrada.");
+            return;
+        }
+
+        if (baitShop == null)
+        {
+            SetStatus("Loja de iscas nao encontrada.");
+            return;
+        }
+
+        BaitData bait = baits[_slotIndex];
+        int quantity = GetBaitPurchaseQuantity(_slotIndex, bait);
+
+        if (quantity <= 0)
+        {
+            ShakeBaitQuantity(_slotIndex);
+            SetStatus("Dinheiro insuficiente.");
+            return;
+        }
+
+        bool success = baitShop.TryBuyBait(bait, quantity, out BaitPurchaseResult result);
+
+        if (!success)
+            ShakeBaitQuantity(_slotIndex);
+
+        SetStatus(success ? $"{bait.BaitName} x{quantity} comprada." : GetBaitPurchaseStatusText(result));
         Refresh();
+    }
+
+    private void OpenBaitQuantityPopup(int _slotIndex)
+    {
+        pendingBaitSlotIndex = _slotIndex;
+        selectionBeforePopup = UISelectionHelper.CurrentSelectableInScope(PanelObject);
+        SetObjectActive(baitQuantityPanel, true);
+        RefreshBaitQuantityPopup();
+        UISelectionHelper.Select(
+            UISelectionHelper.IsUsable(baitQuantityFirstSelected) ? baitQuantityFirstSelected : baitQuantityConfirmButton,
+            baitQuantityPanel
+        );
+    }
+
+    private void CloseBaitQuantityPopup(bool _restoreSelection)
+    {
+        SetObjectActive(baitQuantityPanel, false);
+        pendingBaitSlotIndex = -1;
+        lastBaitQuantityMoveDirection = 0;
+        nextBaitQuantityMoveTime = 0f;
+
+        if (_restoreSelection)
+            UISelectionHelper.Select(selectionBeforePopup, PanelObject);
+    }
+
+    private void RefreshBaitQuantityPopup()
+    {
+        if (baitQuantityPanel == null || !baitQuantityPanel.activeInHierarchy || pendingBaitSlotIndex < 0)
+            return;
+
+        BaitData[] baits = GetBaitsForSale();
+
+        if (pendingBaitSlotIndex >= baits.Length)
+        {
+            CloseBaitQuantityPopup(false);
+            return;
+        }
+
+        BaitData bait = baits[pendingBaitSlotIndex];
+        int quantity = GetBaitPurchaseQuantity(pendingBaitSlotIndex, bait);
+        int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
+        int ownedQuantity = baitInventory != null ? baitInventory.GetQuantity(bait) : 0;
+        int totalCost = GetBaitPurchaseCost(bait, quantity);
+
+        if (baitQuantityTitleText != null)
+            baitQuantityTitleText.text = bait != null ? bait.BaitName : "Isca";
+
+        if (baitQuantityText != null)
+            baitQuantityText.text = quantity.ToString();
+
+        if (baitQuantityPriceText != null)
+            baitQuantityPriceText.text = $"Total: R$ {totalCost}";
+
+        if (baitQuantityOwnedText != null)
+            baitQuantityOwnedText.text = $"No inventario: {ownedQuantity}";
+
+        if (baitQuantityMaxText != null)
+            baitQuantityMaxText.text = $"Maximo: {maxQuantity}";
+
+        SetButtonInteractable(baitQuantityDecreaseButton, quantity > 1);
+        SetButtonInteractable(baitQuantityIncreaseButton, quantity < maxQuantity);
+        SetButtonInteractable(baitQuantityConfirmButton, quantity > 0);
+    }
+
+    private void ChangePendingBaitQuantity(int _delta)
+    {
+        if (pendingBaitSlotIndex < 0)
+            return;
+
+        ChangeBaitQuantity(pendingBaitSlotIndex, _delta);
+        RefreshBaitQuantityPopup();
+    }
+
+    private void ConfirmPendingBaitQuantity()
+    {
+        if (pendingBaitSlotIndex < 0)
+            return;
+
+        int slotIndex = pendingBaitSlotIndex;
+        BaitData[] baits = GetBaitsForSale();
+        Selectable previousSelection = selectionBeforePopup;
+
+        if (slotIndex >= baits.Length)
+        {
+            CloseBaitQuantityPopup(false);
+            return;
+        }
+
+        CloseBaitQuantityPopup(false);
+        OpenBaitPurchaseConfirmation(slotIndex, GetBaitPurchaseQuantity(slotIndex, baits[slotIndex]));
+        selectionBeforePopup = previousSelection;
+    }
+
+    private void OpenBaitPurchaseConfirmation(int _slotIndex, int _quantity)
+    {
+        BaitData[] baits = GetBaitsForSale();
+
+        if (_slotIndex < 0 || _slotIndex >= baits.Length)
+            return;
+
+        BaitData bait = baits[_slotIndex];
+        int totalCost = GetBaitPurchaseCost(bait, _quantity);
+        OpenPurchaseConfirmation(
+            "Confirmar compra",
+            $"Comprar {bait.BaitName} x{_quantity} por R$ {totalCost}?",
+            () => ExecuteBaitPurchase(_slotIndex)
+        );
+    }
+
+    private void HandleBaitQuantityMoveInput()
+    {
+        if (!isOpen || currentTab != DockOwnerTab.Baits || InputHandler.instance == null)
+            return;
+
+        int slotIndex = baitQuantityPanel != null && baitQuantityPanel.activeInHierarchy && pendingBaitSlotIndex >= 0
+            ? pendingBaitSlotIndex
+            : GetSelectedBaitSlotIndex();
+
+        if (slotIndex < 0)
+            return;
+
+        float horizontal = InputHandler.instance.moveInput.x;
+
+        if (Mathf.Abs(horizontal) < baitQuantityMoveThreshold)
+        {
+            lastBaitQuantityMoveDirection = 0;
+            nextBaitQuantityMoveTime = 0f;
+            return;
+        }
+
+        int direction = horizontal > 0f ? 1 : -1;
+
+        if (direction == lastBaitQuantityMoveDirection && Time.unscaledTime < nextBaitQuantityMoveTime)
+            return;
+
+        ChangeBaitQuantity(slotIndex, direction);
+        lastBaitQuantityMoveDirection = direction;
+        nextBaitQuantityMoveTime = Time.unscaledTime + baitQuantityMoveRepeatDelay;
+    }
+
+    private int GetSelectedBaitSlotIndex()
+    {
+        if (EventSystem.current == null || baitShopCards == null)
+            return -1;
+
+        GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
+
+        if (selectedObject == null)
+            return -1;
+
+        for (int i = 0; i < baitShopCards.Length; i++)
+        {
+            if (baitShopCards[i] != null && baitShopCards[i].Contains(selectedObject))
+                return i;
+        }
+
+        return -1;
+    }
+
+    private void ShakeBaitQuantity(int _slotIndex)
+    {
+        TMP_Text feedbackText = baitQuantityPanel != null &&
+                                baitQuantityPanel.activeInHierarchy &&
+                                pendingBaitSlotIndex == _slotIndex
+            ? baitQuantityText
+            : GetBaitCardFeedbackText(_slotIndex);
+
+        if (feedbackText == null)
+            return;
+
+        if (baitQuantityFeedbackRoutine != null)
+            StopCoroutine(baitQuantityFeedbackRoutine);
+
+        baitQuantityFeedbackRoutine = StartCoroutine(ShakeTextRoutine(feedbackText));
+    }
+
+    private TMP_Text GetBaitCardFeedbackText(int _slotIndex)
+    {
+        if (baitShopCards == null ||
+            _slotIndex < 0 ||
+            _slotIndex >= baitShopCards.Length ||
+            baitShopCards[_slotIndex] == null)
+        {
+            return null;
+        }
+
+        return baitShopCards[_slotIndex].FeedbackText;
+    }
+
+    private IEnumerator ShakeTextRoutine(TMP_Text _text)
+    {
+        RectTransform rect = _text != null ? _text.rectTransform : null;
+
+        if (rect == null)
+            yield break;
+
+        Vector2 basePosition = rect.anchoredPosition;
+        Vector3 baseScale = rect.localScale;
+        const float duration = 0.22f;
+        float elapsed = 0f;
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(elapsed / duration);
+            float shake = Mathf.Sin(progress * Mathf.PI * 8f) * (1f - progress) * 8f;
+            rect.anchoredPosition = basePosition + new Vector2(shake, 0f);
+            rect.localScale = baseScale * (1f + 0.08f * (1f - progress));
+            yield return null;
+        }
+
+        rect.anchoredPosition = basePosition;
+        rect.localScale = baseScale;
+        baitQuantityFeedbackRoutine = null;
+    }
+
+    private string GetBaitPurchaseStatusText(BaitPurchaseResult _purchaseResult)
+    {
+        return _purchaseResult switch
+        {
+            BaitPurchaseResult.MissingReferences => "Sistema de iscas incompleto.",
+            BaitPurchaseResult.InvalidBait => "Isca invalida.",
+            BaitPurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
+            _ => "Nao foi possivel comprar a isca."
+        };
     }
 
     #endregion
 
-    #region Reference Resolution And Runtime UI
+    #region Purchase Confirmation
+
+    private void OpenPurchaseConfirmation(string _title, string _message, Action _purchaseAction)
+    {
+        pendingPurchaseAction = _purchaseAction;
+        selectionBeforePopup = UISelectionHelper.CurrentSelectableInScope(PanelObject);
+
+        if (purchaseConfirmTitleText != null)
+            purchaseConfirmTitleText.text = _title;
+
+        if (purchaseConfirmMessageText != null)
+            purchaseConfirmMessageText.text = _message;
+
+        if (purchaseConfirmPanel == null)
+        {
+            ConfirmPendingPurchase();
+            return;
+        }
+
+        SetObjectActive(purchaseConfirmPanel, true);
+        UISelectionHelper.Select(
+            UISelectionHelper.IsUsable(purchaseConfirmFirstSelected) ? purchaseConfirmFirstSelected : purchaseConfirmYesButton,
+            purchaseConfirmPanel
+        );
+    }
+
+    private void ConfirmPendingPurchase()
+    {
+        Action action = pendingPurchaseAction;
+        ClosePurchaseConfirmation(false);
+        action?.Invoke();
+    }
+
+    private void ClosePurchaseConfirmation(bool _restoreSelection)
+    {
+        SetObjectActive(purchaseConfirmPanel, false);
+        pendingPurchaseAction = null;
+
+        if (_restoreSelection)
+            UISelectionHelper.Select(selectionBeforePopup, PanelObject);
+    }
+
+    #endregion
+
+    #region Panel State
+
+    private void Close()
+    {
+        CloseImmediate();
+        SetGameUiState(GameManager.GameState.OnFoot, true, false);
+    }
+
+    private void CloseImmediate()
+    {
+        UISelectionHelper.ClearSelection(PanelObject);
+        CloseBaitQuantityPopup(false);
+        ClosePurchaseConfirmation(false);
+        isOpen = false;
+        UIModalManager.PopModal(ref modalToken);
+        PanelObject.SetActive(false);
+    }
+
+    private void PushModalState()
+    {
+        if (modalToken != UIModalManager.InvalidToken)
+            return;
+
+        UIModalRequest request = UIModalRequest.Create(
+            this,
+            pauseTimeWhileOpen,
+            hideHudWhileOpen,
+            blockPauseWhileOpen,
+            false,
+            HandleBackPressed
+        );
+
+        modalToken = UIModalManager.PushModal(request);
+    }
+
+    private void HandlePausePressed()
+    {
+        if (!isOpen)
+            return;
+
+        HandleBackPressed();
+    }
+
+    private void HandleBackPressed()
+    {
+        if (purchaseConfirmPanel != null && purchaseConfirmPanel.activeInHierarchy)
+        {
+            ClosePurchaseConfirmation(true);
+            return;
+        }
+
+        if (baitQuantityPanel != null && baitQuantityPanel.activeInHierarchy)
+        {
+            CloseBaitQuantityPopup(true);
+            return;
+        }
+
+        Close();
+    }
+
+    #endregion
+
+    #region References And Events
 
     private void TryResolveReferences()
     {
@@ -654,9 +1628,6 @@ public class DockOwnerUI : MonoBehaviour
         if (baitShop == null)
             baitShop = FindFirstObjectByType<BaitShop>();
 
-        if (baitShop == null)
-            baitShop = gameObject.AddComponent<BaitShop>();
-
         if (fishMarket != null)
         {
             shipInventory = fishMarket.ShipInventory;
@@ -669,491 +1640,71 @@ public class DockOwnerUI : MonoBehaviour
         if (playerMoneyManager == null)
             playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
 
-        if (baitInventory == null)
-            baitInventory = baitShop != null ? baitShop.BaitInventory : BaitInventory.GetOrCreate();
+        if (baitInventory == null && baitShop != null)
+            baitInventory = baitShop.BaitInventory;
+
+        ResolveUpgradeRows();
+        ResolveBaitShopCards();
+        ResolveSellFishScrollRect();
     }
 
-    private void EnsureUpgradeControls()
+    private void ResolveSellFishScrollRect()
     {
-        if (upgradesTabPanel == null || capacityUpgradeText == null || capacityUpgradeButton == null)
-        {
-            LogMissingUpgradeControls();
-            return;
-        }
-
-        bool needsRuntimeLayout = boatSpeedUpgradeText == null ||
-                                  boatSpeedUpgradeButton == null ||
-                                  rodUpgradeText == null ||
-                                  rodUpgradeButton == null ||
-                                  fireproofBoatUpgradeText == null ||
-                                  fireproofBoatUpgradeButton == null;
-
-        if (!needsRuntimeLayout)
+        if (sellFishScrollRect != null)
             return;
 
-        if (!allowRuntimeFallback)
-        {
-            LogMissingUpgradeControls();
-            return;
-        }
+        if (sellFishGridContent != null)
+            sellFishScrollRect = sellFishGridContent.GetComponentInParent<ScrollRect>(true);
 
-        Transform upgradesParent = upgradesTabPanel.transform;
-
-        ConfigureUpgradeText(capacityUpgradeText, new Vector2(-310f, 105f));
-        ConfigureUpgradeButton(capacityUpgradeButton, new Vector2(-310f, -10f));
-
-        boatSpeedUpgradeText = EnsureUpgradeText(boatSpeedUpgradeText, "BoatSpeedUpgradeText", upgradesParent, new Vector2(310f, 105f));
-        boatSpeedUpgradeButton = EnsureUpgradeButton(boatSpeedUpgradeButton, "BoatSpeedUpgradeButton", upgradesParent, new Vector2(310f, -10f));
-        rodUpgradeText = EnsureUpgradeText(rodUpgradeText, "RodUpgradeText", upgradesParent, new Vector2(-310f, -155f));
-        rodUpgradeButton = EnsureUpgradeButton(rodUpgradeButton, "RodUpgradeButton", upgradesParent, new Vector2(-310f, -270f));
-        fireproofBoatUpgradeText = EnsureUpgradeText(fireproofBoatUpgradeText, "FireproofBoatUpgradeText", upgradesParent, new Vector2(310f, -155f));
-        fireproofBoatUpgradeButton = EnsureUpgradeButton(fireproofBoatUpgradeButton, "FireproofBoatUpgradeButton", upgradesParent, new Vector2(310f, -270f));
-
-        if (upgradesPlaceholderText != null)
-        {
-            RectTransform placeholderRect = upgradesPlaceholderText.rectTransform;
-            placeholderRect.anchoredPosition = new Vector2(0f, 235f);
-            placeholderRect.sizeDelta = new Vector2(820f, 60f);
-            upgradesPlaceholderText.fontSize = 32f;
-        }
+        if (sellFishScrollRect == null && sellTabPanel != null)
+            sellFishScrollRect = sellTabPanel.GetComponentInChildren<ScrollRect>(true);
     }
 
-    private void EnsureBaitControls()
+    private void ResolveUpgradeRows()
     {
-        ResolveBaitTabReferences();
+        DockOwnerUpgradeRowUI[] rows = GetComponentsInChildren<DockOwnerUpgradeRowUI>(true);
 
-        if (baitsTabPanel == null)
+        for (int i = 0; i < rows.Length; i++)
         {
-            LogMissingBaitControls(0);
-            return;
-        }
+            DockOwnerUpgradeRowUI row = rows[i];
 
-        ConfigureTabPanelRectIfDefault(baitsTabPanel);
+            if (row == null)
+                continue;
 
-        BaitData[] baits = GetBaitsForSale();
-        int targetCount = Mathf.Clamp(baits.Length, 0, 3);
-
-        if (targetCount == 0)
-            targetCount = 3;
-
-        if (baitTexts == null || baitTexts.Length < targetCount)
-        {
-            TMP_Text[] resizedTexts = new TMP_Text[targetCount];
-
-            if (baitTexts != null)
+            switch (row.UpgradeType)
             {
-                for (int i = 0; i < baitTexts.Length && i < resizedTexts.Length; i++)
-                    resizedTexts[i] = baitTexts[i];
+                case DockUpgradeType.Capacity:
+                    if (capacityUpgradeRow == null)
+                        capacityUpgradeRow = row;
+                    break;
+                case DockUpgradeType.BoatSpeed:
+                    if (boatSpeedUpgradeRow == null)
+                        boatSpeedUpgradeRow = row;
+                    break;
+                case DockUpgradeType.Rod:
+                    if (rodUpgradeRow == null)
+                        rodUpgradeRow = row;
+                    break;
+                case DockUpgradeType.FireproofBoat:
+                    if (fireproofBoatUpgradeRow == null)
+                        fireproofBoatUpgradeRow = row;
+                    break;
             }
-
-            baitTexts = resizedTexts;
-        }
-
-        if (baitBuyButtons == null || baitBuyButtons.Length < targetCount)
-        {
-            Button[] resizedButtons = new Button[targetCount];
-
-            if (baitBuyButtons != null)
-            {
-                for (int i = 0; i < baitBuyButtons.Length && i < resizedButtons.Length; i++)
-                    resizedButtons[i] = baitBuyButtons[i];
-            }
-
-            baitBuyButtons = resizedButtons;
-        }
-
-        Transform baitsParent = baitsTabPanel.transform;
-        ResolveExistingBaitControls(baitsParent, targetCount);
-
-        if (HasMissingBaitControls(targetCount) && !allowRuntimeFallback)
-        {
-            LogMissingBaitControls(targetCount);
-            return;
-        }
-
-        if (baitsPlaceholderText == null && allowRuntimeFallback)
-            baitsPlaceholderText = EnsureBaitsHeader(baitsParent);
-
-        Vector2[] textPositions =
-        {
-            new Vector2(-320f, 35f),
-            new Vector2(0f, 35f),
-            new Vector2(320f, 35f)
-        };
-
-        Vector2[] buttonPositions =
-        {
-            new Vector2(-320f, -165f),
-            new Vector2(0f, -165f),
-            new Vector2(320f, -165f)
-        };
-
-        for (int i = 0; i < targetCount; i++)
-        {
-            baitTexts[i] = EnsureBaitText(baitTexts[i], $"BaitItemText{i + 1}", baitsParent, textPositions[i]);
-            baitBuyButtons[i] = EnsureBaitButton(baitBuyButtons[i], $"BaitBuyButton{i + 1}", baitsParent, buttonPositions[i]);
-        }
-
-        if (baitsPlaceholderText != null)
-        {
-            ConfigureBaitsHeaderIfDefault(baitsPlaceholderText);
         }
     }
 
-    private void ResolveBaitTabReferences()
+    private void ResolveBaitShopCards()
     {
-        if (baitsTabPanel == null)
-            baitsTabPanel = FindChildGameObject("BaitsTabPanel", "BaitTabPanel", "IscasTabPanel", "IscasPanel");
-
-        if (baitsTabPanel != null && baitsPlaceholderText == null)
-            baitsPlaceholderText = FindChildText(baitsTabPanel.transform, "BaitsPlaceholderText", "BaitsTitleText", "IscasTitleText", "IscasHeaderText");
-    }
-
-    private void ConfigureTabPanelRectIfDefault(GameObject _panel)
-    {
-        if (_panel == null)
+        if (baitShopCards != null)
             return;
 
-        RectTransform panelRect = _panel.GetComponent<RectTransform>();
-
-        if (panelRect == null)
-            return;
-
-        if (!IsDefaultSizedRect(panelRect, 120f, 120f))
-            return;
-
-        panelRect.anchorMin = new Vector2(0.5f, 0.5f);
-        panelRect.anchorMax = new Vector2(0.5f, 0.5f);
-        panelRect.pivot = new Vector2(0.5f, 0.5f);
-        panelRect.anchoredPosition = Vector2.zero;
-        panelRect.sizeDelta = new Vector2(920f, 520f);
+        baitShopCards = Array.Empty<BaitShopCard>();
     }
 
-    private void ResolveExistingBaitControls(Transform _parent, int _targetCount)
+    private int GetBaitShopCardCount()
     {
-        TMP_Text[] existingTexts = GetExistingBaitItemTexts(_parent);
-        Button[] existingButtons = GetExistingBaitButtons(_parent);
-
-        for (int i = 0; i < _targetCount; i++)
-        {
-            if (baitTexts[i] == null)
-            {
-                baitTexts[i] = FindChildText(
-                    _parent,
-                    $"BaitItemText{i + 1}",
-                    $"BaitText{i + 1}",
-                    $"IscaText{i + 1}",
-                    $"IscaItemText{i + 1}"
-                );
-            }
-
-            if (baitTexts[i] == null && existingTexts != null && i < existingTexts.Length)
-                baitTexts[i] = existingTexts[i];
-
-            if (baitBuyButtons[i] == null)
-            {
-                baitBuyButtons[i] = FindChildButton(
-                    _parent,
-                    $"BaitBuyButton{i + 1}",
-                    $"BuyBaitButton{i + 1}",
-                    $"ComprarIscaButton{i + 1}"
-                );
-            }
-
-            if (baitBuyButtons[i] == null && existingButtons != null && i < existingButtons.Length)
-                baitBuyButtons[i] = existingButtons[i];
-        }
+        return baitShopCards != null ? baitShopCards.Length : 0;
     }
-
-    private bool HasMissingBaitControls(int _targetCount)
-    {
-        for (int i = 0; i < _targetCount; i++)
-        {
-            if (baitTexts == null || i >= baitTexts.Length || baitTexts[i] == null)
-                return true;
-
-            if (baitBuyButtons == null || i >= baitBuyButtons.Length || baitBuyButtons[i] == null)
-                return true;
-        }
-
-        return false;
-    }
-
-    private void LogMissingUpgradeControls()
-    {
-        if (!logMissingReferences || hasLoggedMissingUpgradeControls)
-            return;
-
-        List<string> missingReferences = new List<string>();
-
-        if (upgradesTabPanel == null)
-            missingReferences.Add("UpgradesTabPanel");
-
-        if (capacityUpgradeText == null)
-            missingReferences.Add("CapacityUpgradeText");
-
-        if (capacityUpgradeButton == null)
-            missingReferences.Add("CapacityUpgradeButton");
-
-        if (boatSpeedUpgradeText == null)
-            missingReferences.Add("BoatSpeedUpgradeText");
-
-        if (boatSpeedUpgradeButton == null)
-            missingReferences.Add("BoatSpeedUpgradeButton");
-
-        if (rodUpgradeText == null)
-            missingReferences.Add("RodUpgradeText");
-
-        if (rodUpgradeButton == null)
-            missingReferences.Add("RodUpgradeButton");
-
-        if (fireproofBoatUpgradeText == null)
-            missingReferences.Add("FireproofBoatUpgradeText");
-
-        if (fireproofBoatUpgradeButton == null)
-            missingReferences.Add("FireproofBoatUpgradeButton");
-
-        if (missingReferences.Count == 0)
-            return;
-
-        Debug.LogWarning($"[DockOwnerUI] Referencias de upgrades faltando: {string.Join(", ", missingReferences)}. Crie os objetos na cena/prefab ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-los em runtime.", this);
-        hasLoggedMissingUpgradeControls = true;
-    }
-
-    private void LogMissingBaitControls(int _targetCount)
-    {
-        if (!logMissingReferences || hasLoggedMissingBaitControls)
-            return;
-
-        List<string> missingReferences = new List<string>();
-
-        if (baitsTabPanel == null)
-            missingReferences.Add("BaitsTabPanel");
-
-        for (int i = 0; i < _targetCount; i++)
-        {
-            if (baitTexts == null || i >= baitTexts.Length || baitTexts[i] == null)
-                missingReferences.Add($"BaitItemText{i + 1}");
-
-            if (baitBuyButtons == null || i >= baitBuyButtons.Length || baitBuyButtons[i] == null)
-                missingReferences.Add($"BaitBuyButton{i + 1}");
-        }
-
-        if (missingReferences.Count == 0)
-            return;
-
-        Debug.LogWarning($"[DockOwnerUI] Referencias de iscas faltando: {string.Join(", ", missingReferences)}. Crie os textos/botoes dentro do BaitsTabPanel ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-los em runtime.", this);
-        hasLoggedMissingBaitControls = true;
-    }
-
-    private TMP_Text EnsureBaitsHeader(Transform _parent)
-    {
-        if (baitsPlaceholderText != null)
-            return baitsPlaceholderText;
-
-        GameObject textObject = CreateRuntimeTextObject("BaitsPlaceholderText", _parent);
-        TMP_Text text = textObject.GetComponent<TMP_Text>();
-        text.text = "Compre iscas por unidade.";
-        return text;
-    }
-
-    private void ConfigureBaitsHeaderIfDefault(TMP_Text _text)
-    {
-        if (_text == null)
-            return;
-
-        RectTransform textRect = _text.rectTransform;
-
-        if (!IsDefaultSizedRect(textRect, 120f, 80f))
-            return;
-
-        textRect.anchoredPosition = new Vector2(0f, 235f);
-        textRect.sizeDelta = new Vector2(820f, 60f);
-        _text.fontSize = 32f;
-        _text.alignment = TextAlignmentOptions.Center;
-    }
-
-    private TMP_Text EnsureUpgradeText(TMP_Text _text, string _name, Transform _parent, Vector2 _position)
-    {
-        if (_text == null)
-        {
-            GameObject textObject = Instantiate(capacityUpgradeText.gameObject, _parent);
-            textObject.name = _name;
-            _text = textObject.GetComponent<TMP_Text>();
-        }
-
-        ConfigureUpgradeText(_text, _position);
-        return _text;
-    }
-
-    private Button EnsureUpgradeButton(Button _button, string _name, Transform _parent, Vector2 _position)
-    {
-        if (_button == null)
-        {
-            GameObject buttonObject = Instantiate(capacityUpgradeButton.gameObject, _parent);
-            buttonObject.name = _name;
-            _button = buttonObject.GetComponent<Button>();
-        }
-
-        ConfigureUpgradeButton(_button, _position);
-        SetButtonText(_button, "Comprar");
-        return _button;
-    }
-
-    private TMP_Text EnsureBaitText(TMP_Text _text, string _name, Transform _parent, Vector2 _position)
-    {
-        bool wasCreated = false;
-
-        if (_text == null)
-        {
-            GameObject textObject = capacityUpgradeText != null
-                ? Instantiate(capacityUpgradeText.gameObject, _parent)
-                : CreateRuntimeTextObject(_name, _parent);
-
-            textObject.name = _name;
-            _text = textObject.GetComponent<TMP_Text>();
-            wasCreated = true;
-        }
-
-        if (wasCreated)
-            ConfigureBaitText(_text, _position);
-
-        return _text;
-    }
-
-    private Button EnsureBaitButton(Button _button, string _name, Transform _parent, Vector2 _position)
-    {
-        bool wasCreated = false;
-
-        if (_button == null)
-        {
-            GameObject buttonObject = capacityUpgradeButton != null
-                ? Instantiate(capacityUpgradeButton.gameObject, _parent)
-                : CreateRuntimeButtonObject(_name, _parent);
-
-            buttonObject.name = _name;
-            _button = buttonObject.GetComponent<Button>();
-            wasCreated = true;
-        }
-
-        if (wasCreated)
-        {
-            ConfigureBaitButton(_button, _position);
-            SetButtonText(_button, "Comprar");
-        }
-
-        return _button;
-    }
-
-    private GameObject CreateRuntimeTextObject(string _name, Transform _parent)
-    {
-        GameObject textObject = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        textObject.transform.SetParent(_parent, false);
-
-        TMP_Text text = textObject.GetComponent<TMP_Text>();
-        text.color = Color.white;
-        text.text = string.Empty;
-
-        return textObject;
-    }
-
-    private GameObject CreateRuntimeButtonObject(string _name, Transform _parent)
-    {
-        GameObject buttonObject = new GameObject(_name, typeof(RectTransform), typeof(CanvasRenderer), typeof(Image), typeof(Button));
-        buttonObject.transform.SetParent(_parent, false);
-
-        Image image = buttonObject.GetComponent<Image>();
-        image.color = new Color(0.08f, 0.08f, 0.08f, 0.85f);
-
-        GameObject textObject = new GameObject("Text", typeof(RectTransform), typeof(CanvasRenderer), typeof(TextMeshProUGUI));
-        textObject.transform.SetParent(buttonObject.transform, false);
-
-        RectTransform textRect = textObject.GetComponent<RectTransform>();
-        textRect.anchorMin = Vector2.zero;
-        textRect.anchorMax = Vector2.one;
-        textRect.offsetMin = Vector2.zero;
-        textRect.offsetMax = Vector2.zero;
-
-        TMP_Text text = textObject.GetComponent<TMP_Text>();
-        text.text = "Comprar";
-        text.fontSize = 28f;
-        text.alignment = TextAlignmentOptions.Center;
-        text.color = Color.white;
-
-        return buttonObject;
-    }
-
-    private void ConfigureUpgradeText(TMP_Text _text, Vector2 _position)
-    {
-        if (_text == null)
-            return;
-
-        RectTransform textRect = _text.rectTransform;
-        textRect.anchoredPosition = _position;
-        textRect.sizeDelta = new Vector2(520f, 120f);
-        _text.fontSize = 28f;
-        _text.alignment = TextAlignmentOptions.Center;
-    }
-
-    private void ConfigureUpgradeButton(Button _button, Vector2 _position)
-    {
-        if (_button == null)
-            return;
-
-        RectTransform buttonRect = _button.GetComponent<RectTransform>();
-        if (buttonRect == null)
-            return;
-
-        buttonRect.anchoredPosition = _position;
-        buttonRect.sizeDelta = new Vector2(220f, 58f);
-    }
-
-    private void ConfigureBaitText(TMP_Text _text, Vector2 _position)
-    {
-        if (_text == null)
-            return;
-
-        RectTransform textRect = _text.rectTransform;
-        textRect.anchoredPosition = _position;
-        textRect.sizeDelta = new Vector2(300f, 190f);
-        _text.fontSize = 22f;
-        _text.enableAutoSizing = true;
-        _text.fontSizeMin = 14f;
-        _text.fontSizeMax = 22f;
-        _text.alignment = TextAlignmentOptions.Center;
-        _text.overflowMode = TextOverflowModes.Ellipsis;
-    }
-
-    private void ConfigureBaitButton(Button _button, Vector2 _position)
-    {
-        if (_button == null)
-            return;
-
-        RectTransform buttonRect = _button.GetComponent<RectTransform>();
-
-        if (buttonRect == null)
-            return;
-
-        buttonRect.anchoredPosition = _position;
-        buttonRect.sizeDelta = new Vector2(200f, 58f);
-    }
-
-    private void SetButtonText(Button _button, string _text)
-    {
-        if (_button == null)
-            return;
-
-        TMP_Text buttonText = _button.GetComponentInChildren<TMP_Text>(true);
-        if (buttonText != null)
-        {
-            buttonText.text = _text;
-            buttonText.fontSize = 36f;
-        }
-    }
-
-    #endregion
-
-    #region Subscriptions And Button Binding
 
     private void SubscribeToReferences()
     {
@@ -1203,6 +1754,43 @@ public class DockOwnerUI : MonoBehaviour
         isSubscribed = false;
     }
 
+    private void ChangeFishList(List<FishData> _fishList, float _fishWeight)
+    {
+        Refresh();
+    }
+
+    private void ChangeMoney(float _money)
+    {
+        playerMoney = _money;
+        SetSellUI();
+        SetUpgradeUI();
+        SetBaitUI();
+    }
+
+    private void HandleSaleCompleted(int _earnedMoney)
+    {
+        Refresh();
+    }
+
+    private void HandleUpgradesChanged()
+    {
+        Refresh();
+    }
+
+    private void HandleBaitInventoryChanged()
+    {
+        Refresh();
+    }
+
+    private void HandleBaitPurchased(BaitData _bait, int _quantity)
+    {
+        Refresh();
+    }
+
+    #endregion
+
+    #region Button Binding
+
     private void TrySubscribeInput()
     {
         if (isInputSubscribed || InputHandler.instance == null)
@@ -1235,27 +1823,38 @@ public class DockOwnerUI : MonoBehaviour
         if (baitsTabButton != null)
             baitsTabButton.onClick.AddListener(OnClickBaitsTab);
 
-        if (sellAllButton != null)
-            sellAllButton.onClick.AddListener(OnClickSellAll);
+        if (sellSelectedButton != null)
+            sellSelectedButton.onClick.AddListener(OnClickSellSelected);
 
-        if (capacityUpgradeButton != null)
-            capacityUpgradeButton.onClick.AddListener(OnClickBuyCapacityUpgrade);
+        if (selectAllFishToggle != null)
+            selectAllFishToggle.onValueChanged.AddListener(OnSelectAllFishChanged);
 
-        if (boatSpeedUpgradeButton != null)
-            boatSpeedUpgradeButton.onClick.AddListener(OnClickBuyBoatSpeedUpgrade);
-
-        if (rodUpgradeButton != null)
-            rodUpgradeButton.onClick.AddListener(OnClickBuyRodUpgrade);
-
-        if (fireproofBoatUpgradeButton != null)
-            fireproofBoatUpgradeButton.onClick.AddListener(OnClickBuyFireproofBoatUpgrade);
-
-        BindBaitButton(0, OnClickBuyBaitSlot0);
-        BindBaitButton(1, OnClickBuyBaitSlot1);
-        BindBaitButton(2, OnClickBuyBaitSlot2);
+        BindUpgradeButton(capacityUpgradeRow, OnClickBuyCapacityUpgrade);
+        BindUpgradeButton(boatSpeedUpgradeRow, OnClickBuyBoatSpeedUpgrade);
+        BindUpgradeButton(rodUpgradeRow, OnClickBuyRodUpgrade);
+        BindUpgradeButton(fireproofBoatUpgradeRow, OnClickBuyFireproofBoatUpgrade);
+        BindBaitCardButtons();
 
         if (closeButton != null)
             closeButton.onClick.AddListener(OnClickClose);
+
+        if (baitQuantityDecreaseButton != null)
+            baitQuantityDecreaseButton.onClick.AddListener(OnClickDecreasePendingBaitQuantity);
+
+        if (baitQuantityIncreaseButton != null)
+            baitQuantityIncreaseButton.onClick.AddListener(OnClickIncreasePendingBaitQuantity);
+
+        if (baitQuantityConfirmButton != null)
+            baitQuantityConfirmButton.onClick.AddListener(OnClickConfirmBaitQuantity);
+
+        if (baitQuantityCancelButton != null)
+            baitQuantityCancelButton.onClick.AddListener(OnClickCancelBaitQuantity);
+
+        if (purchaseConfirmYesButton != null)
+            purchaseConfirmYesButton.onClick.AddListener(OnClickConfirmPurchase);
+
+        if (purchaseConfirmNoButton != null)
+            purchaseConfirmNoButton.onClick.AddListener(OnClickCancelPurchase);
 
         areButtonsBound = true;
     }
@@ -1274,51 +1873,93 @@ public class DockOwnerUI : MonoBehaviour
         if (baitsTabButton != null)
             baitsTabButton.onClick.RemoveListener(OnClickBaitsTab);
 
-        if (sellAllButton != null)
-            sellAllButton.onClick.RemoveListener(OnClickSellAll);
+        if (sellSelectedButton != null)
+            sellSelectedButton.onClick.RemoveListener(OnClickSellSelected);
 
-        if (capacityUpgradeButton != null)
-            capacityUpgradeButton.onClick.RemoveListener(OnClickBuyCapacityUpgrade);
+        if (selectAllFishToggle != null)
+            selectAllFishToggle.onValueChanged.RemoveListener(OnSelectAllFishChanged);
 
-        if (boatSpeedUpgradeButton != null)
-            boatSpeedUpgradeButton.onClick.RemoveListener(OnClickBuyBoatSpeedUpgrade);
-
-        if (rodUpgradeButton != null)
-            rodUpgradeButton.onClick.RemoveListener(OnClickBuyRodUpgrade);
-
-        if (fireproofBoatUpgradeButton != null)
-            fireproofBoatUpgradeButton.onClick.RemoveListener(OnClickBuyFireproofBoatUpgrade);
-
-        UnbindBaitButton(0, OnClickBuyBaitSlot0);
-        UnbindBaitButton(1, OnClickBuyBaitSlot1);
-        UnbindBaitButton(2, OnClickBuyBaitSlot2);
+        UnbindUpgradeButton(capacityUpgradeRow, OnClickBuyCapacityUpgrade);
+        UnbindUpgradeButton(boatSpeedUpgradeRow, OnClickBuyBoatSpeedUpgrade);
+        UnbindUpgradeButton(rodUpgradeRow, OnClickBuyRodUpgrade);
+        UnbindUpgradeButton(fireproofBoatUpgradeRow, OnClickBuyFireproofBoatUpgrade);
+        UnbindBaitCardButtons();
 
         if (closeButton != null)
             closeButton.onClick.RemoveListener(OnClickClose);
 
+        if (baitQuantityDecreaseButton != null)
+            baitQuantityDecreaseButton.onClick.RemoveListener(OnClickDecreasePendingBaitQuantity);
+
+        if (baitQuantityIncreaseButton != null)
+            baitQuantityIncreaseButton.onClick.RemoveListener(OnClickIncreasePendingBaitQuantity);
+
+        if (baitQuantityConfirmButton != null)
+            baitQuantityConfirmButton.onClick.RemoveListener(OnClickConfirmBaitQuantity);
+
+        if (baitQuantityCancelButton != null)
+            baitQuantityCancelButton.onClick.RemoveListener(OnClickCancelBaitQuantity);
+
+        if (purchaseConfirmYesButton != null)
+            purchaseConfirmYesButton.onClick.RemoveListener(OnClickConfirmPurchase);
+
+        if (purchaseConfirmNoButton != null)
+            purchaseConfirmNoButton.onClick.RemoveListener(OnClickCancelPurchase);
+
         areButtonsBound = false;
     }
 
-    private void SetStatus(string _message)
+    private void BindUpgradeButton(DockOwnerUpgradeRowUI _row, UnityEngine.Events.UnityAction _action)
     {
-        if (statusText != null)
-            statusText.text = _message;
-    }
-
-    private void BindBaitButton(int _index, UnityEngine.Events.UnityAction _action)
-    {
-        if (baitBuyButtons == null || _index < 0 || _index >= baitBuyButtons.Length || baitBuyButtons[_index] == null)
+        if (_row == null || _row.BuyButton == null)
             return;
 
-        baitBuyButtons[_index].onClick.AddListener(_action);
+        _row.BuyButton.onClick.AddListener(_action);
     }
 
-    private void UnbindBaitButton(int _index, UnityEngine.Events.UnityAction _action)
+    private void UnbindUpgradeButton(DockOwnerUpgradeRowUI _row, UnityEngine.Events.UnityAction _action)
     {
-        if (baitBuyButtons == null || _index < 0 || _index >= baitBuyButtons.Length || baitBuyButtons[_index] == null)
+        if (_row == null || _row.BuyButton == null)
             return;
 
-        baitBuyButtons[_index].onClick.RemoveListener(_action);
+        _row.BuyButton.onClick.RemoveListener(_action);
+    }
+
+    private void BindBaitCardButtons()
+    {
+        if (baitShopCards == null || baitShopCards.Length == 0)
+            return;
+
+        baitCardBuyActions = new UnityEngine.Events.UnityAction[baitShopCards.Length];
+
+        for (int i = 0; i < baitShopCards.Length; i++)
+        {
+            Button button = baitShopCards[i] != null ? baitShopCards[i].BuyButton : null;
+
+            if (button == null)
+                continue;
+
+            int slotIndex = i;
+            UnityEngine.Events.UnityAction action = () => TryBuyBaitSlot(slotIndex);
+            baitCardBuyActions[i] = action;
+            button.onClick.AddListener(action);
+        }
+    }
+
+    private void UnbindBaitCardButtons()
+    {
+        if (baitShopCards == null || baitCardBuyActions == null)
+            return;
+
+        for (int i = 0; i < baitShopCards.Length && i < baitCardBuyActions.Length; i++)
+        {
+            Button button = baitShopCards[i] != null ? baitShopCards[i].BuyButton : null;
+
+            if (button != null && baitCardBuyActions[i] != null)
+                button.onClick.RemoveListener(baitCardBuyActions[i]);
+        }
+
+        baitCardBuyActions = null;
     }
 
     #endregion
@@ -1331,139 +1972,16 @@ public class DockOwnerUI : MonoBehaviour
             _target.SetActive(_active);
     }
 
-    private GameObject FindChildGameObject(params string[] _names)
-    {
-        if (_names == null)
-            return null;
-
-        Transform[] children = GetComponentsInChildren<Transform>(true);
-
-        for (int i = 0; i < children.Length; i++)
-        {
-            Transform child = children[i];
-
-            if (child == null)
-                continue;
-
-            for (int j = 0; j < _names.Length; j++)
-            {
-                if (string.Equals(child.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
-                    return child.gameObject;
-            }
-        }
-
-        return null;
-    }
-
-    private Button FindChildButton(Transform _root, params string[] _names)
-    {
-        if (_root == null || _names == null)
-            return null;
-
-        Button[] buttons = _root.GetComponentsInChildren<Button>(true);
-
-        for (int i = 0; i < buttons.Length; i++)
-        {
-            Button button = buttons[i];
-
-            if (button == null)
-                continue;
-
-            for (int j = 0; j < _names.Length; j++)
-            {
-                if (string.Equals(button.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
-                    return button;
-            }
-        }
-
-        return null;
-    }
-
-    private TMP_Text FindChildText(Transform _root, params string[] _names)
-    {
-        if (_root == null || _names == null)
-            return null;
-
-        TMP_Text[] texts = _root.GetComponentsInChildren<TMP_Text>(true);
-
-        for (int i = 0; i < texts.Length; i++)
-        {
-            TMP_Text text = texts[i];
-
-            if (text == null)
-                continue;
-
-            for (int j = 0; j < _names.Length; j++)
-            {
-                if (string.Equals(text.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
-                    return text;
-            }
-        }
-
-        return null;
-    }
-
-    private TMP_Text[] GetExistingBaitItemTexts(Transform _root)
-    {
-        List<TMP_Text> texts = new List<TMP_Text>();
-
-        if (_root == null)
-            return texts.ToArray();
-
-        TMP_Text[] children = _root.GetComponentsInChildren<TMP_Text>(true);
-
-        for (int i = 0; i < children.Length; i++)
-        {
-            TMP_Text text = children[i];
-
-            if (text == null || text == baitsPlaceholderText)
-                continue;
-
-            if (text.GetComponentInParent<Button>(true) != null)
-                continue;
-
-            if (IsBaitHeaderText(text))
-                continue;
-
-            texts.Add(text);
-        }
-
-        return texts.ToArray();
-    }
-
-    private Button[] GetExistingBaitButtons(Transform _root)
-    {
-        if (_root == null)
-            return new Button[0];
-
-        return _root.GetComponentsInChildren<Button>(true);
-    }
-
-    private bool IsBaitHeaderText(TMP_Text _text)
-    {
-        if (_text == null)
-            return false;
-
-        string objectName = _text.gameObject.name;
-        return objectName.IndexOf("Placeholder", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
-               objectName.IndexOf("Title", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
-               objectName.IndexOf("Titulo", System.StringComparison.OrdinalIgnoreCase) >= 0 ||
-               objectName.IndexOf("Header", System.StringComparison.OrdinalIgnoreCase) >= 0;
-    }
-
-    private bool IsDefaultSizedRect(RectTransform _rectTransform, float _maxWidth, float _maxHeight)
-    {
-        if (_rectTransform == null)
-            return false;
-
-        return Mathf.Abs(_rectTransform.sizeDelta.x) <= _maxWidth &&
-               Mathf.Abs(_rectTransform.sizeDelta.y) <= _maxHeight;
-    }
-
     private void SetButtonInteractable(Button _button, bool _interactable)
     {
         if (_button != null)
             _button.interactable = _interactable;
+    }
+
+    private void SetStatus(string _message)
+    {
+        if (statusText != null)
+            statusText.text = _message;
     }
 
     private void SelectCurrentTabControl()
@@ -1497,8 +2015,19 @@ public class DockOwnerUI : MonoBehaviour
         if (UISelectionHelper.IsUsable(sellFirstSelected))
             return sellFirstSelected;
 
-        if (UISelectionHelper.IsUsable(sellAllButton))
-            return sellAllButton;
+        if (sellFishSlots != null)
+        {
+            for (int i = 0; i < sellFishSlots.Length; i++)
+            {
+                Selectable selectable = sellFishSlots[i] != null ? sellFishSlots[i].GetComponentInChildren<Selectable>(true) : null;
+
+                if (UISelectionHelper.IsUsable(selectable))
+                    return selectable;
+            }
+        }
+
+        if (UISelectionHelper.IsUsable(sellSelectedButton))
+            return sellSelectedButton;
 
         return closeButton;
     }
@@ -1508,17 +2037,17 @@ public class DockOwnerUI : MonoBehaviour
         if (UISelectionHelper.IsUsable(upgradesFirstSelected))
             return upgradesFirstSelected;
 
-        if (UISelectionHelper.IsUsable(capacityUpgradeButton))
-            return capacityUpgradeButton;
+        if (capacityUpgradeRow != null && UISelectionHelper.IsUsable(capacityUpgradeRow.BuyButton))
+            return capacityUpgradeRow.BuyButton;
 
-        if (UISelectionHelper.IsUsable(boatSpeedUpgradeButton))
-            return boatSpeedUpgradeButton;
+        if (boatSpeedUpgradeRow != null && UISelectionHelper.IsUsable(boatSpeedUpgradeRow.BuyButton))
+            return boatSpeedUpgradeRow.BuyButton;
 
-        if (UISelectionHelper.IsUsable(rodUpgradeButton))
-            return rodUpgradeButton;
+        if (rodUpgradeRow != null && UISelectionHelper.IsUsable(rodUpgradeRow.BuyButton))
+            return rodUpgradeRow.BuyButton;
 
-        if (UISelectionHelper.IsUsable(fireproofBoatUpgradeButton))
-            return fireproofBoatUpgradeButton;
+        if (fireproofBoatUpgradeRow != null && UISelectionHelper.IsUsable(fireproofBoatUpgradeRow.BuyButton))
+            return fireproofBoatUpgradeRow.BuyButton;
 
         return closeButton;
     }
@@ -1528,62 +2057,18 @@ public class DockOwnerUI : MonoBehaviour
         if (UISelectionHelper.IsUsable(baitsFirstSelected))
             return baitsFirstSelected;
 
-        if (baitBuyButtons != null)
+        if (baitShopCards != null)
         {
-            for (int i = 0; i < baitBuyButtons.Length; i++)
+            for (int i = 0; i < baitShopCards.Length; i++)
             {
-                if (UISelectionHelper.IsUsable(baitBuyButtons[i]))
-                    return baitBuyButtons[i];
+                Selectable selectable = baitShopCards[i] != null ? baitShopCards[i].GetSelectable() : null;
+
+                if (UISelectionHelper.IsUsable(selectable))
+                    return selectable;
             }
         }
 
         return closeButton;
-    }
-
-    private string GetUpgradePurchaseStatusText(DockUpgradePurchaseResult _purchaseResult)
-    {
-        return _purchaseResult switch
-        {
-            DockUpgradePurchaseResult.MissingReferences => "Sistema de upgrades incompleto.",
-            DockUpgradePurchaseResult.MaxLevel => "Upgrade maximo atingido.",
-            DockUpgradePurchaseResult.AlreadyOwned => "Upgrade ja comprado.",
-            DockUpgradePurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
-            _ => "Nao foi possivel comprar o upgrade."
-        };
-    }
-
-    private string GetUpgradeSuccessText(DockUpgradeType _upgradeType)
-    {
-        return _upgradeType switch
-        {
-            DockUpgradeType.Capacity => "Capacidade aumentada.",
-            DockUpgradeType.BoatSpeed => "Velocidade do barco aumentada.",
-            DockUpgradeType.Rod => "Vara melhorada.",
-            DockUpgradeType.FireproofBoat => "Barco a prova de fogo comprado.",
-            _ => "Upgrade comprado."
-        };
-    }
-
-    private string GetBaitPurchaseStatusText(BaitPurchaseResult _purchaseResult)
-    {
-        return _purchaseResult switch
-        {
-            BaitPurchaseResult.MissingReferences => "Sistema de iscas incompleto.",
-            BaitPurchaseResult.InvalidBait => "Isca invalida.",
-            BaitPurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
-            _ => "Nao foi possivel comprar a isca."
-        };
-    }
-
-    private bool TryFailPurchase(out DockUpgradePurchaseResult _result)
-    {
-        _result = DockUpgradePurchaseResult.MissingReferences;
-        return false;
-    }
-
-    private int GetPercent(float _value)
-    {
-        return Mathf.RoundToInt(_value * 100f);
     }
 
     private void SetGameUiState(GameManager.GameState _state, bool _lockCursor, bool _showCursor)
