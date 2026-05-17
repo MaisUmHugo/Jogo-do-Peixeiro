@@ -81,11 +81,23 @@ public class PauseManager : MonoBehaviour
         if (GameManager.instance == null)
             return;
 
+        if (GameManager.instance.currentState == GameManager.GameState.Paused)
+        {
+            HandlePausePanelBack();
+            return;
+        }
+
         if (GameManager.instance.currentState != GameManager.GameState.Paused &&
             InvertoryManager.TryHandleOpenInventoryPauseInput())
         {
             return;
         }
+
+        if (UIModalManager.TryHandleBack())
+            return;
+
+        if (InputHandler.instance != null && InputHandler.instance.WasBackInputStartedOverUi)
+            return;
 
         if (GameManager.instance.currentState != GameManager.GameState.Paused &&
             UIModalManager.IsPauseBlocked)
@@ -112,6 +124,23 @@ public class PauseManager : MonoBehaviour
             ResumeGame();
         else
             PauseGame();
+    }
+
+    private void HandlePausePanelBack()
+    {
+        if (confirmPanel != null && confirmPanel.activeSelf)
+        {
+            ConfirmNo();
+            return;
+        }
+
+        if (howToPlayPanel != null && howToPlayPanel.activeSelf)
+        {
+            CloseHowToPlayFromPause();
+            return;
+        }
+
+        ResumeGame();
     }
 
     public void PauseGame()

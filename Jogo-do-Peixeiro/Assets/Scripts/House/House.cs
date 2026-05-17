@@ -87,7 +87,9 @@ public class House : MonoBehaviour, IInteractable
             this,
             pauseTimeWhileOpen,
             hideHudWhileOpen,
-            blockPauseWhileOpen
+            blockPauseWhileOpen,
+            false,
+            CancelSleep
         );
 
         modalToken = UIModalManager.PushModal(request);

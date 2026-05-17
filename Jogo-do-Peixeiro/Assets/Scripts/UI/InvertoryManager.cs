@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 using TMPro;
 using UnityEngine;
+using UnityEngine.EventSystems;
 using UnityEngine.UI;
 
 public class InvertoryManager : MonoBehaviour
@@ -41,6 +42,13 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private Transform fishGridContent;
     [SerializeField] private InventoryFishSlotUI fishSlotTemplate;
     [SerializeField] private bool autoCreateFishGridSlots = true;
+
+    [Header("Scroll Follow")]
+    [SerializeField] private bool keepSelectionVisibleInScroll = true;
+    [SerializeField] private ScrollRect fishScrollRect;
+    [SerializeField] private ScrollRect discardFishScrollRect;
+    [SerializeField] private ScrollRect baitScrollRect;
+    [SerializeField, Min(0f)] private float selectionScrollPadding = 24f;
 
     [Header("Fish Discard")]
     [SerializeField] private GameObject discardModePanel;
@@ -104,6 +112,7 @@ public class InvertoryManager : MonoBehaviour
     private readonly HashSet<int> selectedFishIndexes = new HashSet<int>();
     private bool isDiscardMode;
     private bool isDiscardConfirmVisible;
+    private GameObject lastScrolledSelection;
 
     #endregion
 
@@ -170,6 +179,7 @@ public class InvertoryManager : MonoBehaviour
     private void Update()
     {
         RecoverSelectionFromMoveInput();
+        KeepCurrentSelectionVisible();
     }
 
     private void OnValidate()
@@ -178,6 +188,7 @@ public class InvertoryManager : MonoBehaviour
             fullWeightPercent = almostFullWeightPercent;
 
         selectionRecoveryMoveThreshold = Mathf.Clamp01(selectionRecoveryMoveThreshold);
+        selectionScrollPadding = Mathf.Max(0f, selectionScrollPadding);
     }
 
     #endregion
@@ -237,6 +248,19 @@ public class InvertoryManager : MonoBehaviour
         fishTabPanel = ResolveTabPanelRoot(fishTabPanel, "FishInventory", "FishInventoryPanel");
         baitsTabPanel = ResolveTabPanelRoot(baitsTabPanel, "BaitInventory", "BaitInventoryPanel", "BaitsInventoryPanel");
         EnsureTabObjectFallbacks();
+        ResolveScrollRects();
+    }
+
+    private void ResolveScrollRects()
+    {
+        if (fishScrollRect == null && fishTabPanel != null)
+            fishScrollRect = fishTabPanel.GetComponentInChildren<ScrollRect>(true);
+
+        if (discardFishScrollRect == null && discardModePanel != null)
+            discardFishScrollRect = discardModePanel.GetComponentInChildren<ScrollRect>(true);
+
+        if (baitScrollRect == null && baitsTabPanel != null)
+            baitScrollRect = baitsTabPanel.GetComponentInChildren<ScrollRect>(true);
     }
 
     private GameObject ResolveTabPanelRoot(GameObject _currentPanel, params string[] _rootNames)
@@ -887,6 +911,11 @@ public class InvertoryManager : MonoBehaviour
         return true;
     }
 
+    private void HandleInventoryBack()
+    {
+        TryHandlePauseInput();
+    }
+
     public static bool TryCloseOpenInventory()
     {
         if (Instance == null)
@@ -1054,6 +1083,7 @@ public class InvertoryManager : MonoBehaviour
             }
         }
 
+        ConfigureFishSlotNavigation(fishGridSlots, fishCount, GetFishGridContent(), GetFishGridExitUp(), GetFishGridExitDown());
         RefreshDiscardFishGrid();
     }
 
@@ -1093,6 +1123,8 @@ public class InvertoryManager : MonoBehaviour
                 slot.Clear();
             }
         }
+
+        ConfigureFishSlotNavigation(discardFishGridSlots, fishCount, GetDiscardFishGridContent(), GetDiscardGridExitUp(), GetDiscardGridExitDown());
     }
 
     private void RefreshBaitGrid()
@@ -1442,6 +1474,7 @@ public class InvertoryManager : MonoBehaviour
             ToggleEquippedBait(bait);
 
         SetInventoryTab(InventoryTab.Baits);
+        SelectBaitGridSlot(bait);
     }
 
     private void TryEquipBait(BaitData _bait)
@@ -1452,6 +1485,45 @@ public class InvertoryManager : MonoBehaviour
             ToggleEquippedBait(_bait);
 
         SetInventoryTab(InventoryTab.Baits);
+        SelectBaitGridSlot(_bait);
+    }
+
+    private bool SelectBaitGridSlot(BaitData _bait)
+    {
+        if (_bait == null || !IsInventoryVisible() || baitGridSlots == null)
+            return false;
+
+        for (int i = 0; i < baitGridSlots.Length; i++)
+        {
+            InventoryBaitSlotUI slot = baitGridSlots[i];
+
+            if (slot == null ||
+                slot.CurrentBait == null ||
+                !IsSameBait(slot.CurrentBait, _bait))
+            {
+                continue;
+            }
+
+            Selectable selectable = slot.SlotSelectable;
+
+            if (!UISelectionHelper.IsUsable(selectable))
+                continue;
+
+            UISelectionHelper.Select(selectable, inventoryRoot);
+            return true;
+        }
+
+        return false;
+    }
+
+    private bool IsSameBait(BaitData _left, BaitData _right)
+    {
+        if (_left == null || _right == null)
+            return false;
+
+        return _left == _right ||
+               BaitCatalog.BaitIdMatches(_left, _right.SaveId) ||
+               BaitCatalog.BaitIdMatches(_right, _left.SaveId);
     }
 
     private void RefreshBaitButtons()
@@ -1559,7 +1631,9 @@ public class InvertoryManager : MonoBehaviour
             this,
             pauseTimeWhileOpen,
             hideHudWhileOpen,
-            blockPauseWhileOpen
+            blockPauseWhileOpen,
+            false,
+            HandleInventoryBack
         );
 
         modalToken = UIModalManager.PushModal(request);
@@ -1820,6 +1894,106 @@ public class InvertoryManager : MonoBehaviour
             _button.interactable = _interactable;
     }
 
+    private void ConfigureFishSlotNavigation(
+        InventoryFishSlotUI[] _slots,
+        int _itemCount,
+        Transform _content,
+        Selectable _exitUp,
+        Selectable _exitDown)
+    {
+        if (_slots == null || _itemCount <= 0)
+            return;
+
+        int columns = GetGridColumnCount(_content, _itemCount);
+        int slotCount = Mathf.Min(_itemCount, _slots.Length);
+
+        for (int i = 0; i < slotCount; i++)
+        {
+            Selectable current = GetFishSlotSelectable(_slots, i, slotCount);
+
+            if (current == null)
+                continue;
+
+            int column = i % columns;
+            Navigation navigation = current.navigation;
+            navigation.mode = Navigation.Mode.Explicit;
+            navigation.selectOnLeft = column > 0 ? GetFishSlotSelectable(_slots, i - 1, slotCount) : null;
+            navigation.selectOnRight = column < columns - 1 ? GetFishSlotSelectable(_slots, i + 1, slotCount) : null;
+            navigation.selectOnUp = i - columns >= 0 ? GetFishSlotSelectable(_slots, i - columns, slotCount) : _exitUp;
+            navigation.selectOnDown = i + columns < slotCount ? GetFishSlotSelectable(_slots, i + columns, slotCount) : _exitDown;
+            current.navigation = navigation;
+        }
+    }
+
+    private Selectable GetFishSlotSelectable(InventoryFishSlotUI[] _slots, int _index, int _slotCount)
+    {
+        if (_slots == null || _index < 0 || _index >= _slotCount || _index >= _slots.Length || _slots[_index] == null)
+            return null;
+
+        Selectable selectable = _slots[_index].SlotSelectable;
+        return UISelectionHelper.IsUsable(selectable) ? selectable : null;
+    }
+
+    private int GetGridColumnCount(Transform _content, int _itemCount)
+    {
+        if (_itemCount <= 1)
+            return 1;
+
+        GridLayoutGroup grid = _content != null ? _content.GetComponent<GridLayoutGroup>() : null;
+
+        if (grid == null && _content != null)
+            grid = _content.GetComponentInParent<GridLayoutGroup>();
+
+        if (grid == null)
+            return 1;
+
+        if (grid.constraint == GridLayoutGroup.Constraint.FixedColumnCount)
+            return Mathf.Max(1, grid.constraintCount);
+
+        if (grid.constraint == GridLayoutGroup.Constraint.FixedRowCount)
+            return Mathf.Max(1, Mathf.CeilToInt((float)_itemCount / Mathf.Max(1, grid.constraintCount)));
+
+        RectTransform contentRect = _content as RectTransform;
+        float cellWidth = grid.cellSize.x + grid.spacing.x;
+
+        if (contentRect == null || cellWidth <= 0f)
+            return 1;
+
+        return Mathf.Max(1, Mathf.FloorToInt((contentRect.rect.width + grid.spacing.x) / cellWidth));
+    }
+
+    private Selectable GetFishGridExitUp()
+    {
+        if (UISelectionHelper.IsUsable(fishTabButton))
+            return fishTabButton;
+
+        return UISelectionHelper.IsUsable(baitsTabButton) ? baitsTabButton : null;
+    }
+
+    private Selectable GetFishGridExitDown()
+    {
+        if (UISelectionHelper.IsUsable(discardModeButton))
+            return discardModeButton;
+
+        return UISelectionHelper.IsUsable(baitsTabButton) ? baitsTabButton : null;
+    }
+
+    private Selectable GetDiscardGridExitUp()
+    {
+        if (UISelectionHelper.IsUsable(confirmDiscardButton))
+            return confirmDiscardButton;
+
+        return UISelectionHelper.IsUsable(cancelDiscardButton) ? cancelDiscardButton : null;
+    }
+
+    private Selectable GetDiscardGridExitDown()
+    {
+        if (UISelectionHelper.IsUsable(cancelDiscardButton))
+            return cancelDiscardButton;
+
+        return UISelectionHelper.IsUsable(confirmDiscardButton) ? confirmDiscardButton : null;
+    }
+
     private void SelectCurrentTabControl()
     {
         Selectable target = currentTab switch
@@ -1843,6 +2017,130 @@ public class InvertoryManager : MonoBehaviour
             return;
 
         SelectCurrentTabControl();
+    }
+
+    private void KeepCurrentSelectionVisible()
+    {
+        if (!keepSelectionVisibleInScroll || !IsInventoryVisible() || EventSystem.current == null)
+            return;
+
+        GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
+
+        if (selectedObject == null)
+        {
+            lastScrolledSelection = null;
+            return;
+        }
+
+        ScrollRect scrollRect = GetScrollRectForSelection(selectedObject);
+
+        if (scrollRect == null || scrollRect.content == null)
+            return;
+
+        RectTransform selectedRect = selectedObject.GetComponent<RectTransform>();
+
+        if (selectedRect == null || !selectedRect.IsChildOf(scrollRect.content))
+            return;
+
+        Canvas.ForceUpdateCanvases();
+        ScrollRectToChild(scrollRect, selectedRect, selectedObject != lastScrolledSelection);
+        lastScrolledSelection = selectedObject;
+    }
+
+    private ScrollRect GetScrollRectForSelection(GameObject _selectedObject)
+    {
+        if (_selectedObject == null)
+            return null;
+
+        if (discardConfirmPanel != null && discardConfirmPanel.activeInHierarchy)
+            return null;
+
+        if (isDiscardMode && discardModePanel != null && discardModePanel.activeInHierarchy)
+        {
+            if (discardFishScrollRect != null && _selectedObject.transform.IsChildOf(discardFishScrollRect.transform))
+                return discardFishScrollRect;
+        }
+
+        if (currentTab == InventoryTab.Fish &&
+            fishScrollRect != null &&
+            _selectedObject.transform.IsChildOf(fishScrollRect.transform))
+        {
+            return fishScrollRect;
+        }
+
+        if (currentTab == InventoryTab.Baits &&
+            baitScrollRect != null &&
+            _selectedObject.transform.IsChildOf(baitScrollRect.transform))
+        {
+            return baitScrollRect;
+        }
+
+        return null;
+    }
+
+    private void ScrollRectToChild(ScrollRect _scrollRect, RectTransform _child, bool _selectionChanged)
+    {
+        RectTransform viewport = _scrollRect.viewport != null ? _scrollRect.viewport : _scrollRect.GetComponent<RectTransform>();
+        RectTransform content = _scrollRect.content;
+
+        if (viewport == null || content == null || _child == null)
+            return;
+
+        if (_scrollRect.vertical)
+            ScrollVerticallyToChild(_scrollRect, viewport, content, _child, _selectionChanged);
+
+        if (_scrollRect.horizontal)
+            ScrollHorizontallyToChild(_scrollRect, viewport, content, _child, _selectionChanged);
+    }
+
+    private void ScrollVerticallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged)
+    {
+        float hiddenHeight = _content.rect.height - _viewport.rect.height;
+
+        if (hiddenHeight <= 0f)
+            return;
+
+        Bounds childBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(_viewport, _child);
+        Rect viewportRect = _viewport.rect;
+        float offset = 0f;
+
+        if (childBounds.max.y > viewportRect.yMax - selectionScrollPadding)
+            offset = childBounds.max.y - (viewportRect.yMax - selectionScrollPadding);
+        else if (childBounds.min.y < viewportRect.yMin + selectionScrollPadding)
+            offset = childBounds.min.y - (viewportRect.yMin + selectionScrollPadding);
+
+        if (Mathf.Abs(offset) <= 0.01f)
+            return;
+
+        float target = Mathf.Clamp01(_scrollRect.verticalNormalizedPosition + offset / hiddenHeight);
+        _scrollRect.verticalNormalizedPosition = _selectionChanged
+            ? target
+            : Mathf.MoveTowards(_scrollRect.verticalNormalizedPosition, target, Time.unscaledDeltaTime * 12f);
+    }
+
+    private void ScrollHorizontallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged)
+    {
+        float hiddenWidth = _content.rect.width - _viewport.rect.width;
+
+        if (hiddenWidth <= 0f)
+            return;
+
+        Bounds childBounds = RectTransformUtility.CalculateRelativeRectTransformBounds(_viewport, _child);
+        Rect viewportRect = _viewport.rect;
+        float offset = 0f;
+
+        if (childBounds.max.x > viewportRect.xMax - selectionScrollPadding)
+            offset = childBounds.max.x - (viewportRect.xMax - selectionScrollPadding);
+        else if (childBounds.min.x < viewportRect.xMin + selectionScrollPadding)
+            offset = childBounds.min.x - (viewportRect.xMin + selectionScrollPadding);
+
+        if (Mathf.Abs(offset) <= 0.01f)
+            return;
+
+        float target = Mathf.Clamp01(_scrollRect.horizontalNormalizedPosition + offset / hiddenWidth);
+        _scrollRect.horizontalNormalizedPosition = _selectionChanged
+            ? target
+            : Mathf.MoveTowards(_scrollRect.horizontalNormalizedPosition, target, Time.unscaledDeltaTime * 12f);
     }
 
     private void RecoverSelectionFromMoveInput()

@@ -10,6 +10,11 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField] private TMP_Text statusText;
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
 
+    [Header("Modal")]
+    [SerializeField] private bool pauseTimeWhileOpen = true;
+    [SerializeField] private bool hideHudWhileOpen = true;
+    [SerializeField] private bool blockPauseWhileOpen = true;
+
     [Header("Audio")]
     [SerializeField] private AudioClip doorOpenSfx;
     [SerializeField] private AudioClip doorCloseSfx;
@@ -20,6 +25,7 @@ public class MoneyLenderUI : MonoBehaviour
     private CampaignQuestGuidanceController tutorialController;
     private bool isOpen;
     private bool isTutorialPayment;
+    private int modalToken = UIModalManager.InvalidToken;
 
     private void Awake()
     {
@@ -36,6 +42,8 @@ public class MoneyLenderUI : MonoBehaviour
     {
         if (InputHandler.instance != null)
             InputHandler.instance.onPausePressed -= HandlePausePressed;
+
+        UIModalManager.PopModal(ref modalToken);
     }
 
     private void Update()
@@ -79,6 +87,8 @@ public class MoneyLenderUI : MonoBehaviour
 
         if (panel != null)
             panel.SetActive(true);
+
+        PushModalState();
 
         if (statusText != null)
             statusText.text = string.Empty;
@@ -220,6 +230,25 @@ public class MoneyLenderUI : MonoBehaviour
 
         if (panel != null)
             panel.SetActive(false);
+
+        UIModalManager.PopModal(ref modalToken);
+    }
+
+    private void PushModalState()
+    {
+        if (modalToken != UIModalManager.InvalidToken)
+            return;
+
+        UIModalRequest request = UIModalRequest.Create(
+            this,
+            pauseTimeWhileOpen,
+            hideHudWhileOpen,
+            blockPauseWhileOpen,
+            false,
+            Close
+        );
+
+        modalToken = UIModalManager.PushModal(request);
     }
 
     private void PlayDoorSfx(AudioClip _clip, float _volume)

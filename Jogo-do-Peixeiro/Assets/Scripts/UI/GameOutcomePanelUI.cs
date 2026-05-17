@@ -138,7 +138,9 @@ public class GameOutcomePanelUI : MonoBehaviour
             this,
             pauseTimeWhileShowing && _pauseTime,
             hideHudWhileShowing,
-            blockPauseWhileShowing
+            blockPauseWhileShowing,
+            false,
+            Close
         );
 
         modalToken = UIModalManager.PushModal(request);

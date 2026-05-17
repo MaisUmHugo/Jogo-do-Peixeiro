@@ -261,7 +261,9 @@ public class PaymentUI : MonoBehaviour
             this,
             pauseTimeWhileOpen,
             hideHudWhileOpen,
-            blockPauseWhileOpen
+            blockPauseWhileOpen,
+            false,
+            Close
         );
 
         modalToken = UIModalManager.PushModal(request);

@@ -402,7 +402,8 @@ public class FishResultUI : MonoBehaviour
             pauseTimeWhileShowing,
             hideHudWhileShowing,
             blockPauseWhileShowing,
-            lockCameraWhileShowing
+            lockCameraWhileShowing,
+            TryClose
         );
 
         modalToken = UIModalManager.PushModal(request);

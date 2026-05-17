@@ -200,6 +200,7 @@ public class TextCanvaManager : MonoBehaviour
             return;
 
         InputHandler.instance.onInteractPressed += HandleInteractPressed;
+        InputHandler.instance.onPausePressed += HandleBackPressed;
         isSubscribedToInput = true;
     }
 
@@ -209,7 +210,16 @@ public class TextCanvaManager : MonoBehaviour
             return;
 
         InputHandler.instance.onInteractPressed -= HandleInteractPressed;
+        InputHandler.instance.onPausePressed -= HandleBackPressed;
         isSubscribedToInput = false;
+    }
+
+    private void HandleBackPressed()
+    {
+        if (!IsDialogActive)
+            return;
+
+        CloseDialog(true);
     }
 
     private void SetDialogActive(bool _active)

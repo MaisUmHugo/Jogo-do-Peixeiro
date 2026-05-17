@@ -1,5 +1,7 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 public struct UIModalRequest
 {
@@ -9,8 +11,9 @@ public struct UIModalRequest
     public bool blockPause;
     public bool lockCamera;
     public GameObject[] extraHudRoots;
+    public Action backAction;
 
-    public static UIModalRequest Create(Object _owner, bool _pauseTime, bool _hideHud, bool _blockPause, bool _lockCamera = false)
+    public static UIModalRequest Create(Object _owner, bool _pauseTime, bool _hideHud, bool _blockPause, bool _lockCamera = false, Action _backAction = null)
     {
         return new UIModalRequest
         {
@@ -18,7 +21,8 @@ public struct UIModalRequest
             pauseTime = _pauseTime,
             hideHud = _hideHud,
             blockPause = _blockPause,
-            lockCamera = _lockCamera
+            lockCamera = _lockCamera,
+            backAction = _backAction
         };
     }
 }
@@ -35,6 +39,7 @@ public class UIModalManager : MonoBehaviour
         public bool HideHud;
         public bool BlockPause;
         public bool LockCamera;
+        public Action BackAction;
     }
 
     private struct HiddenObjectState
@@ -108,7 +113,8 @@ public class UIModalManager : MonoBehaviour
             PauseTime = _request.pauseTime,
             HideHud = _request.hideHud,
             BlockPause = _request.blockPause,
-            LockCamera = _request.lockCamera
+            LockCamera = _request.lockCamera,
+            BackAction = _request.backAction
         });
 
         if (_request.pauseTime)
@@ -127,6 +133,25 @@ public class UIModalManager : MonoBehaviour
             PushHudHidden(_request.extraHudRoots, _request.owner);
 
         return token;
+    }
+
+    public static bool TryHandleBack()
+    {
+        if (modalEntries.Count == 0)
+            return false;
+
+        for (int i = modalEntries.Count - 1; i >= 0; i--)
+        {
+            Action backAction = modalEntries[i].BackAction;
+
+            if (backAction == null)
+                continue;
+
+            backAction.Invoke();
+            return true;
+        }
+
+        return IsPauseBlocked;
     }
 
     public static void PopModal(ref int _token)

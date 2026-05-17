@@ -65,7 +65,7 @@ public class InputIconDatabase : ScriptableObject
         changed |= AssignIfMissing(ref _genericController.moveLeft, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_left.png");
         changed |= AssignIfMissing(ref _genericController.moveRight, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_stick_l_right.png");
         changed |= AssignIfMissing(ref _genericController.interact, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_button_a.png");
-        changed |= AssignIfMissing(ref _genericController.pause, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_button_start.png");
+        changed |= AssignIfMissing(ref _genericController.pause, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_button_b.png");
         changed |= AssignIfMissing(ref _genericController.skillCheck, "Assets/Artes/Icones/Input/Xbox Series/Default/xbox_rb.png");
 
         return changed;
