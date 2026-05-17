@@ -2148,18 +2148,22 @@ PrefabInstance:
       propertyPath: fishingManager
       value: 
       objectReference: {fileID: 225710404}
+    - target: {fileID: 1713696941406359856, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: boatMotor
+      value: 
+      objectReference: {fileID: 1785359119}
+    - target: {fileID: 1713696941406359856, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: shipInventory
+      value: 
+      objectReference: {fileID: 1785359118}
+    - target: {fileID: 1713696941406359856, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: playerMoneyManager
+      value: 
+      objectReference: {fileID: 2887934288165867096}
     - target: {fileID: 1713696941406359859, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: playerMoneyManager
       value: 
       objectReference: {fileID: 2887934288165867096}
-    - target: {fileID: 1794666204147874024, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
-      propertyPath: m_AnchorMax.x
-      value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 1794666204147874024, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
-      propertyPath: m_AnchorMax.y
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 2123664545129536305, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -2180,6 +2184,14 @@ PrefabInstance:
       propertyPath: shipInventory
       value: 
       objectReference: {fileID: 1785359118}
+    - target: {fileID: 4772828647246102456, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: shipInventory
+      value: 
+      objectReference: {fileID: 1785359118}
+    - target: {fileID: 4772828647246102456, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: playerMoneyManager
+      value: 
+      objectReference: {fileID: 2887934288165867096}
     - target: {fileID: 4779525275946107001, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
@@ -3499,6 +3511,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 097ae6a14bb553749b46d1ba94ccbe05, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1785359119 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 7662120818427251027, guid: 5659f677d6de5454e905cb63811a56e0, type: 3}
+  m_PrefabInstance: {fileID: 1467762379}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: c4c87c578b8f1794383b07202754fa68, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1857173166

@@ -1,4 +1,3 @@
-using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -15,97 +14,6 @@ public class DockOwnerUI : MonoBehaviour
         Sell,
         Upgrades,
         Baits
-    }
-
-    [Serializable]
-    private class BaitShopCard
-    {
-        [SerializeField] private GameObject root;
-        [SerializeField] private Image iconImage;
-        [SerializeField] private TMP_Text nameText;
-        [SerializeField] private TMP_Text descriptionText;
-        [SerializeField] private TMP_Text ownedQuantityText;
-        [SerializeField] private TMP_Text priceText;
-        [SerializeField] private TMP_Text maxQuantityText;
-        [SerializeField] private Button buyButton;
-
-        public Button BuyButton => buyButton;
-        public TMP_Text FeedbackText => maxQuantityText != null ? maxQuantityText : priceText;
-
-        public void SetBait(BaitData _bait, int _ownedQuantity, int _maxQuantity, int _unitCost)
-        {
-            bool hasBait = _bait != null;
-            SetVisible(hasBait);
-
-            if (buyButton != null)
-                buyButton.interactable = hasBait && _maxQuantity > 0;
-
-            if (!hasBait)
-                return;
-
-            if (nameText != null)
-                nameText.text = _bait.BaitName;
-
-            if (descriptionText != null)
-            {
-                descriptionText.text = string.IsNullOrWhiteSpace(_bait.Description)
-                    ? "Bonus de pesca."
-                    : _bait.Description;
-            }
-
-            if (ownedQuantityText != null)
-                ownedQuantityText.text = $"No inventario: {_ownedQuantity}";
-
-            if (priceText != null)
-                priceText.text = _unitCost > 0 ? $"Preco: R$ {_unitCost}" : "Gratis";
-
-            if (maxQuantityText != null)
-                maxQuantityText.text = _maxQuantity > 0 ? $"Max: {_maxQuantity}" : "Sem dinheiro";
-
-            if (iconImage != null)
-            {
-                iconImage.sprite = _bait.InventoryIcon;
-                iconImage.enabled = _bait.InventoryIcon != null;
-                iconImage.preserveAspect = true;
-            }
-        }
-
-        public void Clear()
-        {
-            if (buyButton != null)
-                buyButton.interactable = false;
-
-            SetVisible(false);
-        }
-
-        public bool Contains(GameObject _target)
-        {
-            GameObject rootObject = GetRootObject();
-            return _target != null &&
-                   rootObject != null &&
-                   (_target == rootObject || _target.transform.IsChildOf(rootObject.transform));
-        }
-
-        public Selectable GetSelectable()
-        {
-            return buyButton;
-        }
-
-        private void SetVisible(bool _visible)
-        {
-            GameObject rootObject = GetRootObject();
-
-            if (rootObject != null)
-                rootObject.SetActive(_visible);
-        }
-
-        private GameObject GetRootObject()
-        {
-            if (root != null)
-                return root;
-
-            return buyButton != null ? buyButton.gameObject : null;
-        }
     }
 
     [Header("Panel")]
@@ -144,35 +52,16 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private DockOwnerUpgradeRowUI rodUpgradeRow;
     [SerializeField] private DockOwnerUpgradeRowUI fireproofBoatUpgradeRow;
 
-    [Header("Bait Shop Cards")]
-    [SerializeField] private BaitShopCard[] baitShopCards;
-    [SerializeField] private int maxBaitPurchaseQuantity = 99;
-    [SerializeField, Range(0.1f, 1f)] private float baitQuantityMoveThreshold = 0.65f;
-    [SerializeField, Min(0.05f)] private float baitQuantityMoveRepeatDelay = 0.22f;
-
-    [Header("Bait Quantity Popup")]
-    [SerializeField] private GameObject baitQuantityPanel;
-    [SerializeField] private TMP_Text baitQuantityTitleText;
-    [SerializeField] private TMP_Text baitQuantityText;
-    [SerializeField] private TMP_Text baitQuantityPriceText;
-    [SerializeField] private TMP_Text baitQuantityOwnedText;
-    [SerializeField] private TMP_Text baitQuantityMaxText;
-    [SerializeField] private Button baitQuantityDecreaseButton;
-    [SerializeField] private Button baitQuantityIncreaseButton;
-    [SerializeField] private Button baitQuantityConfirmButton;
-    [SerializeField] private Button baitQuantityCancelButton;
-    [SerializeField] private Selectable baitQuantityFirstSelected;
+    [Header("Bait Shop")]
+    [SerializeField] private DockOwnerBaitShopUI baitShopUI;
 
     [Header("Purchase Confirmation")]
-    [SerializeField] private GameObject purchaseConfirmPanel;
-    [SerializeField] private TMP_Text purchaseConfirmTitleText;
-    [SerializeField] private TMP_Text purchaseConfirmMessageText;
-    [SerializeField] private Button purchaseConfirmYesButton;
-    [SerializeField] private Button purchaseConfirmNoButton;
-    [SerializeField] private Selectable purchaseConfirmFirstSelected;
+    [SerializeField] private DockOwnerPurchaseConfirmUI purchaseConfirmUI;
 
     [Header("Common")]
     [SerializeField] private TMP_Text statusText;
+    [SerializeField, Min(0.1f)] private float statusMessageDuration = 1.15f;
+    [SerializeField, Min(0f)] private float statusMessageRise = 22f;
     [SerializeField] private Button closeButton;
 
     [Header("Navigation")]
@@ -197,15 +86,10 @@ public class DockOwnerUI : MonoBehaviour
     private bool areButtonsBound;
     private bool isInputSubscribed;
     private bool suppressSelectAllFishToggle;
-    private int[] baitPurchaseQuantities;
-    private int pendingBaitSlotIndex = -1;
-    private float nextBaitQuantityMoveTime;
-    private int lastBaitQuantityMoveDirection;
     private GameObject lastScrolledSellSelection;
-    private Action pendingPurchaseAction;
-    private Selectable selectionBeforePopup;
-    private Coroutine baitQuantityFeedbackRoutine;
-    private UnityEngine.Events.UnityAction[] baitCardBuyActions;
+    private Coroutine statusFeedbackRoutine;
+    private bool hasStatusBasePosition;
+    private Vector2 statusBasePosition;
     private int modalToken = UIModalManager.InvalidToken;
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
@@ -242,7 +126,9 @@ public class DockOwnerUI : MonoBehaviour
 
     private void Update()
     {
-        HandleBaitQuantityMoveInput();
+        if (baitShopUI != null)
+            baitShopUI.HandleMoveInput(isOpen && currentTab == DockOwnerTab.Baits);
+
         KeepSellSelectionVisible();
     }
 
@@ -290,6 +176,32 @@ public class DockOwnerUI : MonoBehaviour
     }
 
     public void OnClickSellSelected()
+    {
+        if (fishMarket == null)
+        {
+            SetStatus("Mercado nao encontrado.");
+            return;
+        }
+
+        PruneSelectedFishForSale();
+
+        if (selectedFishForSale.Count == 0)
+        {
+            SetStatus("Selecione pelo menos um peixe.");
+            Refresh();
+            return;
+        }
+
+        int selectedCount = selectedFishForSale.Count;
+        int selectedValue = GetSelectedFishSaleValue();
+        OpenPurchaseConfirmation(
+            "Confirmar venda",
+            $"Vender {selectedCount} peixe(s) por R$ {selectedValue}?",
+            CompleteSellSelected
+        );
+    }
+
+    private void CompleteSellSelected()
     {
         if (fishMarket == null)
         {
@@ -360,92 +272,110 @@ public class DockOwnerUI : MonoBehaviour
 
     public void OnClickBuyBaitSlot0()
     {
-        TryBuyBaitSlot(0);
+        if (baitShopUI != null)
+            baitShopUI.TryBuySlot(0);
     }
 
     public void OnClickBuyBaitSlot1()
     {
-        TryBuyBaitSlot(1);
+        if (baitShopUI != null)
+            baitShopUI.TryBuySlot(1);
     }
 
     public void OnClickBuyBaitSlot2()
     {
-        TryBuyBaitSlot(2);
+        if (baitShopUI != null)
+            baitShopUI.TryBuySlot(2);
     }
 
     public void OnClickBuyBaitSlot3()
     {
-        TryBuyBaitSlot(3);
+        if (baitShopUI != null)
+            baitShopUI.TryBuySlot(3);
     }
 
     public void OnClickIncreasePendingBaitQuantity()
     {
-        ChangePendingBaitQuantity(1);
+        if (baitShopUI != null)
+            baitShopUI.ChangePendingQuantity(1);
     }
 
     public void OnClickDecreasePendingBaitQuantity()
     {
-        ChangePendingBaitQuantity(-1);
+        if (baitShopUI != null)
+            baitShopUI.ChangePendingQuantity(-1);
     }
 
     public void OnClickConfirmBaitQuantity()
     {
-        ConfirmPendingBaitQuantity();
+        if (baitShopUI != null)
+            baitShopUI.ConfirmPendingQuantity();
     }
 
     public void OnClickCancelBaitQuantity()
     {
-        CloseBaitQuantityPopup(true);
+        if (baitShopUI != null)
+            baitShopUI.CancelPendingQuantity();
     }
 
     public void OnClickConfirmPurchase()
     {
-        ConfirmPendingPurchase();
+        if (purchaseConfirmUI != null)
+            purchaseConfirmUI.Confirm();
     }
 
     public void OnClickCancelPurchase()
     {
-        ClosePurchaseConfirmation(true);
+        if (purchaseConfirmUI != null)
+            purchaseConfirmUI.Close(true);
     }
 
     public void OnClickIncreaseBaitSlot0()
     {
-        ChangeBaitQuantity(0, 1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(0, 1);
     }
 
     public void OnClickDecreaseBaitSlot0()
     {
-        ChangeBaitQuantity(0, -1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(0, -1);
     }
 
     public void OnClickIncreaseBaitSlot1()
     {
-        ChangeBaitQuantity(1, 1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(1, 1);
     }
 
     public void OnClickDecreaseBaitSlot1()
     {
-        ChangeBaitQuantity(1, -1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(1, -1);
     }
 
     public void OnClickIncreaseBaitSlot2()
     {
-        ChangeBaitQuantity(2, 1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(2, 1);
     }
 
     public void OnClickDecreaseBaitSlot2()
     {
-        ChangeBaitQuantity(2, -1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(2, -1);
     }
 
     public void OnClickIncreaseBaitSlot3()
     {
-        ChangeBaitQuantity(3, 1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(3, 1);
     }
 
     public void OnClickDecreaseBaitSlot3()
     {
-        ChangeBaitQuantity(3, -1);
+        if (baitShopUI != null)
+            baitShopUI.ChangeSlotQuantity(3, -1);
     }
 
     public void OnClickClose()
@@ -468,8 +398,12 @@ public class DockOwnerUI : MonoBehaviour
 
     private void SetTab(DockOwnerTab _tab)
     {
-        CloseBaitQuantityPopup(false);
-        ClosePurchaseConfirmation(false);
+        if (baitShopUI != null)
+            baitShopUI.ClosePopup(false);
+
+        if (purchaseConfirmUI != null)
+            purchaseConfirmUI.Close(false);
+
         currentTab = _tab;
 
         SetObjectActive(sellTabPanel, currentTab == DockOwnerTab.Sell);
@@ -591,38 +525,10 @@ public class DockOwnerUI : MonoBehaviour
 
     private void SetBaitUI()
     {
-        BaitData[] baits = GetBaitsForSale();
-        int visibleCount = Mathf.Min(baits.Length, GetBaitShopCardCount());
-        EnsureBaitQuantityArray(visibleCount);
+        ConfigureBaitShopUI();
 
-        for (int i = 0; i < GetBaitShopCardCount(); i++)
-        {
-            BaitShopCard card = baitShopCards[i];
-
-            if (card == null)
-                continue;
-
-            bool hasBait = i < visibleCount && baits[i] != null;
-
-            if (!hasBait)
-            {
-                card.Clear();
-                continue;
-            }
-
-            BaitData bait = baits[i];
-            int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
-            int ownedQuantity = baitInventory != null ? baitInventory.GetQuantity(bait) : 0;
-
-            card.SetBait(
-                bait,
-                ownedQuantity,
-                maxQuantity,
-                Mathf.Max(0, bait.PurchasePrice)
-            );
-        }
-
-        RefreshBaitQuantityPopup();
+        if (baitShopUI != null)
+            baitShopUI.Refresh(playerMoney);
     }
 
     #endregion
@@ -1092,457 +998,17 @@ public class DockOwnerUI : MonoBehaviour
 
     #endregion
 
-    #region Baits
-
-    private BaitData[] GetBaitsForSale()
-    {
-        return baitShop != null ? baitShop.BaitsForSale : BaitCatalog.GetDefaultBaits();
-    }
-
-    private void EnsureBaitQuantityArray(int _count)
-    {
-        int safeCount = Mathf.Max(0, _count);
-
-        if (baitPurchaseQuantities != null && baitPurchaseQuantities.Length >= safeCount)
-            return;
-
-        int[] resizedQuantities = new int[safeCount];
-
-        for (int i = 0; i < resizedQuantities.Length; i++)
-            resizedQuantities[i] = 1;
-
-        if (baitPurchaseQuantities != null)
-        {
-            for (int i = 0; i < baitPurchaseQuantities.Length && i < resizedQuantities.Length; i++)
-                resizedQuantities[i] = Mathf.Max(1, baitPurchaseQuantities[i]);
-        }
-
-        baitPurchaseQuantities = resizedQuantities;
-    }
-
-    private int GetBaitPurchaseQuantity(int _slotIndex, BaitData _bait)
-    {
-        EnsureBaitQuantityArray(GetBaitShopCardCount());
-
-        if (_slotIndex < 0 || baitPurchaseQuantities == null || _slotIndex >= baitPurchaseQuantities.Length)
-            return GetMaxBaitPurchaseQuantity(_bait) > 0 ? 1 : 0;
-
-        int maxQuantity = GetMaxBaitPurchaseQuantity(_bait);
-        int minQuantity = maxQuantity > 0 ? 1 : 0;
-        baitPurchaseQuantities[_slotIndex] = Mathf.Clamp(baitPurchaseQuantities[_slotIndex], minQuantity, Mathf.Max(1, maxQuantity));
-        return baitPurchaseQuantities[_slotIndex];
-    }
-
-    private int GetMaxBaitPurchaseQuantity(BaitData _bait)
-    {
-        int limit = Mathf.Max(1, maxBaitPurchaseQuantity);
-
-        if (baitShop != null)
-            return baitShop.GetMaxAffordableQuantity(_bait, limit);
-
-        if (_bait == null)
-            return 0;
-
-        int unitCost = Mathf.Max(0, _bait.PurchasePrice);
-
-        if (unitCost == 0)
-            return limit;
-
-        int affordable = Mathf.FloorToInt(playerMoney / unitCost);
-        return Mathf.Clamp(affordable, 0, limit);
-    }
-
-    private int GetBaitPurchaseCost(BaitData _bait, int _quantity)
-    {
-        if (_bait == null || _quantity <= 0)
-            return 0;
-
-        if (baitShop != null)
-            return baitShop.GetBaitPurchaseCost(_bait, _quantity);
-
-        return Mathf.Max(0, _bait.PurchasePrice * _quantity);
-    }
-
-    private void SetBaitQuantityFromSlot(int _slotIndex, int _quantity)
-    {
-        BaitData[] baits = GetBaitsForSale();
-
-        if (_slotIndex < 0 || _slotIndex >= baits.Length)
-            return;
-
-        EnsureBaitQuantityArray(GetBaitShopCardCount());
-        baitPurchaseQuantities[_slotIndex] = Mathf.Clamp(_quantity, 0, Mathf.Max(1, GetMaxBaitPurchaseQuantity(baits[_slotIndex])));
-        SetBaitUI();
-        RefreshBaitQuantityPopup();
-    }
-
-    private void ChangeBaitQuantity(int _slotIndex, int _delta)
-    {
-        BaitData[] baits = GetBaitsForSale();
-
-        if (_slotIndex < 0 || _slotIndex >= baits.Length || _delta == 0)
-            return;
-
-        BaitData bait = baits[_slotIndex];
-        EnsureBaitQuantityArray(GetBaitShopCardCount());
-
-        int currentQuantity = GetBaitPurchaseQuantity(_slotIndex, bait);
-        int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
-        int minQuantity = maxQuantity > 0 ? 1 : 0;
-        int nextQuantity = Mathf.Clamp(currentQuantity + _delta, minQuantity, Mathf.Max(1, maxQuantity));
-
-        if (nextQuantity == currentQuantity)
-        {
-            ShakeBaitQuantity(_slotIndex);
-            return;
-        }
-
-        baitPurchaseQuantities[_slotIndex] = nextQuantity;
-        SetBaitUI();
-    }
-
-    private void TryBuyBaitSlot(int _slotIndex)
-    {
-        TryResolveReferences();
-
-        BaitData[] baits = GetBaitsForSale();
-
-        if (_slotIndex < 0 || _slotIndex >= baits.Length)
-        {
-            SetStatus("Isca nao encontrada.");
-            return;
-        }
-
-        if (baitShop == null)
-        {
-            SetStatus("Loja de iscas nao encontrada.");
-            return;
-        }
-
-        BaitData bait = baits[_slotIndex];
-        int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
-
-        if (maxQuantity <= 0)
-        {
-            ShakeBaitQuantity(_slotIndex);
-            SetStatus("Dinheiro insuficiente.");
-            return;
-        }
-
-        pendingBaitSlotIndex = _slotIndex;
-        int quantity = GetBaitPurchaseQuantity(_slotIndex, bait);
-
-        if (baitQuantityPanel != null)
-        {
-            OpenBaitQuantityPopup(_slotIndex);
-            return;
-        }
-
-        OpenBaitPurchaseConfirmation(_slotIndex, quantity);
-    }
-
-    private void ExecuteBaitPurchase(int _slotIndex)
-    {
-        BaitData[] baits = GetBaitsForSale();
-
-        if (_slotIndex < 0 || _slotIndex >= baits.Length)
-        {
-            SetStatus("Isca nao encontrada.");
-            return;
-        }
-
-        if (baitShop == null)
-        {
-            SetStatus("Loja de iscas nao encontrada.");
-            return;
-        }
-
-        BaitData bait = baits[_slotIndex];
-        int quantity = GetBaitPurchaseQuantity(_slotIndex, bait);
-
-        if (quantity <= 0)
-        {
-            ShakeBaitQuantity(_slotIndex);
-            SetStatus("Dinheiro insuficiente.");
-            return;
-        }
-
-        bool success = baitShop.TryBuyBait(bait, quantity, out BaitPurchaseResult result);
-
-        if (!success)
-            ShakeBaitQuantity(_slotIndex);
-
-        SetStatus(success ? $"{bait.BaitName} x{quantity} comprada." : GetBaitPurchaseStatusText(result));
-        Refresh();
-    }
-
-    private void OpenBaitQuantityPopup(int _slotIndex)
-    {
-        pendingBaitSlotIndex = _slotIndex;
-        selectionBeforePopup = UISelectionHelper.CurrentSelectableInScope(PanelObject);
-        SetObjectActive(baitQuantityPanel, true);
-        RefreshBaitQuantityPopup();
-        UISelectionHelper.Select(
-            UISelectionHelper.IsUsable(baitQuantityFirstSelected) ? baitQuantityFirstSelected : baitQuantityConfirmButton,
-            baitQuantityPanel
-        );
-    }
-
-    private void CloseBaitQuantityPopup(bool _restoreSelection)
-    {
-        SetObjectActive(baitQuantityPanel, false);
-        pendingBaitSlotIndex = -1;
-        lastBaitQuantityMoveDirection = 0;
-        nextBaitQuantityMoveTime = 0f;
-
-        if (_restoreSelection)
-            UISelectionHelper.Select(selectionBeforePopup, PanelObject);
-    }
-
-    private void RefreshBaitQuantityPopup()
-    {
-        if (baitQuantityPanel == null || !baitQuantityPanel.activeInHierarchy || pendingBaitSlotIndex < 0)
-            return;
-
-        BaitData[] baits = GetBaitsForSale();
-
-        if (pendingBaitSlotIndex >= baits.Length)
-        {
-            CloseBaitQuantityPopup(false);
-            return;
-        }
-
-        BaitData bait = baits[pendingBaitSlotIndex];
-        int quantity = GetBaitPurchaseQuantity(pendingBaitSlotIndex, bait);
-        int maxQuantity = GetMaxBaitPurchaseQuantity(bait);
-        int ownedQuantity = baitInventory != null ? baitInventory.GetQuantity(bait) : 0;
-        int totalCost = GetBaitPurchaseCost(bait, quantity);
-
-        if (baitQuantityTitleText != null)
-            baitQuantityTitleText.text = bait != null ? bait.BaitName : "Isca";
-
-        if (baitQuantityText != null)
-            baitQuantityText.text = quantity.ToString();
-
-        if (baitQuantityPriceText != null)
-            baitQuantityPriceText.text = $"Total: R$ {totalCost}";
-
-        if (baitQuantityOwnedText != null)
-            baitQuantityOwnedText.text = $"No inventario: {ownedQuantity}";
-
-        if (baitQuantityMaxText != null)
-            baitQuantityMaxText.text = $"Maximo: {maxQuantity}";
-
-        SetButtonInteractable(baitQuantityDecreaseButton, quantity > 1);
-        SetButtonInteractable(baitQuantityIncreaseButton, quantity < maxQuantity);
-        SetButtonInteractable(baitQuantityConfirmButton, quantity > 0);
-    }
-
-    private void ChangePendingBaitQuantity(int _delta)
-    {
-        if (pendingBaitSlotIndex < 0)
-            return;
-
-        ChangeBaitQuantity(pendingBaitSlotIndex, _delta);
-        RefreshBaitQuantityPopup();
-    }
-
-    private void ConfirmPendingBaitQuantity()
-    {
-        if (pendingBaitSlotIndex < 0)
-            return;
-
-        int slotIndex = pendingBaitSlotIndex;
-        BaitData[] baits = GetBaitsForSale();
-        Selectable previousSelection = selectionBeforePopup;
-
-        if (slotIndex >= baits.Length)
-        {
-            CloseBaitQuantityPopup(false);
-            return;
-        }
-
-        CloseBaitQuantityPopup(false);
-        OpenBaitPurchaseConfirmation(slotIndex, GetBaitPurchaseQuantity(slotIndex, baits[slotIndex]));
-        selectionBeforePopup = previousSelection;
-    }
-
-    private void OpenBaitPurchaseConfirmation(int _slotIndex, int _quantity)
-    {
-        BaitData[] baits = GetBaitsForSale();
-
-        if (_slotIndex < 0 || _slotIndex >= baits.Length)
-            return;
-
-        BaitData bait = baits[_slotIndex];
-        int totalCost = GetBaitPurchaseCost(bait, _quantity);
-        OpenPurchaseConfirmation(
-            "Confirmar compra",
-            $"Comprar {bait.BaitName} x{_quantity} por R$ {totalCost}?",
-            () => ExecuteBaitPurchase(_slotIndex)
-        );
-    }
-
-    private void HandleBaitQuantityMoveInput()
-    {
-        if (!isOpen || currentTab != DockOwnerTab.Baits || InputHandler.instance == null)
-            return;
-
-        int slotIndex = baitQuantityPanel != null && baitQuantityPanel.activeInHierarchy && pendingBaitSlotIndex >= 0
-            ? pendingBaitSlotIndex
-            : GetSelectedBaitSlotIndex();
-
-        if (slotIndex < 0)
-            return;
-
-        float horizontal = InputHandler.instance.moveInput.x;
-
-        if (Mathf.Abs(horizontal) < baitQuantityMoveThreshold)
-        {
-            lastBaitQuantityMoveDirection = 0;
-            nextBaitQuantityMoveTime = 0f;
-            return;
-        }
-
-        int direction = horizontal > 0f ? 1 : -1;
-
-        if (direction == lastBaitQuantityMoveDirection && Time.unscaledTime < nextBaitQuantityMoveTime)
-            return;
-
-        ChangeBaitQuantity(slotIndex, direction);
-        lastBaitQuantityMoveDirection = direction;
-        nextBaitQuantityMoveTime = Time.unscaledTime + baitQuantityMoveRepeatDelay;
-    }
-
-    private int GetSelectedBaitSlotIndex()
-    {
-        if (EventSystem.current == null || baitShopCards == null)
-            return -1;
-
-        GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
-
-        if (selectedObject == null)
-            return -1;
-
-        for (int i = 0; i < baitShopCards.Length; i++)
-        {
-            if (baitShopCards[i] != null && baitShopCards[i].Contains(selectedObject))
-                return i;
-        }
-
-        return -1;
-    }
-
-    private void ShakeBaitQuantity(int _slotIndex)
-    {
-        TMP_Text feedbackText = baitQuantityPanel != null &&
-                                baitQuantityPanel.activeInHierarchy &&
-                                pendingBaitSlotIndex == _slotIndex
-            ? baitQuantityText
-            : GetBaitCardFeedbackText(_slotIndex);
-
-        if (feedbackText == null)
-            return;
-
-        if (baitQuantityFeedbackRoutine != null)
-            StopCoroutine(baitQuantityFeedbackRoutine);
-
-        baitQuantityFeedbackRoutine = StartCoroutine(ShakeTextRoutine(feedbackText));
-    }
-
-    private TMP_Text GetBaitCardFeedbackText(int _slotIndex)
-    {
-        if (baitShopCards == null ||
-            _slotIndex < 0 ||
-            _slotIndex >= baitShopCards.Length ||
-            baitShopCards[_slotIndex] == null)
-        {
-            return null;
-        }
-
-        return baitShopCards[_slotIndex].FeedbackText;
-    }
-
-    private IEnumerator ShakeTextRoutine(TMP_Text _text)
-    {
-        RectTransform rect = _text != null ? _text.rectTransform : null;
-
-        if (rect == null)
-            yield break;
-
-        Vector2 basePosition = rect.anchoredPosition;
-        Vector3 baseScale = rect.localScale;
-        const float duration = 0.22f;
-        float elapsed = 0f;
-
-        while (elapsed < duration)
-        {
-            elapsed += Time.unscaledDeltaTime;
-            float progress = Mathf.Clamp01(elapsed / duration);
-            float shake = Mathf.Sin(progress * Mathf.PI * 8f) * (1f - progress) * 8f;
-            rect.anchoredPosition = basePosition + new Vector2(shake, 0f);
-            rect.localScale = baseScale * (1f + 0.08f * (1f - progress));
-            yield return null;
-        }
-
-        rect.anchoredPosition = basePosition;
-        rect.localScale = baseScale;
-        baitQuantityFeedbackRoutine = null;
-    }
-
-    private string GetBaitPurchaseStatusText(BaitPurchaseResult _purchaseResult)
-    {
-        return _purchaseResult switch
-        {
-            BaitPurchaseResult.MissingReferences => "Sistema de iscas incompleto.",
-            BaitPurchaseResult.InvalidBait => "Isca invalida.",
-            BaitPurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
-            _ => "Nao foi possivel comprar a isca."
-        };
-    }
-
-    #endregion
-
     #region Purchase Confirmation
 
-    private void OpenPurchaseConfirmation(string _title, string _message, Action _purchaseAction)
+    private void OpenPurchaseConfirmation(string _title, string _message, System.Action _purchaseAction)
     {
-        pendingPurchaseAction = _purchaseAction;
-        selectionBeforePopup = UISelectionHelper.CurrentSelectableInScope(PanelObject);
-
-        if (purchaseConfirmTitleText != null)
-            purchaseConfirmTitleText.text = _title;
-
-        if (purchaseConfirmMessageText != null)
-            purchaseConfirmMessageText.text = _message;
-
-        if (purchaseConfirmPanel == null)
+        if (purchaseConfirmUI == null)
         {
-            ConfirmPendingPurchase();
+            _purchaseAction?.Invoke();
             return;
         }
 
-        SetObjectActive(purchaseConfirmPanel, true);
-        UISelectionHelper.Select(
-            UISelectionHelper.IsUsable(purchaseConfirmFirstSelected) ? purchaseConfirmFirstSelected : purchaseConfirmYesButton,
-            purchaseConfirmPanel
-        );
-    }
-
-    private void ConfirmPendingPurchase()
-    {
-        Action action = pendingPurchaseAction;
-        ClosePurchaseConfirmation(false);
-        action?.Invoke();
-    }
-
-    private void ClosePurchaseConfirmation(bool _restoreSelection)
-    {
-        SetObjectActive(purchaseConfirmPanel, false);
-        pendingPurchaseAction = null;
-
-        if (_restoreSelection)
-            UISelectionHelper.Select(selectionBeforePopup, PanelObject);
+        purchaseConfirmUI.Open(_title, _message, _purchaseAction, PanelObject);
     }
 
     #endregion
@@ -1558,8 +1024,12 @@ public class DockOwnerUI : MonoBehaviour
     private void CloseImmediate()
     {
         UISelectionHelper.ClearSelection(PanelObject);
-        CloseBaitQuantityPopup(false);
-        ClosePurchaseConfirmation(false);
+        if (baitShopUI != null)
+            baitShopUI.ClosePopup(false);
+
+        if (purchaseConfirmUI != null)
+            purchaseConfirmUI.Close(false);
+
         isOpen = false;
         UIModalManager.PopModal(ref modalToken);
         PanelObject.SetActive(false);
@@ -1592,17 +1062,11 @@ public class DockOwnerUI : MonoBehaviour
 
     private void HandleBackPressed()
     {
-        if (purchaseConfirmPanel != null && purchaseConfirmPanel.activeInHierarchy)
-        {
-            ClosePurchaseConfirmation(true);
+        if (purchaseConfirmUI != null && purchaseConfirmUI.TryHandleBack())
             return;
-        }
 
-        if (baitQuantityPanel != null && baitQuantityPanel.activeInHierarchy)
-        {
-            CloseBaitQuantityPopup(true);
+        if (baitShopUI != null && baitShopUI.TryHandleBack())
             return;
-        }
 
         Close();
     }
@@ -1643,9 +1107,15 @@ public class DockOwnerUI : MonoBehaviour
         if (baitInventory == null && baitShop != null)
             baitInventory = baitShop.BaitInventory;
 
+        if (baitShopUI == null)
+            baitShopUI = GetComponentInChildren<DockOwnerBaitShopUI>(true);
+
+        if (purchaseConfirmUI == null)
+            purchaseConfirmUI = GetComponentInChildren<DockOwnerPurchaseConfirmUI>(true);
+
         ResolveUpgradeRows();
-        ResolveBaitShopCards();
         ResolveSellFishScrollRect();
+        ConfigureBaitShopUI();
     }
 
     private void ResolveSellFishScrollRect()
@@ -1693,17 +1163,20 @@ public class DockOwnerUI : MonoBehaviour
         }
     }
 
-    private void ResolveBaitShopCards()
+    private void ConfigureBaitShopUI()
     {
-        if (baitShopCards != null)
+        if (baitShopUI == null)
             return;
 
-        baitShopCards = Array.Empty<BaitShopCard>();
-    }
-
-    private int GetBaitShopCardCount()
-    {
-        return baitShopCards != null ? baitShopCards.Length : 0;
+        baitShopUI.Initialize(
+            baitShop,
+            baitInventory,
+            playerMoneyManager,
+            purchaseConfirmUI,
+            PanelObject,
+            SetStatus,
+            Refresh
+        );
     }
 
     private void SubscribeToReferences()
@@ -1833,28 +1306,9 @@ public class DockOwnerUI : MonoBehaviour
         BindUpgradeButton(boatSpeedUpgradeRow, OnClickBuyBoatSpeedUpgrade);
         BindUpgradeButton(rodUpgradeRow, OnClickBuyRodUpgrade);
         BindUpgradeButton(fireproofBoatUpgradeRow, OnClickBuyFireproofBoatUpgrade);
-        BindBaitCardButtons();
 
         if (closeButton != null)
             closeButton.onClick.AddListener(OnClickClose);
-
-        if (baitQuantityDecreaseButton != null)
-            baitQuantityDecreaseButton.onClick.AddListener(OnClickDecreasePendingBaitQuantity);
-
-        if (baitQuantityIncreaseButton != null)
-            baitQuantityIncreaseButton.onClick.AddListener(OnClickIncreasePendingBaitQuantity);
-
-        if (baitQuantityConfirmButton != null)
-            baitQuantityConfirmButton.onClick.AddListener(OnClickConfirmBaitQuantity);
-
-        if (baitQuantityCancelButton != null)
-            baitQuantityCancelButton.onClick.AddListener(OnClickCancelBaitQuantity);
-
-        if (purchaseConfirmYesButton != null)
-            purchaseConfirmYesButton.onClick.AddListener(OnClickConfirmPurchase);
-
-        if (purchaseConfirmNoButton != null)
-            purchaseConfirmNoButton.onClick.AddListener(OnClickCancelPurchase);
 
         areButtonsBound = true;
     }
@@ -1883,28 +1337,9 @@ public class DockOwnerUI : MonoBehaviour
         UnbindUpgradeButton(boatSpeedUpgradeRow, OnClickBuyBoatSpeedUpgrade);
         UnbindUpgradeButton(rodUpgradeRow, OnClickBuyRodUpgrade);
         UnbindUpgradeButton(fireproofBoatUpgradeRow, OnClickBuyFireproofBoatUpgrade);
-        UnbindBaitCardButtons();
 
         if (closeButton != null)
             closeButton.onClick.RemoveListener(OnClickClose);
-
-        if (baitQuantityDecreaseButton != null)
-            baitQuantityDecreaseButton.onClick.RemoveListener(OnClickDecreasePendingBaitQuantity);
-
-        if (baitQuantityIncreaseButton != null)
-            baitQuantityIncreaseButton.onClick.RemoveListener(OnClickIncreasePendingBaitQuantity);
-
-        if (baitQuantityConfirmButton != null)
-            baitQuantityConfirmButton.onClick.RemoveListener(OnClickConfirmBaitQuantity);
-
-        if (baitQuantityCancelButton != null)
-            baitQuantityCancelButton.onClick.RemoveListener(OnClickCancelBaitQuantity);
-
-        if (purchaseConfirmYesButton != null)
-            purchaseConfirmYesButton.onClick.RemoveListener(OnClickConfirmPurchase);
-
-        if (purchaseConfirmNoButton != null)
-            purchaseConfirmNoButton.onClick.RemoveListener(OnClickCancelPurchase);
 
         areButtonsBound = false;
     }
@@ -1925,43 +1360,6 @@ public class DockOwnerUI : MonoBehaviour
         _row.BuyButton.onClick.RemoveListener(_action);
     }
 
-    private void BindBaitCardButtons()
-    {
-        if (baitShopCards == null || baitShopCards.Length == 0)
-            return;
-
-        baitCardBuyActions = new UnityEngine.Events.UnityAction[baitShopCards.Length];
-
-        for (int i = 0; i < baitShopCards.Length; i++)
-        {
-            Button button = baitShopCards[i] != null ? baitShopCards[i].BuyButton : null;
-
-            if (button == null)
-                continue;
-
-            int slotIndex = i;
-            UnityEngine.Events.UnityAction action = () => TryBuyBaitSlot(slotIndex);
-            baitCardBuyActions[i] = action;
-            button.onClick.AddListener(action);
-        }
-    }
-
-    private void UnbindBaitCardButtons()
-    {
-        if (baitShopCards == null || baitCardBuyActions == null)
-            return;
-
-        for (int i = 0; i < baitShopCards.Length && i < baitCardBuyActions.Length; i++)
-        {
-            Button button = baitShopCards[i] != null ? baitShopCards[i].BuyButton : null;
-
-            if (button != null && baitCardBuyActions[i] != null)
-                button.onClick.RemoveListener(baitCardBuyActions[i]);
-        }
-
-        baitCardBuyActions = null;
-    }
-
     #endregion
 
     #region Selection And Helpers
@@ -1980,8 +1378,68 @@ public class DockOwnerUI : MonoBehaviour
 
     private void SetStatus(string _message)
     {
-        if (statusText != null)
-            statusText.text = _message;
+        if (statusText == null)
+            return;
+
+        RectTransform rect = statusText.rectTransform;
+
+        if (!hasStatusBasePosition)
+        {
+            statusBasePosition = rect.anchoredPosition;
+            hasStatusBasePosition = true;
+        }
+
+        if (statusFeedbackRoutine != null)
+        {
+            StopCoroutine(statusFeedbackRoutine);
+            statusFeedbackRoutine = null;
+        }
+
+        rect.anchoredPosition = statusBasePosition;
+
+        if (string.IsNullOrEmpty(_message))
+        {
+            statusText.text = string.Empty;
+            Color hiddenColor = statusText.color;
+            hiddenColor.a = 0f;
+            statusText.color = hiddenColor;
+            return;
+        }
+
+        statusFeedbackRoutine = StartCoroutine(ShowStatusRoutine(_message));
+    }
+
+    private IEnumerator ShowStatusRoutine(string _message)
+    {
+        RectTransform rect = statusText.rectTransform;
+        Vector2 basePosition = hasStatusBasePosition ? statusBasePosition : rect.anchoredPosition;
+        Color baseColor = statusText.color;
+        Color visibleColor = baseColor;
+        visibleColor.a = 1f;
+        float duration = Mathf.Max(0.1f, statusMessageDuration);
+        float elapsed = 0f;
+
+        statusText.text = _message;
+        statusText.color = visibleColor;
+        statusText.gameObject.SetActive(true);
+
+        while (elapsed < duration)
+        {
+            elapsed += Time.unscaledDeltaTime;
+            float progress = Mathf.Clamp01(elapsed / duration);
+            float fadeProgress = Mathf.InverseLerp(0.25f, 1f, progress);
+            Color color = visibleColor;
+            color.a = Mathf.Lerp(1f, 0f, fadeProgress);
+            statusText.color = color;
+            rect.anchoredPosition = basePosition + Vector2.up * (statusMessageRise * progress);
+            yield return null;
+        }
+
+        statusText.text = string.Empty;
+        rect.anchoredPosition = basePosition;
+        baseColor.a = 0f;
+        statusText.color = baseColor;
+        statusFeedbackRoutine = null;
     }
 
     private void SelectCurrentTabControl()
@@ -2057,16 +1515,10 @@ public class DockOwnerUI : MonoBehaviour
         if (UISelectionHelper.IsUsable(baitsFirstSelected))
             return baitsFirstSelected;
 
-        if (baitShopCards != null)
-        {
-            for (int i = 0; i < baitShopCards.Length; i++)
-            {
-                Selectable selectable = baitShopCards[i] != null ? baitShopCards[i].GetSelectable() : null;
+        Selectable baitSelectable = baitShopUI != null ? baitShopUI.GetFirstSelectable() : null;
 
-                if (UISelectionHelper.IsUsable(selectable))
-                    return selectable;
-            }
-        }
+        if (UISelectionHelper.IsUsable(baitSelectable))
+            return baitSelectable;
 
         return closeButton;
     }
