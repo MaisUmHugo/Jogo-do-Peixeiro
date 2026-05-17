@@ -11,6 +11,7 @@ public class InputHandler : MonoBehaviour
     public Vector2 moveInput { get; private set; }
     public Vector2 lookInput { get; private set; }
     public float zoomInput { get; private set; }
+    public bool WasBackInputStartedOverUi { get; private set; }
 
     public Action onPausePressed;
     public Action onInteractPressed;
@@ -67,7 +68,11 @@ public class InputHandler : MonoBehaviour
 
         if (inputActions.Player.Pause.WasPressedThisFrame())
         {
-            onPausePressed?.Invoke();
+            DispatchPausePressed();
+        }
+        else if (inputActions.UI.Cancel.WasPressedThisFrame() && CanCancelOpenUi())
+        {
+            DispatchPausePressed();
         }
 
         if (inputActions.Player.Inventory.WasPressedThisFrame())
@@ -87,6 +92,29 @@ public class InputHandler : MonoBehaviour
             return Vector2.zero;
 
         return _moveInput;
+    }
+
+    private void DispatchPausePressed()
+    {
+        WasBackInputStartedOverUi =
+            UIModalManager.HasOpenModal ||
+            (GameManager.instance != null && GameManager.instance.currentState == GameManager.GameState.Paused) ||
+            (GameManager.instance != null && GameManager.instance.currentState == GameManager.GameState.InUI);
+
+        onPausePressed?.Invoke();
+        WasBackInputStartedOverUi = false;
+    }
+
+    private bool CanCancelOpenUi()
+    {
+        if (UIModalManager.HasOpenModal)
+            return true;
+
+        if (GameManager.instance == null)
+            return false;
+
+        return GameManager.instance.currentState == GameManager.GameState.InUI ||
+               GameManager.instance.currentState == GameManager.GameState.Paused;
     }
 
     public void ResetGameplayInput()

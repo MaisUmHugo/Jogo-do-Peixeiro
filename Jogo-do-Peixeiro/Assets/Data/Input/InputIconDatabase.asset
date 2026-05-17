@@ -26,5 +26,5 @@ MonoBehaviour:
     moveLeft: {fileID: 21300000, guid: 1b538ee86fd3d3443b423045a662b8c0, type: 3}
     moveRight: {fileID: 21300000, guid: dce614c51ce533246a4cb1b2bafa5a02, type: 3}
     interact: {fileID: 21300000, guid: 86127b3be891e12459c35fe070a59265, type: 3}
-    pause: {fileID: 21300000, guid: fabd909a24079ff408229154a4755173, type: 3}
+    pause: {fileID: 21300000, guid: 53afbf4188d88d54f92efac0e37ebcaa, type: 3}
     skillCheck: {fileID: 21300000, guid: aeb7849107154a745ac1d7370a9e1a6c, type: 3}
