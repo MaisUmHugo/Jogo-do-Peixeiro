@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -67,12 +68,100 @@ public static class UISelectionHelper
         return null;
     }
 
+    public static void ConfigureVerticalOnlyScrollRect(ScrollRect _scrollRect)
+    {
+        if (_scrollRect == null)
+            return;
+
+        _scrollRect.horizontal = false;
+        _scrollRect.vertical = true;
+        _scrollRect.movementType = ScrollRect.MovementType.Clamped;
+
+        if (_scrollRect.horizontalScrollbar != null)
+        {
+            SetNavigationNone(_scrollRect.horizontalScrollbar);
+            _scrollRect.horizontalScrollbar.gameObject.SetActive(false);
+        }
+
+        if (_scrollRect.verticalScrollbar != null)
+            SetNavigationNone(_scrollRect.verticalScrollbar);
+
+        _scrollRect.horizontalNormalizedPosition = 0f;
+
+        RectTransform content = _scrollRect.content;
+
+        if (content == null)
+            return;
+
+        Vector2 anchoredPosition = content.anchoredPosition;
+
+        if (Mathf.Approximately(anchoredPosition.x, 0f))
+            return;
+
+        anchoredPosition.x = 0f;
+        content.anchoredPosition = anchoredPosition;
+    }
+
+    public static void ConfigureVerticalContentNavigation(IList<Selectable> _selectables)
+    {
+        if (_selectables == null)
+            return;
+
+        for (int i = 0; i < _selectables.Count; i++)
+        {
+            Selectable current = _selectables[i];
+
+            if (current == null)
+                continue;
+
+            Navigation navigation = current.navigation;
+            navigation.mode = Navigation.Mode.Explicit;
+            navigation.selectOnUp = GetPreviousUsable(_selectables, i);
+            navigation.selectOnDown = GetNextUsable(_selectables, i);
+            navigation.selectOnLeft = null;
+            navigation.selectOnRight = null;
+            current.navigation = navigation;
+        }
+    }
+
     private static Selectable GetUsableSelectable(Selectable _preferred, GameObject _scope)
     {
         if (IsUsable(_preferred))
             return _preferred;
 
         return FirstUsable(_scope);
+    }
+
+    private static void SetNavigationNone(Selectable _selectable)
+    {
+        if (_selectable == null)
+            return;
+
+        Navigation navigation = _selectable.navigation;
+        navigation.mode = Navigation.Mode.None;
+        _selectable.navigation = navigation;
+    }
+
+    private static Selectable GetPreviousUsable(IList<Selectable> _selectables, int _index)
+    {
+        for (int i = _index - 1; i >= 0; i--)
+        {
+            if (IsUsable(_selectables[i]))
+                return _selectables[i];
+        }
+
+        return null;
+    }
+
+    private static Selectable GetNextUsable(IList<Selectable> _selectables, int _index)
+    {
+        for (int i = _index + 1; i < _selectables.Count; i++)
+        {
+            if (IsUsable(_selectables[i]))
+                return _selectables[i];
+        }
+
+        return null;
     }
 
     private static bool IsInScope(GameObject _target, GameObject _scope)

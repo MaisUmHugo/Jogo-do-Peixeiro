@@ -51,6 +51,9 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private DockOwnerUpgradeRowUI boatSpeedUpgradeRow;
     [SerializeField] private DockOwnerUpgradeRowUI rodUpgradeRow;
     [SerializeField] private DockOwnerUpgradeRowUI fireproofBoatUpgradeRow;
+    [SerializeField] private bool keepUpgradeSelectionVisibleInScroll = true;
+    [SerializeField] private ScrollRect upgradesScrollRect;
+    [SerializeField, Min(0f)] private float upgradesSelectionScrollPadding;
 
     [Header("Bait Shop")]
     [SerializeField] private DockOwnerBaitShopUI baitShopUI;
@@ -87,6 +90,7 @@ public class DockOwnerUI : MonoBehaviour
     private bool isInputSubscribed;
     private bool suppressSelectAllFishToggle;
     private GameObject lastScrolledSellSelection;
+    private GameObject lastScrolledUpgradeSelection;
     private Coroutine statusFeedbackRoutine;
     private bool hasStatusBasePosition;
     private Vector2 statusBasePosition;
@@ -130,6 +134,7 @@ public class DockOwnerUI : MonoBehaviour
             baitShopUI.HandleMoveInput(isOpen && currentTab == DockOwnerTab.Baits);
 
         KeepSellSelectionVisible();
+        KeepUpgradeSelectionVisible();
     }
 
     #endregion
@@ -521,6 +526,8 @@ public class DockOwnerUI : MonoBehaviour
             1,
             dockUpgradeSystem.CanBuyFireproofBoatUpgrade
         );
+
+        ConfigureUpgradeNavigation();
     }
 
     private void SetBaitUI()
@@ -742,12 +749,103 @@ public class DockOwnerUI : MonoBehaviour
         if (selectedRect == null || !selectedRect.IsChildOf(sellFishScrollRect.content))
             return;
 
-        Canvas.ForceUpdateCanvases();
-        ScrollRectToChild(sellFishScrollRect, selectedRect, selectedObject != lastScrolledSellSelection);
-        lastScrolledSellSelection = selectedObject;
+        TryKeepSelectionVisibleInScroll(
+            sellFishScrollRect,
+            selectedRect,
+            selectedObject,
+            sellSelectionScrollPadding,
+            ref lastScrolledSellSelection
+        );
     }
 
-    private void ScrollRectToChild(ScrollRect _scrollRect, RectTransform _child, bool _selectionChanged)
+    private void KeepUpgradeSelectionVisible()
+    {
+        if (!keepUpgradeSelectionVisibleInScroll ||
+            !isOpen ||
+            currentTab != DockOwnerTab.Upgrades ||
+            EventSystem.current == null)
+        {
+            lastScrolledUpgradeSelection = null;
+            return;
+        }
+
+        ResolveUpgradeScrollRect();
+
+        if (upgradesScrollRect == null || upgradesScrollRect.content == null)
+            return;
+
+        GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
+
+        if (selectedObject == null || !selectedObject.transform.IsChildOf(upgradesScrollRect.transform))
+        {
+            lastScrolledUpgradeSelection = null;
+            return;
+        }
+
+        RectTransform selectedRect = GetUpgradeScrollTarget(selectedObject);
+
+        if (selectedRect == null ||
+            selectedRect == upgradesScrollRect.content ||
+            !selectedRect.IsChildOf(upgradesScrollRect.content))
+        {
+            return;
+        }
+
+        TryKeepSelectionVisibleInScroll(
+            upgradesScrollRect,
+            selectedRect,
+            selectedObject,
+            upgradesSelectionScrollPadding,
+            ref lastScrolledUpgradeSelection
+        );
+    }
+
+    private RectTransform GetUpgradeScrollTarget(GameObject _selectedObject)
+    {
+        DockOwnerUpgradeRowUI row = GetUpgradeRowForSelection(_selectedObject);
+
+        if (row != null)
+            return row.GetScrollTarget(upgradesScrollRect.content);
+
+        return _selectedObject != null ? _selectedObject.GetComponent<RectTransform>() : null;
+    }
+
+    private DockOwnerUpgradeRowUI GetUpgradeRowForSelection(GameObject _selectedObject)
+    {
+        if (_selectedObject == null)
+            return null;
+
+        DockOwnerUpgradeRowUI[] rows =
+        {
+            capacityUpgradeRow,
+            boatSpeedUpgradeRow,
+            rodUpgradeRow,
+            fireproofBoatUpgradeRow
+        };
+
+        for (int i = 0; i < rows.Length; i++)
+        {
+            if (rows[i] != null && rows[i].ContainsSelection(_selectedObject))
+                return rows[i];
+        }
+
+        return _selectedObject.GetComponentInParent<DockOwnerUpgradeRowUI>(true);
+    }
+
+    private void TryKeepSelectionVisibleInScroll(
+        ScrollRect _scrollRect,
+        RectTransform _selectedRect,
+        GameObject _selectedObject,
+        float _padding,
+        ref GameObject _lastScrolledSelection)
+    {
+        UISelectionHelper.ConfigureVerticalOnlyScrollRect(_scrollRect);
+        Canvas.ForceUpdateCanvases();
+        ScrollRectToChild(_scrollRect, _selectedRect, _selectedObject != _lastScrolledSelection, _padding);
+        _lastScrolledSelection = _selectedObject;
+    }
+
+    private void ScrollRectToChild(ScrollRect _scrollRect, RectTransform _child, bool _selectionChanged, float _padding)
     {
         RectTransform viewport = _scrollRect.viewport != null ? _scrollRect.viewport : _scrollRect.GetComponent<RectTransform>();
         RectTransform content = _scrollRect.content;
@@ -756,13 +854,13 @@ public class DockOwnerUI : MonoBehaviour
             return;
 
         if (_scrollRect.vertical)
-            ScrollVerticallyToChild(_scrollRect, viewport, content, _child, _selectionChanged);
+            ScrollVerticallyToChild(_scrollRect, viewport, content, _child, _selectionChanged, _padding);
 
         if (_scrollRect.horizontal)
-            ScrollHorizontallyToChild(_scrollRect, viewport, content, _child, _selectionChanged);
+            ScrollHorizontallyToChild(_scrollRect, viewport, content, _child, _selectionChanged, _padding);
     }
 
-    private void ScrollVerticallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged)
+    private void ScrollVerticallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged, float _padding)
     {
         float hiddenHeight = _content.rect.height - _viewport.rect.height;
 
@@ -773,10 +871,10 @@ public class DockOwnerUI : MonoBehaviour
         Rect viewportRect = _viewport.rect;
         float offset = 0f;
 
-        if (childBounds.max.y > viewportRect.yMax - sellSelectionScrollPadding)
-            offset = childBounds.max.y - (viewportRect.yMax - sellSelectionScrollPadding);
-        else if (childBounds.min.y < viewportRect.yMin + sellSelectionScrollPadding)
-            offset = childBounds.min.y - (viewportRect.yMin + sellSelectionScrollPadding);
+        if (childBounds.max.y > viewportRect.yMax - _padding)
+            offset = childBounds.max.y - (viewportRect.yMax - _padding);
+        else if (childBounds.min.y < viewportRect.yMin + _padding)
+            offset = childBounds.min.y - (viewportRect.yMin + _padding);
 
         if (Mathf.Abs(offset) <= 0.01f)
             return;
@@ -787,7 +885,7 @@ public class DockOwnerUI : MonoBehaviour
             : Mathf.MoveTowards(_scrollRect.verticalNormalizedPosition, target, Time.unscaledDeltaTime * 12f);
     }
 
-    private void ScrollHorizontallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged)
+    private void ScrollHorizontallyToChild(ScrollRect _scrollRect, RectTransform _viewport, RectTransform _content, RectTransform _child, bool _selectionChanged, float _padding)
     {
         float hiddenWidth = _content.rect.width - _viewport.rect.width;
 
@@ -798,10 +896,10 @@ public class DockOwnerUI : MonoBehaviour
         Rect viewportRect = _viewport.rect;
         float offset = 0f;
 
-        if (childBounds.max.x > viewportRect.xMax - sellSelectionScrollPadding)
-            offset = childBounds.max.x - (viewportRect.xMax - sellSelectionScrollPadding);
-        else if (childBounds.min.x < viewportRect.xMin + sellSelectionScrollPadding)
-            offset = childBounds.min.x - (viewportRect.xMin + sellSelectionScrollPadding);
+        if (childBounds.max.x > viewportRect.xMax - _padding)
+            offset = childBounds.max.x - (viewportRect.xMax - _padding);
+        else if (childBounds.min.x < viewportRect.xMin + _padding)
+            offset = childBounds.min.x - (viewportRect.xMin + _padding);
 
         if (Mathf.Abs(offset) <= 0.01f)
             return;
@@ -928,7 +1026,7 @@ public class DockOwnerUI : MonoBehaviour
         string _name,
         string _description,
         string _level,
-        string _value,
+        string _effect,
         string _cost,
         int _currentLevel,
         int _maxLevel,
@@ -937,7 +1035,7 @@ public class DockOwnerUI : MonoBehaviour
         if (_row == null)
             return;
 
-        _row.SetUpgrade(_name, _description, _level, _value, _cost, _currentLevel, _maxLevel, _canBuy);
+        _row.SetUpgrade(_name, _description, _level, _effect, _cost, _currentLevel, _maxLevel, _canBuy);
     }
 
     private string GetUpgradeCostText(int _cost, bool _isMaxed)
@@ -1115,19 +1213,67 @@ public class DockOwnerUI : MonoBehaviour
 
         ResolveUpgradeRows();
         ResolveSellFishScrollRect();
+        ResolveUpgradeScrollRect();
         ConfigureBaitShopUI();
     }
 
     private void ResolveSellFishScrollRect()
     {
-        if (sellFishScrollRect != null)
-            return;
-
-        if (sellFishGridContent != null)
+        if (sellFishScrollRect == null && sellFishGridContent != null)
             sellFishScrollRect = sellFishGridContent.GetComponentInParent<ScrollRect>(true);
 
         if (sellFishScrollRect == null && sellTabPanel != null)
             sellFishScrollRect = sellTabPanel.GetComponentInChildren<ScrollRect>(true);
+
+        UISelectionHelper.ConfigureVerticalOnlyScrollRect(sellFishScrollRect);
+    }
+
+    private void ResolveUpgradeScrollRect()
+    {
+        if (upgradesScrollRect == null && upgradesTabPanel != null)
+            upgradesScrollRect = upgradesTabPanel.GetComponentInChildren<ScrollRect>(true);
+
+        if (upgradesScrollRect == null)
+            upgradesScrollRect = GetUpgradeRowScrollRect(capacityUpgradeRow);
+
+        if (upgradesScrollRect == null)
+            upgradesScrollRect = GetUpgradeRowScrollRect(boatSpeedUpgradeRow);
+
+        if (upgradesScrollRect == null)
+            upgradesScrollRect = GetUpgradeRowScrollRect(rodUpgradeRow);
+
+        if (upgradesScrollRect == null)
+            upgradesScrollRect = GetUpgradeRowScrollRect(fireproofBoatUpgradeRow);
+
+        UISelectionHelper.ConfigureVerticalOnlyScrollRect(upgradesScrollRect);
+    }
+
+    private ScrollRect GetUpgradeRowScrollRect(DockOwnerUpgradeRowUI _row)
+    {
+        if (_row == null)
+            return null;
+
+        return _row.GetComponentInParent<ScrollRect>(true);
+    }
+
+    private void ConfigureUpgradeNavigation()
+    {
+        List<Selectable> upgradeSelectables = new List<Selectable>();
+
+        AddUpgradeNavigationButton(upgradeSelectables, capacityUpgradeRow);
+        AddUpgradeNavigationButton(upgradeSelectables, boatSpeedUpgradeRow);
+        AddUpgradeNavigationButton(upgradeSelectables, rodUpgradeRow);
+        AddUpgradeNavigationButton(upgradeSelectables, fireproofBoatUpgradeRow);
+
+        UISelectionHelper.ConfigureVerticalContentNavigation(upgradeSelectables);
+    }
+
+    private void AddUpgradeNavigationButton(List<Selectable> _selectables, DockOwnerUpgradeRowUI _row)
+    {
+        if (_row == null || _row.BuyButton == null)
+            return;
+
+        _selectables.Add(_row.BuyButton);
     }
 
     private void ResolveUpgradeRows()

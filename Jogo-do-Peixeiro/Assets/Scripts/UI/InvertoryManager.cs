@@ -261,6 +261,10 @@ public class InvertoryManager : MonoBehaviour
 
         if (baitScrollRect == null && baitsTabPanel != null)
             baitScrollRect = baitsTabPanel.GetComponentInChildren<ScrollRect>(true);
+
+        UISelectionHelper.ConfigureVerticalOnlyScrollRect(fishScrollRect);
+        UISelectionHelper.ConfigureVerticalOnlyScrollRect(discardFishScrollRect);
+        UISelectionHelper.ConfigureVerticalOnlyScrollRect(baitScrollRect);
     }
 
     private GameObject ResolveTabPanelRoot(GameObject _currentPanel, params string[] _rootNames)
@@ -2080,6 +2084,8 @@ public class InvertoryManager : MonoBehaviour
 
     private void ScrollRectToChild(ScrollRect _scrollRect, RectTransform _child, bool _selectionChanged)
     {
+        UISelectionHelper.ConfigureVerticalOnlyScrollRect(_scrollRect);
+
         RectTransform viewport = _scrollRect.viewport != null ? _scrollRect.viewport : _scrollRect.GetComponent<RectTransform>();
         RectTransform content = _scrollRect.content;
 
