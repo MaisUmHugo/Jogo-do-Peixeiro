@@ -20,12 +20,15 @@ public class PlayerAnimationController : MonoBehaviour
 
     [Header("Movement")]
     [SerializeField, Min(0f)] private float _moveThreshold = 0.1f;
+    [SerializeField, Min(0f)] private float _positionMoveResetThreshold = 0.01f;
     [SerializeField, Min(0f)] private float _moveSpeedDampTime = 0.08f;
 
     [Header("Idle AFK")]
     [SerializeField, Min(0f)] private float _afkIdleDelay = 8f;
     [SerializeField] private int _defaultIdleStage;
     [SerializeField] private int _afkIdleStage = 1;
+    [SerializeField] private bool _ignorePositionMovementWhileAfkIdle = true;
+    [SerializeField] private bool _snapMoveSpeedWhenLeavingAfkIdle = true;
 
     [Header("Animator Parameters")]
     [SerializeField] private string _moveSpeedParameter = "MoveSpeed";
@@ -45,6 +48,10 @@ public class PlayerAnimationController : MonoBehaviour
 
     private float _idleTimer;
     private bool _wasFishing;
+    private bool _hasLastPosition;
+    private bool _isAfkIdleActive;
+    private bool _leftAfkIdleByMoveInput;
+    private Vector3 _lastPosition;
 
     public Vector2 CurrentMoveInput { get; private set; }
     public float CurrentMoveSpeed { get; private set; }
@@ -54,6 +61,7 @@ public class PlayerAnimationController : MonoBehaviour
     private void OnValidate()
     {
         _moveThreshold = Mathf.Max(0f, _moveThreshold);
+        _positionMoveResetThreshold = Mathf.Max(0f, _positionMoveResetThreshold);
         _moveSpeedDampTime = Mathf.Max(0f, _moveSpeedDampTime);
         _afkIdleDelay = Mathf.Max(0f, _afkIdleDelay);
     }
@@ -129,12 +137,17 @@ public class PlayerAnimationController : MonoBehaviour
         bool isOnBoat = state == GameManager.GameState.OnBoat || isFishing;
         bool hasFishBitten = FishingManager.instance != null && FishingManager.instance.HasFishBitten;
 
+        _leftAfkIdleByMoveInput = false;
         UpdateMovementState(isOnFoot);
         UpdateIdleState(isOnFoot);
         UpdateFishingTransition(isFishing);
         UpdatePullDirection(isFishing && hasFishBitten);
 
-        SetFloat(_moveSpeedParameter, CurrentMoveSpeed, _moveSpeedDampTime);
+        float moveSpeedDampTime = _snapMoveSpeedWhenLeavingAfkIdle && _leftAfkIdleByMoveInput
+            ? 0f
+            : _moveSpeedDampTime;
+
+        SetFloat(_moveSpeedParameter, CurrentMoveSpeed, moveSpeedDampTime);
         SetBool(_isMovingParameter, IsMoving);
         SetBool(_isOnBoatParameter, isOnBoat);
         SetBool(_isFishingParameter, isFishing);
@@ -154,7 +167,44 @@ public class PlayerAnimationController : MonoBehaviour
             : Vector2.zero;
 
         CurrentMoveSpeed = Mathf.Clamp01(CurrentMoveInput.magnitude);
-        IsMoving = _isOnFoot && CurrentMoveSpeed > _moveThreshold;
+        bool hasMoveInput = _isOnFoot && CurrentMoveSpeed > _moveThreshold;
+        _leftAfkIdleByMoveInput = _isAfkIdleActive && hasMoveInput;
+        bool shouldIgnorePositionMovement = _ignorePositionMovementWhileAfkIdle && _isAfkIdleActive && !hasMoveInput;
+        bool hasPositionMovement = shouldIgnorePositionMovement ? SyncLastPosition() : HasPositionMovement(_isOnFoot);
+        IsMoving = hasMoveInput || hasPositionMovement;
+    }
+
+    private bool SyncLastPosition()
+    {
+        _lastPosition = transform.position;
+        _hasLastPosition = true;
+        return false;
+    }
+
+    private bool HasPositionMovement(bool _isOnFoot)
+    {
+        Vector3 currentPosition = transform.position;
+
+        if (!_isOnFoot)
+        {
+            _lastPosition = currentPosition;
+            _hasLastPosition = true;
+            return false;
+        }
+
+        if (!_hasLastPosition)
+        {
+            _lastPosition = currentPosition;
+            _hasLastPosition = true;
+            return false;
+        }
+
+        Vector3 delta = currentPosition - _lastPosition;
+        delta.y = 0f;
+        _lastPosition = currentPosition;
+
+        float threshold = Mathf.Max(0f, _positionMoveResetThreshold);
+        return delta.sqrMagnitude > threshold * threshold;
     }
 
     private void UpdateIdleState(bool _isOnFoot)
@@ -162,12 +212,14 @@ public class PlayerAnimationController : MonoBehaviour
         if (!_isOnFoot || IsMoving)
         {
             _idleTimer = 0f;
+            _isAfkIdleActive = false;
             SetInteger(_idleStageParameter, _defaultIdleStage);
             return;
         }
 
         _idleTimer += Time.deltaTime;
         int idleStage = _idleTimer >= _afkIdleDelay ? _afkIdleStage : _defaultIdleStage;
+        _isAfkIdleActive = idleStage == _afkIdleStage;
         SetInteger(_idleStageParameter, idleStage);
     }
 
