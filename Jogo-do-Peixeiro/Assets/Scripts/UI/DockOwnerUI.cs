@@ -1265,7 +1265,15 @@ public class DockOwnerUI : MonoBehaviour
         AddUpgradeNavigationButton(upgradeSelectables, rodUpgradeRow);
         AddUpgradeNavigationButton(upgradeSelectables, fireproofBoatUpgradeRow);
 
-        UISelectionHelper.ConfigureVerticalContentNavigation(upgradeSelectables);
+        Selectable tabExitUp = UISelectionHelper.IsUsable(sellTabButton) ? sellTabButton : baitsTabButton;
+
+        UISelectionHelper.ConfigureVerticalContentNavigation(
+            upgradeSelectables,
+            tabExitUp,
+            null,
+            sellTabButton,
+            baitsTabButton
+        );
     }
 
     private void AddUpgradeNavigationButton(List<Selectable> _selectables, DockOwnerUpgradeRowUI _row)

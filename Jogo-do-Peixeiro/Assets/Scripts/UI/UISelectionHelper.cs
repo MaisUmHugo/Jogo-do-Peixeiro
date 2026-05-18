@@ -102,7 +102,12 @@ public static class UISelectionHelper
         content.anchoredPosition = anchoredPosition;
     }
 
-    public static void ConfigureVerticalContentNavigation(IList<Selectable> _selectables)
+    public static void ConfigureVerticalContentNavigation(
+        IList<Selectable> _selectables,
+        Selectable _exitUp = null,
+        Selectable _exitDown = null,
+        Selectable _exitLeft = null,
+        Selectable _exitRight = null)
     {
         if (_selectables == null)
             return;
@@ -118,8 +123,15 @@ public static class UISelectionHelper
             navigation.mode = Navigation.Mode.Explicit;
             navigation.selectOnUp = GetPreviousUsable(_selectables, i);
             navigation.selectOnDown = GetNextUsable(_selectables, i);
-            navigation.selectOnLeft = null;
-            navigation.selectOnRight = null;
+            navigation.selectOnLeft = GetUsableExit(_exitLeft);
+            navigation.selectOnRight = GetUsableExit(_exitRight);
+
+            if (navigation.selectOnUp == null)
+                navigation.selectOnUp = GetUsableExit(_exitUp);
+
+            if (navigation.selectOnDown == null)
+                navigation.selectOnDown = GetUsableExit(_exitDown);
+
             current.navigation = navigation;
         }
     }
@@ -162,6 +174,11 @@ public static class UISelectionHelper
         }
 
         return null;
+    }
+
+    private static Selectable GetUsableExit(Selectable _selectable)
+    {
+        return IsUsable(_selectable) ? _selectable : null;
     }
 
     private static bool IsInScope(GameObject _target, GameObject _scope)
