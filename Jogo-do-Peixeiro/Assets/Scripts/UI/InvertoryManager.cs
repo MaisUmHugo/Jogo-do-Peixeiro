@@ -43,6 +43,10 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private InventoryFishSlotUI fishSlotTemplate;
     [SerializeField] private bool autoCreateFishGridSlots = true;
 
+    [Header("Fish Preview")]
+    [SerializeField] private FishPreviewPanelUI fishPreviewPanel;
+    [SerializeField] private bool openFishPreviewOnSubmit = true;
+
     [Header("Scroll Follow")]
     [SerializeField] private bool keepSelectionVisibleInScroll = true;
     [SerializeField] private ScrollRect fishScrollRect;
@@ -225,6 +229,9 @@ public class InvertoryManager : MonoBehaviour
             baitInventory.OnBaitInventoryChanged += OnBaitInventoryChanged;
             isBaitInventorySubscribed = true;
         }
+
+        if (fishPreviewPanel == null)
+            fishPreviewPanel = FindFirstObjectByType<FishPreviewPanelUI>(FindObjectsInactive.Include);
 
         ResolveInventoryPanels();
         ResolveInventoryButtons();
@@ -1263,7 +1270,10 @@ public class InvertoryManager : MonoBehaviour
     private void HandleFishSlotSubmitted(int _fishIndex)
     {
         if (!isDiscardMode)
+        {
+            TryOpenFishPreview(_fishIndex);
             return;
+        }
 
         if (selectedFishIndexes.Contains(_fishIndex))
             selectedFishIndexes.Remove(_fishIndex);
@@ -1272,6 +1282,22 @@ public class InvertoryManager : MonoBehaviour
 
         UpdateDiscardControls();
         RefreshFishGrid();
+    }
+
+    private void TryOpenFishPreview(int _fishIndex)
+    {
+        if (!openFishPreviewOnSubmit || fishPreviewPanel == null || shipInventory == null || shipInventory.OwnedFish == null)
+            return;
+
+        if (_fishIndex < 0 || _fishIndex >= shipInventory.OwnedFish.Count)
+            return;
+
+        FishData fish = shipInventory.OwnedFish[_fishIndex];
+
+        if (fish == null || fish.typeOfFish == null)
+            return;
+
+        fishPreviewPanel.ShowFish(fish, inventoryRoot);
     }
 
     private void SetDiscardMode(bool _enabled)
