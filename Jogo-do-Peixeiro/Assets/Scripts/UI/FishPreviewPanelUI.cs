@@ -4,6 +4,8 @@ using UnityEngine.EventSystems;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
+[RequireComponent(typeof(Canvas))]
+[RequireComponent(typeof(GraphicRaycaster))]
 public class FishPreviewPanelUI : MonoBehaviour
 {
     [Header("Panel")]
@@ -214,6 +216,8 @@ public class FishPreviewPanelUI : MonoBehaviour
         if (panelCanvas == null)
             panelCanvas = PanelObject.GetComponent<Canvas>();
 
+        EnsureGraphicRaycaster();
+
         if (closeButton == null)
             closeButton = FindChildComponent<Button>("CloseButton", "BackButton", "VoltarButton", "FecharButton");
 
@@ -245,6 +249,15 @@ public class FishPreviewPanelUI : MonoBehaviour
             firstSelected = closeButton;
 
         StoreRotateHintDefaultState();
+    }
+
+    private void EnsureGraphicRaycaster()
+    {
+        if (panelCanvas == null)
+            return;
+
+        if (!panelCanvas.TryGetComponent(out GraphicRaycaster _))
+            panelCanvas.gameObject.AddComponent<GraphicRaycaster>();
     }
 
     private T FindChildComponent<T>(params string[] _names) where T : Component
