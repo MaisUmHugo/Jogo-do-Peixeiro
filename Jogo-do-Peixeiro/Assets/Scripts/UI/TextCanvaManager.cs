@@ -19,11 +19,11 @@ public class TextCanvaManager : MonoBehaviour
     [SerializeField] private Image dialogBackGroundImage;
     [SerializeField] private Image nameBackGroundImage;
 
-    
-    private List<string> senteces = new List<string>();
+    private readonly List<DialogSequenceLineData> dialogLines = new List<DialogSequenceLineData>();
     private int textIndex = 0;
     private bool isWritting = false;
     private Action onDialogFinished;
+    private DialogCameraFocusTarget defaultCameraFocusTarget;
     private DialogCameraFocusTarget currentCameraFocusTarget;
     private int dialogStartedFrame = -1;
     private bool isSubscribedToInput;
@@ -68,7 +68,7 @@ public class TextCanvaManager : MonoBehaviour
 
         if (!isWritting)
         {
-            if (textIndex >= senteces.Count - 1)
+            if (textIndex >= dialogLines.Count - 1)
             {
                 FinishDialog();
                 return;
@@ -76,9 +76,7 @@ public class TextCanvaManager : MonoBehaviour
 
             textIndex++;
 
-            if (dialogTMPText != null)
-                dialogTMPText.text = "";
-
+            ApplyCurrentLine(true);
             StartCoroutine(TypeLineCourotine());
         }
         else
@@ -87,24 +85,24 @@ public class TextCanvaManager : MonoBehaviour
         }
     }
 
-    public void InitializeDialog(DialogData _dialog)
+    public void InitializeDialog(DialogSequenceData _dialog)
     {
         InitializeDialog(_dialog, (Action)null);
     }
 
-    public void InitializeDialog(DialogData _dialog, Action _onFinished)
+    public void InitializeDialog(DialogSequenceData _dialog, Action _onFinished)
     {
         InitializeDialog(_dialog, _onFinished, null);
     }
 
-    public void InitializeDialog(DialogData _dialog, DialogCameraFocusTarget _cameraFocusTarget)
+    public void InitializeDialog(DialogSequenceData _dialog, DialogCameraFocusTarget _cameraFocusTarget)
     {
         InitializeDialog(_dialog, (Action)null, _cameraFocusTarget);
     }
 
-    public void InitializeDialog(DialogData _dialog, Action _onFinished, DialogCameraFocusTarget _cameraFocusTarget)
+    public void InitializeDialog(DialogSequenceData _dialog, Action _onFinished, DialogCameraFocusTarget _cameraFocusTarget)
     {
-        if (_dialog == null || _dialog.senteces == null || _dialog.senteces.Length == 0)
+        if (_dialog == null || !_dialog.HasLines)
         {
             _onFinished?.Invoke();
             return;
@@ -115,19 +113,18 @@ public class TextCanvaManager : MonoBehaviour
 
         TrySubscribeInput();
         StopAllCoroutines();
-        senteces.Clear();
+        dialogLines.Clear();
         textIndex = 0;
         isWritting = false;
         onDialogFinished = _onFinished;
-        currentCameraFocusTarget = _cameraFocusTarget;
+        defaultCameraFocusTarget = _cameraFocusTarget;
         dialogStartedFrame = Time.frameCount;
 
-        if (nameTMPtext != null)
-            nameTMPtext.text = _dialog.speakerName;
+        dialogLines.AddRange(_dialog.GetLines());
 
         SetDialogActive(true);
+        ApplyCurrentLine(false);
         NotifyDialogStarted();
-        senteces.AddRange(_dialog.senteces);
         StartCoroutine(TypeLineCourotine());
     }
 
@@ -138,7 +135,7 @@ public class TextCanvaManager : MonoBehaviour
 
     public void CloseDialog(bool _invokeCallback)
     {
-        if (!IsDialogActive && senteces.Count == 0)
+        if (!IsDialogActive && dialogLines.Count == 0)
             return;
 
         StopAllCoroutines();
@@ -146,7 +143,7 @@ public class TextCanvaManager : MonoBehaviour
         Action callback = _invokeCallback ? onDialogFinished : null;
         onDialogFinished = null;
         textIndex = 0;
-        senteces.Clear();
+        dialogLines.Clear();
         isWritting = false;
         SetDialogActive(false);
         NotifyDialogFinished();
@@ -160,13 +157,13 @@ public class TextCanvaManager : MonoBehaviour
 
     private void FinishWriteSentence()
     {
-        if (senteces.Count == 0)
+        if (dialogLines.Count == 0)
             return;
 
         StopAllCoroutines();
         
         if (dialogTMPText != null)
-            dialogTMPText.text = senteces[textIndex];
+            dialogTMPText.text = GetCurrentSentence();
 
         isWritting = false;
 
@@ -174,16 +171,58 @@ public class TextCanvaManager : MonoBehaviour
 
     private IEnumerator TypeLineCourotine()
     {
-        if (senteces.Count == 0 || dialogTMPText == null)
+        if (dialogLines.Count == 0 || dialogTMPText == null)
             yield break;
 
-        foreach (char _character in senteces[textIndex])
+        isWritting = true;
+
+        foreach (char _character in GetCurrentSentence())
         {
             dialogTMPText.text += _character;
-            isWritting = true;
             yield return new WaitForSecondsRealtime(TextSpeed);
         }
+
         isWritting = false;
+    }
+
+    private void ApplyCurrentLine(bool _requestCameraFocus)
+    {
+        if (dialogTMPText != null)
+            dialogTMPText.text = "";
+
+        DialogSequenceLineData currentLine = GetCurrentLine();
+        string currentSpeakerName = currentLine != null ? currentLine.SpeakerName : string.Empty;
+        bool hasSpeakerName = !string.IsNullOrWhiteSpace(currentSpeakerName);
+
+        if (nameTMPtext != null)
+        {
+            nameTMPtext.text = hasSpeakerName ? currentSpeakerName : string.Empty;
+            nameTMPtext.gameObject.SetActive(IsDialogActive && hasSpeakerName);
+        }
+
+        if (nameBackGroundImage != null)
+            nameBackGroundImage.gameObject.SetActive(IsDialogActive && hasSpeakerName);
+
+        currentCameraFocusTarget = currentLine != null && currentLine.CameraFocusTarget != null
+            ? currentLine.CameraFocusTarget
+            : defaultCameraFocusTarget;
+
+        if (_requestCameraFocus && currentCameraFocusTarget != null)
+            RequestCameraFocus(currentCameraFocusTarget);
+    }
+
+    private DialogSequenceLineData GetCurrentLine()
+    {
+        if (textIndex < 0 || textIndex >= dialogLines.Count)
+            return null;
+
+        return dialogLines[textIndex];
+    }
+
+    private string GetCurrentSentence()
+    {
+        DialogSequenceLineData currentLine = GetCurrentLine();
+        return currentLine != null ? currentLine.Sentence : string.Empty;
     }
 
     private void HandleInteractPressed()
@@ -251,6 +290,7 @@ public class TextCanvaManager : MonoBehaviour
     private void NotifyDialogFinished()
     {
         DialogFinished?.Invoke();
+        defaultCameraFocusTarget = null;
         currentCameraFocusTarget = null;
     }
 }

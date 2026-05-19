@@ -1,12 +1,11 @@
-using System.Collections.Generic;
 using UnityEngine;
 
 public class DialogTester : MonoBehaviour
 {
-    [SerializeField] private DialogData dialog;
+    [SerializeField] private DialogSequenceData dialog;
     [SerializeField] private TextCanvaManager canvaManager;
 
-    [ContextMenu("teste diálogo")]
+    [ContextMenu("Test Dialog")]
     private void DialogTest()
     {
 
