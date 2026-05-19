@@ -148,6 +148,7 @@ public class GameSaveManager : MonoBehaviour
         data.dayCycle = CaptureDayCycleData(dayCycle);
         data.campaign = campaignProgress != null ? campaignProgress.CaptureSaveData() : new CampaignSaveData();
         data.shipFish = CaptureShipFishData(shipInventory);
+        data.fishCaptureHistory = FishCaptureHistory.CaptureSaveData();
         data.equippedBaitId = baitInventory != null && baitInventory.EquippedBait != null ? baitInventory.EquippedBait.SaveId : string.Empty;
         data.baits = CaptureBaitData(baitInventory);
 
@@ -197,6 +198,8 @@ public class GameSaveManager : MonoBehaviour
 
         if (shipInventory != null)
             shipInventory.ReplaceFish(RestoreShipFishData(_data.shipFish));
+
+        FishCaptureHistory.ApplySaveData(_data.fishCaptureHistory);
 
         if (baitInventory != null)
             baitInventory.ReplaceBaits(RestoreBaitData(_data.baits), BaitSaveResolver.FindBaitById(_data.equippedBaitId));

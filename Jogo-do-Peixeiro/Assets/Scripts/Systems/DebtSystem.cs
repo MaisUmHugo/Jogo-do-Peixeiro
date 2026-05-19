@@ -4,7 +4,7 @@ public class DebtSystem : MonoBehaviour
 {
     public static DebtSystem Instance { get; private set; }
 
-    [SerializeField, Min(0)] private int initialDebt = 1500;
+    [SerializeField, Min(0)] private int initialDebt = 1100;
 
     private int currentDebt;
     private bool hasInitialized;

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -66,6 +67,10 @@ public class CampaignProgressSystem : MonoBehaviour
     [SerializeField] private FishScriptableObject specialDeliveryFish;
     [SerializeField, Min(0)] private int specialDeliveryQuantity;
     [SerializeField, Min(0)] private int specialDeliveryRequiredWeight;
+
+    [Header("Special Delivery Fallback")]
+    [SerializeField] private FishScriptableObject[] specialDeliveryFishPool;
+    [SerializeField, Min(1)] private int defaultSpecialDeliveryQuantity = 1;
 
     private DayCycle boundDayCycle;
 
@@ -389,10 +394,54 @@ public class CampaignProgressSystem : MonoBehaviour
 
     private void SetSpecialDeliveryInternal(FishScriptableObject _fish, int _quantity, int _requiredWeight)
     {
-        specialDeliveryFish = _fish;
+        specialDeliveryFish = IsRequestableSpecialDeliveryFish(_fish)
+            ? _fish
+            : GetRandomSpecialDeliveryFish();
+
         specialDeliveryQuantity = Mathf.Max(0, _quantity);
+
+        if (specialDeliveryFish != null && specialDeliveryQuantity <= 0)
+            specialDeliveryQuantity = defaultSpecialDeliveryQuantity;
+
         specialDeliveryRequiredWeight = Mathf.Max(0, _requiredWeight);
         isSpecialMoneyLenderDeliveryActive = specialDeliveryFish != null && specialDeliveryQuantity > 0;
+    }
+
+    private FishScriptableObject GetRandomSpecialDeliveryFish()
+    {
+        List<FishScriptableObject> candidates = new List<FishScriptableObject>();
+
+        AddSpecialDeliveryCandidates(candidates, specialDeliveryFishPool);
+
+        foreach (FishingAreaDefinition area in Resources.FindObjectsOfTypeAll<FishingAreaDefinition>())
+        {
+            if (area != null)
+                AddSpecialDeliveryCandidates(candidates, area.AvailableFish);
+        }
+
+        AddSpecialDeliveryCandidates(candidates, Resources.FindObjectsOfTypeAll<FishScriptableObject>());
+
+        if (candidates.Count == 0)
+            return null;
+
+        return candidates[UnityEngine.Random.Range(0, candidates.Count)];
+    }
+
+    private void AddSpecialDeliveryCandidates(List<FishScriptableObject> _candidates, IEnumerable<FishScriptableObject> _fishList)
+    {
+        if (_candidates == null || _fishList == null)
+            return;
+
+        foreach (FishScriptableObject fish in _fishList)
+        {
+            if (IsRequestableSpecialDeliveryFish(fish) && !_candidates.Contains(fish))
+                _candidates.Add(fish);
+        }
+    }
+
+    private bool IsRequestableSpecialDeliveryFish(FishScriptableObject _fish)
+    {
+        return _fish != null && _fish.CanBeRequestedByMoneyLender;
     }
 
     private void ClearSpecialDeliveryInternal()
@@ -516,6 +565,7 @@ public class CampaignProgressSystem : MonoBehaviour
         specialDeliveryQuantity = Mathf.Max(0, specialDeliveryQuantity);
         specialDeliveryRequiredWeight = Mathf.Max(0, specialDeliveryRequiredWeight);
         campaignCompletionDebtAmount = Mathf.Max(0, campaignCompletionDebtAmount);
+        defaultSpecialDeliveryQuantity = Mathf.Max(1, defaultSpecialDeliveryQuantity);
     }
 
     private static CampaignQuestDefinition[] CreateDefaultQuestDefinitions()
