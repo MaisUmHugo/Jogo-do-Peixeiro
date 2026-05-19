@@ -1,8 +1,6 @@
 using System;
 using UnityEngine;
-using UnityEngine.EventSystems;
 using UnityEngine.SceneManagement;
-using UnityEngine.UI;
 
 public class CampaignQuestGuidanceController : MonoBehaviour
 {
@@ -55,17 +53,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private ShipInventory shipInventory;
     [SerializeField] private CampaignProgressSystem campaignProgress;
 
-    [Header("Panels")]
-    [SerializeField] private GameObject tutorialCompletePanel;
-    [SerializeField] private GameObject tutorialFailedPanel;
-    [SerializeField] private Selectable tutorialCompleteFirstSelected;
-    [SerializeField] private Selectable tutorialFailedFirstSelected;
+    [Header("Outcome Panel")]
     [SerializeField] private bool pauseGameOnCompletion;
     [SerializeField] private bool pauseGameOnFailure = true;
-
-    [Header("General Outcome Panel")]
     [SerializeField] private GameOutcomePanelUI generalOutcomePanel;
-    [SerializeField] private bool useGeneralOutcomePanel = true;
     [SerializeField] private string tutorialCompleteTitle = "Tutorial concluido";
     [SerializeField] private string tutorialCompleteMessage = "Voce concluiu o tutorial.";
     [SerializeField] private string tutorialFailureTitle = "Falha na quest";
@@ -173,8 +164,6 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         TrySubscribeCampaignProgress();
         tutorialStartDay = dayCycle != null ? dayCycle.ElapsedDays : 1;
-        SetPanelActive(tutorialCompletePanel, false);
-        SetPanelActive(tutorialFailedPanel, false);
 
         if (!runTutorial)
         {
@@ -324,7 +313,6 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         isShowingEndPanel = false;
         Time.timeScale = 1f;
-        SetPanelActive(tutorialCompletePanel, false);
 
         if (generalOutcomePanel != null)
             generalOutcomePanel.Close();
@@ -337,7 +325,6 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         isShowingEndPanel = false;
         Time.timeScale = 1f;
-        SetPanelActive(tutorialFailedPanel, false);
 
         if (generalOutcomePanel != null)
             generalOutcomePanel.Close();
@@ -803,7 +790,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         ShowDialog(completedDialog, () =>
         {
-            ShowEndPanel(tutorialCompletePanel, tutorialCompleteFirstSelected, pauseGameOnCompletion);
+            ShowCompletionOutcome();
             ShowWarning("Tutorial concluído!");
         });
     }
@@ -814,35 +801,41 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         isFinishingDelivery = false;
         SetStep(TutorialStep.Failed);
 
-        ShowEndPanel(tutorialFailedPanel, tutorialFailedFirstSelected, pauseGameOnFailure);
+        ShowFailureOutcome();
     }
 
-    private void ShowEndPanel(GameObject _panel, Selectable _firstSelected, bool _pauseGame)
+    private void ShowCompletionOutcome()
+    {
+        ShowOutcome(false, tutorialCompleteTitle, tutorialCompleteMessage, pauseGameOnCompletion);
+    }
+
+    private void ShowFailureOutcome()
+    {
+        ShowOutcome(true, tutorialFailureTitle, tutorialFailureMessage, pauseGameOnFailure);
+    }
+
+    private void ShowOutcome(bool _isFailure, string _title, string _message, bool _pauseGame)
     {
         if (textCanvaManager != null)
             textCanvaManager.CloseDialog();
 
-        if (TryShowGeneralOutcomePanel(_panel, _pauseGame))
+        if (generalOutcomePanel != null)
+        {
+            if (_isFailure)
+                generalOutcomePanel.ShowFailure(_title, _message, _pauseGame);
+            else
+                generalOutcomePanel.ShowCompletion(_title, _message, _pauseGame);
+
+            isShowingEndPanel = true;
             return;
+        }
 
-        SetPanelActive(_panel, true);
-        PreparePanelForInput(_panel);
-
-        Time.timeScale = _pauseGame ? 0f : 1f;
-
-        if (GameManager.instance != null)
-            GameManager.instance.SetState(GameManager.GameState.InUI);
-
-        UnlockCursorForUi();
-        SelectEndPanelButton(_panel, _firstSelected);
-        isShowingEndPanel = true;
+        ShowWarning(_message);
     }
 
     private void KeepEndPanelUiReady()
     {
-        if (!IsPanelActive(tutorialCompletePanel) &&
-            !IsPanelActive(tutorialFailedPanel) &&
-            (generalOutcomePanel == null || !generalOutcomePanel.IsShowing))
+        if (generalOutcomePanel == null || !generalOutcomePanel.IsShowing)
         {
             isShowingEndPanel = false;
             return;
@@ -851,68 +844,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         UnlockCursorForUi();
     }
 
-    private bool TryShowGeneralOutcomePanel(GameObject _panel, bool _pauseGame)
-    {
-        if (!useGeneralOutcomePanel || generalOutcomePanel == null)
-            return false;
-
-        bool isFailurePanel = _panel == tutorialFailedPanel || currentStep == TutorialStep.Failed || IsTutorialFailed;
-
-        if (isFailurePanel)
-            generalOutcomePanel.ShowFailure(tutorialFailureTitle, tutorialFailureMessage, _pauseGame);
-        else
-            generalOutcomePanel.ShowCompletion(tutorialCompleteTitle, tutorialCompleteMessage, _pauseGame);
-
-        isShowingEndPanel = true;
-        return true;
-    }
-
     private void UnlockCursorForUi()
     {
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
-    }
-
-    private void PreparePanelForInput(GameObject _panel)
-    {
-        if (_panel == null)
-            return;
-
-        CanvasGroup[] canvasGroups = _panel.GetComponentsInParent<CanvasGroup>(true);
-
-        foreach (CanvasGroup canvasGroup in canvasGroups)
-        {
-            canvasGroup.alpha = 1f;
-            canvasGroup.interactable = true;
-            canvasGroup.blocksRaycasts = true;
-        }
-
-        Selectable[] selectables = _panel.GetComponentsInChildren<Selectable>(true);
-
-        foreach (Selectable selectable in selectables)
-            selectable.interactable = true;
-    }
-
-    private void SelectEndPanelButton(GameObject _panel, Selectable _firstSelected)
-    {
-        if (EventSystem.current == null || _panel == null)
-            return;
-
-        Selectable target = _firstSelected;
-
-        if (target == null || !target.gameObject.activeInHierarchy)
-            target = _panel.GetComponentInChildren<Selectable>(true);
-
-        if (target == null)
-            return;
-
-        EventSystem.current.SetSelectedGameObject(null);
-        EventSystem.current.SetSelectedGameObject(target.gameObject);
-    }
-
-    private bool IsPanelActive(GameObject _panel)
-    {
-        return _panel != null && _panel.activeInHierarchy;
     }
 
     #endregion
@@ -1259,12 +1194,6 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         campaignProgress.OnQuestDeadlineExpired -= HandleCampaignQuestDeadlineExpired;
         isCampaignSubscribed = false;
-    }
-
-    private void SetPanelActive(GameObject _panel, bool _active)
-    {
-        if (_panel != null)
-            _panel.SetActive(_active);
     }
 
     private void ShowWarning(string _message)
