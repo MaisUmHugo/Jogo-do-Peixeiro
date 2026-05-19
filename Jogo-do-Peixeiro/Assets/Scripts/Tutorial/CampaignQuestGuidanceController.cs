@@ -72,10 +72,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private string tutorialFailureMessage = "O prazo acabou antes de concluir a meta.";
 
     [Header("Dialogs")]
-    [SerializeField] private DialogData firstTalkDialog;
-    [SerializeField] private DialogData noDeliveryDialog;
-    [SerializeField] private DialogData readyToDeliverDialog;
-    [SerializeField] private DialogData completedDialog;
+    [SerializeField] private DialogSequenceData firstTalkDialog;
+    [SerializeField] private DialogSequenceData noDeliveryDialog;
+    [SerializeField] private DialogSequenceData readyToDeliverDialog;
+    [SerializeField] private DialogSequenceData completedDialog;
 
     [Header("Objective Markers")]
     [SerializeField] private GameObject moneyLenderCabinMarker;
@@ -919,12 +919,11 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     #region Dialogs And Text Formatting
 
-    private void ShowDialog(DialogData _dialogData, Action _onFinished = null, DialogCameraFocusTarget _cameraFocusTarget = null)
+    private void ShowDialog(DialogSequenceData _dialogData, Action _onFinished = null, DialogCameraFocusTarget _cameraFocusTarget = null)
     {
         if (textCanvaManager == null ||
             _dialogData == null ||
-            _dialogData.senteces == null ||
-            _dialogData.senteces.Length == 0)
+            !_dialogData.HasLines)
         {
             _onFinished?.Invoke();
             return;
@@ -941,18 +940,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         return _moneyLender.GetComponentInChildren<DialogCameraFocusTarget>();
     }
 
-    private DialogData GetFormattedDialog(DialogData _dialogData)
+    private DialogSequenceData GetFormattedDialog(DialogSequenceData _dialogData)
     {
-        DialogData formattedDialog = new DialogData
-        {
-            speakerName = FormatTutorialText(_dialogData.speakerName),
-            senteces = new string[_dialogData.senteces.Length]
-        };
-
-        for (int i = 0; i < _dialogData.senteces.Length; i++)
-            formattedDialog.senteces[i] = FormatTutorialText(_dialogData.senteces[i]);
-
-        return formattedDialog;
+        return _dialogData.GetFormatted(FormatTutorialText);
     }
 
     private string FormatTutorialText(string _text)
