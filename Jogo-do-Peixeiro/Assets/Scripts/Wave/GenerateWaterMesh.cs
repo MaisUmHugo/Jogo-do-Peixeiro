@@ -127,7 +127,7 @@ public class GenerateWaterMesh : MonoBehaviour
             return;
 
         float zDistance = boat.position.z - referenceObject.position.z;
-        Debug.Log(zDistance);
+        //Debug.Log(zDistance);
         float darkness = Mathf.InverseLerp(
             darkStartDistance,
             darkMaxDistance,
