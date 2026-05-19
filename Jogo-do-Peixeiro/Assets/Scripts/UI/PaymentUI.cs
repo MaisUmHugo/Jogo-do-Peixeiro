@@ -29,6 +29,18 @@ public class PaymentUI : MonoBehaviour
     [SerializeField] private TMP_Text fishesText;
     [SerializeField] private TMP_Text statusText;
 
+    [Header("Payment Mode Groups")]
+    [SerializeField] private GameObject defaultPaymentGroup;
+    [SerializeField] private GameObject specialDeliveryGroup;
+
+    [Header("Special Delivery")]
+    [SerializeField] private Image specialDeliveryFishImage;
+    [SerializeField] private TMP_Text specialDeliveryFishNameText;
+    [SerializeField] private TMP_Text specialDeliveryRequirementText;
+    [SerializeField] private TMP_Text specialDeliveryOwnedText;
+    [SerializeField] private Button specialDeliveryPreviewButton;
+    [SerializeField] private FishPreviewPanelUI fishPreviewPanel;
+
     [Header("Ship References")]
     [SerializeField] private ShipInventory shipInventory;
 
@@ -213,11 +225,17 @@ public class PaymentUI : MonoBehaviour
         Close();
     }
 
+    public void OnClickPreviewSpecialFish()
+    {
+        ShowSpecialDeliveryFishPreview();
+    }
+
     public void Refresh()
     {
         RefreshInventorySnapshot();
         SetPaymentTexts();
         SetFishListText();
+        SetPaymentModeVisuals();
         SetPayButtonState();
         EnsureSelectionIsUsable();
     }
@@ -297,6 +315,35 @@ public class PaymentUI : MonoBehaviour
 
         if (textCanvaManager == null)
             textCanvaManager = FindFirstObjectByType<TextCanvaManager>();
+
+        if (fishPreviewPanel == null)
+            fishPreviewPanel = FindFirstObjectByType<FishPreviewPanelUI>(FindObjectsInactive.Include);
+
+        ResolveModeGroupReferences();
+    }
+
+    private void ResolveModeGroupReferences()
+    {
+        if (defaultPaymentGroup == null)
+            defaultPaymentGroup = FindChildGameObject("DefaultPaymentGroup", "DefaultPaymentPanel", "PagamentoPadraoGroup");
+
+        if (specialDeliveryGroup == null)
+            specialDeliveryGroup = FindChildGameObject("SpecialDeliveryGroup", "SpecialDeliveryPanel", "EntregaEspecialGroup");
+
+        if (specialDeliveryPreviewButton == null)
+            specialDeliveryPreviewButton = FindChildComponent<Button>("SpecialFishPreviewButton", "PreviewFishButton", "VerPeixeButton");
+
+        if (specialDeliveryFishImage == null)
+            specialDeliveryFishImage = FindChildComponent<Image>("SpecialFishImage", "RequestedFishImage", "PeixePedidoImage");
+
+        if (specialDeliveryFishNameText == null)
+            specialDeliveryFishNameText = FindChildComponent<TMP_Text>("SpecialFishNameText", "RequestedFishNameText", "PeixePedidoText");
+
+        if (specialDeliveryRequirementText == null)
+            specialDeliveryRequirementText = FindChildComponent<TMP_Text>("SpecialDeliveryRequirementText", "RequirementText", "RequisitoText");
+
+        if (specialDeliveryOwnedText == null)
+            specialDeliveryOwnedText = FindChildComponent<TMP_Text>("SpecialDeliveryOwnedText", "OwnedText", "PossuiText");
     }
 
     private void SubscribeToReferences()
@@ -370,6 +417,9 @@ public class PaymentUI : MonoBehaviour
         if (closeButton != null)
             closeButton.onClick.AddListener(OnClickClose);
 
+        if (specialDeliveryPreviewButton != null)
+            specialDeliveryPreviewButton.onClick.AddListener(OnClickPreviewSpecialFish);
+
         areButtonsBound = true;
     }
 
@@ -383,6 +433,9 @@ public class PaymentUI : MonoBehaviour
 
         if (closeButton != null)
             closeButton.onClick.RemoveListener(OnClickClose);
+
+        if (specialDeliveryPreviewButton != null)
+            specialDeliveryPreviewButton.onClick.RemoveListener(OnClickPreviewSpecialFish);
 
         areButtonsBound = false;
     }
@@ -642,7 +695,7 @@ public class PaymentUI : MonoBehaviour
             return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}\n<color=red>Prazo encerrado.</color>\nA entrega falhou.";
 
         FishScriptableObject specialFish = campaignProgress.SpecialDeliveryFish;
-        string fishName = specialFish != null ? specialFish.fishName : "peixe especial";
+        string fishName = GetFishDisplayName(specialFish);
         int requiredQuantity = campaignProgress.SpecialDeliveryQuantity;
         int ownedQuantity = shipInventory != null && specialFish != null ? shipInventory.CountFish(specialFish) : 0;
         string fishColor = ownedQuantity >= requiredQuantity && requiredQuantity > 0 ? "green" : "red";
@@ -654,6 +707,14 @@ public class PaymentUI : MonoBehaviour
             $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>\n" +
             $"Entregue: <color={fishColor}>{ownedQuantity}</color>/{requiredQuantity} {fishName}\n" +
             $"Divida total: <color=red>{debtValue}</color>";
+    }
+
+    private string GetFishDisplayName(FishScriptableObject _fish)
+    {
+        if (_fish == null)
+            return "peixe especial";
+
+        return !string.IsNullOrWhiteSpace(_fish.fishName) ? _fish.fishName : _fish.name;
     }
 
     private void SetPayButtonState()
@@ -686,6 +747,150 @@ public class PaymentUI : MonoBehaviour
                                  (campaignProgress == null || !campaignProgress.HasFailedCurrentQuest) &&
                                  currentDebtPayment > 0 &&
                                  playerMoney > 0;
+    }
+
+    #endregion
+
+    #region Payment Mode Visuals
+
+    private void SetPaymentModeVisuals()
+    {
+        bool isSpecialDelivery = IsCampaignSpecialDeliveryActive();
+
+        SetObjectActive(defaultPaymentGroup, !isSpecialDelivery);
+        SetObjectActive(specialDeliveryGroup, isSpecialDelivery);
+        SetSpecialDeliveryVisuals(isSpecialDelivery);
+    }
+
+    private void SetSpecialDeliveryVisuals(bool _isSpecialDelivery)
+    {
+        FishScriptableObject specialFish = _isSpecialDelivery && campaignProgress != null
+            ? campaignProgress.SpecialDeliveryFish
+            : null;
+
+        if (specialDeliveryFishImage != null)
+        {
+            Sprite icon = specialFish != null ? specialFish.InventoryIcon : null;
+            specialDeliveryFishImage.sprite = icon;
+            specialDeliveryFishImage.enabled = icon != null;
+            specialDeliveryFishImage.preserveAspect = true;
+        }
+
+        if (specialDeliveryFishNameText != null)
+            specialDeliveryFishNameText.text = specialFish != null ? GetFishDisplayName(specialFish) : "Peixe especial";
+
+        if (specialDeliveryRequirementText != null)
+            specialDeliveryRequirementText.text = GetSpecialDeliveryRequirementText(specialFish);
+
+        if (specialDeliveryOwnedText != null)
+            specialDeliveryOwnedText.text = GetSpecialDeliveryOwnedText(specialFish);
+
+        if (specialDeliveryPreviewButton != null)
+            specialDeliveryPreviewButton.interactable = specialFish != null && fishPreviewPanel != null;
+    }
+
+    private string GetSpecialDeliveryRequirementText(FishScriptableObject _specialFish)
+    {
+        if (!IsCampaignSpecialDeliveryActive() || campaignProgress == null)
+            return string.Empty;
+
+        string fishName = GetFishDisplayName(_specialFish);
+        string weightText = campaignProgress.SpecialDeliveryRequiredWeight > 0
+            ? $" | Peso: {campaignProgress.SpecialDeliveryRequiredWeight} kg"
+            : string.Empty;
+
+        return $"Pedido: {campaignProgress.SpecialDeliveryQuantity}x {fishName}{weightText}";
+    }
+
+    private string GetSpecialDeliveryOwnedText(FishScriptableObject _specialFish)
+    {
+        if (!IsCampaignSpecialDeliveryActive() || campaignProgress == null)
+            return string.Empty;
+
+        int ownedQuantity = shipInventory != null && _specialFish != null ? shipInventory.CountFish(_specialFish) : 0;
+        int ownedWeight = GetOwnedSpecificFishWeight(_specialFish);
+        string weightText = campaignProgress.SpecialDeliveryRequiredWeight > 0
+            ? $" | Peso no barco: {ownedWeight}/{campaignProgress.SpecialDeliveryRequiredWeight} kg"
+            : string.Empty;
+
+        return $"No barco: {ownedQuantity}/{campaignProgress.SpecialDeliveryQuantity}{weightText}";
+    }
+
+    private int GetOwnedSpecificFishWeight(FishScriptableObject _specialFish)
+    {
+        if (_specialFish == null)
+            return 0;
+
+        int totalWeight = 0;
+
+        for (int i = 0; i < ownedFish.Count; i++)
+        {
+            FishData fish = ownedFish[i];
+
+            if (fish != null && fish.typeOfFish == _specialFish)
+                totalWeight += fish.weight;
+        }
+
+        return totalWeight;
+    }
+
+    private void ShowSpecialDeliveryFishPreview()
+    {
+        TryResolveReferences();
+
+        FishScriptableObject specialFish = IsCampaignSpecialDeliveryActive() && campaignProgress != null
+            ? campaignProgress.SpecialDeliveryFish
+            : null;
+
+        if (specialFish == null)
+        {
+            SetStatus("Nenhum peixe especial configurado.");
+            return;
+        }
+
+        if (fishPreviewPanel == null)
+        {
+            SetStatus("Painel de peixe nao configurado.");
+            return;
+        }
+
+        fishPreviewPanel.ShowFish(specialFish, PanelObject);
+    }
+
+    private void SetObjectActive(GameObject _target, bool _active)
+    {
+        if (_target != null)
+            _target.SetActive(_active);
+    }
+
+    private GameObject FindChildGameObject(params string[] _names)
+    {
+        Transform found = FindChildTransform(_names);
+        return found != null ? found.gameObject : null;
+    }
+
+    private T FindChildComponent<T>(params string[] _names) where T : Component
+    {
+        Transform found = FindChildTransform(_names);
+        return found != null ? found.GetComponent<T>() : null;
+    }
+
+    private Transform FindChildTransform(params string[] _names)
+    {
+        Transform[] children = PanelObject.GetComponentsInChildren<Transform>(true);
+
+        for (int i = 0; i < children.Length; i++)
+        {
+            Transform child = children[i];
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (child.name == _names[j])
+                    return child;
+            }
+        }
+
+        return null;
     }
 
     #endregion
