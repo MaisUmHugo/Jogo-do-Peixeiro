@@ -71,6 +71,7 @@ public class ForcedSleepController : MonoBehaviour
         ResetInput();
         PrepareFadeText();
         yield return FadeTo(1f, _fadeInDuration);
+        CompleteDayCycleSleep();
 
         if (FishingManager.instance != null && FishingManager.instance.IsFishing)
             FishingManager.instance.CancelFishing();
@@ -113,6 +114,12 @@ public class ForcedSleepController : MonoBehaviour
 
         SetGameState(GameManager.GameState.OnFoot);
         _isRunning = false;
+    }
+
+    private void CompleteDayCycleSleep()
+    {
+        if (_dayCycle != null)
+            _dayCycle.CompleteForcedSleepWakeUp();
     }
 
     private void TeleportPlayer()

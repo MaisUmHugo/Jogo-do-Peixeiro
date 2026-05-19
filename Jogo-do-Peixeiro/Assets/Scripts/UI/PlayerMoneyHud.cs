@@ -15,11 +15,13 @@ public class PlayerMoneyHud : MonoBehaviour
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
     [SerializeField] private DebtSystem debtSystem;
     [SerializeField] private CampaignProgressSystem campaignProgress;
+    [SerializeField] private DayCycle dayCycle;
 
     [Header("Settings")]
     [SerializeField] private bool showDebtWithMoneyWhenMissingText = true;
     [SerializeField] private bool showCampaignHud = true;
     [SerializeField] private bool autoResolveCampaignHudTexts = true;
+    [SerializeField] private bool useDayCycleTextColors = true;
     [SerializeField] private bool allowRuntimeFallback;
     [SerializeField] private bool logMissingReferences = true;
     [SerializeField] private string debtColor = "#D94A4A";
@@ -29,6 +31,7 @@ public class PlayerMoneyHud : MonoBehaviour
     private float currentMoney;
     private int currentDebt;
     private bool isCampaignSubscribed;
+    private bool isDayCycleSubscribed;
     private bool hasLoggedMissingCampaignHud;
 
     private void OnEnable()
@@ -40,6 +43,7 @@ public class PlayerMoneyHud : MonoBehaviour
         ResolveCampaignHudTexts();
         EnsureCampaignHud();
         SubscribeCampaignProgress();
+        SubscribeDayCycleVisuals();
 
         currentMoney = playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f;
         currentDebt = debtSystem != null ? debtSystem.CurrentDebt : 0;
@@ -52,6 +56,7 @@ public class PlayerMoneyHud : MonoBehaviour
         PlayerMoneyManager.OnMoneyChangeEvent -= UpdateMoneyText;
         DebtSystem.OnDebtChangedEvent -= UpdateDebtText;
         UnsubscribeCampaignProgress();
+        UnsubscribeDayCycleVisuals();
     }
 
     private void UpdateMoneyText(float _money)
@@ -90,6 +95,7 @@ public class PlayerMoneyHud : MonoBehaviour
         SetCampaignText(campaignQuestText, GetCampaignQuestLine());
         SetCampaignText(campaignDeadlineText, GetCampaignDeadlineLine());
         SetCampaignText(campaignGoalText, GetCampaignGoalLine());
+        ApplyHudTextColors();
     }
 
     private string GetDebtLine()
@@ -110,6 +116,9 @@ public class PlayerMoneyHud : MonoBehaviour
 
         if (campaignProgress == null)
             campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<DayCycle>();
     }
 
     private void ResolveCampaignHudTexts()
@@ -175,6 +184,35 @@ public class PlayerMoneyHud : MonoBehaviour
         campaignProgress.OnQuestDeadlineExpired -= RefreshHudText;
         campaignProgress.OnCampaignCompleted -= RefreshHudText;
         isCampaignSubscribed = false;
+    }
+
+    private void SubscribeDayCycleVisuals()
+    {
+        if (!useDayCycleTextColors || isDayCycleSubscribed)
+            return;
+
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<DayCycle>();
+
+        if (dayCycle == null)
+            return;
+
+        dayCycle.VisualModeChanged += HandleDayCycleVisualModeChanged;
+        isDayCycleSubscribed = true;
+    }
+
+    private void UnsubscribeDayCycleVisuals()
+    {
+        if (!isDayCycleSubscribed || dayCycle == null)
+            return;
+
+        dayCycle.VisualModeChanged -= HandleDayCycleVisualModeChanged;
+        isDayCycleSubscribed = false;
+    }
+
+    private void HandleDayCycleVisualModeChanged(bool _isDayVisualMode)
+    {
+        RefreshHudText();
     }
 
     private void EnsureCampaignHud()
@@ -258,6 +296,53 @@ public class PlayerMoneyHud : MonoBehaviour
         _text.text = hasText ? _value : string.Empty;
     }
 
+    private void ApplyHudTextColors()
+    {
+        Color primaryColor = GetPrimaryTextColor();
+        Color secondaryColor = GetSecondaryTextColor();
+
+        SetTextColor(moneyText, secondaryColor);
+        SetTextColor(debtText, secondaryColor);
+        SetTextColor(campaignText, secondaryColor);
+        SetTextColor(campaignQuestText, primaryColor);
+        SetTextColor(campaignDeadlineText, secondaryColor);
+        SetTextColor(campaignGoalText, secondaryColor);
+    }
+
+    private void SetTextColor(TMP_Text _text, Color _color)
+    {
+        if (_text != null)
+            _text.color = _color;
+    }
+
+    private Color GetPrimaryTextColor()
+    {
+        return useDayCycleTextColors && dayCycle != null
+            ? dayCycle.PrimaryHudTextColor
+            : Color.white;
+    }
+
+    private Color GetSecondaryTextColor()
+    {
+        return useDayCycleTextColors && dayCycle != null
+            ? dayCycle.SecondaryHudTextColor
+            : Color.white;
+    }
+
+    private string GetPrimaryTextColorHex()
+    {
+        return useDayCycleTextColors && dayCycle != null
+            ? dayCycle.PrimaryHudTextColorHex
+            : warningColor;
+    }
+
+    private string GetSecondaryTextColorHex()
+    {
+        return useDayCycleTextColors && dayCycle != null
+            ? dayCycle.SecondaryHudTextColorHex
+            : "#FFFFFF";
+    }
+
     private string GetCampaignLine()
     {
         if (!showCampaignHud || campaignProgress == null)
@@ -311,7 +396,7 @@ public class PlayerMoneyHud : MonoBehaviour
         if (campaignProgress.HasFailedCurrentQuest)
             return $"Prazo: <color={debtColor}>encerrado</color>";
 
-        string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? warningColor : "#FFFFFF";
+        string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? GetPrimaryTextColorHex() : GetSecondaryTextColorHex();
         return $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
     }
 
@@ -331,9 +416,7 @@ public class PlayerMoneyHud : MonoBehaviour
 
         if (campaignProgress.CurrentQuestRequiresSpecialDelivery)
         {
-            string fishName = campaignProgress.SpecialDeliveryFish != null
-                ? campaignProgress.SpecialDeliveryFish.fishName
-                : "peixe especial";
+            string fishName = GetFishDisplayName(campaignProgress.SpecialDeliveryFish);
 
             string weightText = campaignProgress.SpecialDeliveryRequiredWeight > 0
                 ? $" e {campaignProgress.SpecialDeliveryRequiredWeight}kg"
@@ -343,5 +426,13 @@ public class PlayerMoneyHud : MonoBehaviour
         }
 
         return $"Meta: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
+    }
+
+    private string GetFishDisplayName(FishScriptableObject _fish)
+    {
+        if (_fish == null)
+            return "peixe especial";
+
+        return !string.IsNullOrWhiteSpace(_fish.fishName) ? _fish.fishName : _fish.name;
     }
 }
