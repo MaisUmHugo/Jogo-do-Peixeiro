@@ -3338,6 +3338,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8e994c767a6c9a45ba0b3797445fc73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  visualTarget: {fileID: 0}
   normalScale: 1
   selectedScale: 1.1
   usePulse: 1
@@ -4357,35 +4358,42 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   panel: {fileID: 3035187247175787101}
   closeOnAwake: 1
+  pauseTimeWhileOpen: 1
+  hideHudWhileOpen: 1
+  blockPauseWhileOpen: 1
   sellTabButton: {fileID: 1731296982}
   upgradesTabButton: {fileID: 634487499}
   baitsTabButton: {fileID: 108812064}
   sellTabPanel: {fileID: 2035980265}
   upgradesTabPanel: {fileID: 1533265665}
   baitsTabPanel: {fileID: 1647917532}
-  fishListText: {fileID: 2031444864111678897}
-  totalValueText: {fileID: 8967464416482299116}
+  sellFishSlots: []
+  sellFishGridContent: {fileID: 0}
+  sellFishSlotTemplate: {fileID: 0}
+  autoCreateSellFishSlots: 0
+  keepSellSelectionVisibleInScroll: 1
+  sellFishScrollRect: {fileID: 0}
+  sellSelectionScrollPadding: 24
+  selectAllFishToggle: {fileID: 0}
+  selectedSaleValueText: {fileID: 0}
   moneyText: {fileID: 1838800967}
-  sellAllButton: {fileID: 6375362951879580819}
-  capacityUpgradeText: {fileID: 0}
-  capacityUpgradeButton: {fileID: 0}
-  boatSpeedUpgradeText: {fileID: 0}
-  boatSpeedUpgradeButton: {fileID: 0}
-  rodUpgradeText: {fileID: 0}
-  rodUpgradeButton: {fileID: 0}
-  fireproofBoatUpgradeText: {fileID: 0}
-  fireproofBoatUpgradeButton: {fileID: 0}
-  upgradesPlaceholderText: {fileID: 1730922766}
-  baitsPlaceholderText: {fileID: 0}
-  baitTexts: []
-  baitBuyButtons: []
+  sellSelectedButton: {fileID: 0}
+  capacityUpgradeRow: {fileID: 0}
+  boatSpeedUpgradeRow: {fileID: 0}
+  rodUpgradeRow: {fileID: 0}
+  fireproofBoatUpgradeRow: {fileID: 0}
+  keepUpgradeSelectionVisibleInScroll: 1
+  upgradesScrollRect: {fileID: 0}
+  upgradesSelectionScrollPadding: 0
+  baitShopUI: {fileID: 0}
+  purchaseConfirmUI: {fileID: 0}
   statusText: {fileID: 0}
+  statusMessageDuration: 1.15
+  statusMessageRise: 22
   closeButton: {fileID: 960467304}
   sellFirstSelected: {fileID: 0}
   upgradesFirstSelected: {fileID: 0}
   baitsFirstSelected: {fileID: 0}
-  allowRuntimeFallback: 0
-  logMissingReferences: 1
   fishMarket: {fileID: 762983091}
   dockUpgradeSystem: {fileID: 0}
   baitShop: {fileID: 762983093}
@@ -5576,6 +5584,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8e994c767a6c9a45ba0b3797445fc73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  visualTarget: {fileID: 0}
   normalScale: 1
   selectedScale: 1.1
   usePulse: 1
@@ -5855,6 +5864,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   dayCycle: {fileID: 1923923833}
   sleepUI: {fileID: 224823240}
+  pauseTimeWhileOpen: 1
+  hideHudWhileOpen: 1
+  blockPauseWhileOpen: 1
 --- !u!4 &1517858030 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 4032245004545196666, guid: 5df9e3c1bc43e5143bbd1c367dc81c22, type: 3}
@@ -6019,6 +6031,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: f8e994c767a6c9a45ba0b3797445fc73, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  visualTarget: {fileID: 0}
   normalScale: 1
   selectedScale: 1.1
   usePulse: 1
@@ -6703,17 +6716,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: a3baa9e2ff59f1f46990485217be0090, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
---- !u!114 &1730922766 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 9002000000000000016, guid: defef818672a5df4da3d785180d02030, type: 3}
-  m_PrefabInstance: {fileID: 4497281714677957395}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!114 &1731296982 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 9001000000000000005, guid: defef818672a5df4da3d785180d02030, type: 3}
@@ -7360,6 +7362,12 @@ MonoBehaviour:
   tutorialFailedFirstSelected: {fileID: 1183211993}
   pauseGameOnCompletion: 0
   pauseGameOnFailure: 1
+  generalOutcomePanel: {fileID: 0}
+  useGeneralOutcomePanel: 1
+  tutorialCompleteTitle: Tutorial concluido
+  tutorialCompleteMessage: Voce concluiu o tutorial.
+  tutorialFailureTitle: Falha na quest
+  tutorialFailureMessage: O prazo acabou antes de concluir a meta.
   firstTalkDialog:
     speakerName: Cobrador
     senteces:
@@ -7597,6 +7605,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: Water
       objectReference: {fileID: 0}
+    - target: {fileID: 5914047214984535719, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: -876546973899608171, guid: 1dbdbc599af48094597cb7bc2fe3efa2, type: 3}
     - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: speed
       value: 0.4
@@ -8229,17 +8241,6 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 1517858031}
   m_SourcePrefab: {fileID: 100100000, guid: 5df9e3c1bc43e5143bbd1c367dc81c22, type: 3}
---- !u!114 &2031444864111678897 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 3920699801493967293, guid: defef818672a5df4da3d785180d02030, type: 3}
-  m_PrefabInstance: {fileID: 4497281714677957395}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1 &3035187247175787101 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 6196093409790076373, guid: defef818672a5df4da3d785180d02030, type: 3}
@@ -8569,33 +8570,11 @@ PrefabInstance:
       insertIndex: -1
       addedObject: {fileID: 833635006}
   m_SourcePrefab: {fileID: 100100000, guid: d439ff154ffadf14da37bc398df083fc, type: 3}
---- !u!114 &6375362951879580819 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 7114874769037805135, guid: defef818672a5df4da3d785180d02030, type: 3}
-  m_PrefabInstance: {fileID: 4497281714677957395}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!224 &8903105701966114737 stripped
 RectTransform:
   m_CorrespondingSourceObject: {fileID: 5753798402316205594, guid: defef818672a5df4da3d785180d02030, type: 3}
   m_PrefabInstance: {fileID: 4497281714677957395}
   m_PrefabAsset: {fileID: 0}
---- !u!114 &8967464416482299116 stripped
-MonoBehaviour:
-  m_CorrespondingSourceObject: {fileID: 138832286277296833, guid: defef818672a5df4da3d785180d02030, type: 3}
-  m_PrefabInstance: {fileID: 4497281714677957395}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 0}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: f4688fdb7df04437aeb418b961361dc5, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
 --- !u!1660057539 &9223372036854775807
 SceneRoots:
   m_ObjectHideFlags: 0
