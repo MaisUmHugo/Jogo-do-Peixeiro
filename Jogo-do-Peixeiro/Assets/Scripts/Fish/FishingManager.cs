@@ -688,6 +688,7 @@ public class FishingManager : MonoBehaviour
 
         if (addedSuccessfully)
         {
+            FishCaptureHistory.RegisterCatch(_pendingFish.typeOfFish);
             Debug.Log($"Peixe capturado: {_pendingFish.typeOfFish.fishName} - {_pendingFish.weight}kg");
 
             bool showedCatchResult = TryShowCatchResult(_pendingFish);
