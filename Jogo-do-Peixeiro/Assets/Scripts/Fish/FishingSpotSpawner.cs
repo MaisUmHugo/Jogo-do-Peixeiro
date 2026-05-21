@@ -4,9 +4,68 @@ using UnityEngine;
 
 public class FishingSpotSpawner : MonoBehaviour
 {
+    [System.Serializable]
+    private class WaterMaterialAreaBinding
+    {
+        [SerializeField] private Material _material;
+        [SerializeField] private Shader _shader;
+        [SerializeField] private FishingAreaDefinition _fishingArea;
+
+        public FishingAreaDefinition FishingArea => _fishingArea;
+
+        public bool Matches(Material _waterMaterial)
+        {
+            if (_waterMaterial == null || _fishingArea == null)
+                return false;
+
+            if (_material != null &&
+                (_waterMaterial == _material || HaveSameBaseName(_waterMaterial, _material)))
+            {
+                return true;
+            }
+
+            return _shader != null && _waterMaterial.shader == _shader;
+        }
+
+        private static bool HaveSameBaseName(Material _a, Material _b)
+        {
+            return string.Equals(
+                GetBaseMaterialName(_a),
+                GetBaseMaterialName(_b),
+                System.StringComparison.OrdinalIgnoreCase
+            );
+        }
+
+        private static string GetBaseMaterialName(Material _material)
+        {
+            if (_material == null)
+                return string.Empty;
+
+            return _material.name.Replace(" (Instance)", string.Empty);
+        }
+    }
+
     [Header("Area")]
     [SerializeField] private FishingAreaDefinition _fishingArea;
     [SerializeField] private FishingSpot _spotPrefab;
+
+    [Header("Water Area Detection")]
+    [SerializeField] private bool _useWaterDepthArea;
+    [SerializeField] private GenerateWaterMesh _waterAreaSource;
+    [SerializeField] private FishingAreaDefinition _shallowFishingArea;
+    [SerializeField] private FishingAreaDefinition _deepFishingArea;
+
+    [Header("Material Area Detection")]
+    [SerializeField] private bool _useWaterMaterialArea = true;
+    [SerializeField] private WaterMaterialAreaBinding[] _waterMaterialAreas;
+    [SerializeField] private float _activeAreaProbeInterval = 0.5f;
+    [SerializeField] private bool _fallBackToDepthAreaWhenMaterialUnknown = true;
+
+    [Header("Active Area Focus")]
+    [SerializeField] private bool _clearOtherAreaSpotsOnAreaChanged = true;
+    [SerializeField] private bool _forceSpawnNearReferenceOnAreaChanged = true;
+    [SerializeField] private bool _showAreaChangedWarning;
+    [SerializeField] private string _areaChangedWarningFormat = "Nova area de pesca: {0}";
 
     [Header("Spawn")]
     [SerializeField] private bool _spawnAtStart = true;
@@ -49,7 +108,11 @@ public class FishingSpotSpawner : MonoBehaviour
 
     private readonly List<FishingSpot> _activeSpots = new();
     private Coroutine _respawnRoutine;
+    private Coroutine _activeAreaProbeRoutine;
     private float _lastSpotUseTime;
+    private FishingAreaDefinition _activeFishingArea;
+
+    public FishingAreaDefinition ActiveFishingArea => _activeFishingArea != null ? _activeFishingArea : _fishingArea;
 
     private void OnValidate()
     {
@@ -69,19 +132,124 @@ public class FishingSpotSpawner : MonoBehaviour
         _projectionBoundsPadding = Mathf.Max(0f, _projectionBoundsPadding);
         _raycastHeight = Mathf.Max(0f, _raycastHeight);
         _raycastDistance = Mathf.Max(0.1f, _raycastDistance);
+        _activeAreaProbeInterval = Mathf.Max(0.1f, _activeAreaProbeInterval);
     }
 
     private void Start()
     {
         _lastSpotUseTime = Time.time;
 
+        UpdateActiveFishingAreaFromReference(false);
+
         if (_spawnAtStart)
             SpawnMissingSpots();
+
+        if (_useWaterMaterialArea)
+            _activeAreaProbeRoutine = StartCoroutine(ActiveAreaProbeRoutine());
+    }
+
+    private void OnDisable()
+    {
+        if (_activeAreaProbeRoutine != null)
+        {
+            StopCoroutine(_activeAreaProbeRoutine);
+            _activeAreaProbeRoutine = null;
+        }
     }
 
     public void SpawnMissingSpots()
     {
         SpawnMissingSpots(false);
+    }
+
+    public void SetActiveFishingArea(FishingAreaDefinition _fishingAreaDefinition, bool _forceNearReference = true)
+    {
+        if (_fishingAreaDefinition == null)
+            return;
+
+        bool areaChanged = _activeFishingArea != _fishingAreaDefinition;
+        _activeFishingArea = _fishingAreaDefinition;
+        _lastSpotUseTime = Time.time;
+
+        if (_respawnRoutine != null)
+        {
+            StopCoroutine(_respawnRoutine);
+            _respawnRoutine = null;
+        }
+
+        if (_clearOtherAreaSpotsOnAreaChanged)
+            RemoveSpotsOutsideArea(_activeFishingArea);
+
+        bool shouldForceNearReference = areaChanged &&
+                                        _forceNearReference &&
+                                        _forceSpawnNearReferenceOnAreaChanged;
+
+        SpawnMissingSpots(shouldForceNearReference);
+
+        if (areaChanged && _showAreaChangedWarning && HUDWarningUI.Instance != null)
+            HUDWarningUI.Instance.ShowWarning(GetAreaChangedWarning(_activeFishingArea));
+    }
+
+    public void RefreshActiveFishingAreaFromReference(bool _forceNearReference = true)
+    {
+        UpdateActiveFishingAreaFromReference(_forceNearReference);
+    }
+
+    public string CycleDebugFishingArea()
+    {
+        if (_activeAreaProbeRoutine != null)
+        {
+            StopCoroutine(_activeAreaProbeRoutine);
+            _activeAreaProbeRoutine = null;
+        }
+
+        _useWaterMaterialArea = false;
+        _useWaterDepthArea = false;
+
+        FishingAreaDefinition nextArea = ActiveFishingArea == _shallowFishingArea
+            ? _deepFishingArea
+            : _shallowFishingArea;
+
+        if (nextArea == null)
+            nextArea = _deepFishingArea != null ? _deepFishingArea : _fishingArea;
+
+        if (nextArea == null)
+            return "Sem area configurada";
+
+        SetActiveFishingArea(nextArea, true);
+        return nextArea.DisplayName;
+    }
+
+    private IEnumerator ActiveAreaProbeRoutine()
+    {
+        WaitForSeconds wait = new WaitForSeconds(_activeAreaProbeInterval);
+
+        while (enabled)
+        {
+            UpdateActiveFishingAreaFromReference(true);
+            yield return wait;
+        }
+    }
+
+    private void UpdateActiveFishingAreaFromReference(bool _forceNearReference)
+    {
+        if (!_useWaterMaterialArea)
+            return;
+
+        Transform reference = GetSpawnReference();
+
+        if (reference == null)
+            return;
+
+        if (!TryProjectToWater(reference.position, out Vector3 waterPosition, out RaycastHit waterHit))
+            return;
+
+        FishingAreaDefinition detectedArea = GetFishingAreaForWaterHit(waterPosition, waterHit, false);
+
+        if (detectedArea == null || detectedArea == ActiveFishingArea)
+            return;
+
+        SetActiveFishingArea(detectedArea, _forceNearReference);
     }
 
     private void SpawnMissingSpots(bool _forceNearReference)
@@ -150,14 +318,19 @@ public class FishingSpotSpawner : MonoBehaviour
         {
             Vector3 spawnPosition = GetRandomSpawnPosition(_forceNearReference);
 
-            if (!TryProjectToWater(spawnPosition, out Vector3 waterPosition))
+            if (!TryProjectToWater(spawnPosition, out Vector3 waterPosition, out RaycastHit waterHit))
+                continue;
+
+            FishingAreaDefinition spawnArea = GetFishingAreaForWaterHit(waterPosition, waterHit, true);
+
+            if (_activeFishingArea != null && spawnArea != _activeFishingArea)
                 continue;
 
             if (!IsFarEnoughFromActiveSpots(waterPosition))
                 continue;
 
             FishingSpot spot = Instantiate(_spotPrefab, waterPosition, _spotPrefab.transform.rotation, transform);
-            spot.Initialize(_fishingArea, this, _spawnedSpotsDeactivateAfterFishingStarts);
+            spot.Initialize(spawnArea, this, _spawnedSpotsDeactivateAfterFishingStarts);
             _activeSpots.Add(spot);
 
             if (_replaceUnfishedSpots && _spotLifetime > 0f)
@@ -188,6 +361,156 @@ public class FishingSpotSpawner : MonoBehaviour
         );
 
         return transform.position + new Vector3(areaOffset.x, 0f, areaOffset.y);
+    }
+
+    private FishingAreaDefinition GetFishingAreaForWaterHit(Vector3 _waterPosition, RaycastHit _waterHit, bool _allowActiveAreaFallback)
+    {
+        if (_useWaterMaterialArea && TryGetFishingAreaFromWaterMaterial(_waterHit, out FishingAreaDefinition materialArea))
+            return materialArea;
+
+        if (_activeFishingArea != null && _allowActiveAreaFallback)
+            return _activeFishingArea;
+
+        if (!_useWaterDepthArea || (_useWaterMaterialArea && !_fallBackToDepthAreaWhenMaterialUnknown))
+            return _fishingArea;
+
+        if (_waterAreaSource == null)
+            _waterAreaSource = FindFirstObjectByType<GenerateWaterMesh>();
+
+        bool isDeepWater = _waterAreaSource != null && _waterAreaSource.IsDeepWater(_waterPosition);
+
+        if (isDeepWater && _deepFishingArea != null)
+            return _deepFishingArea;
+
+        if (!isDeepWater && _shallowFishingArea != null)
+            return _shallowFishingArea;
+
+        return _fishingArea;
+    }
+
+    private bool TryGetFishingAreaFromWaterMaterial(RaycastHit _waterHit, out FishingAreaDefinition _area)
+    {
+        _area = null;
+
+        if (_waterMaterialAreas == null || _waterMaterialAreas.Length == 0)
+            return false;
+
+        if (!TryGetWaterMaterial(_waterHit, out Material waterMaterial))
+            return false;
+
+        for (int i = 0; i < _waterMaterialAreas.Length; i++)
+        {
+            WaterMaterialAreaBinding binding = _waterMaterialAreas[i];
+
+            if (binding == null || !binding.Matches(waterMaterial))
+                continue;
+
+            _area = binding.FishingArea;
+            return _area != null;
+        }
+
+        return false;
+    }
+
+    private bool TryGetWaterMaterial(RaycastHit _waterHit, out Material _material)
+    {
+        _material = null;
+
+        if (_waterHit.collider == null)
+            return false;
+
+        Renderer renderer = _waterHit.collider.GetComponent<Renderer>();
+
+        if (renderer == null)
+            renderer = _waterHit.collider.GetComponentInParent<Renderer>();
+
+        if (renderer == null)
+            return false;
+
+        Material[] materials = renderer.sharedMaterials;
+
+        if (materials == null || materials.Length == 0)
+            return false;
+
+        if (materials.Length == 1)
+        {
+            _material = materials[0];
+            return _material != null;
+        }
+
+        int materialIndex = GetHitSubMeshMaterialIndex(_waterHit);
+        materialIndex = Mathf.Clamp(materialIndex, 0, materials.Length - 1);
+        _material = materials[materialIndex];
+        return _material != null;
+    }
+
+    private int GetHitSubMeshMaterialIndex(RaycastHit _waterHit)
+    {
+        MeshCollider meshCollider = _waterHit.collider as MeshCollider;
+        Mesh mesh = meshCollider != null ? meshCollider.sharedMesh : null;
+
+        if (mesh == null || _waterHit.triangleIndex < 0)
+            return 0;
+
+        int triangleOffset = 0;
+
+        for (int subMeshIndex = 0; subMeshIndex < mesh.subMeshCount; subMeshIndex++)
+        {
+            int triangleCount = mesh.GetTriangles(subMeshIndex).Length / 3;
+
+            if (_waterHit.triangleIndex < triangleOffset + triangleCount)
+                return subMeshIndex;
+
+            triangleOffset += triangleCount;
+        }
+
+        return 0;
+    }
+
+    private void RemoveSpotsOutsideArea(FishingAreaDefinition _targetArea)
+    {
+        for (int i = _activeSpots.Count - 1; i >= 0; i--)
+        {
+            FishingSpot spot = _activeSpots[i];
+
+            if (spot == null)
+            {
+                _activeSpots.RemoveAt(i);
+                continue;
+            }
+
+            if (spot.FishingArea == _targetArea)
+                continue;
+
+            _activeSpots.RemoveAt(i);
+            DestroySpotWithoutRespawn(spot);
+        }
+    }
+
+    private void DestroySpotWithoutRespawn(FishingSpot _spot)
+    {
+        if (_spot == null)
+            return;
+
+        if (Application.isPlaying)
+        {
+            Destroy(_spot.gameObject);
+            return;
+        }
+
+        DestroyImmediate(_spot.gameObject);
+    }
+
+    private string GetAreaChangedWarning(FishingAreaDefinition _area)
+    {
+        string areaName = _area != null && !string.IsNullOrWhiteSpace(_area.DisplayName)
+            ? _area.DisplayName
+            : "nova area";
+
+        if (string.IsNullOrWhiteSpace(_areaChangedWarningFormat))
+            return areaName;
+
+        return string.Format(_areaChangedWarningFormat, areaName);
     }
 
     private Vector3 GetReferenceRelativeSpawnPosition(bool _forceNearReference)
@@ -256,7 +579,13 @@ public class FishingSpotSpawner : MonoBehaviour
 
     private bool TryProjectToWater(Vector3 _position, out Vector3 _waterPosition)
     {
+        return TryProjectToWater(_position, out _waterPosition, out _);
+    }
+
+    private bool TryProjectToWater(Vector3 _position, out Vector3 _waterPosition, out RaycastHit _waterHit)
+    {
         _waterPosition = _position;
+        _waterHit = default;
 
         if (_waterLayer.value == 0)
             return true;
@@ -269,6 +598,7 @@ public class FishingSpotSpawner : MonoBehaviour
             return false;
 
         _waterPosition = hit.point;
+        _waterHit = hit;
         return true;
     }
 

@@ -6,7 +6,11 @@ public class BaitData : ScriptableObject
     [SerializeField] private string saveId;
     [SerializeField] private string baitName = "Isca";
     [TextArea, SerializeField] private string description;
+
+    [Header("Presentation")]
     [SerializeField] private Sprite inventoryIcon;
+
+    [Header("Shop")]
     [SerializeField, Min(0)] private int purchasePrice = 20;
     [SerializeField, Min(1)] private int purchaseQuantity = 1;
 
@@ -16,6 +20,7 @@ public class BaitData : ScriptableObject
     [SerializeField, Range(0.1f, 2f)] private float skillCheckIndicatorSpeedMultiplier = 1f;
     [SerializeField, Range(0.1f, 3f)] private float skillCheckSuccessZoneMultiplier = 1f;
     [SerializeField, Range(0.1f, 3f)] private float directionChangeIntervalMultiplier = 1f;
+    [SerializeField] private bool forcePerfectSkillCheckHits;
 
     public string SaveId => string.IsNullOrWhiteSpace(saveId) ? name : saveId;
     public string BaitName => string.IsNullOrWhiteSpace(baitName) ? name : baitName;
@@ -28,6 +33,7 @@ public class BaitData : ScriptableObject
     public float SkillCheckIndicatorSpeedMultiplier => skillCheckIndicatorSpeedMultiplier;
     public float SkillCheckSuccessZoneMultiplier => skillCheckSuccessZoneMultiplier;
     public float DirectionChangeIntervalMultiplier => directionChangeIntervalMultiplier;
+    public bool ForcePerfectSkillCheckHits => forcePerfectSkillCheckHits;
 
     public void InitializeRuntime(
         string _saveId,
@@ -39,7 +45,8 @@ public class BaitData : ScriptableObject
         float _catchProgressMultiplier,
         float _skillCheckIndicatorSpeedMultiplier,
         float _skillCheckSuccessZoneMultiplier,
-        float _directionChangeIntervalMultiplier)
+        float _directionChangeIntervalMultiplier,
+        bool _forcePerfectSkillCheckHits)
     {
         saveId = _saveId;
         baitName = _baitName;
@@ -51,6 +58,7 @@ public class BaitData : ScriptableObject
         skillCheckIndicatorSpeedMultiplier = Mathf.Clamp(_skillCheckIndicatorSpeedMultiplier, 0.1f, 2f);
         skillCheckSuccessZoneMultiplier = Mathf.Clamp(_skillCheckSuccessZoneMultiplier, 0.1f, 3f);
         directionChangeIntervalMultiplier = Mathf.Clamp(_directionChangeIntervalMultiplier, 0.1f, 3f);
+        forcePerfectSkillCheckHits = _forcePerfectSkillCheckHits;
         name = _saveId;
     }
 

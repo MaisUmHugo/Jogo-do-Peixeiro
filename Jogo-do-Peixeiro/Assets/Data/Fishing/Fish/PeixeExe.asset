@@ -20,6 +20,6 @@ MonoBehaviour:
   basePrice: 66
   spawnWeight: 2
   canBeRequestedByMoneyLender: 1
-  availabilityPeriod: 0
+  availabilityPeriod: 2
   fishName: Peixe.exe
-  description: Um peixe raro com comportamento estranho e bom retorno financeiro.
+  description: Um peixe extremamente agressivo, suas escamas ultrarealistas tendem a assustar diversos pescadores. Nao e um executavel.

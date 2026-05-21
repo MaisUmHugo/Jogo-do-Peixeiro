@@ -111,6 +111,7 @@ public class GameOutcomePanelUI : MonoBehaviour
         CurrentOutcomeType = _outcomeType;
         IsShowing = true;
         PanelObject.SetActive(true);
+        BringPanelToFront();
 
         if (titleText != null)
             titleText.text = string.IsNullOrWhiteSpace(_title) ? GetDefaultTitle(_outcomeType) : _title;
@@ -219,6 +220,30 @@ public class GameOutcomePanelUI : MonoBehaviour
     {
         SetObjectActive(completionButtonsGroup, _outcomeType == GameOutcomeType.Completion);
         SetObjectActive(failureButtonsGroup, _outcomeType == GameOutcomeType.Failure);
+    }
+
+    private void BringPanelToFront()
+    {
+        GameObject panelObject = PanelObject;
+
+        if (panelObject == null)
+            return;
+
+        Transform panelTransform = panelObject.transform;
+        panelTransform.SetAsLastSibling();
+
+        Canvas parentCanvas = panelObject.GetComponentInParent<Canvas>();
+
+        if (parentCanvas == null)
+            return;
+
+        Transform currentParent = panelTransform.parent;
+
+        while (currentParent != null && currentParent != parentCanvas.transform)
+        {
+            currentParent.SetAsLastSibling();
+            currentParent = currentParent.parent;
+        }
     }
 
     private Selectable GetFirstSelected(GameOutcomeType _outcomeType)

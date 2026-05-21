@@ -28,6 +28,8 @@ public class DockOwnerBaitShopUI : MonoBehaviour
     [SerializeField] private TMP_Text quantityWarningText;
     [SerializeField] private Button quantityConfirmButton;
     [SerializeField] private Button quantityCancelButton;
+    [SerializeField] private Button quantityDecreaseMouseButton;
+    [SerializeField] private Button quantityIncreaseMouseButton;
     [SerializeField] private Selectable quantityValueSelectable;
     [SerializeField] private Selectable quantityFirstSelected;
     [SerializeField, Min(0.1f)] private float quantityWarningDuration = 0.85f;
@@ -60,12 +62,14 @@ public class DockOwnerBaitShopUI : MonoBehaviour
     private void Awake()
     {
         ResolveSlots();
+        ResolveQuantityMouseButtons();
         BindButtons();
     }
 
     private void OnEnable()
     {
         ResolveSlots();
+        ResolveQuantityMouseButtons();
         BindButtons();
     }
 
@@ -92,6 +96,7 @@ public class DockOwnerBaitShopUI : MonoBehaviour
         setStatus = _setStatus;
         refreshOwner = _refreshOwner;
         ResolveSlots();
+        ResolveQuantityMouseButtons();
     }
 
     public void Refresh(float _playerMoney)
@@ -457,6 +462,8 @@ public class DockOwnerBaitShopUI : MonoBehaviour
 
         if (quantityConfirmButton != null)
             quantityConfirmButton.interactable = quantity > 0;
+
+        SetQuantityMouseButtonsInteractable(maxQuantity > 0);
     }
 
     private void ChangePendingBaitQuantity(int _delta)
@@ -706,6 +713,12 @@ public class DockOwnerBaitShopUI : MonoBehaviour
         if (quantityCancelButton != null)
             quantityCancelButton.onClick.AddListener(OnCancelPendingClicked);
 
+        if (quantityDecreaseMouseButton != null)
+            quantityDecreaseMouseButton.onClick.AddListener(OnDecreaseQuantityMouseClicked);
+
+        if (quantityIncreaseMouseButton != null)
+            quantityIncreaseMouseButton.onClick.AddListener(OnIncreaseQuantityMouseClicked);
+
         areButtonsBound = true;
     }
 
@@ -726,6 +739,12 @@ public class DockOwnerBaitShopUI : MonoBehaviour
 
         if (quantityCancelButton != null)
             quantityCancelButton.onClick.RemoveListener(OnCancelPendingClicked);
+
+        if (quantityDecreaseMouseButton != null)
+            quantityDecreaseMouseButton.onClick.RemoveListener(OnDecreaseQuantityMouseClicked);
+
+        if (quantityIncreaseMouseButton != null)
+            quantityIncreaseMouseButton.onClick.RemoveListener(OnIncreaseQuantityMouseClicked);
 
         areButtonsBound = false;
     }
@@ -775,6 +794,18 @@ public class DockOwnerBaitShopUI : MonoBehaviour
     private void OnCancelPendingClicked()
     {
         ClosePopup(true);
+    }
+
+    private void OnDecreaseQuantityMouseClicked()
+    {
+        ChangePendingBaitQuantity(-1);
+        ReselectQuantityValue();
+    }
+
+    private void OnIncreaseQuantityMouseClicked()
+    {
+        ChangePendingBaitQuantity(1);
+        ReselectQuantityValue();
     }
 
     private void SetObjectActive(GameObject _target, bool _active)
@@ -908,6 +939,81 @@ public class DockOwnerBaitShopUI : MonoBehaviour
             return quantityCancelButton;
 
         return quantityValueSelectable;
+    }
+
+    private void ResolveQuantityMouseButtons()
+    {
+        GameObject root = QuantityRoot != null ? QuantityRoot : gameObject;
+
+        if (quantityDecreaseMouseButton == null)
+        {
+            quantityDecreaseMouseButton = FindButtonInRoot(
+                root,
+                "QuantityDecreaseButton",
+                "DecreaseQuantityButton",
+                "QuantityMinusButton",
+                "MinusButton",
+                "DecreaseButton"
+            );
+        }
+
+        if (quantityIncreaseMouseButton == null)
+        {
+            quantityIncreaseMouseButton = FindButtonInRoot(
+                root,
+                "QuantityIncreaseButton",
+                "IncreaseQuantityButton",
+                "QuantityPlusButton",
+                "PlusButton",
+                "IncreaseButton"
+            );
+        }
+
+        ConfigureMouseOnlyQuantityButton(quantityDecreaseMouseButton);
+        ConfigureMouseOnlyQuantityButton(quantityIncreaseMouseButton);
+    }
+
+    private Button FindButtonInRoot(GameObject _root, params string[] _names)
+    {
+        if (_root == null || _names == null || _names.Length == 0)
+            return null;
+
+        Button[] buttons = _root.GetComponentsInChildren<Button>(true);
+
+        for (int i = 0; i < _names.Length; i++)
+        {
+            string targetName = _names[i];
+
+            for (int j = 0; j < buttons.Length; j++)
+            {
+                if (buttons[j] != null &&
+                    string.Equals(buttons[j].name, targetName, StringComparison.OrdinalIgnoreCase))
+                {
+                    return buttons[j];
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private void ConfigureMouseOnlyQuantityButton(Button _button)
+    {
+        if (_button == null)
+            return;
+
+        Navigation navigation = _button.navigation;
+        navigation.mode = Navigation.Mode.None;
+        _button.navigation = navigation;
+    }
+
+    private void SetQuantityMouseButtonsInteractable(bool _interactable)
+    {
+        if (quantityDecreaseMouseButton != null)
+            quantityDecreaseMouseButton.interactable = _interactable;
+
+        if (quantityIncreaseMouseButton != null)
+            quantityIncreaseMouseButton.interactable = _interactable;
     }
 
     private void SetStatus(string _message)

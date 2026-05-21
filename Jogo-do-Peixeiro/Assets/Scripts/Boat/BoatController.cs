@@ -250,7 +250,10 @@ public class BoatController : MonoBehaviour
             playerMove.ResetMovementState();
 
         if (playerAnimationController != null)
+        {
             playerAnimationController.ResetFishingAnimationState();
+            playerAnimationController.ResetFishingVisualOffset();
+        }
     }
 
     private void EnsurePlayerAnimatorEnabled()

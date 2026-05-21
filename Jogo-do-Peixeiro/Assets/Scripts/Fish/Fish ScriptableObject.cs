@@ -5,7 +5,8 @@ public enum FishAvailabilityPeriod
 {
     Any,
     Morning,
-    Night
+    Night,
+    Day
 }
 
 [CreateAssetMenu(fileName = "Fish", menuName = "New Fish")]
@@ -46,6 +47,7 @@ public class FishScriptableObject : ScriptableObject
         {
             FishAvailabilityPeriod.Morning => hour >= 5f && hour < 12f,
             FishAvailabilityPeriod.Night => hour >= 18f || hour < 5f,
+            FishAvailabilityPeriod.Day => hour >= 5f && hour < 18f,
             _ => true
         };
     }

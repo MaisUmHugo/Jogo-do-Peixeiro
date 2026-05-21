@@ -41,11 +41,16 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private string _pullDirectionParameter = "PullDirection";
 
     [Header("Fishing Offset")]
+    [SerializeField] private Transform _fishingOffsetTarget;
     [SerializeField] private float _fishingYOffset = -0.8f;
     [SerializeField] private float _fishingOffsetSmoothTime = 1.4f;
+    [SerializeField] private float _fishingOffsetResetThreshold = 0.01f;
 
     private float _currentFishingOffset;
     private float _fishingOffsetVelocity;
+    private Transform _fishingOffsetParent;
+    private Vector3 _fishingOffsetBaseLocalPosition;
+    private bool _hasFishingOffsetBase;
 
     [Header("Debug")]
     [SerializeField] private bool _logMissingParameters = true;
@@ -71,6 +76,8 @@ public class PlayerAnimationController : MonoBehaviour
         _positionMoveResetThreshold = Mathf.Max(0f, _positionMoveResetThreshold);
         _moveSpeedDampTime = Mathf.Max(0f, _moveSpeedDampTime);
         _afkIdleDelay = Mathf.Max(0f, _afkIdleDelay);
+        _fishingOffsetSmoothTime = Mathf.Max(0f, _fishingOffsetSmoothTime);
+        _fishingOffsetResetThreshold = Mathf.Max(0f, _fishingOffsetResetThreshold);
     }
 
     private void Awake()
@@ -98,21 +105,101 @@ public class PlayerAnimationController : MonoBehaviour
         if (_animator == null)
             return;
 
+        UpdateFishingVisualOffset();
+    }
+
+    public void ResetFishingVisualOffset()
+    {
+        Transform offsetTarget = ResolveFishingOffsetTarget();
+
+        if (offsetTarget != null &&
+            _hasFishingOffsetBase &&
+            offsetTarget.parent == _fishingOffsetParent)
+        {
+            offsetTarget.localPosition = _fishingOffsetBaseLocalPosition;
+        }
+
+        ClearFishingOffsetState();
+    }
+
+    private void UpdateFishingVisualOffset()
+    {
         float targetOffset = 0f;
+        bool isFishing = GameManager.instance != null && IsFishingState(GameManager.instance.currentState);
+        Transform offsetTarget = ResolveFishingOffsetTarget();
 
-        if (GameManager.instance != null && IsFishingState(GameManager.instance.currentState))
+        if (offsetTarget == null)
+            return;
+
+        if (!isFishing && !_hasFishingOffsetBase && Mathf.Abs(_currentFishingOffset) <= _fishingOffsetResetThreshold)
+            return;
+
+        if (_hasFishingOffsetBase && offsetTarget.parent != _fishingOffsetParent)
+        {
+            ClearFishingOffsetState();
+            return;
+        }
+
+        if (isFishing)
+        {
+            if (!_hasFishingOffsetBase)
+                CaptureFishingOffsetBase(offsetTarget);
+
             targetOffset = _fishingYOffset;
+        }
 
-        _currentFishingOffset = Mathf.SmoothDamp(
-            _currentFishingOffset,
-            targetOffset,
-            ref _fishingOffsetVelocity,
-            _fishingOffsetSmoothTime
-        );
+        if (_fishingOffsetSmoothTime <= 0f)
+        {
+            _currentFishingOffset = targetOffset;
+            _fishingOffsetVelocity = 0f;
+        }
+        else
+        {
+            _currentFishingOffset = Mathf.SmoothDamp(
+                _currentFishingOffset,
+                targetOffset,
+                ref _fishingOffsetVelocity,
+                _fishingOffsetSmoothTime
+            );
+        }
 
-        Vector3 pos = _animator.transform.localPosition;
-        pos.y = _currentFishingOffset;
-        _animator.transform.localPosition = pos;
+        if (_hasFishingOffsetBase)
+        {
+            Vector3 pos = _fishingOffsetBaseLocalPosition;
+            pos.y += _currentFishingOffset;
+            offsetTarget.localPosition = pos;
+        }
+
+        if (!isFishing && Mathf.Abs(_currentFishingOffset) <= _fishingOffsetResetThreshold)
+        {
+            if (_hasFishingOffsetBase)
+                offsetTarget.localPosition = _fishingOffsetBaseLocalPosition;
+
+            ClearFishingOffsetState();
+        }
+    }
+
+    private Transform ResolveFishingOffsetTarget()
+    {
+        if (_fishingOffsetTarget != null)
+            return _fishingOffsetTarget;
+
+        return _animator != null ? _animator.transform : null;
+    }
+
+    private void CaptureFishingOffsetBase(Transform _offsetTarget)
+    {
+        _fishingOffsetParent = _offsetTarget.parent;
+        _fishingOffsetBaseLocalPosition = _offsetTarget.localPosition;
+        _hasFishingOffsetBase = true;
+    }
+
+    private void ClearFishingOffsetState()
+    {
+        _currentFishingOffset = 0f;
+        _fishingOffsetVelocity = 0f;
+        _fishingOffsetParent = null;
+        _hasFishingOffsetBase = false;
     }
 
     public void TriggerCastRod()

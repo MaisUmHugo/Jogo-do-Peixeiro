@@ -37,14 +37,10 @@ public class DayCycle : MonoBehaviour
 
     [Header("HUD Visuals")]
     [SerializeField] private Image dayProgressBackplate;
-    [SerializeField] private Image dayProgressFill;
     [SerializeField] private RectTransform dayProgressTrack;
     [SerializeField] private RectTransform dayProgressHandle;
-    [SerializeField] private bool configureDayProgressFill = true;
-    [SerializeField] private bool resizeDayProgressFillRect = true;
+    [SerializeField] private bool autoResolveDayCycleHud = true;
     [SerializeField] private bool keepDayProgressHandleInsideTrack = true;
-    [SerializeField] private bool tintDayProgressFillOverTime = true;
-    [SerializeField] private Gradient dayProgressFillColorByTime = CreateDefaultDayProgressGradient();
     [SerializeField, Range(0f, 24f)] private float dayVisualStartHour = 6f;
     [SerializeField, Range(0f, 24f)] private float dayVisualEndHour = 18f;
     [SerializeField] private Color dayPrimaryTextColor = new Color(0.16f, 0.35f, 0.85f, 1f);
@@ -72,40 +68,17 @@ public class DayCycle : MonoBehaviour
     public int ElapsedDays => elapsedDays;
     public float NormalizedTime => currentTime;
     public bool IsHourTextVisible => HourText != null && HourText.gameObject.activeSelf;
-    public bool IsDayTextVisible => DayText != null && DayText.gameObject.activeSelf;
+    public bool IsDayTextVisible => IsDayCycleHudVisible();
     public bool IsDayVisualMode => isDayVisualMode;
     public Color PrimaryHudTextColor => isDayVisualMode ? dayPrimaryTextColor : nightPrimaryTextColor;
     public Color SecondaryHudTextColor => isDayVisualMode ? daySecondaryTextColor : nightSecondaryTextColor;
     public string PrimaryHudTextColorHex => $"#{ColorUtility.ToHtmlStringRGB(PrimaryHudTextColor)}";
     public string SecondaryHudTextColorHex => $"#{ColorUtility.ToHtmlStringRGB(SecondaryHudTextColor)}";
 
-    private static Gradient CreateDefaultDayProgressGradient()
-    {
-        Gradient gradient = new();
-        gradient.SetKeys(
-            new[]
-            {
-                new GradientColorKey(new Color(0.04f, 0.08f, 0.2f), 0f),
-                new GradientColorKey(new Color(0.04f, 0.08f, 0.2f), 0.2f),
-                new GradientColorKey(new Color(1f, 0.86f, 0.18f), 0.3f),
-                new GradientColorKey(new Color(1f, 0.86f, 0.18f), 0.62f),
-                new GradientColorKey(new Color(1f, 0.46f, 0.12f), 0.76f),
-                new GradientColorKey(new Color(0.04f, 0.08f, 0.2f), 0.88f),
-                new GradientColorKey(new Color(0.04f, 0.08f, 0.2f), 1f)
-            },
-            new[]
-            {
-                new GradientAlphaKey(1f, 0f),
-                new GradientAlphaKey(1f, 1f)
-            }
-        );
-
-        return gradient;
-    }
-
     void Start()
     {
-        ConfigureDayProgressFill();
+        ResolveDayCycleHudReferences();
+        HideHourText();
         UpdateDayUI();
         UpdateTime();
         UpdateDayProgress();
@@ -147,97 +120,44 @@ public class DayCycle : MonoBehaviour
 
     public void SetDayCycleHudVisible(bool _hourVisible, bool _dayVisible)
     {
-        if (HourText != null)
-            HourText.gameObject.SetActive(_hourVisible);
+        ResolveDayCycleHudReferences();
+        HideHourText();
 
         if (DayText != null)
             DayText.gameObject.SetActive(_dayVisible);
 
-        if (dayProgressBackplate != null)
-            dayProgressBackplate.gameObject.SetActive(_hourVisible || _dayVisible);
+        bool barVisible = _hourVisible || _dayVisible;
 
-        if (dayProgressFill != null)
-            dayProgressFill.gameObject.SetActive(_hourVisible || _dayVisible);
+        if (dayProgressBackplate != null)
+            dayProgressBackplate.gameObject.SetActive(barVisible);
 
         if (dayProgressTrack != null)
-            dayProgressTrack.gameObject.SetActive(_hourVisible || _dayVisible);
+            dayProgressTrack.gameObject.SetActive(barVisible);
 
         if (dayProgressHandle != null)
-            dayProgressHandle.gameObject.SetActive(_hourVisible || _dayVisible);
+            dayProgressHandle.gameObject.SetActive(barVisible);
     }
 
-    private void ConfigureDayProgressFill()
+    private bool IsDayCycleHudVisible()
     {
-        if (dayProgressFill == null || !configureDayProgressFill)
-            return;
+        ResolveDayCycleHudReferences();
 
-        if (dayProgressBackplate != null && dayProgressFill == dayProgressBackplate)
-        {
-            Debug.LogWarning(
-                "[DayCycle] Day Progress Fill esta usando a mesma Image do Backplate. " +
-                "Use uma Image filha separada para o fill, senao a barra de fundo inteira sera colorida.",
-                this
-            );
-        }
+        if (DayText != null && DayText.gameObject.activeSelf)
+            return true;
 
-        if (resizeDayProgressFillRect)
-        {
-            RectTransform fillTransform = dayProgressFill.rectTransform;
-            fillTransform.anchorMin = new Vector2(0f, 0f);
-            fillTransform.anchorMax = new Vector2(0f, 1f);
-            fillTransform.pivot = new Vector2(0f, 0.5f);
-            fillTransform.anchoredPosition = Vector2.zero;
-            fillTransform.sizeDelta = new Vector2(0f, 0f);
-            dayProgressFill.type = Image.Type.Simple;
-            return;
-        }
+        if (dayProgressBackplate != null && dayProgressBackplate.gameObject.activeSelf)
+            return true;
 
-        dayProgressFill.type = Image.Type.Filled;
-        dayProgressFill.fillMethod = Image.FillMethod.Horizontal;
-        dayProgressFill.fillOrigin = (int)Image.OriginHorizontal.Left;
+        if (dayProgressTrack != null && dayProgressTrack.gameObject.activeSelf)
+            return true;
+
+        return dayProgressHandle != null && dayProgressHandle.gameObject.activeSelf;
     }
 
     private void UpdateDayProgress()
     {
         float normalizedTime = Mathf.Clamp01(currentTime);
-
-        if (dayProgressFill != null)
-        {
-            UpdateDayProgressFillSize(normalizedTime);
-            UpdateDayProgressFillColor(normalizedTime);
-        }
-
         UpdateDayProgressHandle(normalizedTime);
-    }
-
-    private void UpdateDayProgressFillSize(float _normalizedTime)
-    {
-        if (!resizeDayProgressFillRect)
-        {
-            dayProgressFill.fillAmount = _normalizedTime;
-            return;
-        }
-
-        RectTransform track = GetDayProgressTrack();
-
-        if (track == null)
-            return;
-
-        RectTransform fillTransform = dayProgressFill.rectTransform;
-        float fillWidth = track.rect.width * Mathf.Clamp01(_normalizedTime);
-        fillTransform.anchorMin = new Vector2(0f, fillTransform.anchorMin.y);
-        fillTransform.anchorMax = new Vector2(0f, fillTransform.anchorMax.y);
-        fillTransform.pivot = new Vector2(0f, fillTransform.pivot.y);
-        fillTransform.anchoredPosition = new Vector2(0f, fillTransform.anchoredPosition.y);
-        fillTransform.sizeDelta = new Vector2(fillWidth, fillTransform.sizeDelta.y);
-    }
-
-    private void UpdateDayProgressFillColor(float _normalizedTime)
-    {
-        if (!tintDayProgressFillOverTime || dayProgressFillColorByTime == null)
-            return;
-
-        dayProgressFill.color = dayProgressFillColorByTime.Evaluate(Mathf.Clamp01(_normalizedTime));
     }
 
     private void UpdateDayProgressHandle(float _normalizedTime)
@@ -292,11 +212,58 @@ public class DayCycle : MonoBehaviour
         if (dayProgressBackplate != null)
             return dayProgressBackplate.rectTransform;
 
-        if (dayProgressFill == null)
+        return null;
+    }
+
+    private void ResolveDayCycleHudReferences()
+    {
+        if (!autoResolveDayCycleHud)
+            return;
+
+        if (DayText == null)
+            DayText = FindHudComponentByName<TextMeshProUGUI>("Days", "DayText", "DiaText");
+
+        if (HourText == null)
+            HourText = FindHudComponentByName<TextMeshProUGUI>("Time", "HourText", "Horas");
+
+        if (dayProgressBackplate == null)
+            dayProgressBackplate = FindHudComponentByName<Image>("DayProgressBackplate");
+
+        if (dayProgressTrack == null)
+            dayProgressTrack = FindHudComponentByName<RectTransform>("DayProgressTrack");
+
+        if (dayProgressHandle == null)
+            dayProgressHandle = FindHudComponentByName<RectTransform>("DayProgressHandle");
+    }
+
+    private T FindHudComponentByName<T>(params string[] _names) where T : Component
+    {
+        if (_names == null || _names.Length == 0)
             return null;
 
-        RectTransform fillParent = dayProgressFill.rectTransform.parent as RectTransform;
-        return fillParent != null ? fillParent : dayProgressFill.rectTransform;
+        T[] components = FindObjectsByType<T>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < components.Length; i++)
+        {
+            T component = components[i];
+
+            if (component == null)
+                continue;
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (string.Equals(component.gameObject.name, _names[j], StringComparison.OrdinalIgnoreCase))
+                    return component;
+            }
+        }
+
+        return null;
+    }
+
+    private void HideHourText()
+    {
+        if (HourText != null)
+            HourText.gameObject.SetActive(false);
     }
 
     private void UpdateHudVisualMode(bool _forceNotify)
@@ -377,20 +344,17 @@ public class DayCycle : MonoBehaviour
     {
         Clock = currentTime * 24f;
 
-        int hours24 = Mathf.FloorToInt(Clock);
-        int minutes = Mathf.FloorToInt((Clock % 1f) * 60f);
-
-        string period = hours24 >= 12 ? "PM" : "AM";
-
-        int hours12 = hours24 % 12;
-        if (hours12 == 0) hours12 = 12;
-
         if (HourText != null)
-            HourText.text = $"{hours12:00}:00 {period}";
-        //HourText.text = $"{hours12:00}:{minutes:00} {period}";
+            HourText.text = string.Empty;
     }
 
     public void NextDay()
+    {
+        AdvanceDay(true);
+        ResetSleepDeadlineState();
+    }
+
+    public void DebugAdvanceDay()
     {
         AdvanceDay(true);
         ResetSleepDeadlineState();

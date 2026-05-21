@@ -135,6 +135,12 @@ MonoBehaviour:
   resolution: 200
   size: 400
   waterMaterial: {fileID: -876546973899608171, guid: da62d6bbf110d1e4bb17099e26569424, type: 3}
+  darkWaterMaterial: {fileID: 0}
+  referenceObject: {fileID: 0}
+  boatTag: Boat
+  darkStartDistance: 10
+  darkMaxDistance: 100
+  deepAreaThreshold: 0.35
 --- !u!114 &8068605801289175824
 MonoBehaviour:
   m_ObjectHideFlags: 0

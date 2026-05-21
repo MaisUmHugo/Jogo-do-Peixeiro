@@ -381,6 +381,9 @@ public class FishSkillCheck : MonoBehaviour
 
     private FeedbackResult CalculateSuccessFeedback()
     {
+        if (_currentBait != null && _currentBait.ForcePerfectSkillCheckHits)
+            return FeedbackResult.Perfect;
+
         float center = (SuccessZoneStartNormalized + SuccessZoneEndNormalized) * 0.5f;
         float halfSize = (SuccessZoneEndNormalized - SuccessZoneStartNormalized) * 0.5f;
 

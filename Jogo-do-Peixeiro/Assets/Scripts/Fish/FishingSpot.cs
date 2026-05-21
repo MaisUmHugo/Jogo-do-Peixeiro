@@ -46,6 +46,8 @@ public class FishingSpot : MonoBehaviour
     private GameObject areaVFXInstance;
     private Coroutine escapeFadeRoutine;
 
+    public FishingAreaDefinition FishingArea => fishingArea;
+
     private void Awake()
     {
         originalScale = transform.localScale;

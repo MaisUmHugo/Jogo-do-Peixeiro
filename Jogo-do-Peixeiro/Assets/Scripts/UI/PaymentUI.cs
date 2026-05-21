@@ -183,6 +183,11 @@ public class PaymentUI : MonoBehaviour
         OpenInternal(_moneyLender, _tutorialController);
     }
 
+    public void ShowStatusMessage(string _message)
+    {
+        SetStatus(_message);
+    }
+
     private void OpenInternal(MoneyLender _moneyLender, CampaignQuestGuidanceController _tutorialController)
     {
         bool wasOpen = isOpen;
@@ -258,7 +263,7 @@ public class PaymentUI : MonoBehaviour
 
         if (shouldCloseAfterPayment)
         {
-            Close();
+            CloseAfterPotentialOutcome();
 
             if (tutorialController != null)
                 tutorialController.NotifyMoneyLenderDebtPayment(success, paidAmount, paymentResult);
@@ -315,6 +320,22 @@ public class PaymentUI : MonoBehaviour
             PlayDoorSfx(doorCloseSfx, doorCloseSfxVolume);
 
         CloseImmediate();
+        SetGameUiState(GameManager.GameState.OnFoot, true, false);
+    }
+
+    private void CloseAfterPotentialOutcome()
+    {
+        if (isOpen)
+            PlayDoorSfx(doorCloseSfx, doorCloseSfxVolume);
+
+        CloseImmediate();
+
+        if (UIModalManager.HasOpenModal)
+        {
+            SetGameUiState(GameManager.GameState.InUI, false, true);
+            return;
+        }
+
         SetGameUiState(GameManager.GameState.OnFoot, true, false);
     }
 
@@ -801,7 +822,7 @@ public class PaymentUI : MonoBehaviour
 
         if (success)
         {
-            Close();
+            CloseAfterPotentialOutcome();
 
             if (tutorialController != null)
                 tutorialController.NotifyMoneyLenderSpecialDeliveryCompleted();

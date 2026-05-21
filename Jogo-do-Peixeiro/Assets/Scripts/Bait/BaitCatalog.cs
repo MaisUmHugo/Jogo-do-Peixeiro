@@ -10,47 +10,60 @@ public static class BaitCatalog
         if (defaultBaits != null && defaultBaits.Length > 0)
             return defaultBaits;
 
+        defaultBaits = LoadResourceBaits();
+
+        if (defaultBaits != null && defaultBaits.Length > 0)
+            return defaultBaits;
+
         defaultBaits = new[]
         {
             CreateRuntimeBait(
                 "worms",
                 "Minhoca",
-                "Diminui um pouco o tempo ate a mordida.",
+                "Ponteiro do skill check 15% mais lento.",
                 20,
                 1,
+                1f,
+                1f,
                 0.85f,
                 1f,
                 1f,
-                1.05f,
-                1f
+                false
             ),
             CreateRuntimeBait(
                 "insects",
-                "Insetos",
-                "Ajuda o peixe a morder mais rapido e facilita a captura.",
+                "Inseto",
+                "Ponteiro do skill check 30% mais lento.",
                 40,
                 1,
-                0.75f,
-                1.08f,
-                0.95f,
-                1.1f,
-                1f
+                1f,
+                1f,
+                0.7f,
+                1f,
+                1f,
+                false
             ),
             CreateRuntimeBait(
                 "master_bait",
-                "Isca mestre",
-                "Bonus forte para mordida, progresso e skill check.",
+                "Isca Mestre",
+                "Ponteiro do skill check 50% mais lento e todo acerto vira critico.",
                 120,
                 1,
-                0.65f,
-                1.15f,
-                0.9f,
-                1.2f,
-                1.15f
+                1f,
+                1f,
+                0.5f,
+                1f,
+                1f,
+                true
             )
         };
 
         return defaultBaits;
+    }
+
+    public static void ReloadDefaultBaits()
+    {
+        defaultBaits = null;
     }
 
     public static BaitData[] GetBaitsOrDefault(BaitData[] _configuredBaits)
@@ -97,6 +110,49 @@ public static class BaitCatalog
                string.Equals(_bait.BaitName, _baitId, System.StringComparison.OrdinalIgnoreCase);
     }
 
+    private static BaitData[] LoadResourceBaits()
+    {
+        BaitData[] loadedBaits = Resources.LoadAll<BaitData>("Baits");
+
+        if (loadedBaits == null || loadedBaits.Length == 0)
+            return null;
+
+        List<BaitData> validBaits = new List<BaitData>();
+
+        for (int i = 0; i < loadedBaits.Length; i++)
+        {
+            if (loadedBaits[i] != null && !validBaits.Contains(loadedBaits[i]))
+                validBaits.Add(loadedBaits[i]);
+        }
+
+        validBaits.Sort(CompareBaitsByDefaultOrder);
+        return validBaits.ToArray();
+    }
+
+    private static int CompareBaitsByDefaultOrder(BaitData _left, BaitData _right)
+    {
+        return GetDefaultBaitOrder(_left).CompareTo(GetDefaultBaitOrder(_right));
+    }
+
+    private static int GetDefaultBaitOrder(BaitData _bait)
+    {
+        if (_bait == null)
+            return int.MaxValue;
+
+        string id = _bait.SaveId;
+
+        if (string.Equals(id, "worms", System.StringComparison.OrdinalIgnoreCase))
+            return 0;
+
+        if (string.Equals(id, "insects", System.StringComparison.OrdinalIgnoreCase))
+            return 1;
+
+        if (string.Equals(id, "master_bait", System.StringComparison.OrdinalIgnoreCase))
+            return 2;
+
+        return 100;
+    }
+
     private static BaitData CreateRuntimeBait(
         string _saveId,
         string _baitName,
@@ -107,7 +163,8 @@ public static class BaitCatalog
         float _catchProgressMultiplier,
         float _skillCheckIndicatorSpeedMultiplier,
         float _skillCheckSuccessZoneMultiplier,
-        float _directionChangeIntervalMultiplier)
+        float _directionChangeIntervalMultiplier,
+        bool _forcePerfectSkillCheckHits)
     {
         BaitData bait = ScriptableObject.CreateInstance<BaitData>();
         bait.InitializeRuntime(
@@ -120,7 +177,8 @@ public static class BaitCatalog
             _catchProgressMultiplier,
             _skillCheckIndicatorSpeedMultiplier,
             _skillCheckSuccessZoneMultiplier,
-            _directionChangeIntervalMultiplier
+            _directionChangeIntervalMultiplier,
+            _forcePerfectSkillCheckHits
         );
 
         return bait;

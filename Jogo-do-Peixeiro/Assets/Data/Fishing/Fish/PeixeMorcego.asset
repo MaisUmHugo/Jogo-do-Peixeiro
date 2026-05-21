@@ -22,4 +22,4 @@ MonoBehaviour:
   canBeRequestedByMoneyLender: 1
   availabilityPeriod: 2
   fishName: Peixe Morcego
-  description: Peixe noturno, encontrado durante a noite.
+  description: Atraido a luz e ao cheiro do crime.
