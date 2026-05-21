@@ -11,7 +11,7 @@ public class PauseManager : MonoBehaviour
     [Header("Panels")]
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject confirmPanel;
-    [SerializeField] private GameObject howToPlayPanel;
+    [SerializeField] private GameObject controlsPanel;
 
     [Header("Pause Visibility")]
     [SerializeField] private GameObject[] panelsToHideWhilePaused;
@@ -23,7 +23,7 @@ public class PauseManager : MonoBehaviour
     [Header("Navigation")]
     [SerializeField] private Selectable pauseFirstSelected;
     [SerializeField] private Selectable confirmFirstSelected;
-    [SerializeField] private Selectable howToPlayFirstSelected;
+    [SerializeField] private Selectable controlsFirstSelected;
 
     // guarda ação que será executada após confirmação 
     private Action confirmAction;
@@ -65,7 +65,7 @@ public class PauseManager : MonoBehaviour
         // garante que todos os painéis começam desligados
         if (pausePanel != null) pausePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
-        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
     }
 
     private void OnDestroy()
@@ -112,10 +112,9 @@ public class PauseManager : MonoBehaviour
             return;
         }
 
-        // se estiver no "Como Jogar" - volta pro pause
-        if (howToPlayPanel != null && howToPlayPanel.activeSelf)
+        if (controlsPanel != null && controlsPanel.activeSelf)
         {
-            CloseHowToPlayFromPause();
+            CloseControlsFromPause();
             return;
         }
 
@@ -134,9 +133,9 @@ public class PauseManager : MonoBehaviour
             return;
         }
 
-        if (howToPlayPanel != null && howToPlayPanel.activeSelf)
+        if (controlsPanel != null && controlsPanel.activeSelf)
         {
-            CloseHowToPlayFromPause();
+            CloseControlsFromPause();
             return;
         }
 
@@ -178,7 +177,7 @@ public class PauseManager : MonoBehaviour
         // ativa painel de pause e desativa outros
         if (pausePanel != null) pausePanel.SetActive(true);
         if (confirmPanel != null) confirmPanel.SetActive(false);
-        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
 
         SelectPausePanel();
     }
@@ -207,7 +206,7 @@ public class PauseManager : MonoBehaviour
         // desativa todos os painéis
         if (pausePanel != null) pausePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
-        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
 
         // limpa ação pendente
         ClearPauseSelection();
@@ -215,22 +214,21 @@ public class PauseManager : MonoBehaviour
         confirmAction = null;
     }
 
-    public void OpenHowToPlayFromPause()
+    public void OpenControlsFromPause()
     {
-        // abre painel "como jogar"
         StorePauseSelection();
 
         if (pausePanel != null) pausePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
-        if (howToPlayPanel != null) howToPlayPanel.SetActive(true);
+        if (controlsPanel != null) controlsPanel.SetActive(true);
 
-        SelectHowToPlayPanel();
+        SelectControlsPanel();
     }
 
-    public void CloseHowToPlayFromPause()
+    public void CloseControlsFromPause()
     {
         // volta para o pause
-        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
         if (pausePanel != null) pausePanel.SetActive(true);
 
         SelectPausePanel();
@@ -244,7 +242,7 @@ public class PauseManager : MonoBehaviour
 
         // abre painel de confirmação
         if (pausePanel != null) pausePanel.SetActive(false);
-        if (howToPlayPanel != null) howToPlayPanel.SetActive(false);
+        if (controlsPanel != null) controlsPanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(true);
 
         SelectConfirmPanel();
@@ -372,7 +370,7 @@ public class PauseManager : MonoBehaviour
     {
         return IsSameOrParent(panel, pausePanel) ||
                IsSameOrParent(panel, confirmPanel) ||
-               IsSameOrParent(panel, howToPlayPanel);
+               IsSameOrParent(panel, controlsPanel);
     }
 
     private bool IsSameOrParent(GameObject candidate, GameObject child)
@@ -394,16 +392,16 @@ public class PauseManager : MonoBehaviour
         UISelectionHelper.Select(confirmFirstSelected, confirmPanel);
     }
 
-    private void SelectHowToPlayPanel()
+    private void SelectControlsPanel()
     {
-        UISelectionHelper.Select(howToPlayFirstSelected, howToPlayPanel);
+        UISelectionHelper.Select(controlsFirstSelected, controlsPanel);
     }
 
     private void ClearPauseSelection()
     {
         UISelectionHelper.ClearSelection(pausePanel);
         UISelectionHelper.ClearSelection(confirmPanel);
-        UISelectionHelper.ClearSelection(howToPlayPanel);
+        UISelectionHelper.ClearSelection(controlsPanel);
     }
 
     private void StorePauseSelection()
