@@ -36,7 +36,14 @@ public class InputHandler : MonoBehaviour
         }
 
         instance = this;
+        DontDestroyOnLoad(gameObject);
         inputActions = new InputActions();
+    }
+
+    private void OnDestroy()
+    {
+        if (instance == this)
+            instance = null;
     }
 
     private void OnEnable()
