@@ -50,7 +50,6 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69acd70d789997d48a9ffc918cc5ec56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  _spookyFishObject: {fileID: 0}
   _timingDuration: 2.2
   _maxFails: 3
   _successBonus: 0.18
