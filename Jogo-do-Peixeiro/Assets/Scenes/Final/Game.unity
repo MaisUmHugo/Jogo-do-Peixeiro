@@ -963,6 +963,17 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8104924370711847714, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
   m_PrefabInstance: {fileID: 1183211992}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &153822543 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3060285024314494446, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 46e3dedc5ac66244c8c9334781bc4a11, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &211865285
 GameObject:
   m_ObjectHideFlags: 0
@@ -1202,6 +1213,10 @@ PrefabInstance:
       propertyPath: basicPanelSequence
       value: 
       objectReference: {fileID: 1183212000}
+    - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: generalOutcomePanel
+      value: 
+      objectReference: {fileID: 2044551107}
     - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: tutorialFailedPanel
       value: 
@@ -1896,6 +1911,11 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 8816962700375390361, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
   m_PrefabInstance: {fileID: 1183211992}
   m_PrefabAsset: {fileID: 0}
+--- !u!224 &890447237 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 2818214951862102031, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &934853008
 GameObject:
   m_ObjectHideFlags: 0
@@ -1936,6 +1956,11 @@ Transform:
 Transform:
   m_CorrespondingSourceObject: {fileID: 340691023402868448, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
   m_PrefabInstance: {fileID: 2047460351}
+  m_PrefabAsset: {fileID: 0}
+--- !u!224 &1025308120 stripped
+RectTransform:
+  m_CorrespondingSourceObject: {fileID: 7831899213513072115, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
   m_PrefabAsset: {fileID: 0}
 --- !u!1 &1030037965
 GameObject:
@@ -1982,7 +2007,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   campaignProgress: {fileID: 0}
-  outcomePanel: {fileID: 0}
+  outcomePanel: {fileID: 2044551107}
   debtSystem: {fileID: 1857173168}
   showQuestFailurePanel: 1
   pauseOnQuestFailure: 1
@@ -2489,6 +2514,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 4db9060e3c0648d79027fb57d807d2ac, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1231715060 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4831205404419501787, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 69acd70d789997d48a9ffc918cc5ec56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1341590122
@@ -3001,6 +3037,17 @@ Transform:
   m_Children: []
   m_Father: {fileID: 777769304}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &1611839940 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 8985022898183750969, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 40bbec53cdf5eed4f902dd1c4e7aaa6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1625533975
 GameObject:
   m_ObjectHideFlags: 0
@@ -3173,6 +3220,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 8884783820838179367, guid: d439ff154ffadf14da37bc398df083fc, type: 3}
   m_PrefabInstance: {fileID: 5381522070422688945}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &1709982250 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 5078289830462615356, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: fe87c0e1cc204ed48ad3b37840f39efc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1 &1711858602
 GameObject:
   m_ObjectHideFlags: 0
@@ -3717,10 +3775,10 @@ MonoBehaviour:
   totalDays: 3
   DayText: {fileID: 0}
   elapsedDays: 1
-  dayProgressBackplate: {fileID: 0}
+  dayProgressBackplate: {fileID: 1709982250}
   dayProgressFill: {fileID: 0}
-  dayProgressTrack: {fileID: 0}
-  dayProgressHandle: {fileID: 0}
+  dayProgressTrack: {fileID: 1025308120}
+  dayProgressHandle: {fileID: 890447237}
   configureDayProgressFill: 1
   resizeDayProgressFillRect: 1
   keepDayProgressHandleInsideTrack: 1
@@ -3879,6 +3937,17 @@ Transform:
   m_CorrespondingSourceObject: {fileID: 4714886759235506170, guid: 6508f708eb053904b8403b7434896666, type: 3}
   m_PrefabInstance: {fileID: 1457102924}
   m_PrefabAsset: {fileID: 0}
+--- !u!114 &2044551107 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 4601954985091168709, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d395a146a8d8417daf091ab5d47596cc, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
 --- !u!1001 &2047460351
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -4198,7 +4267,7 @@ PrefabInstance:
     - target: {fileID: 94024375582584941, guid: ea36245afc9db0a4f8cdd5feab620bf0, type: 3}
       propertyPath: _fishSkillCheck
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1231715060}
     - target: {fileID: 94024375582584941, guid: ea36245afc9db0a4f8cdd5feab620bf0, type: 3}
       propertyPath: fishBiteHandler
       value: 
@@ -4222,7 +4291,7 @@ PrefabInstance:
     - target: {fileID: 94024375582584941, guid: ea36245afc9db0a4f8cdd5feab620bf0, type: 3}
       propertyPath: _fishDirectionPull
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1611839940}
     - target: {fileID: 94024375582584941, guid: ea36245afc9db0a4f8cdd5feab620bf0, type: 3}
       propertyPath: _fishResultPanelUI
       value: 
@@ -4483,7 +4552,7 @@ PrefabInstance:
     - target: {fileID: 1873225989179664595, guid: 5b96911cbbe851f41b0273259648fd66, type: 3}
       propertyPath: _fishDirectionPull
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 1611839940}
     - target: {fileID: 3418760079812328034, guid: 5b96911cbbe851f41b0273259648fd66, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1.848587
@@ -4581,13 +4650,17 @@ PrefabInstance:
       value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 8629147022727816661, guid: 5b96911cbbe851f41b0273259648fd66, type: 3}
+      propertyPath: playerRoot
+      value: 
+      objectReference: {fileID: 1728700687}
+    - target: {fileID: 8629147022727816661, guid: 5b96911cbbe851f41b0273259648fd66, type: 3}
       propertyPath: playerCamera
       value: 
       objectReference: {fileID: 574899194}
     - target: {fileID: 8629147022727816661, guid: 5b96911cbbe851f41b0273259648fd66, type: 3}
       propertyPath: interactionUI
       value: 
-      objectReference: {fileID: 0}
+      objectReference: {fileID: 153822543}
     - target: {fileID: 9158752665431399116, guid: 5b96911cbbe851f41b0273259648fd66, type: 3}
       propertyPath: m_Name
       value: Personagem_Principal_Animacoes
