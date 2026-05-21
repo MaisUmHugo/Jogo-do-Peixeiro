@@ -1833,10 +1833,6 @@ PrefabInstance:
       value: 1.8
       objectReference: {fileID: 0}
     - target: {fileID: 100002, guid: ec9d4aa4b3f44d7e9e7f56459a15d91b, type: 3}
-      propertyPath: _spookyFishObject
-      value: 
-      objectReference: {fileID: 477870260}
-    - target: {fileID: 100002, guid: ec9d4aa4b3f44d7e9e7f56459a15d91b, type: 3}
       propertyPath: _fishDirectionPull
       value: 
       objectReference: {fileID: 1751399035}
@@ -4077,10 +4073,6 @@ PrefabInstance:
       propertyPath: badMissThreshold
       value: 0.6
       objectReference: {fileID: 0}
-    - target: {fileID: 4138304293193393139, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
-      propertyPath: _spookyFishObject
-      value: 
-      objectReference: {fileID: 477870260}
     - target: {fileID: 4138304293193393139, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: nearMissThreshold
       value: 0.25

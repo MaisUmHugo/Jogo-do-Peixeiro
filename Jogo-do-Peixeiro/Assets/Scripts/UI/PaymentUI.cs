@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using System.Text;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -25,21 +24,45 @@ public class PaymentUI : MonoBehaviour
     [SerializeField] private Selectable firstSelected;
 
     [Header("Texts References")]
-    [SerializeField] private TMP_Text paymentText;
-    [SerializeField] private TMP_Text fishesText;
     [SerializeField] private TMP_Text statusText;
+
+    [Header("Status Feedback")]
+    [SerializeField] private bool animateStatusText = true;
+    [SerializeField] private float statusVisibleDuration = 1.2f;
+    [SerializeField] private float statusFadeDuration = 0.35f;
+    [SerializeField] private float statusRiseDistance = 24f;
 
     [Header("Payment Mode Groups")]
     [SerializeField] private GameObject defaultPaymentGroup;
     [SerializeField] private GameObject specialDeliveryGroup;
 
+    [Header("Default Payment Texts")]
+    [SerializeField] private TMP_Text defaultTitleText;
+    [SerializeField] private TMP_Text defaultQuestText;
+    [SerializeField] private TMP_Text defaultDeadlineText;
+    [SerializeField] private TMP_Text defaultDebtText;
+    [SerializeField] private TMP_Text defaultGoalText;
+    [SerializeField] private TMP_Text defaultMoneyText;
+
     [Header("Special Delivery")]
+    [SerializeField] private TMP_Text specialDeliveryTitleText;
+    [SerializeField] private TMP_Text specialDeliveryQuestText;
+    [SerializeField] private TMP_Text specialDeliveryDeadlineText;
+    [SerializeField] private TMP_Text specialDeliveryDebtText;
     [SerializeField] private Image specialDeliveryFishImage;
     [SerializeField] private TMP_Text specialDeliveryFishNameText;
     [SerializeField] private TMP_Text specialDeliveryRequirementText;
     [SerializeField] private TMP_Text specialDeliveryOwnedText;
     [SerializeField] private Button specialDeliveryPreviewButton;
     [SerializeField] private FishPreviewPanelUI fishPreviewPanel;
+
+    [Header("Special Delivery Effects")]
+    [SerializeField] private bool animateSpecialDeliveryText = true;
+    [SerializeField] private TMP_Text[] specialDeliveryAnimatedTexts;
+    [SerializeField] private Gradient specialDeliveryTintGradient = CreateDefaultSpecialDeliveryTintGradient();
+    [SerializeField] private float specialDeliveryTintSpeed = 2.5f;
+    [SerializeField] private float specialDeliveryPulseSpeed = 5f;
+    [SerializeField] private float specialDeliveryPulseScale = 0.08f;
 
     [Header("Ship References")]
     [SerializeField] private ShipInventory shipInventory;
@@ -75,8 +98,31 @@ public class PaymentUI : MonoBehaviour
     private bool isInputSubscribed;
     private bool isCampaignSubscribed;
     private int modalToken = UIModalManager.InvalidToken;
+    private readonly Dictionary<TMP_Text, TextFxState> specialDeliveryTextVisualStates = new Dictionary<TMP_Text, TextFxState>();
+    private bool hasStatusOriginalState;
+    private Color statusOriginalColor;
+    private Vector3 statusOriginalLocalPosition;
+    private Vector2 statusOriginalAnchoredPosition;
+    private float statusMessageTimer;
+    private float statusMessageTotalDuration;
 
     private GameObject PanelObject => panel != null ? panel : gameObject;
+
+    #endregion
+
+    #region Types
+
+    private struct TextFxState
+    {
+        public Color Color;
+        public Vector3 LocalScale;
+
+        public TextFxState(Color _color, Vector3 _localScale)
+        {
+            Color = _color;
+            LocalScale = _localScale;
+        }
+    }
 
     #endregion
 
@@ -85,6 +131,7 @@ public class PaymentUI : MonoBehaviour
     private void Awake()
     {
         TryResolveReferences();
+        ClearStatusText();
 
         if (closeOnAwake)
             CloseImmediate();
@@ -106,7 +153,17 @@ public class PaymentUI : MonoBehaviour
         UnsubscribeInput();
         UnsubscribeFromReferences();
         UnsubscribeCampaignProgress();
+        RestoreSpecialDeliveryTextFx();
         UIModalManager.PopModal(ref modalToken);
+    }
+
+    private void Update()
+    {
+        if (!isOpen)
+            return;
+
+        UpdateStatusTextFeedback();
+        UpdateSpecialDeliveryTextFx();
     }
 
     #endregion
@@ -234,7 +291,6 @@ public class PaymentUI : MonoBehaviour
     {
         RefreshInventorySnapshot();
         SetPaymentTexts();
-        SetFishListText();
         SetPaymentModeVisuals();
         SetPayButtonState();
         EnsureSelectionIsUsable();
@@ -266,6 +322,8 @@ public class PaymentUI : MonoBehaviour
     {
         UISelectionHelper.ClearSelection(PanelObject);
         isOpen = false;
+        ClearStatusText();
+        RestoreSpecialDeliveryTextFx();
         UIModalManager.PopModal(ref modalToken);
         PanelObject.SetActive(false);
     }
@@ -329,6 +387,36 @@ public class PaymentUI : MonoBehaviour
 
         if (specialDeliveryGroup == null)
             specialDeliveryGroup = FindChildGameObject("SpecialDeliveryGroup", "SpecialDeliveryPanel", "EntregaEspecialGroup");
+
+        if (defaultTitleText == null)
+            defaultTitleText = FindChildComponent<TMP_Text>("DefaultTitleText", "PaymentTitleText", "TituloPagamentoText");
+
+        if (defaultQuestText == null)
+            defaultQuestText = FindChildComponent<TMP_Text>("DefaultQuestText", "PaymentQuestText", "QuestPaymentText");
+
+        if (defaultDeadlineText == null)
+            defaultDeadlineText = FindChildComponent<TMP_Text>("DefaultDeadlineText", "PaymentDeadlineText", "PrazoPagamentoText");
+
+        if (defaultDebtText == null)
+            defaultDebtText = FindChildComponent<TMP_Text>("DefaultDebtText", "DebtValueText", "DividaText");
+
+        if (defaultGoalText == null)
+            defaultGoalText = FindChildComponent<TMP_Text>("DefaultGoalText", "PaymentGoalText", "MetaPagamentoText");
+
+        if (defaultMoneyText == null)
+            defaultMoneyText = FindChildComponent<TMP_Text>("DefaultMoneyText", "PlayerMoneyText", "DinheiroText");
+
+        if (specialDeliveryTitleText == null)
+            specialDeliveryTitleText = FindChildComponent<TMP_Text>("SpecialDeliveryTitleText", "EntregaEspecialTitleText");
+
+        if (specialDeliveryQuestText == null)
+            specialDeliveryQuestText = FindChildComponent<TMP_Text>("SpecialDeliveryQuestText", "SpecialQuestText");
+
+        if (specialDeliveryDeadlineText == null)
+            specialDeliveryDeadlineText = FindChildComponent<TMP_Text>("SpecialDeliveryDeadlineText", "SpecialDeadlineText");
+
+        if (specialDeliveryDebtText == null)
+            specialDeliveryDebtText = FindChildComponent<TMP_Text>("SpecialDeliveryDebtText", "SpecialDebtText");
 
         if (specialDeliveryPreviewButton == null)
             specialDeliveryPreviewButton = FindChildComponent<Button>("SpecialFishPreviewButton", "PreviewFishButton", "VerPeixeButton");
@@ -489,11 +577,10 @@ public class PaymentUI : MonoBehaviour
         ownedFish.Clear();
 
         if (_fishList != null)
-            ownedFish.AddRange(_fishList);
+        ownedFish.AddRange(_fishList);
 
         fishWeight = _fishWeight;
         SetPaymentTexts();
-        SetFishListText();
         SetPayButtonState();
     }
 
@@ -519,70 +606,158 @@ public class PaymentUI : MonoBehaviour
 
     private void SetPaymentTexts()
     {
-        if (paymentText == null)
-            return;
+        SetSeparatedPaymentTexts();
+    }
 
+    private void SetSeparatedPaymentTexts()
+    {
         if (ShouldUseTutorialPayment())
         {
-            int ownedRequestedFish = tutorialController.OwnedRequestedFishCount;
-            int requestedQuantity = tutorialController.RequestedQuantity;
-            int requestedWeight = tutorialController.RequestedTotalWeight;
-            string fishColor = tutorialController.HasEnoughRequestedFish ? "green" : "red";
-            string weightColor = tutorialController.HasEnoughRequestedWeight ? "green" : "red";
-
-            paymentText.text =
-                $"Pedido: <color={fishColor}>{ownedRequestedFish}</color> / {requestedQuantity} {tutorialController.RequestedFishName}\n" +
-                $"Peso: <color={weightColor}>{fishWeight:0}</color> / {requestedWeight} kg";
+            SetTutorialSeparatedTexts();
             return;
         }
 
         if (IsCampaignSpecialDeliveryActive())
         {
-            paymentText.text = GetCampaignSpecialDeliveryText();
+            SetSpecialDeliverySeparatedTexts();
             return;
         }
 
-        if (IsCampaignPaymentActive())
-        {
-            paymentText.text = GetCampaignPaymentText();
-            return;
-        }
-
-        string moneyColor = playerMoney >= currentDebtPayment ? "green" : "red";
-        string debtColor = currentDebtBalance > 0 ? "red" : "green";
-        string debtValue = currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
-        paymentText.text =
-            $"Divida total: <color={debtColor}>{debtValue}</color>\n" +
-            $"Pagamento: R$ {currentDebtPayment}\n" +
-            $"Dinheiro: <color={moneyColor}>R$ {playerMoney:0}</color>";
+        SetDefaultPaymentSeparatedTexts();
     }
 
-    private void SetFishListText()
+    private void SetTutorialSeparatedTexts()
     {
-        if (fishesText == null)
+        int ownedRequestedFish = tutorialController != null ? tutorialController.OwnedRequestedFishCount : 0;
+        int requestedQuantity = tutorialController != null ? tutorialController.RequestedQuantity : 0;
+        int requestedWeight = tutorialController != null ? tutorialController.RequestedTotalWeight : 0;
+        string requestedFishName = tutorialController != null ? tutorialController.RequestedFishName : "peixe";
+        string weightText = requestedWeight > 0 ? $" | Peso: {fishWeight:0}/{requestedWeight} kg" : string.Empty;
+
+        SetText(defaultTitleText, "Pedido");
+        SetText(defaultQuestText, "Quest 1 - Tutorial");
+        SetText(defaultDeadlineText, GetDeadlineLine());
+        SetText(defaultDebtText, GetDebtLine());
+        SetText(defaultGoalText, $"Pedido: {ownedRequestedFish}/{requestedQuantity} {requestedFishName}{weightText}");
+        SetText(defaultMoneyText, $"Dinheiro: R$ {playerMoney:0}");
+
+        ClearSpecialDeliverySeparatedTexts();
+    }
+
+    private void SetDefaultPaymentSeparatedTexts()
+    {
+        string debtValue = GetDebtValueText();
+
+        SetText(defaultTitleText, "Divida");
+        SetText(defaultQuestText, GetQuestLine());
+        SetText(defaultDeadlineText, GetDeadlineLine());
+        SetText(defaultDebtText, $"Divida total: {debtValue}");
+        SetText(defaultGoalText, GetGoalLine());
+        SetText(defaultMoneyText, $"Dinheiro: R$ {playerMoney:0}");
+
+        ClearSpecialDeliverySeparatedTexts();
+    }
+
+    private void SetSpecialDeliverySeparatedTexts()
+    {
+        FishScriptableObject specialFish = campaignProgress != null ? campaignProgress.SpecialDeliveryFish : null;
+
+        SetText(specialDeliveryTitleText, "Entrega especial");
+        SetText(specialDeliveryQuestText, GetQuestLine());
+        SetText(specialDeliveryDeadlineText, GetDeadlineLine());
+        SetText(specialDeliveryDebtText, $"Divida total: {GetDebtValueText()}");
+        SetSpecialDeliveryVisuals(true);
+
+        ClearDefaultPaymentSeparatedTexts();
+    }
+
+    private void ClearDefaultPaymentSeparatedTexts()
+    {
+        SetText(defaultTitleText, string.Empty);
+        SetText(defaultQuestText, string.Empty);
+        SetText(defaultDeadlineText, string.Empty);
+        SetText(defaultDebtText, string.Empty);
+        SetText(defaultGoalText, string.Empty);
+        SetText(defaultMoneyText, string.Empty);
+    }
+
+    private void ClearSpecialDeliverySeparatedTexts()
+    {
+        RestoreSpecialDeliveryTextFx();
+        SetText(specialDeliveryTitleText, string.Empty);
+        SetText(specialDeliveryQuestText, string.Empty);
+        SetText(specialDeliveryDeadlineText, string.Empty);
+        SetText(specialDeliveryDebtText, string.Empty);
+    }
+
+    private void SetText(TMP_Text _text, string _value)
+    {
+        if (_text == null)
             return;
 
-        if (ownedFish.Count == 0)
+        bool hasValue = !string.IsNullOrWhiteSpace(_value);
+        _text.gameObject.SetActive(hasValue);
+        _text.text = hasValue ? _value : string.Empty;
+    }
+
+    private string GetQuestLine()
+    {
+        if (campaignProgress == null || campaignProgress.GameMode != GameProgressMode.Campaign)
+            return string.Empty;
+
+        if (campaignProgress.IsCampaignCompleted)
+            return "Campanha concluida";
+
+        string questLabel = $"Quest {campaignProgress.CurrentQuestIndex}";
+
+        if (campaignProgress.IsCurrentQuestTutorial)
+            return $"{questLabel} - Tutorial";
+
+        if (campaignProgress.IsCurrentQuestFinal)
+            return $"{questLabel} - Final";
+
+        return string.IsNullOrWhiteSpace(campaignProgress.CurrentQuestName)
+            ? questLabel
+            : $"{questLabel} - {campaignProgress.CurrentQuestName}";
+    }
+
+    private string GetDeadlineLine()
+    {
+        if (campaignProgress == null ||
+            campaignProgress.GameMode != GameProgressMode.Campaign ||
+            campaignProgress.IsCampaignCompleted)
         {
-            fishesText.text = "Nenhum peixe no barco.";
-            return;
+            return string.Empty;
         }
 
-        StringBuilder builder = new StringBuilder();
+        return campaignProgress.HasFailedCurrentQuest
+            ? "Prazo: encerrado"
+            : $"Prazo: {campaignProgress.DaysRemainingInCurrentQuest} dia(s)";
+    }
 
-        foreach (FishData fish in ownedFish)
+    private string GetGoalLine()
+    {
+        if (campaignProgress == null ||
+            campaignProgress.GameMode != GameProgressMode.Campaign ||
+            campaignProgress.IsCampaignCompleted)
         {
-            if (fish == null || fish.typeOfFish == null)
-                continue;
-
-            builder.Append(fish.typeOfFish.fishName);
-            builder.Append(", peso: ");
-            builder.Append(fish.weight);
-            builder.Append(" kg, valor: R$ ");
-            builder.AppendLine(FishPriceCalculator.CalculatePrice(fish).ToString());
+            return string.Empty;
         }
 
-        fishesText.text = builder.ToString();
+        if (campaignProgress.HasFailedCurrentQuest)
+            return "Meta falhou";
+
+        return $"Meta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget} | Falta: R$ {campaignProgress.QuestDebtPaymentRemaining}";
+    }
+
+    private string GetDebtLine()
+    {
+        return $"Divida total: {GetDebtValueText()}";
+    }
+
+    private string GetDebtValueText()
+    {
+        return currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
     }
 
     #endregion
@@ -652,61 +827,12 @@ public class PaymentUI : MonoBehaviour
         };
     }
 
-    private bool IsCampaignPaymentActive()
-    {
-        return campaignProgress != null &&
-               campaignProgress.GameMode == GameProgressMode.Campaign &&
-               !campaignProgress.IsCampaignCompleted &&
-               !campaignProgress.CurrentQuestRequiresSpecialDelivery;
-    }
-
     private bool IsCampaignSpecialDeliveryActive()
     {
         return campaignProgress != null &&
                campaignProgress.GameMode == GameProgressMode.Campaign &&
                !campaignProgress.IsCampaignCompleted &&
                campaignProgress.CurrentQuestRequiresSpecialDelivery;
-    }
-
-    private string GetCampaignPaymentText()
-    {
-        if (campaignProgress.HasFailedCurrentQuest)
-            return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}\n<color=red>Prazo encerrado.</color>\nA quest falhou.";
-
-        string moneyColor = playerMoney > 0 ? "green" : "red";
-        string debtColor = currentDebtBalance > 0 ? "red" : "green";
-        string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? "#F2C94C" : "white";
-        string debtValue = currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
-        int questRemaining = campaignProgress.QuestDebtPaymentRemaining;
-
-        return
-            $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}: {campaignProgress.CurrentQuestName}\n" +
-            $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>\n" +
-            $"Meta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}\n" +
-            $"Falta na quest: R$ {questRemaining}\n" +
-            $"Pagamento agora: R$ {currentDebtPayment}\n" +
-            $"Divida total: <color={debtColor}>{debtValue}</color>\n" +
-            $"Dinheiro: <color={moneyColor}>R$ {playerMoney:0}</color>";
-    }
-
-    private string GetCampaignSpecialDeliveryText()
-    {
-        if (campaignProgress.HasFailedCurrentQuest)
-            return $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}\n<color=red>Prazo encerrado.</color>\nA entrega falhou.";
-
-        FishScriptableObject specialFish = campaignProgress.SpecialDeliveryFish;
-        string fishName = GetFishDisplayName(specialFish);
-        int requiredQuantity = campaignProgress.SpecialDeliveryQuantity;
-        int ownedQuantity = shipInventory != null && specialFish != null ? shipInventory.CountFish(specialFish) : 0;
-        string fishColor = ownedQuantity >= requiredQuantity && requiredQuantity > 0 ? "green" : "red";
-        string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? "#F2C94C" : "white";
-        string debtValue = currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
-
-        return
-            $"Quest {campaignProgress.CurrentQuestIndex}/{campaignProgress.MaxQuestCount}: entrega especial\n" +
-            $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>\n" +
-            $"Entregue: <color={fishColor}>{ownedQuantity}</color>/{requiredQuantity} {fishName}\n" +
-            $"Divida total: <color=red>{debtValue}</color>";
     }
 
     private string GetFishDisplayName(FishScriptableObject _fish)
@@ -759,6 +885,10 @@ public class PaymentUI : MonoBehaviour
 
         SetObjectActive(defaultPaymentGroup, !isSpecialDelivery);
         SetObjectActive(specialDeliveryGroup, isSpecialDelivery);
+
+        if (!isSpecialDelivery)
+            RestoreSpecialDeliveryTextFx();
+
         SetSpecialDeliveryVisuals(isSpecialDelivery);
     }
 
@@ -808,12 +938,25 @@ public class PaymentUI : MonoBehaviour
             return string.Empty;
 
         int ownedQuantity = shipInventory != null && _specialFish != null ? shipInventory.CountFish(_specialFish) : 0;
+        int requiredQuantity = Mathf.Max(0, campaignProgress.SpecialDeliveryQuantity);
+        int missingQuantity = Mathf.Max(0, requiredQuantity - ownedQuantity);
         int ownedWeight = GetOwnedSpecificFishWeight(_specialFish);
+        string fishLabel = ownedQuantity == 1 ? "peixe" : "peixes";
+        string missingFishLabel = missingQuantity == 1 ? "peixe" : "peixes";
+        string missingText = missingQuantity > 0 ? $" | Faltam: {missingQuantity} {missingFishLabel}" : " | Pedido completo";
         string weightText = campaignProgress.SpecialDeliveryRequiredWeight > 0
-            ? $" | Peso no barco: {ownedWeight}/{campaignProgress.SpecialDeliveryRequiredWeight} kg"
+            ? GetSpecialDeliveryOwnedWeightText(ownedWeight)
             : string.Empty;
 
-        return $"No barco: {ownedQuantity}/{campaignProgress.SpecialDeliveryQuantity}{weightText}";
+        return $"Possui: {ownedQuantity}/{requiredQuantity} {fishLabel}{missingText}{weightText}";
+    }
+
+    private string GetSpecialDeliveryOwnedWeightText(int _ownedWeight)
+    {
+        int requiredWeight = Mathf.Max(0, campaignProgress.SpecialDeliveryRequiredWeight);
+        int missingWeight = Mathf.Max(0, requiredWeight - _ownedWeight);
+        string missingWeightText = missingWeight > 0 ? $" | Faltam: {missingWeight} kg" : string.Empty;
+        return $" | Peso: {_ownedWeight}/{requiredWeight} kg{missingWeightText}";
     }
 
     private int GetOwnedSpecificFishWeight(FishScriptableObject _specialFish)
@@ -895,6 +1038,99 @@ public class PaymentUI : MonoBehaviour
 
     #endregion
 
+    #region Special Delivery Text Effects
+
+    private void UpdateSpecialDeliveryTextFx()
+    {
+        if (!animateSpecialDeliveryText || !IsCampaignSpecialDeliveryActive())
+            return;
+
+        float colorTime = Mathf.Repeat(Time.unscaledTime * specialDeliveryTintSpeed, 1f);
+        float pulse = 1f + Mathf.Sin(Time.unscaledTime * specialDeliveryPulseSpeed) * specialDeliveryPulseScale;
+        Color tint = specialDeliveryTintGradient != null
+            ? specialDeliveryTintGradient.Evaluate(colorTime)
+            : Color.white;
+
+        bool hasAssignedTexts = false;
+
+        if (specialDeliveryAnimatedTexts != null)
+        {
+            for (int i = 0; i < specialDeliveryAnimatedTexts.Length; i++)
+            {
+                TMP_Text text = specialDeliveryAnimatedTexts[i];
+
+                if (text == null)
+                    continue;
+
+                hasAssignedTexts = true;
+                ApplySpecialDeliveryTextFx(text, tint, pulse);
+            }
+        }
+
+        if (hasAssignedTexts)
+            return;
+
+        ApplySpecialDeliveryTextFx(specialDeliveryTitleText, tint, pulse);
+        ApplySpecialDeliveryTextFx(specialDeliveryRequirementText, tint, pulse);
+    }
+
+    private void ApplySpecialDeliveryTextFx(TMP_Text _text, Color _color, float _scale)
+    {
+        if (_text == null || !_text.gameObject.activeInHierarchy)
+            return;
+
+        StoreSpecialDeliveryTextState(_text);
+        TextFxState originalState = specialDeliveryTextVisualStates[_text];
+        _text.color = _color;
+        _text.transform.localScale = originalState.LocalScale * _scale;
+    }
+
+    private void StoreSpecialDeliveryTextState(TMP_Text _text)
+    {
+        if (_text == null || specialDeliveryTextVisualStates.ContainsKey(_text))
+            return;
+
+        specialDeliveryTextVisualStates.Add(_text, new TextFxState(_text.color, _text.transform.localScale));
+    }
+
+    private void RestoreSpecialDeliveryTextFx()
+    {
+        foreach (KeyValuePair<TMP_Text, TextFxState> pair in specialDeliveryTextVisualStates)
+        {
+            if (pair.Key == null)
+                continue;
+
+            pair.Key.color = pair.Value.Color;
+            pair.Key.transform.localScale = pair.Value.LocalScale;
+        }
+
+        specialDeliveryTextVisualStates.Clear();
+    }
+
+    private static Gradient CreateDefaultSpecialDeliveryTintGradient()
+    {
+        Gradient gradient = new Gradient();
+        gradient.SetKeys(
+            new[]
+            {
+                new GradientColorKey(new Color(1f, 0.12f, 0.05f), 0f),
+                new GradientColorKey(new Color(1f, 0.85f, 0.05f), 0.25f),
+                new GradientColorKey(new Color(0.1f, 0.85f, 1f), 0.5f),
+                new GradientColorKey(new Color(1f, 0.15f, 0.9f), 0.75f),
+                new GradientColorKey(new Color(1f, 0.12f, 0.05f), 1f)
+            },
+            new[]
+            {
+                new GradientAlphaKey(1f, 0f),
+                new GradientAlphaKey(1f, 1f)
+            }
+        );
+
+        return gradient;
+    }
+
+    #endregion
+
     #region Selection And UI Helpers
 
     private void SelectInitialControl()
@@ -964,8 +1200,97 @@ public class PaymentUI : MonoBehaviour
 
     private void SetStatus(string _message)
     {
-        if (statusText != null)
-            statusText.text = _message;
+        if (statusText == null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(_message))
+        {
+            ClearStatusText();
+            return;
+        }
+
+        EnsureStatusTextOriginalState();
+
+        statusText.text = _message;
+        statusText.gameObject.SetActive(true);
+        statusText.color = statusOriginalColor;
+        SetStatusTextOffset(0f);
+
+        statusMessageTotalDuration = Mathf.Max(0.05f, statusVisibleDuration + statusFadeDuration);
+        statusMessageTimer = statusMessageTotalDuration;
+    }
+
+    #endregion
+
+    #region Status Feedback
+
+    private void UpdateStatusTextFeedback()
+    {
+        if (statusText == null || statusMessageTimer <= 0f)
+            return;
+
+        EnsureStatusTextOriginalState();
+
+        statusMessageTimer -= Time.unscaledDeltaTime;
+
+        if (animateStatusText)
+        {
+            float elapsed = statusMessageTotalDuration - statusMessageTimer;
+            float moveProgress = Mathf.Clamp01(elapsed / Mathf.Max(0.01f, statusMessageTotalDuration));
+            float fadeProgress = statusMessageTimer <= statusFadeDuration
+                ? Mathf.Clamp01(statusMessageTimer / Mathf.Max(0.01f, statusFadeDuration))
+                : 1f;
+
+            Color animatedColor = statusOriginalColor;
+            animatedColor.a *= fadeProgress;
+            statusText.color = animatedColor;
+            SetStatusTextOffset(statusRiseDistance * moveProgress);
+        }
+
+        if (statusMessageTimer <= 0f)
+            ClearStatusText();
+    }
+
+    private void EnsureStatusTextOriginalState()
+    {
+        if (hasStatusOriginalState || statusText == null)
+            return;
+
+        statusOriginalColor = statusText.color;
+        statusOriginalLocalPosition = statusText.transform.localPosition;
+
+        if (statusText.transform is RectTransform rectTransform)
+            statusOriginalAnchoredPosition = rectTransform.anchoredPosition;
+
+        hasStatusOriginalState = true;
+    }
+
+    private void SetStatusTextOffset(float _offsetY)
+    {
+        if (statusText == null)
+            return;
+
+        if (statusText.transform is RectTransform rectTransform)
+        {
+            rectTransform.anchoredPosition = statusOriginalAnchoredPosition + new Vector2(0f, _offsetY);
+            return;
+        }
+
+        statusText.transform.localPosition = statusOriginalLocalPosition + new Vector3(0f, _offsetY, 0f);
+    }
+
+    private void ClearStatusText()
+    {
+        if (statusText == null)
+            return;
+
+        EnsureStatusTextOriginalState();
+
+        statusMessageTimer = 0f;
+        statusText.text = string.Empty;
+        statusText.color = statusOriginalColor;
+        SetStatusTextOffset(0f);
+        statusText.gameObject.SetActive(false);
     }
 
     #endregion

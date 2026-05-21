@@ -4,9 +4,28 @@ using UnityEngine.InputSystem;
 
 public class InputDeviceDetector : MonoBehaviour
 {
+    public static InputDeviceDetector Instance { get; private set; }
     public static event Action<InputDeviceType> DeviceTypeChanged;
 
     public static InputDeviceType CurrentDeviceType { get; private set; } = InputDeviceType.Keyboard;
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Destroy(gameObject);
+            return;
+        }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
+    }
 
     private void Update()
     {

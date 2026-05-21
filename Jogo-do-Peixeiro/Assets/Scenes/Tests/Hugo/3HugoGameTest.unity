@@ -1099,7 +1099,7 @@ GameObject:
   - component: {fileID: 284037258}
   - component: {fileID: 284037257}
   m_Layer: 5
-  m_Name: HTPText
+  m_Name: ControlsText
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -1144,7 +1144,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Como Jogar
+  m_text: Controles
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -1380,7 +1380,7 @@ GameObject:
   - component: {fileID: 520408647}
   - component: {fileID: 520408646}
   m_Layer: 5
-  m_Name: HTPPanel
+  m_Name: ControlsPanel
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2425,7 +2425,7 @@ GameObject:
   - component: {fileID: 921761160}
   - component: {fileID: 921761159}
   m_Layer: 5
-  m_Name: HTPButton
+  m_Name: ControlsButton
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -2497,7 +2497,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2105225065}
         m_TargetAssemblyTypeName: PauseManager, Assembly-CSharp
-        m_MethodName: OpenHowToPlayFromPause
+        m_MethodName: OpenControlsFromPause
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -3729,7 +3729,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Como Jogar
+  m_text: Controles
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -5378,7 +5378,7 @@ MonoBehaviour:
       m_Calls:
       - m_Target: {fileID: 2105225065}
         m_TargetAssemblyTypeName: PauseManager, Assembly-CSharp
-        m_MethodName: CloseHowToPlayFromPause
+        m_MethodName: CloseControlsFromPause
         m_Mode: 1
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
@@ -6154,7 +6154,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   pausePanel: {fileID: 543697053}
   confirmPanel: {fileID: 92124777}
-  howToPlayPanel: {fileID: 520408645}
+  controlsPanel: {fileID: 520408645}
 --- !u!114 &2105225069
 MonoBehaviour:
   m_ObjectHideFlags: 0

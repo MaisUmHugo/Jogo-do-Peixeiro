@@ -12,6 +12,7 @@ public class GameSaveData
 {
     public int version = 1;
     public GameProgressMode gameMode = GameProgressMode.Campaign;
+    public float playTimeSeconds;
     public float playerMoney;
     public int currentDebt;
     public int moneyLenderTimesPaid;

@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using UnityEngine;
 using UnityEngine.Serialization;
 
@@ -14,10 +13,6 @@ public class FishSkillCheck : MonoBehaviour
         Great,
         Perfect
     }
-
-    [Header("Spooky")]
-    [FormerlySerializedAs("peixeexe")]
-    [SerializeField] private GameObject _spookyFishObject;
 
     [Header("References")]
     [SerializeField] private FishDirectionPull _fishDirectionPull;
@@ -506,19 +501,9 @@ public class FishSkillCheck : MonoBehaviour
 
     private void FailMinigame()
     {
-        if (PlayerPrefs.GetInt("SpookyMode", 0) == 1 && _spookyFishObject != null)
-            CoroutineRunner.instance.StartCoroutine(FailSpookyRoutine());
-
         StopSkillCheck();
 
         if (_fishingManager != null)
             _fishingManager.OnSkillCheckFail();
-    }
-
-    private IEnumerator FailSpookyRoutine()
-    {
-        _spookyFishObject.SetActive(true);
-        yield return new WaitForSecondsRealtime(0.5f);
-        _spookyFishObject.SetActive(false);
     }
 }

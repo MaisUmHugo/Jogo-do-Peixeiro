@@ -180,6 +180,19 @@ public class CampaignProgressSystem : MonoBehaviour
         return true;
     }
 
+    public void StartUnlockedEndlessMode()
+    {
+        endlessUnlocked = true;
+        hasUnlockedFreePlay = true;
+        gameMode = GameProgressMode.Endless;
+        isCampaignCompleted = false;
+        hasFailedCurrentQuest = false;
+        daysElapsedInCurrentQuest = 0;
+        questDebtPaidAmount = 0;
+        ClearSpecialDeliveryInternal();
+        NotifyChanged();
+    }
+
     public void RegisterDebtPayment(int _paidAmount, int _currentQuestTarget, int _nextQuestTarget)
     {
         if (!IsCampaignRunning())

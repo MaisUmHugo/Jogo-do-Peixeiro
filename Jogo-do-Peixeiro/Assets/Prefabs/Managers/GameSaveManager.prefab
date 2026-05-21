@@ -45,4 +45,6 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   saveFileName: savegame.json
+  campaignSaveFileName: campaign_save.json
+  endlessSaveFileName: endless_save.json
   saveOnApplicationQuit: 1
