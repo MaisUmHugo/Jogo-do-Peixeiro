@@ -40,6 +40,13 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private string _castRodParameter = "CastRod";
     [SerializeField] private string _pullDirectionParameter = "PullDirection";
 
+    [Header("Fishing Offset")]
+    [SerializeField] private float _fishingYOffset = -0.8f;
+    [SerializeField] private float _fishingOffsetSmoothTime = 1.4f;
+
+    private float _currentFishingOffset;
+    private float _fishingOffsetVelocity;
+
     [Header("Debug")]
     [SerializeField] private bool _logMissingParameters = true;
 
@@ -84,6 +91,28 @@ public class PlayerAnimationController : MonoBehaviour
             return;
 
         UpdateAnimatorState();
+    }
+
+    private void OnAnimatorMove()
+    {
+        if (_animator == null)
+            return;
+
+        float targetOffset = 0f;
+
+        if (GameManager.instance != null && IsFishingState(GameManager.instance.currentState))
+            targetOffset = _fishingYOffset;
+
+        _currentFishingOffset = Mathf.SmoothDamp(
+            _currentFishingOffset,
+            targetOffset,
+            ref _fishingOffsetVelocity,
+            _fishingOffsetSmoothTime
+        );
+
+        Vector3 pos = _animator.transform.localPosition;
+        pos.y = _currentFishingOffset;
+        _animator.transform.localPosition = pos;
     }
 
     public void TriggerCastRod()
@@ -138,6 +167,7 @@ public class PlayerAnimationController : MonoBehaviour
         bool hasFishBitten = FishingManager.instance != null && FishingManager.instance.HasFishBitten;
 
         _leftAfkIdleByMoveInput = false;
+
         UpdateMovementState(isOnFoot);
         UpdateIdleState(isOnFoot);
         UpdateFishingTransition(isFishing);
@@ -167,10 +197,21 @@ public class PlayerAnimationController : MonoBehaviour
             : Vector2.zero;
 
         CurrentMoveSpeed = Mathf.Clamp01(CurrentMoveInput.magnitude);
+
         bool hasMoveInput = _isOnFoot && CurrentMoveSpeed > _moveThreshold;
+
         _leftAfkIdleByMoveInput = _isAfkIdleActive && hasMoveInput;
-        bool shouldIgnorePositionMovement = _ignorePositionMovementWhileAfkIdle && _isAfkIdleActive && !hasMoveInput;
-        bool hasPositionMovement = shouldIgnorePositionMovement ? SyncLastPosition() : HasPositionMovement(_isOnFoot);
+
+        bool shouldIgnorePositionMovement =
+            _ignorePositionMovementWhileAfkIdle &&
+            _isAfkIdleActive &&
+            !hasMoveInput;
+
+        bool hasPositionMovement =
+            shouldIgnorePositionMovement
+            ? SyncLastPosition()
+            : HasPositionMovement(_isOnFoot);
+
         IsMoving = hasMoveInput || hasPositionMovement;
     }
 
@@ -200,10 +241,13 @@ public class PlayerAnimationController : MonoBehaviour
         }
 
         Vector3 delta = currentPosition - _lastPosition;
+
         delta.y = 0f;
+
         _lastPosition = currentPosition;
 
         float threshold = Mathf.Max(0f, _positionMoveResetThreshold);
+
         return delta.sqrMagnitude > threshold * threshold;
     }
 
@@ -218,8 +262,14 @@ public class PlayerAnimationController : MonoBehaviour
         }
 
         _idleTimer += Time.deltaTime;
-        int idleStage = _idleTimer >= _afkIdleDelay ? _afkIdleStage : _defaultIdleStage;
+
+        int idleStage =
+            _idleTimer >= _afkIdleDelay
+            ? _afkIdleStage
+            : _defaultIdleStage;
+
         _isAfkIdleActive = idleStage == _afkIdleStage;
+
         SetInteger(_idleStageParameter, idleStage);
     }
 
@@ -236,13 +286,19 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void UpdatePullDirection(bool _shouldUsePullDirection)
     {
-        if (!_shouldUsePullDirection || _fishDirectionPull == null || !_fishDirectionPull.IsPullActive)
+        if (!_shouldUsePullDirection ||
+            _fishDirectionPull == null ||
+            !_fishDirectionPull.IsPullActive)
         {
             SetPullDirection(PullDirection.None);
             return;
         }
 
-        SetPullDirection(ToPullDirection(_fishDirectionPull.ActiveRequiredPullDirection));
+        SetPullDirection(
+            ToPullDirection(
+                _fishDirectionPull.ActiveRequiredPullDirection
+            )
+        );
     }
 
     private PullDirection ToPullDirection(FishDirectionPull.FishForceDirection _direction)
@@ -316,12 +372,17 @@ public class PlayerAnimationController : MonoBehaviour
         }
 
         LogMissingParameterOnce(parameterHash, _parameterName, _expectedType);
+
         return false;
     }
 
-    private void LogMissingParameterOnce(int _parameterHash, string _parameterName, AnimatorControllerParameterType _expectedType)
+    private void LogMissingParameterOnce(
+        int _parameterHash,
+        string _parameterName,
+        AnimatorControllerParameterType _expectedType)
     {
-        if (!_logMissingParameters || _loggedMissingParameters.Contains(_parameterHash))
+        if (!_logMissingParameters ||
+            _loggedMissingParameters.Contains(_parameterHash))
             return;
 
         _loggedMissingParameters.Add(_parameterHash);
