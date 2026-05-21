@@ -7,13 +7,19 @@ public class GameSaveManager : MonoBehaviour
 {
     public static GameSaveManager Instance { get; private set; }
 
+    [Header("Save Files")]
     [SerializeField] private string saveFileName = "savegame.json";
+    [SerializeField] private string campaignSaveFileName = "campaign_save.json";
+    [SerializeField] private string endlessSaveFileName = "endless_save.json";
     [SerializeField] private bool saveOnApplicationQuit = true;
 
     private const string LoadSaveOnNextSceneKey = "LoadSaveOnNextScene";
+    private const string LoadSaveModeOnNextSceneKey = "LoadSaveModeOnNextScene";
+    private float loadedPlayTimeSeconds;
+    private float sessionStartRealtime;
 
-    public string SavePath => Path.Combine(Application.persistentDataPath, saveFileName);
-    public bool HasSave => File.Exists(SavePath);
+    public string SavePath => GetSavePath(GetCurrentModeForSave());
+    public bool HasSave => HasSaveForMode(GameProgressMode.Campaign) || HasSaveForMode(GameProgressMode.Endless);
 
     public static GameSaveManager GetOrCreate()
     {
@@ -33,12 +39,21 @@ public class GameSaveManager : MonoBehaviour
     public static void RequestLoadOnNextScene()
     {
         PlayerPrefs.SetInt(LoadSaveOnNextSceneKey, 1);
+        PlayerPrefs.DeleteKey(LoadSaveModeOnNextSceneKey);
+        PlayerPrefs.Save();
+    }
+
+    public static void RequestLoadOnNextScene(GameProgressMode mode)
+    {
+        PlayerPrefs.SetInt(LoadSaveOnNextSceneKey, 1);
+        PlayerPrefs.SetInt(LoadSaveModeOnNextSceneKey, (int)mode);
         PlayerPrefs.Save();
     }
 
     public static void ClearLoadRequest()
     {
         PlayerPrefs.DeleteKey(LoadSaveOnNextSceneKey);
+        PlayerPrefs.DeleteKey(LoadSaveModeOnNextSceneKey);
         PlayerPrefs.Save();
     }
 
@@ -52,6 +67,7 @@ public class GameSaveManager : MonoBehaviour
 
         Instance = this;
         DontDestroyOnLoad(gameObject);
+        ResetSessionTimer();
     }
 
     private void OnEnable()
@@ -66,7 +82,7 @@ public class GameSaveManager : MonoBehaviour
 
     private void OnApplicationQuit()
     {
-        if (saveOnApplicationQuit)
+        if (saveOnApplicationQuit && CanSaveCurrentScene())
             SaveGame();
     }
 
@@ -75,55 +91,147 @@ public class GameSaveManager : MonoBehaviour
         if (PlayerPrefs.GetInt(LoadSaveOnNextSceneKey, 0) != 1)
             return false;
 
+        bool hasRequestedMode = PlayerPrefs.HasKey(LoadSaveModeOnNextSceneKey);
+        GameProgressMode requestedMode = (GameProgressMode)PlayerPrefs.GetInt(
+            LoadSaveModeOnNextSceneKey,
+            (int)GameProgressMode.Campaign
+        );
+
         ClearLoadRequest();
+
+        if (hasRequestedMode)
+            return LoadGame(requestedMode);
+
         return LoadGame();
     }
 
     [ContextMenu("Save Game")]
     public void SaveGame()
     {
+        if (!CanSaveCurrentScene())
+            return;
+
         GameSaveData data = CaptureCurrentGame();
+        string savePath = GetSavePath(data.gameMode);
         string json = JsonUtility.ToJson(data, true);
-        string directory = Path.GetDirectoryName(SavePath);
+        string directory = Path.GetDirectoryName(savePath);
 
         if (!string.IsNullOrEmpty(directory))
             Directory.CreateDirectory(directory);
 
-        File.WriteAllText(SavePath, json);
-        Debug.Log($"Jogo salvo em: {SavePath}");
+        File.WriteAllText(savePath, json);
+        loadedPlayTimeSeconds = data.playTimeSeconds;
+        ResetSessionTimer();
+        Debug.Log($"Jogo salvo em: {savePath}");
     }
 
     [ContextMenu("Load Game")]
     public bool LoadGame()
     {
-        if (!HasSave)
-        {
-            Debug.Log("Nenhum save encontrado.");
+        if (!TryReadSaveData(out GameSaveData data))
             return false;
-        }
-
-        string json = File.ReadAllText(SavePath);
-        GameSaveData data = JsonUtility.FromJson<GameSaveData>(json);
-
-        if (data == null)
-        {
-            Debug.LogWarning("Save invalido.");
-            return false;
-        }
 
         ApplySaveData(data);
-        Debug.Log($"Jogo carregado de: {SavePath}");
+        Debug.Log("Jogo carregado.");
         return true;
+    }
+
+    public bool LoadGame(GameProgressMode mode)
+    {
+        if (!TryReadSaveData(mode, out GameSaveData data))
+            return false;
+
+        ApplySaveData(data);
+        Debug.Log($"Jogo carregado: {mode}");
+        return true;
+    }
+
+    public bool TryReadSaveData(out GameSaveData data)
+    {
+        if (TryReadSaveData(GameProgressMode.Campaign, out data))
+            return true;
+
+        if (TryReadSaveData(GameProgressMode.Endless, out data))
+            return true;
+
+        data = null;
+        Debug.Log("Nenhum save encontrado.");
+        return false;
+    }
+
+    public bool TryReadSaveData(GameProgressMode mode, out GameSaveData data)
+    {
+        string savePath = GetSavePath(mode);
+
+        if (TryReadSaveDataFromPath(savePath, out data))
+            return true;
+
+        if (mode == GameProgressMode.Campaign && TryReadSaveDataFromPath(GetLegacySavePath(), out data))
+            return true;
+
+        data = null;
+        return false;
+    }
+
+    public bool HasSaveForMode(GameProgressMode mode)
+    {
+        if (File.Exists(GetSavePath(mode)))
+            return true;
+
+        return mode == GameProgressMode.Campaign && File.Exists(GetLegacySavePath());
+    }
+
+    private bool TryReadSaveDataFromPath(string path, out GameSaveData data)
+    {
+        data = null;
+
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+        {
+            return false;
+        }
+
+        string json = File.ReadAllText(path);
+        data = JsonUtility.FromJson<GameSaveData>(json);
+
+        if (data != null)
+            return true;
+
+        Debug.LogWarning($"Save invalido: {path}");
+        return false;
     }
 
     [ContextMenu("Delete Save")]
     public void DeleteSave()
     {
-        if (!HasSave)
-            return;
+        bool deletedAny = DeleteSaveFile(GetSavePath(GameProgressMode.Campaign));
+        deletedAny |= DeleteSaveFile(GetSavePath(GameProgressMode.Endless));
+        deletedAny |= DeleteSaveFile(GetLegacySavePath());
 
-        File.Delete(SavePath);
-        Debug.Log("Save removido.");
+        if (deletedAny)
+        {
+            ResetTrackedPlayTime();
+            Debug.Log("Saves removidos.");
+        }
+    }
+
+    public void DeleteSave(GameProgressMode mode)
+    {
+        bool deletedAny = DeleteSaveFile(GetSavePath(mode));
+
+        if (mode == GameProgressMode.Campaign)
+            deletedAny |= DeleteSaveFile(GetLegacySavePath());
+
+        if (deletedAny)
+        {
+            ResetTrackedPlayTime();
+            Debug.Log($"Save removido: {mode}");
+        }
+    }
+
+    public void ResetTrackedPlayTime()
+    {
+        loadedPlayTimeSeconds = 0f;
+        ResetSessionTimer();
     }
 
     public GameSaveData CaptureCurrentGame()
@@ -139,6 +247,7 @@ public class GameSaveManager : MonoBehaviour
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
         BaitInventory baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
 
+        data.playTimeSeconds = GetCurrentPlayTimeSeconds();
         data.playerMoney = moneyManager != null ? moneyManager.PlayerMoney : 0f;
         data.currentDebt = debtSystem != null ? debtSystem.CurrentDebt : 0;
         data.moneyLenderTimesPaid = moneyLender != null ? moneyLender.GetTimesPaid() : 0;
@@ -203,6 +312,61 @@ public class GameSaveManager : MonoBehaviour
 
         if (baitInventory != null)
             baitInventory.ReplaceBaits(RestoreBaitData(_data.baits), BaitSaveResolver.FindBaitById(_data.equippedBaitId));
+
+        loadedPlayTimeSeconds = Mathf.Max(0f, _data.playTimeSeconds);
+        ResetSessionTimer();
+    }
+
+    private float GetCurrentPlayTimeSeconds()
+    {
+        return Mathf.Max(0f, loadedPlayTimeSeconds + Time.realtimeSinceStartup - sessionStartRealtime);
+    }
+
+    private void ResetSessionTimer()
+    {
+        sessionStartRealtime = Time.realtimeSinceStartup;
+    }
+
+    private bool CanSaveCurrentScene()
+    {
+        return FindFirstObjectByType<GameManager>() != null &&
+               FindFirstObjectByType<DayCycle>() != null &&
+               FindFirstObjectByType<PlayerMoneyManager>() != null;
+    }
+
+    private GameProgressMode GetCurrentModeForSave()
+    {
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.Instance;
+        return campaignProgress != null ? campaignProgress.GameMode : GameProgressMode.Campaign;
+    }
+
+    private string GetSavePath(GameProgressMode mode)
+    {
+        return Path.Combine(Application.persistentDataPath, GetSaveFileName(mode));
+    }
+
+    private string GetLegacySavePath()
+    {
+        return Path.Combine(Application.persistentDataPath, saveFileName);
+    }
+
+    private bool DeleteSaveFile(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path) || !File.Exists(path))
+            return false;
+
+        File.Delete(path);
+        return true;
+    }
+
+    private string GetSaveFileName(GameProgressMode mode)
+    {
+        string fileName = mode == GameProgressMode.Endless ? endlessSaveFileName : campaignSaveFileName;
+
+        if (!string.IsNullOrWhiteSpace(fileName))
+            return fileName;
+
+        return string.IsNullOrWhiteSpace(saveFileName) ? "savegame.json" : saveFileName;
     }
 
     private DockUpgradeSaveData CaptureUpgradeData(DockUpgradeSystem _dockUpgradeSystem)
