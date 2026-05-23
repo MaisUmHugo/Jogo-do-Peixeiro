@@ -1012,20 +1012,12 @@ public class InvertoryManager : MonoBehaviour
         if (inventoryText != null)
             inventoryText.text = hasGridSlots && hasFish ? string.Empty : GetFishInventoryText();
 
-        if (kilogramText != null)
-        {
-            float currentWeight = shipInventory != null ? shipInventory.GetCurrentWeight() : 0f;
-            float maxWeight = shipInventory != null ? shipInventory.GetMaxCapacity() : 0f;
-            kilogramText.text = maxWeight > 0f
-                ? $"Peixes: {currentWeight:0.#}/{maxWeight:0.#} kg"
-                : $"Peixes: {currentWeight:0.#} kg";
-            kilogramText.color = GetWeightTextColor(currentWeight, maxWeight);
-        }
+        SetInventoryWeightText();
 
-        if (baitInventoryText != null)
+        if (baitInventoryText != null && baitInventoryText != inventoryText)
             baitInventoryText.text = string.Empty;
 
-        if (equippedBaitText != null)
+        if (HasDedicatedEquippedBaitText())
             equippedBaitText.text = string.Empty;
 
         ValidateSelectedFishIndexes();
@@ -1045,16 +1037,40 @@ public class InvertoryManager : MonoBehaviour
 
         string equippedText = GetEquippedBaitText();
 
-        if (kilogramText != null && hasStoredKilogramTextColor)
-            kilogramText.color = kilogramTextDefaultColor;
+        SetInventoryWeightText();
 
-        if (equippedBaitText != null)
+        if (HasDedicatedEquippedBaitText())
+        {
             equippedBaitText.text = equippedText;
-        else if (kilogramText != null)
-            kilogramText.text = equippedText;
+        }
+        else if (targetText != null && !string.IsNullOrWhiteSpace(equippedText))
+        {
+            targetText.text = string.IsNullOrWhiteSpace(targetText.text)
+                ? equippedText
+                : $"{targetText.text}\n{equippedText}";
+        }
 
         RefreshBaitButtons();
         RefreshBaitGrid();
+    }
+
+    private void SetInventoryWeightText()
+    {
+        if (kilogramText == null)
+            return;
+
+        float currentWeight = shipInventory != null ? shipInventory.GetCurrentWeight() : 0f;
+        float maxWeight = shipInventory != null ? shipInventory.GetMaxCapacity() : 0f;
+
+        kilogramText.text = maxWeight > 0f
+            ? $"Peso: {currentWeight:0.#}/{maxWeight:0.#} kg"
+            : $"Peso: {currentWeight:0.#} kg";
+        kilogramText.color = GetWeightTextColor(currentWeight, maxWeight);
+    }
+
+    private bool HasDedicatedEquippedBaitText()
+    {
+        return equippedBaitText != null && equippedBaitText != kilogramText;
     }
 
     private void RefreshFishGrid()
