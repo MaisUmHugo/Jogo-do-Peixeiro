@@ -22,4 +22,4 @@ MonoBehaviour:
   canBeRequestedByMoneyLender: 1
   availabilityPeriod: 0
   fishName: Peixe Obsidiana
-  description: Pontudo e surpreendentemente fragil, juntar 14 deles nao cria um portal.
+  description: Pontudo e surpreendentemente frágil. Juntar 14 deles não cria um portal.

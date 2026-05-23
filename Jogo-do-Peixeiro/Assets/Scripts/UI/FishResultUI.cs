@@ -163,8 +163,7 @@ public class FishResultUI : MonoBehaviour
         if (mesh != null)
             mesh.mesh = fishMesh;
 
-        if (objectRenderer != null)
-            objectRenderer.material = fishMaterial;
+        FishVisualUtility.ApplyMaterial(_fish.typeOfFish, objectRenderer, false);
 
         ShowRarityStars(fishRarity);
         ResetFishRotation();

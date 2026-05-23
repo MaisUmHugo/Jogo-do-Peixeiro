@@ -482,11 +482,7 @@ public class FishPreviewPanelUI : MonoBehaviour
         if (currentFishType == null)
             return;
 
-        if (meshFilter != null)
-            meshFilter.sharedMesh = currentFishType.mesh;
-
-        if (fishRenderer != null)
-            fishRenderer.sharedMaterial = currentFishType.material;
+        FishVisualUtility.ApplyModel(currentFishType, meshFilter, fishRenderer, true);
     }
 
     private void ApplyTexts()

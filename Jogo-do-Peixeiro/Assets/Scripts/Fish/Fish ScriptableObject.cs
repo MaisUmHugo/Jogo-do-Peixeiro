@@ -15,8 +15,10 @@ public class FishScriptableObject : ScriptableObject
     public int minWeight;
     public int maxWeight;
     
+    [Header("Model Visuals")]
     public Mesh mesh;
     public Material material;
+    public Texture2D texture;
 
     [Header("Inventory UI")]
     public Sprite inventoryIcon;
@@ -37,6 +39,7 @@ public class FishScriptableObject : ScriptableObject
 
     public string SaveId => name;
     public Sprite InventoryIcon => inventoryIcon;
+    public Texture2D FishTexture => texture;
     public bool CanBeRequestedByMoneyLender => canBeRequestedByMoneyLender;
 
     public bool IsAvailableAtHour(float _hour)
@@ -50,5 +53,60 @@ public class FishScriptableObject : ScriptableObject
             FishAvailabilityPeriod.Day => hour >= 5f && hour < 18f,
             _ => true
         };
+    }
+}
+
+public static class FishVisualUtility
+{
+    private static readonly int[] TexturePropertyIds =
+    {
+        Shader.PropertyToID("_BaseMap"),
+        Shader.PropertyToID("_MainTex"),
+        Shader.PropertyToID("_BaseColorMap")
+    };
+
+    public static void ApplyModel(FishScriptableObject _fish, MeshFilter _meshFilter, Renderer _renderer, bool _useSharedMaterial)
+    {
+        if (_fish == null)
+            return;
+
+        if (_meshFilter != null)
+            _meshFilter.sharedMesh = _fish.mesh;
+
+        ApplyMaterial(_fish, _renderer, _useSharedMaterial);
+    }
+
+    public static void ApplyMaterial(FishScriptableObject _fish, Renderer _renderer, bool _useSharedMaterial)
+    {
+        if (_renderer == null)
+            return;
+
+        if (_fish != null && _fish.material != null)
+        {
+            if (_useSharedMaterial)
+                _renderer.sharedMaterial = _fish.material;
+            else
+                _renderer.material = _fish.material;
+        }
+
+        ApplyTexture(_renderer, _fish != null ? _fish.FishTexture : null);
+    }
+
+    public static void ApplyTexture(Renderer _renderer, Texture _texture)
+    {
+        if (_renderer == null)
+            return;
+
+        MaterialPropertyBlock propertyBlock = new MaterialPropertyBlock();
+
+        if (_texture != null)
+        {
+            _renderer.GetPropertyBlock(propertyBlock);
+
+            foreach (int propertyId in TexturePropertyIds)
+                propertyBlock.SetTexture(propertyId, _texture);
+        }
+
+        _renderer.SetPropertyBlock(propertyBlock);
     }
 }

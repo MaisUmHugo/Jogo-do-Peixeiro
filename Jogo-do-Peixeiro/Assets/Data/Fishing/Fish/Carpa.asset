@@ -22,4 +22,4 @@ MonoBehaviour:
   canBeRequestedByMoneyLender: 1
   availabilityPeriod: 3
   fishName: Carpa
-  description: Peixe de lagoas comum, dizem ser o progenitor dos peixes.
+  description: Peixe de lagoas comum. Dizem ser o progenitor dos peixes.
