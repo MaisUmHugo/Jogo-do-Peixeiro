@@ -121,11 +121,21 @@ public class BaitInventory : MonoBehaviour
         if (EquippedBait == null)
             return false;
 
-        BaitStack stack = FindStack(EquippedBait);
+        return TryConsumeBait(EquippedBait);
+    }
+
+    public bool TryConsumeBait(BaitData _bait)
+    {
+        if (_bait == null)
+            return false;
+
+        BaitStack stack = FindStack(_bait);
 
         if (stack == null || stack.quantity <= 0)
         {
-            EquippedBait = null;
+            if (IsEquippedBait(_bait))
+                EquippedBait = null;
+
             NotifyChanged();
             return false;
         }
@@ -135,7 +145,9 @@ public class BaitInventory : MonoBehaviour
         if (stack.quantity <= 0)
         {
             baitStacks.Remove(stack);
-            EquippedBait = null;
+
+            if (IsEquippedBait(_bait))
+                EquippedBait = null;
         }
 
         NotifyChanged();
@@ -208,6 +220,13 @@ public class BaitInventory : MonoBehaviour
         }
 
         return null;
+    }
+
+    private bool IsEquippedBait(BaitData _bait)
+    {
+        return EquippedBait != null &&
+               _bait != null &&
+               BaitCatalog.BaitIdMatches(EquippedBait, _bait.SaveId);
     }
 
     private void NotifyChanged()
