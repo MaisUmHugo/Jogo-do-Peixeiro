@@ -32,7 +32,9 @@ public class PlayerMoneyHud : MonoBehaviour
     private int currentDebt;
     private bool isCampaignSubscribed;
     private bool isDayCycleSubscribed;
+    private bool isShipInventorySubscribed;
     private bool hasLoggedMissingCampaignHud;
+    private ShipInventory shipInventory;
 
     private void OnEnable()
     {
@@ -44,6 +46,7 @@ public class PlayerMoneyHud : MonoBehaviour
         EnsureCampaignHud();
         SubscribeCampaignProgress();
         SubscribeDayCycleVisuals();
+        SubscribeShipInventory();
 
         currentMoney = playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f;
         currentDebt = debtSystem != null ? debtSystem.CurrentDebt : 0;
@@ -57,6 +60,7 @@ public class PlayerMoneyHud : MonoBehaviour
         DebtSystem.OnDebtChangedEvent -= UpdateDebtText;
         UnsubscribeCampaignProgress();
         UnsubscribeDayCycleVisuals();
+        UnsubscribeShipInventory();
     }
 
     private void UpdateMoneyText(float _money)
@@ -76,9 +80,15 @@ public class PlayerMoneyHud : MonoBehaviour
         string moneyLine = $"R$: {currentMoney:0}";
         string debtLine = GetDebtLine();
 
+        if (debtText != null && !debtText.gameObject.activeSelf)
+            debtText.gameObject.SetActive(true);
+
+        bool shouldShowDebtWithMoney = showDebtWithMoneyWhenMissingText &&
+                                       (debtText == null || !debtText.gameObject.activeInHierarchy);
+
         if (moneyText != null)
         {
-            moneyText.text = debtText == null && showDebtWithMoneyWhenMissingText
+            moneyText.text = shouldShowDebtWithMoney
                 ? $"{moneyLine}\n{debtLine}"
                 : moneyLine;
         }
@@ -119,6 +129,38 @@ public class PlayerMoneyHud : MonoBehaviour
 
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<DayCycle>();
+
+        if (shipInventory == null)
+            shipInventory = FindFirstObjectByType<ShipInventory>();
+    }
+
+    private void SubscribeShipInventory()
+    {
+        if (isShipInventorySubscribed)
+            return;
+
+        if (shipInventory == null)
+            shipInventory = FindFirstObjectByType<ShipInventory>();
+
+        if (shipInventory == null)
+            return;
+
+        shipInventory.OnFishListChange += HandleShipInventoryChanged;
+        isShipInventorySubscribed = true;
+    }
+
+    private void UnsubscribeShipInventory()
+    {
+        if (!isShipInventorySubscribed || shipInventory == null)
+            return;
+
+        shipInventory.OnFishListChange -= HandleShipInventoryChanged;
+        isShipInventorySubscribed = false;
+    }
+
+    private void HandleShipInventoryChanged(System.Collections.Generic.List<FishData> _fishList, float _fishWeight)
+    {
+        RefreshHudText();
     }
 
     private void ResolveCampaignHudTexts()
@@ -397,7 +439,11 @@ public class PlayerMoneyHud : MonoBehaviour
             return $"Prazo: <color={debtColor}>encerrado</color>";
 
         string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? GetPrimaryTextColorHex() : GetSecondaryTextColorHex();
-        return $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
+        string deadlineLine = $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
+        string inventoryLine = GetInventoryWeightLine();
+        return string.IsNullOrWhiteSpace(inventoryLine)
+            ? deadlineLine
+            : $"{deadlineLine} | {inventoryLine}";
     }
 
     private string GetCampaignGoalLine()
@@ -422,10 +468,36 @@ public class PlayerMoneyHud : MonoBehaviour
                 ? $" e {campaignProgress.SpecialDeliveryRequiredWeight}kg"
                 : string.Empty;
 
-            return $"Meta: entregar {campaignProgress.SpecialDeliveryQuantity}x {fishName}{weightText}";
+            return $"Objetivo: entregue {campaignProgress.SpecialDeliveryQuantity}x {fishName}{weightText} ao Cobrador";
         }
 
-        return $"Meta: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
+        int paidAmount = campaignProgress.QuestDebtPaidAmount;
+        int targetAmount = campaignProgress.QuestDebtPaymentTarget;
+        int remainingAmount = campaignProgress.QuestDebtPaymentRemaining;
+        string objective = currentMoney >= remainingAmount && remainingAmount > 0
+            ? "pague o Cobrador"
+            : "pesque e venda";
+
+        if (remainingAmount <= 0)
+            objective = "pague o Cobrador";
+
+        return $"Objetivo: {objective} | Pago: R$ {paidAmount}/{targetAmount} | Falta: R$ {remainingAmount}";
+    }
+
+    private string GetInventoryWeightLine()
+    {
+        if (shipInventory == null)
+            shipInventory = FindFirstObjectByType<ShipInventory>();
+
+        if (shipInventory == null)
+            return string.Empty;
+
+        float maxCapacity = shipInventory.GetMaxCapacity();
+
+        if (maxCapacity <= 0f)
+            return string.Empty;
+
+        return $"Barco: {shipInventory.GetCurrentWeight():0.#}/{maxCapacity:0.#}kg";
     }
 
     private string GetFishDisplayName(FishScriptableObject _fish)
