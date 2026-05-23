@@ -13,6 +13,11 @@ public class MainMenuManager : MonoBehaviour
     [Header("Scene")]
     [SerializeField] private string gameSceneName = "Game";
 
+    [Header("Music")]
+    [SerializeField] private AudioClip menuMusic;
+    [SerializeField] private string fallbackMenuMusicResourcePath = "Music/Menu_Jogo_Peixeiro";
+    [SerializeField] private bool playMenuMusicOnStart = true;
+
     [Header("Panels")]
     [SerializeField] private GameObject menuPanel;
     [SerializeField] private GameObject modeSelectPanel;
@@ -99,6 +104,7 @@ public class MainMenuManager : MonoBehaviour
     {
         Time.timeScale = 1f;
 
+        PlayMenuMusic();
         RefreshSaveCache();
         ShowMenu();
     }
@@ -694,6 +700,18 @@ public class MainMenuManager : MonoBehaviour
     #endregion
 
     #region Panel Helpers
+
+    private void PlayMenuMusic()
+    {
+        if (!playMenuMusicOnStart || AudioManager.Instance == null)
+            return;
+
+        AudioClip clip = menuMusic != null
+            ? menuMusic
+            : Resources.Load<AudioClip>(fallbackMenuMusicResourcePath);
+
+        AudioManager.Instance.PlayMusic(clip);
+    }
 
     private void ShowMenu()
     {

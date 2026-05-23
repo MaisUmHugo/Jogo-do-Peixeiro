@@ -1559,7 +1559,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: SEGURE
+  m_text: SEGURE A DIRECAO
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -4209,7 +4209,7 @@ MonoBehaviour:
   _idleIconColor: {r: 1, g: 1, b: 1, a: 1}
   _pressedIconColor: {r: 0.25, g: 1, b: 0.35, a: 1}
   _holdHintText: {fileID: 8391092444510306685}
-  _holdHintMessage: SEGURE
+  _holdHintMessage: SEGURE A DIRECAO
   _holdHintOffset: {x: 0, y: 58}
   _holdHintCorrectHoldTime: 0.45
   _holdHintPulseSpeed: 6

@@ -9617,7 +9617,7 @@ MonoBehaviour:
   - 85
   - 100
   - 120
-  capacityUpgradeCosts: b4000000c201000052030000140500006c070000
+  capacityUpgradeCosts: 82000000040100009001000094020000a6040000
   boatSpeedLevel: 0
   boatSpeedUpgradeCosts: dc00000008020000b6030000aa05000034080000
   boatSpeedIncreasePerLevel: 0.15
