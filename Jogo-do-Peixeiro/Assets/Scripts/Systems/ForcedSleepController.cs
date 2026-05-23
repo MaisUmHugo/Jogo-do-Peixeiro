@@ -12,6 +12,7 @@ public class ForcedSleepController : MonoBehaviour
     [SerializeField] private PlayerMove _playerMove;
     [SerializeField] private PlayerInteract _playerInteract;
     [SerializeField] private BoatController _boatController;
+    [SerializeField] private ShipInventory _shipInventory;
 
     [Header("Sleep")]
     [SerializeField] private Transform _forcedSleepPoint;
@@ -23,10 +24,15 @@ public class ForcedSleepController : MonoBehaviour
     [SerializeField] private bool _returnBoatToParkPointOnForcedSleep = true;
     [SerializeField] private Transform _boatParkPoint;
 
+    [Header("Forced Sleep Cargo Loss")]
+    [SerializeField] private bool _loseFishOnForcedSleep = true;
+    [SerializeField, Range(0f, 1f)] private float _forcedSleepFishLossRatio = 0.25f;
+
     [Header("Fade Transition")]
     [SerializeField] private CanvasGroup _fadeCanvasGroup;
     [SerializeField] private TMP_Text _fadeText;
     [SerializeField] private string _forcedSleepText = "Voce apagou de sono...";
+    [SerializeField] private string _regularSleepText = "Dormindo...";
     [SerializeField] private float _fadeInDuration = 0.6f;
     [SerializeField] private float _fadeHoldDuration = 0.8f;
     [SerializeField] private float _fadeOutDuration = 0.6f;
@@ -61,6 +67,42 @@ public class ForcedSleepController : MonoBehaviour
         StartCoroutine(ForcedSleepRoutine());
     }
 
+    public bool StartRegularSleep(DayCycle _targetDayCycle = null)
+    {
+        if (_isRunning)
+            return false;
+
+        if (_targetDayCycle != null)
+            _dayCycle = _targetDayCycle;
+
+        StartCoroutine(RegularSleepRoutine());
+        return true;
+    }
+
+    private IEnumerator RegularSleepRoutine()
+    {
+        _isRunning = true;
+        ResolveReferences();
+
+        SetGameState(GameManager.GameState.InUI);
+        ClosePanels();
+        ResetInput();
+        PrepareFadeText(_regularSleepText);
+        yield return FadeTo(1f, _fadeInDuration);
+
+        if (_dayCycle != null)
+            _dayCycle.NextDay();
+
+        RegisterCurrentPositionAsSafeRespawn();
+        ResetInput();
+        yield return new WaitForSecondsRealtime(_fadeHoldDuration);
+        yield return FadeTo(0f, _fadeOutDuration);
+        SetFadeTextVisible(false);
+
+        SetGameState(GameManager.GameState.OnFoot);
+        _isRunning = false;
+    }
+
     private IEnumerator ForcedSleepRoutine()
     {
         _isRunning = true;
@@ -69,7 +111,7 @@ public class ForcedSleepController : MonoBehaviour
         SetGameState(GameManager.GameState.InUI);
         ClosePanels();
         ResetInput();
-        PrepareFadeText();
+        PrepareFadeText(_forcedSleepText);
         yield return FadeTo(1f, _fadeInDuration);
         CompleteDayCycleSleep();
 
@@ -83,6 +125,7 @@ public class ForcedSleepController : MonoBehaviour
         }
 
         ReturnBoatToParkPoint();
+        ApplyForcedSleepFishLoss();
 
         SetPlayerControllerEnabled(false);
         SetCharacterControllerEnabled(false);
@@ -104,6 +147,7 @@ public class ForcedSleepController : MonoBehaviour
         SetPlayerControllerEnabled(true);
         ResetInput();
         Physics.SyncTransforms();
+        RegisterCurrentPositionAsSafeRespawn();
 
         if (_playerInteract != null)
             _playerInteract.RefreshInteractablesAfterTeleport();
@@ -131,6 +175,12 @@ public class ForcedSleepController : MonoBehaviour
         _playerRoot.rotation = _forcedSleepPoint.rotation;
     }
 
+    private void RegisterCurrentPositionAsSafeRespawn()
+    {
+        if (_playerMove != null && _playerRoot != null)
+            _playerMove.SetSafeRespawnPosition(_playerRoot.position);
+    }
+
     private void ResolveReferences()
     {
         if (_dayCycle == null)
@@ -143,6 +193,9 @@ public class ForcedSleepController : MonoBehaviour
 
         if (_boatParkPoint == null)
             _boatParkPoint = FindBoatParkPoint();
+
+        if (_shipInventory == null)
+            _shipInventory = FindFirstObjectByType<ShipInventory>(FindObjectsInactive.Include);
     }
 
     private Transform FindBoatParkPoint()
@@ -183,6 +236,23 @@ public class ForcedSleepController : MonoBehaviour
 
         _boatController.ReturnToParkPoint(_boatParkPoint);
         Physics.SyncTransforms();
+    }
+
+    private void ApplyForcedSleepFishLoss()
+    {
+        if (!_loseFishOnForcedSleep || _shipInventory == null)
+            return;
+
+        float currentWeight = _shipInventory.GetCurrentWeight();
+        float targetWeightLoss = currentWeight * Mathf.Clamp01(_forcedSleepFishLossRatio);
+
+        if (targetWeightLoss <= 0f)
+            return;
+
+        int removedCount = _shipInventory.RemoveFishUntilWeightLost(targetWeightLoss, out float removedWeight);
+
+        if (removedCount > 0)
+            Debug.Log($"Sono forcado removeu {removedCount} peixe(s), {removedWeight:0.#}kg de carga.");
     }
 
     private void ResolvePlayerReferences(bool _forceRefresh)
@@ -284,11 +354,11 @@ public class ForcedSleepController : MonoBehaviour
             GameManager.instance.SetState(_state);
     }
 
-    private void PrepareFadeText()
+    private void PrepareFadeText(string _text)
     {
         if (_fadeText != null)
         {
-            _fadeText.text = _forcedSleepText;
+            _fadeText.text = _text;
             SetFadeTextVisible(true);
         }
     }
