@@ -50,6 +50,7 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private Transform _boatOffsetTarget;
     [SerializeField] private Vector3 _boatPositionOffset;
     [SerializeField] private Vector3 _boatRotationOffset;
+    [SerializeField, Min(0f)] private float _fishingFacingMaxDegreesPerSecond = 540f;
 
     private float _currentFishingOffset;
     private float _fishingOffsetVelocity;
@@ -90,6 +91,7 @@ public class PlayerAnimationController : MonoBehaviour
         _afkIdleDelay = Mathf.Max(0f, _afkIdleDelay);
         _fishingOffsetSmoothTime = Mathf.Max(0f, _fishingOffsetSmoothTime);
         _fishingOffsetResetThreshold = Mathf.Max(0f, _fishingOffsetResetThreshold);
+        _fishingFacingMaxDegreesPerSecond = Mathf.Max(0f, _fishingFacingMaxDegreesPerSecond);
     }
 
     private void Awake()
@@ -146,7 +148,7 @@ public class PlayerAnimationController : MonoBehaviour
             CaptureBoatOffsetBase(offsetTarget);
 
         offsetTarget.localPosition = _boatOffsetBaseLocalPosition + _boatPositionOffset;
-        offsetTarget.localRotation = GetBoatVisualLocalRotation(offsetTarget);
+        offsetTarget.localRotation = GetSmoothedBoatVisualLocalRotation(offsetTarget);
     }
 
     public void ResetBoatVisualOffset()
@@ -265,7 +267,7 @@ public class PlayerAnimationController : MonoBehaviour
     {
         return _state == GameManager.GameState.OnBoat ||
                IsFishingState(_state) ||
-               (_state == GameManager.GameState.InUI && _hasBoatOffsetBase);
+               ((_state == GameManager.GameState.InUI || _state == GameManager.GameState.Paused) && _hasBoatOffsetBase);
     }
 
     private Transform ResolveBoatOffsetTarget()
@@ -298,6 +300,24 @@ public class PlayerAnimationController : MonoBehaviour
             baseEuler.x,
             targetYaw + _fishingFacingYawOffset,
             baseEuler.z
+        );
+    }
+
+    private Quaternion GetSmoothedBoatVisualLocalRotation(Transform _offsetTarget)
+    {
+        Quaternion targetRotation = GetBoatVisualLocalRotation(_offsetTarget);
+
+        if (!_hasFishingFacingTarget ||
+            _fishingFacingMaxDegreesPerSecond <= 0f ||
+            !Application.isPlaying)
+        {
+            return targetRotation;
+        }
+
+        return Quaternion.RotateTowards(
+            _offsetTarget.localRotation,
+            targetRotation,
+            _fishingFacingMaxDegreesPerSecond * Time.deltaTime
         );
     }
 
@@ -396,7 +416,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         bool isOnFoot = state == GameManager.GameState.OnFoot;
         bool isFishing = IsFishingState(state);
-        bool isOnBoat = state == GameManager.GameState.OnBoat || isFishing;
+        bool isOnBoat = IsBoatAnimationState(state, isFishing);
         bool hasFishBitten = FishingManager.instance != null && FishingManager.instance.HasFishBitten;
 
         _leftAfkIdleByMoveInput = false;
@@ -421,6 +441,15 @@ public class PlayerAnimationController : MonoBehaviour
     {
         return _state == GameManager.GameState.Fishing ||
                (FishingManager.instance != null && FishingManager.instance.IsFishing);
+    }
+
+    private bool IsBoatAnimationState(GameManager.GameState _state, bool _isFishing)
+    {
+        if (_state == GameManager.GameState.OnBoat || _isFishing)
+            return true;
+
+        return (_state == GameManager.GameState.InUI || _state == GameManager.GameState.Paused) &&
+               _hasBoatOffsetBase;
     }
 
     private void UpdateMovementState(bool _isOnFoot)
