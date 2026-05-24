@@ -13,6 +13,10 @@ public class GenerateWaterMesh : MonoBehaviour
     public Material waterMaterial;
     public Material darkWaterMaterial;
 
+    [Header("Lava Opcional")]
+    public bool useLavaMaterial;
+    public Material lavaMaterial;
+
     [Header("Referencia")]
     public Transform referenceObject;
 
@@ -81,15 +85,16 @@ public class GenerateWaterMesh : MonoBehaviour
 
         GetComponent<MeshFilter>().mesh = mesh;
 
-        if (darkWaterMaterial != null)
+        if (ShouldUseDarkWaterMaterial())
             runtimeDarkMaterial = new Material(darkWaterMaterial);
 
         MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+        Material surfaceMaterial = GetSurfaceMaterial();
 
         if (runtimeDarkMaterial != null)
-            meshRenderer.materials = new Material[] { waterMaterial, runtimeDarkMaterial };
+            meshRenderer.materials = new Material[] { surfaceMaterial, runtimeDarkMaterial };
         else
-            meshRenderer.material = waterMaterial;
+            meshRenderer.material = surfaceMaterial;
 
         GetComponent<MeshCollider>().sharedMesh = mesh;
 
@@ -101,7 +106,7 @@ public class GenerateWaterMesh : MonoBehaviour
 
     private void Start()
     {
-        if (darkWaterMaterial == null)
+        if (!ShouldUseDarkWaterMaterial())
             return;
 
         runtimeDarkMaterial = new Material(darkWaterMaterial);
@@ -117,7 +122,7 @@ public class GenerateWaterMesh : MonoBehaviour
 
         GetComponent<MeshRenderer>().materials = new Material[]
         {
-            waterMaterial,
+            GetSurfaceMaterial(),
             runtimeDarkMaterial
         };
     }
@@ -147,5 +152,20 @@ public class GenerateWaterMesh : MonoBehaviour
     public bool IsDeepWater(Vector3 _worldPosition)
     {
         return GetDarknessAtWorldPosition(_worldPosition) >= deepAreaThreshold;
+    }
+
+    private bool ShouldUseLavaMaterial()
+    {
+        return useLavaMaterial && lavaMaterial != null;
+    }
+
+    private bool ShouldUseDarkWaterMaterial()
+    {
+        return !ShouldUseLavaMaterial() && darkWaterMaterial != null;
+    }
+
+    private Material GetSurfaceMaterial()
+    {
+        return ShouldUseLavaMaterial() ? lavaMaterial : waterMaterial;
     }
 }

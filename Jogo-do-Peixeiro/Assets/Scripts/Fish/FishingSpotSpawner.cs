@@ -61,6 +61,13 @@ public class FishingSpotSpawner : MonoBehaviour
     [SerializeField] private float _activeAreaProbeInterval = 0.5f;
     [SerializeField] private bool _fallBackToDepthAreaWhenMaterialUnknown = true;
 
+    [Header("Lava Area Detection")]
+    [SerializeField] private Material _lavaMaterial;
+    [SerializeField] private Shader _lavaShader;
+    [SerializeField] private FishingAreaDefinition _lavaFishingArea;
+    [SerializeField] private bool _autoDetectLavaMaterialByName = true;
+    [SerializeField] private string _lavaMaterialNameKeyword = "lava";
+
     [Header("Active Area Focus")]
     [SerializeField] private bool _clearOtherAreaSpotsOnAreaChanged = true;
     [SerializeField] private bool _forceSpawnNearReferenceOnAreaChanged = true;
@@ -73,8 +80,15 @@ public class FishingSpotSpawner : MonoBehaviour
     [SerializeField] private float _respawnDelay = 12f;
     [Tooltip("Spots gerados somem depois de uma pescaria resolvida com mordida/captura. Cancelar antes da mordida nao consome o spot.")]
     [SerializeField] private bool _spawnedSpotsDeactivateAfterFishingStarts = true;
+    [Tooltip("Quando ligado, spots que fogem ou foram usados sao destruidos. Desligue se for integrar object pool.")]
+    [SerializeField] private bool _destroyDeactivatedSpots = true;
     [SerializeField] private float _minDistanceBetweenSpots = 8f;
     [SerializeField] private int _maxSpawnAttempts = 25;
+
+    [Header("Object Pool")]
+    [SerializeField] private bool _useFishingSpotPool = true;
+    [SerializeField] private string _fishingSpotPoolKey = "FishingSpot";
+    [SerializeField, Min(1)] private int _fishingSpotPoolSize = 6;
 
     [Header("Unfished Spot Lifetime")]
     [SerializeField] private bool _replaceUnfishedSpots = true;
@@ -106,11 +120,23 @@ public class FishingSpotSpawner : MonoBehaviour
     [SerializeField] private float _raycastHeight = 30f;
     [SerializeField] private float _raycastDistance = 80f;
 
+    [Header("Spawn Blocking")]
+    [SerializeField] private LayerMask _blockedSpawnLayers;
+    [SerializeField, Min(0f)] private float _blockedSpawnRadius = 2f;
+    [SerializeField, Min(0f)] private float _blockedSpawnProbeHeight = 4f;
+    [SerializeField, Min(0f)] private float _blockedSpawnProbeDepth = 4f;
+    [SerializeField] private bool _blockSpawnNearReference = true;
+    [SerializeField, Min(0f)] private float _blockedReferenceSpawnRadius = 8f;
+    [SerializeField] private bool _blockSpawnNearBoatTag = true;
+    [SerializeField] private string _boatTag = "Boat";
+
     private readonly List<FishingSpot> _activeSpots = new();
+    private readonly Dictionary<FishingSpot, int> _activeSpotSpawnVersions = new();
     private Coroutine _respawnRoutine;
     private Coroutine _activeAreaProbeRoutine;
     private float _lastSpotUseTime;
     private FishingAreaDefinition _activeFishingArea;
+    private int _nextSpotSpawnVersion;
 
     public FishingAreaDefinition ActiveFishingArea => _activeFishingArea != null ? _activeFishingArea : _fishingArea;
 
@@ -133,11 +159,17 @@ public class FishingSpotSpawner : MonoBehaviour
         _raycastHeight = Mathf.Max(0f, _raycastHeight);
         _raycastDistance = Mathf.Max(0.1f, _raycastDistance);
         _activeAreaProbeInterval = Mathf.Max(0.1f, _activeAreaProbeInterval);
+        _blockedSpawnRadius = Mathf.Max(0f, _blockedSpawnRadius);
+        _blockedSpawnProbeHeight = Mathf.Max(0f, _blockedSpawnProbeHeight);
+        _blockedSpawnProbeDepth = Mathf.Max(0f, _blockedSpawnProbeDepth);
+        _blockedReferenceSpawnRadius = Mathf.Max(0f, _blockedReferenceSpawnRadius);
+        _fishingSpotPoolSize = Mathf.Max(1, _fishingSpotPoolSize);
     }
 
     private void Start()
     {
         _lastSpotUseTime = Time.time;
+        PrepareFishingSpotPool();
 
         UpdateActiveFishingAreaFromReference(false);
 
@@ -269,7 +301,10 @@ public class FishingSpotSpawner : MonoBehaviour
     public void HandleSpotDeactivated(FishingSpot _spot)
     {
         if (_spot != null)
+        {
             _activeSpots.Remove(_spot);
+            ReleaseSpotWithoutRespawn(_spot);
+        }
 
         _lastSpotUseTime = Time.time;
 
@@ -326,15 +361,25 @@ public class FishingSpotSpawner : MonoBehaviour
             if (_activeFishingArea != null && spawnArea != _activeFishingArea)
                 continue;
 
+            if (IsSpawnNearBlockedReference(waterPosition))
+                continue;
+
+            if (IsSpawnBlocked(waterPosition))
+                continue;
+
             if (!IsFarEnoughFromActiveSpots(waterPosition))
                 continue;
 
-            FishingSpot spot = Instantiate(_spotPrefab, waterPosition, _spotPrefab.transform.rotation, transform);
+            FishingSpot spot = GetSpotInstance(waterPosition);
+
+            if (spot == null)
+                continue;
+
             spot.Initialize(spawnArea, this, _spawnedSpotsDeactivateAfterFishingStarts);
             _activeSpots.Add(spot);
 
             if (_replaceUnfishedSpots && _spotLifetime > 0f)
-                StartCoroutine(ExpireUnfishedSpotAfterLifetime(spot));
+                StartCoroutine(ExpireUnfishedSpotAfterLifetime(spot, RegisterSpotSpawnVersion(spot)));
 
             return true;
         }
@@ -392,10 +437,13 @@ public class FishingSpotSpawner : MonoBehaviour
     {
         _area = null;
 
-        if (_waterMaterialAreas == null || _waterMaterialAreas.Length == 0)
+        if (!TryGetWaterMaterial(_waterHit, out Material waterMaterial))
             return false;
 
-        if (!TryGetWaterMaterial(_waterHit, out Material waterMaterial))
+        if (TryGetLavaAreaFromMaterial(waterMaterial, out _area))
+            return true;
+
+        if (_waterMaterialAreas == null || _waterMaterialAreas.Length == 0)
             return false;
 
         for (int i = 0; i < _waterMaterialAreas.Length; i++)
@@ -410,6 +458,48 @@ public class FishingSpotSpawner : MonoBehaviour
         }
 
         return false;
+    }
+
+    private bool TryGetLavaAreaFromMaterial(Material _waterMaterial, out FishingAreaDefinition _area)
+    {
+        _area = null;
+
+        if (_waterMaterial == null || _lavaFishingArea == null)
+            return false;
+
+        bool materialMatches = _lavaMaterial != null && MaterialsMatch(_waterMaterial, _lavaMaterial);
+        bool shaderMatches = _lavaShader != null && _waterMaterial.shader == _lavaShader;
+        bool nameMatches = _autoDetectLavaMaterialByName && MaterialNameContains(_waterMaterial, _lavaMaterialNameKeyword);
+
+        if (!materialMatches && !shaderMatches && !nameMatches)
+            return false;
+
+        _area = _lavaFishingArea;
+        return true;
+    }
+
+    private static bool MaterialsMatch(Material _a, Material _b)
+    {
+        if (_a == null || _b == null)
+            return false;
+
+        return _a == _b || string.Equals(GetBaseMaterialName(_a), GetBaseMaterialName(_b), System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private static bool MaterialNameContains(Material _material, string _keyword)
+    {
+        if (_material == null || string.IsNullOrWhiteSpace(_keyword))
+            return false;
+
+        return GetBaseMaterialName(_material).IndexOf(_keyword, System.StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private static string GetBaseMaterialName(Material _material)
+    {
+        if (_material == null)
+            return string.Empty;
+
+        return _material.name.Replace(" (Instance)", string.Empty);
     }
 
     private bool TryGetWaterMaterial(RaycastHit _waterHit, out Material _material)
@@ -483,18 +573,29 @@ public class FishingSpotSpawner : MonoBehaviour
                 continue;
 
             _activeSpots.RemoveAt(i);
-            DestroySpotWithoutRespawn(spot);
+            ReleaseSpotWithoutRespawn(spot);
         }
     }
 
-    private void DestroySpotWithoutRespawn(FishingSpot _spot)
+    private void ReleaseSpotWithoutRespawn(FishingSpot _spot)
     {
         if (_spot == null)
             return;
 
+        _activeSpotSpawnVersions.Remove(_spot);
+
         if (Application.isPlaying)
         {
-            Destroy(_spot.gameObject);
+            if (_useFishingSpotPool && PoolManager.TryReturn(_spot.gameObject))
+                return;
+
+            if (_destroyDeactivatedSpots)
+            {
+                Destroy(_spot.gameObject);
+                return;
+            }
+
+            _spot.gameObject.SetActive(false);
             return;
         }
 
@@ -533,18 +634,24 @@ public class FishingSpotSpawner : MonoBehaviour
         return reference.position + direction.normalized * distance;
     }
 
-    private IEnumerator ExpireUnfishedSpotAfterLifetime(FishingSpot _spot)
+    private IEnumerator ExpireUnfishedSpotAfterLifetime(FishingSpot _spot, int _spawnVersion)
     {
         yield return new WaitForSeconds(_spotLifetime);
 
         if (_spot == null)
             yield break;
 
+        if (!_activeSpotSpawnVersions.TryGetValue(_spot, out int currentSpawnVersion) ||
+            currentSpawnVersion != _spawnVersion)
+        {
+            yield break;
+        }
+
         if (!_activeSpots.Contains(_spot) || !_spot.gameObject.activeInHierarchy)
             yield break;
 
         _activeSpots.Remove(_spot);
-        Destroy(_spot.gameObject);
+        ReleaseSpotWithoutRespawn(_spot);
 
         bool shouldForceNearReference =
             _forceNearReferenceAfterLongNoFishing &&
@@ -638,6 +745,73 @@ public class FishingSpotSpawner : MonoBehaviour
         return height;
     }
 
+    private bool IsSpawnBlocked(Vector3 _waterPosition)
+    {
+        if (_blockedSpawnLayers.value == 0 || _blockedSpawnRadius <= 0f)
+            return false;
+
+        Vector3 probeOrigin = _waterPosition + Vector3.up * _blockedSpawnProbeHeight;
+        float probeDistance = _blockedSpawnProbeHeight + _blockedSpawnProbeDepth;
+
+        if (probeDistance > 0f &&
+            Physics.SphereCast(
+                probeOrigin,
+                _blockedSpawnRadius,
+                Vector3.down,
+                out _,
+                probeDistance,
+                _blockedSpawnLayers,
+                QueryTriggerInteraction.Ignore))
+        {
+            return true;
+        }
+
+        return Physics.CheckSphere(
+            _waterPosition,
+            _blockedSpawnRadius,
+            _blockedSpawnLayers,
+            QueryTriggerInteraction.Ignore
+        );
+    }
+
+    private bool IsSpawnNearBlockedReference(Vector3 _waterPosition)
+    {
+        if (!_blockSpawnNearReference || _blockedReferenceSpawnRadius <= 0f)
+            return false;
+
+        Transform reference = GetSpawnReference();
+
+        if (reference != null && IsWithinHorizontalDistance(_waterPosition, reference.position, _blockedReferenceSpawnRadius))
+            return true;
+
+        if (!_blockSpawnNearBoatTag || string.IsNullOrWhiteSpace(_boatTag))
+            return false;
+
+        try
+        {
+            GameObject[] boats = GameObject.FindGameObjectsWithTag(_boatTag);
+
+            for (int i = 0; i < boats.Length; i++)
+            {
+                if (boats[i] != null && IsWithinHorizontalDistance(_waterPosition, boats[i].transform.position, _blockedReferenceSpawnRadius))
+                    return true;
+            }
+        }
+        catch (UnityException)
+        {
+            return false;
+        }
+
+        return false;
+    }
+
+    private static bool IsWithinHorizontalDistance(Vector3 _a, Vector3 _b, float _distance)
+    {
+        _a.y = 0f;
+        _b.y = 0f;
+        return Vector3.Distance(_a, _b) < _distance;
+    }
+
     private bool IsFarEnoughFromActiveSpots(Vector3 _position)
     {
         if (_minDistanceBetweenSpots <= 0f)
@@ -663,7 +837,49 @@ public class FishingSpotSpawner : MonoBehaviour
         for (int i = _activeSpots.Count - 1; i >= 0; i--)
         {
             if (_activeSpots[i] == null || !_activeSpots[i].gameObject.activeInHierarchy)
+            {
+                if (_activeSpots[i] != null)
+                    _activeSpotSpawnVersions.Remove(_activeSpots[i]);
+
                 _activeSpots.RemoveAt(i);
+            }
         }
+    }
+
+    private void PrepareFishingSpotPool()
+    {
+        if (!_useFishingSpotPool || _spotPrefab == null || string.IsNullOrWhiteSpace(_fishingSpotPoolKey))
+            return;
+
+        int poolSize = Mathf.Max(_fishingSpotPoolSize, _activeSpotCount);
+        PoolManager.GetOrCreate().EnsurePool(_fishingSpotPoolKey, _spotPrefab.gameObject, poolSize, false);
+    }
+
+    private FishingSpot GetSpotInstance(Vector3 _waterPosition)
+    {
+        Quaternion rotation = _spotPrefab.transform.rotation;
+
+        if (_useFishingSpotPool && !string.IsNullOrWhiteSpace(_fishingSpotPoolKey))
+        {
+            PrepareFishingSpotPool();
+            GameObject pooledObject = PoolManager.Instance != null
+                ? PoolManager.Instance.GetObject(_fishingSpotPoolKey, _waterPosition, rotation, transform)
+                : null;
+
+            if (pooledObject != null && pooledObject.TryGetComponent(out FishingSpot pooledSpot))
+                return pooledSpot;
+
+            if (pooledObject != null)
+                PoolManager.TryReturn(pooledObject);
+        }
+
+        return Instantiate(_spotPrefab, _waterPosition, rotation, transform);
+    }
+
+    private int RegisterSpotSpawnVersion(FishingSpot _spot)
+    {
+        int spawnVersion = ++_nextSpotSpawnVersion;
+        _activeSpotSpawnVersions[_spot] = spawnVersion;
+        return spawnVersion;
     }
 }
