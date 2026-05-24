@@ -45,10 +45,22 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private FishDirectionPull fishDirectionPull;
     [SerializeField] private bool moveHookWithFishPull = true;
     [SerializeField] private bool keepSplashWhileFishing = true;
+    [Tooltip("Quando ligado, usa um unico FishVFX ativo seguindo o movimento do peixe durante a pescaria.")]
+    [SerializeField] private bool keepFishPullVFXWhileFishing = true;
     [SerializeField] private float fishMovementRadius = 1.4f;
     [SerializeField] private float fishMovementFollowSpeed = 4f;
     [SerializeField] private VisualEffect fishPullVFXPrefab;
     [SerializeField] private float fishPullVFXLifetime = 1.2f;
+    [SerializeField] private bool alignFishPullVFXToWaterSurface = true;
+    [SerializeField] private bool alignFishPullVFXOnlyInDeepArea = true;
+    [SerializeField] private Vector3 fishPullVFXOffset = new Vector3(0f, 0.08f, 0f);
+
+    [Header("VFX Pool")]
+    [SerializeField] private bool useVFXPool = true;
+    [SerializeField] private string splashVFXPoolKey = "SplashVFX";
+    [SerializeField, Min(1)] private int splashVFXPoolSize = 4;
+    [SerializeField] private string fishPullVFXPoolKey = "FishPullVFX";
+    [SerializeField, Min(1)] private int fishPullVFXPoolSize = 6;
 
     [Header("Audio")]
     [SerializeField, InspectorName("Cast SFX")] private AudioClip castSfx;
@@ -64,11 +76,15 @@ public class FishingRod : MonoBehaviour
 
     private FishingSpot currentTargetSpot;
     private VisualEffect currentSplashInstance;
+    private GameObject currentSplashRoot;
+    private VisualEffect currentFishPullVFXInstance;
+    private GameObject currentFishPullVFXRoot;
     private Transform currentHook;
     private Coroutine hookRoutine;
     private Vector3 hookWaterOrigin;
     private Vector3 fishMovementTarget;
     private int lastFishMovementPromptId = -1;
+    private Vector3 currentFishPullDirection = Vector3.forward;
     private Vector3[] arcCache;
     private Vector3 currentPlayerFacingTargetPoint;
     private PlayerAnimationController playerAnimationController;
@@ -90,6 +106,8 @@ public class FishingRod : MonoBehaviour
         fishMovementRadius = Mathf.Max(0f, fishMovementRadius);
         fishMovementFollowSpeed = Mathf.Max(0f, fishMovementFollowSpeed);
         fishPullVFXLifetime = Mathf.Max(0f, fishPullVFXLifetime);
+        splashVFXPoolSize = Mathf.Max(1, splashVFXPoolSize);
+        fishPullVFXPoolSize = Mathf.Max(1, fishPullVFXPoolSize);
     }
 
     private void Awake()
@@ -110,6 +128,8 @@ public class FishingRod : MonoBehaviour
 
     private void Start()
     {
+        PrepareVFXPools();
+
         if (InputHandler.instance != null && useInteractToRecallHook)
             InputHandler.instance.onInteractPressed += HandleInteractPressed;
     }
@@ -118,6 +138,9 @@ public class FishingRod : MonoBehaviour
     {
         if (InputHandler.instance != null)
             InputHandler.instance.onInteractPressed -= HandleInteractPressed;
+
+        DestroyCurrentSplash();
+        ReleaseCurrentFishPullVFX();
     }
 
     #endregion
@@ -378,6 +401,7 @@ public class FishingRod : MonoBehaviour
         currentTargetSpot = null;
         lastFishMovementPromptId = -1;
         hookRoutine = null;
+        ReleaseCurrentFishPullVFX();
         ClearPlayerFacingTarget();
     }
 
@@ -522,19 +546,32 @@ public class FishingRod : MonoBehaviour
 
         DestroyCurrentSplash();
 
-        currentSplashInstance = Instantiate(
+        VisualEffect splashInstance = PooledVisualEffectUtility.Spawn(
             splashVFXPrefab,
+            splashVFXPoolKey,
             _position,
-            Quaternion.identity
+            Quaternion.identity,
+            null,
+            useVFXPool,
+            splashVFXPoolSize,
+            splashLifetime,
+            !keepSplashWhileFishing,
+            out GameObject splashRoot
         );
 
-        if (currentSplashInstance.HasFloat("Intensity"))
-            currentSplashInstance.SetFloat("Intensity", splashIntensity);
+        if (splashInstance == null)
+            return;
 
-        currentSplashInstance.Play();
+        if (splashInstance.HasFloat("Intensity"))
+            splashInstance.SetFloat("Intensity", splashIntensity);
 
-        if (!keepSplashWhileFishing)
-            Destroy(currentSplashInstance.gameObject, splashLifetime);
+        splashInstance.Play();
+
+        if (keepSplashWhileFishing)
+        {
+            currentSplashInstance = splashInstance;
+            currentSplashRoot = splashRoot;
+        }
 
         PlaySplashSfx(_position);
     }
@@ -574,6 +611,8 @@ public class FishingRod : MonoBehaviour
 
         if (currentSplashInstance != null)
             currentSplashInstance.transform.position = currentHook.position;
+
+        UpdateCurrentFishPullVFX(false, false);
     }
 
     private void DestroyCurrentSplash()
@@ -581,8 +620,12 @@ public class FishingRod : MonoBehaviour
         if (currentSplashInstance == null)
             return;
 
-        Destroy(currentSplashInstance.gameObject);
+        PooledVisualEffectUtility.Release(currentSplashRoot != null
+            ? currentSplashRoot
+            : currentSplashInstance.gameObject);
+
         currentSplashInstance = null;
+        currentSplashRoot = null;
     }
 
     private void SpawnFishPullVFX()
@@ -595,23 +638,180 @@ public class FishingRod : MonoBehaviour
             : Vector2.zero;
 
         Vector3 fishWorldDir = new Vector3(fishMove.x, 0f, fishMove.y);
+        currentFishPullDirection = fishWorldDir.sqrMagnitude > 0.0001f
+            ? fishWorldDir.normalized
+            : currentFishPullDirection;
 
-        Quaternion spawnRotation = fishWorldDir != Vector3.zero
-            ? Quaternion.LookRotation(fishWorldDir, Vector3.up)
+        if (keepFishPullVFXWhileFishing)
+        {
+            UpdateCurrentFishPullVFX(true);
+            return;
+        }
+
+        SpawnOneShotFishPullVFXAt(GetFishPullVFXPosition(), fishWorldDir);
+    }
+
+    public bool DebugSpawnFishPullVFXAtWater(Vector3 _worldPosition, Vector3 _worldDirection)
+    {
+        if (fishPullVFXPrefab == null)
+            return false;
+
+        Vector3 spawnPosition = _worldPosition + fishPullVFXOffset;
+
+        if (WaveManager.instance != null)
+            spawnPosition.y = WaveManager.instance.GetWaveHeight(spawnPosition.x, spawnPosition.z) + fishPullVFXOffset.y;
+
+        SpawnOneShotFishPullVFXAt(spawnPosition, _worldDirection);
+        return true;
+    }
+
+    private void SpawnOneShotFishPullVFXAt(Vector3 _position, Vector3 _worldDirection)
+    {
+        Vector3 flatDirection = _worldDirection;
+        flatDirection.y = 0f;
+
+        Quaternion spawnRotation = flatDirection.sqrMagnitude > 0.0001f
+            ? Quaternion.LookRotation(flatDirection.normalized, Vector3.up)
             : Quaternion.identity;
 
-        VisualEffect instance = Instantiate(
+        VisualEffect instance = PooledVisualEffectUtility.Spawn(
             fishPullVFXPrefab,
-            currentHook.position,
-            spawnRotation
+            fishPullVFXPoolKey,
+            _position,
+            spawnRotation,
+            null,
+            useVFXPool,
+            fishPullVFXPoolSize,
+            fishPullVFXLifetime,
+            true,
+            out _
         );
 
+        if (instance == null)
+            return;
+
         if (instance.HasVector3("Direction"))
-            instance.SetVector3("Direction", fishWorldDir);
+            instance.SetVector3("Direction", flatDirection.normalized);
 
         instance.Play();
+    }
 
-        Destroy(instance.gameObject, fishPullVFXLifetime);
+    private void UpdateCurrentFishPullVFX(bool _replay, bool _allowCreate = true)
+    {
+        if (!keepFishPullVFXWhileFishing || fishPullVFXPrefab == null || currentHook == null)
+            return;
+
+        Vector3 position = GetFishPullVFXPosition();
+        Vector3 flatDirection = currentFishPullDirection;
+        flatDirection.y = 0f;
+
+        if (flatDirection.sqrMagnitude <= 0.0001f)
+            flatDirection = transform.forward;
+
+        Quaternion rotation = Quaternion.LookRotation(flatDirection.normalized, Vector3.up);
+
+        if (currentFishPullVFXInstance == null)
+        {
+            if (!_allowCreate)
+                return;
+
+            currentFishPullVFXInstance = PooledVisualEffectUtility.Spawn(
+                fishPullVFXPrefab,
+                fishPullVFXPoolKey,
+                position,
+                rotation,
+                null,
+                useVFXPool,
+                fishPullVFXPoolSize,
+                fishPullVFXLifetime,
+                false,
+                out currentFishPullVFXRoot
+            );
+        }
+
+        if (currentFishPullVFXInstance == null)
+            return;
+
+        Transform rootTransform = currentFishPullVFXRoot != null
+            ? currentFishPullVFXRoot.transform
+            : currentFishPullVFXInstance.transform;
+
+        rootTransform.SetPositionAndRotation(position, rotation);
+
+        if (currentFishPullVFXInstance.HasVector3("Direction"))
+            currentFishPullVFXInstance.SetVector3("Direction", flatDirection.normalized);
+
+        if (_replay)
+            currentFishPullVFXInstance.Play();
+    }
+
+    private void ReleaseCurrentFishPullVFX()
+    {
+        if (currentFishPullVFXInstance == null)
+            return;
+
+        PooledVisualEffectUtility.Release(currentFishPullVFXRoot != null
+            ? currentFishPullVFXRoot
+            : currentFishPullVFXInstance.gameObject);
+
+        currentFishPullVFXInstance = null;
+        currentFishPullVFXRoot = null;
+        currentFishPullDirection = Vector3.forward;
+    }
+
+    private Vector3 GetFishPullVFXPosition()
+    {
+        Vector3 position = currentHook.position + fishPullVFXOffset;
+
+        if (ShouldAlignFishPullVFXToWaterSurface() && WaveManager.instance != null)
+            position.y = WaveManager.instance.GetWaveHeight(position.x, position.z) + fishPullVFXOffset.y;
+
+        return position;
+    }
+
+    private bool ShouldAlignFishPullVFXToWaterSurface()
+    {
+        if (!alignFishPullVFXToWaterSurface)
+            return false;
+
+        return !alignFishPullVFXOnlyInDeepArea ||
+               (currentTargetSpot != null && IsDeepFishingArea(currentTargetSpot.FishingArea));
+    }
+
+    private static bool IsDeepFishingArea(FishingAreaDefinition _area)
+    {
+        if (_area == null)
+            return false;
+
+        return ContainsDeepKeyword(_area.AreaId) || ContainsDeepKeyword(_area.DisplayName);
+    }
+
+    private static bool ContainsDeepKeyword(string _text)
+    {
+        if (string.IsNullOrWhiteSpace(_text))
+            return false;
+
+        string normalizedText = _text.ToLowerInvariant();
+        return normalizedText.Contains("deep") || normalizedText.Contains("profund");
+    }
+
+    private void PrepareVFXPools()
+    {
+        PooledVisualEffectUtility.EnsurePool(
+            splashVFXPoolKey,
+            splashVFXPrefab,
+            splashVFXPoolSize,
+            useVFXPool,
+            true
+        );
+
+        PooledVisualEffectUtility.EnsurePool(
+            fishPullVFXPoolKey,
+            fishPullVFXPrefab,
+            fishPullVFXPoolSize,
+            useVFXPool,
+            true
+        );
     }
 
     #endregion
@@ -690,15 +890,28 @@ public class FishingRod : MonoBehaviour
         if (splashVFXPrefab == null)
             return;
 
-        VisualEffect splash = Instantiate(splashVFXPrefab, _position, Quaternion.identity);
+        VisualEffect splash = PooledVisualEffectUtility.Spawn(
+            splashVFXPrefab,
+            splashVFXPoolKey,
+            _position,
+            Quaternion.identity,
+            null,
+            useVFXPool,
+            splashVFXPoolSize,
+            splashLifetime,
+            true,
+            out _
+        );
+
+        if (splash == null)
+            return;
+
         float finalIntensity = splashIntensity * _multiplier;
 
         if (splash.HasFloat("Intensity"))
             splash.SetFloat("Intensity", finalIntensity);
 
         splash.Play();
-
-        Destroy(splash.gameObject, splashLifetime);
     }
 
     private IEnumerator PerfectPull()

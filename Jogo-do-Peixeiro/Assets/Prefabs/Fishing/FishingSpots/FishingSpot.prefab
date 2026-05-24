@@ -431,19 +431,19 @@ MonoBehaviour:
   ignoreEscapeForDebug: 0
   boatTag: Boat
   escapeWarningMessage: Os peixes fugiram
-  fadeOutByBoatDistance: 1
-  blockFishingWhileFading: 1
-  escapeDistance: 6
-  escapeFadeDuration: 0.35
-  fadeStartDistance: 8
-  minimumFadeScale: 0.15
+  escapeDistance: 1.5
+  escapeFadeDuration: 0.18
   castTargetPoint: {fileID: 0}
-  areaVFXObject: {fileID: 0}
-  areaVFXPrefab: {fileID: 0}
-  areaVFXPoint: {fileID: 0}
-  areaVFXLocalOffset: {x: 0, y: 0, z: 0}
+  areaVFXObject: {fileID: 6005944270024154703}
+  areaVFXPrefab: {fileID: 6005944270024154703}
+  areaVFXPoint: {fileID: 4361207725155196602}
+  alignAreaVFXToWaterSurface: 1
+  alignAreaVFXOnlyInDeepArea: 1
+  areaVFXWaterYOffset: 0.08
+  deepAreaVFXWaterYOffset: -0.25
   parentAreaVFXToSpot: 1
   playAreaVFXOnEnable: 1
+  updateAreaVFXPositionEveryFrame: 1
 --- !u!1001 &5746120337017120602
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -455,6 +455,18 @@ PrefabInstance:
     - target: {fileID: 2082691071524518165, guid: 4c508141ba07bad47ac56de53d7b18da, type: 3}
       propertyPath: m_Name
       value: BoiaVFX
+      objectReference: {fileID: 0}
+    - target: {fileID: 3728394716171142803, guid: 4c508141ba07bad47ac56de53d7b18da, type: 3}
+      propertyPath: m_SortingLayer
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 3728394716171142803, guid: 4c508141ba07bad47ac56de53d7b18da, type: 3}
+      propertyPath: m_SortingOrder
+      value: 32767
+      objectReference: {fileID: 0}
+    - target: {fileID: 3728394716171142803, guid: 4c508141ba07bad47ac56de53d7b18da, type: 3}
+      propertyPath: m_SortingLayerID
+      value: -649288389
       objectReference: {fileID: 0}
     - target: {fileID: 8302470924773177824, guid: 4c508141ba07bad47ac56de53d7b18da, type: 3}
       propertyPath: m_LocalScale.x
@@ -516,5 +528,10 @@ PrefabInstance:
 --- !u!4 &4361207725155196602 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 8302470924773177824, guid: 4c508141ba07bad47ac56de53d7b18da, type: 3}
+  m_PrefabInstance: {fileID: 5746120337017120602}
+  m_PrefabAsset: {fileID: 0}
+--- !u!1 &6005944270024154703 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: 2082691071524518165, guid: 4c508141ba07bad47ac56de53d7b18da, type: 3}
   m_PrefabInstance: {fileID: 5746120337017120602}
   m_PrefabAsset: {fileID: 0}
