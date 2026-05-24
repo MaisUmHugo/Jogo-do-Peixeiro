@@ -63,6 +63,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private TutorialPanelSequence basicPanelSequence;
     [SerializeField] private DayCycle dayCycle;
     [SerializeField] private ShipInventory shipInventory;
+    [SerializeField] private PlayerMoneyManager playerMoneyManager;
     [SerializeField] private CampaignProgressSystem campaignProgress;
 
     [Header("Outcome Panel")]
@@ -554,6 +555,25 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (_earnedMoney <= 0)
             return;
+
+        if (!HasEnoughMoneyForQuestGoal())
+        {
+            hasSoldFishToDockOwner = false;
+            shouldShowDebtPaymentSlidesOnDockOwnerClose = false;
+
+            int remainingPayment = GetQuestDebtPaymentRemaining();
+            int currentMoney = GetCurrentPlayerMoney();
+            int missingMoney = Mathf.Max(0, remainingPayment - currentMoney);
+
+            SetStep(HasEnoughAvailableValueForQuestGoal()
+                ? TutorialStep.GoToDockOwner
+                : TutorialStep.GoToBoat);
+
+            if (missingMoney > 0)
+                ShowWarning($"Peixes vendidos. Ainda faltam R$ {missingMoney} para pagar a meta.");
+
+            return;
+        }
 
         hasSoldFishToDockOwner = true;
 
@@ -1128,6 +1148,14 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         return shipInventory != null ? shipInventory.GetTotalFishValue() : 0;
     }
 
+    private int GetCurrentPlayerMoney()
+    {
+        if (playerMoneyManager == null)
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>(FindObjectsInactive.Include);
+
+        return playerMoneyManager != null ? Mathf.FloorToInt(playerMoneyManager.PlayerMoney) : 0;
+    }
+
     private int GetQuestDebtPaymentRemaining()
     {
         if (campaignProgress == null)
@@ -1147,6 +1175,26 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return true;
 
         return GetCurrentFishInventoryValue() >= remainingPayment;
+    }
+
+    private bool HasEnoughMoneyForQuestGoal()
+    {
+        int remainingPayment = GetQuestDebtPaymentRemaining();
+
+        if (remainingPayment <= 0)
+            return true;
+
+        return GetCurrentPlayerMoney() >= remainingPayment;
+    }
+
+    private bool HasEnoughAvailableValueForQuestGoal()
+    {
+        int remainingPayment = GetQuestDebtPaymentRemaining();
+
+        if (remainingPayment <= 0)
+            return true;
+
+        return GetCurrentPlayerMoney() + GetCurrentFishInventoryValue() >= remainingPayment;
     }
 
     private string GetRequestedFishName()
