@@ -13,6 +13,7 @@ public class PlayerInteract : MonoBehaviour
     [Header("Focus Settings")]
     [SerializeField] private float minViewDot = 0.35f;
     [SerializeField] private float screenCenterWeight = 50f;
+    [SerializeField, Min(0.1f)] private float maxInteractionDistance = 4f;
 
     [Header("Refresh Settings")]
     [SerializeField] private float teleportRefreshRadius = 8f;
@@ -191,7 +192,7 @@ public class PlayerInteract : MonoBehaviour
 
         if (promptPointComponents.Length == 0)
         {
-            if (TryScorePrompt(_interactableTransform.position, _interactable.GetInteractionPriority(), out _bestScore))
+            if (TryScoreInteractableArea(_interactableTransform, _interactable.GetInteractionPriority(), out _bestScore))
                 return null;
 
             return null;
@@ -229,6 +230,12 @@ public class PlayerInteract : MonoBehaviour
         if (!currentInteractable.CanInteract())
             return;
 
+        if (!IsCurrentInteractableInRange())
+        {
+            ClearCurrentInteractable();
+            return;
+        }
+
         currentInteractable.Interact();
     }
 
@@ -240,6 +247,9 @@ public class PlayerInteract : MonoBehaviour
             return false;
 
         float distance = Vector3.Distance(playerRoot.position, _worldPosition);
+
+        if (distance > maxInteractionDistance)
+            return false;
 
         if (playerCamera == null)
         {
@@ -269,6 +279,53 @@ public class PlayerInteract : MonoBehaviour
         return true;
     }
 
+    private bool TryScoreInteractableArea(Transform _interactableTransform, int _priority, out float _score)
+    {
+        Vector3 scorePosition = _interactableTransform.position;
+
+        if (TryGetClosestInteractablePoint(_interactableTransform, out Vector3 closestPoint))
+            scorePosition = closestPoint;
+
+        return TryScorePrompt(scorePosition, _priority, out _score);
+    }
+
+    private bool TryGetClosestInteractablePoint(Transform _interactableTransform, out Vector3 _closestPoint)
+    {
+        _closestPoint = Vector3.zero;
+
+        if (_interactableTransform == null || playerRoot == null)
+            return false;
+
+        Collider[] colliders = _interactableTransform.GetComponentsInChildren<Collider>(true);
+        bool foundPoint = false;
+        float bestSqrDistance = float.MaxValue;
+
+        for (int i = 0; i < colliders.Length; i++)
+        {
+            Collider collider = colliders[i];
+
+            if (collider == null ||
+                !collider.enabled ||
+                !collider.gameObject.activeInHierarchy ||
+                collider.transform.IsChildOf(playerRoot))
+            {
+                continue;
+            }
+
+            Vector3 closestPoint = collider.ClosestPoint(playerRoot.position);
+            float sqrDistance = (closestPoint - playerRoot.position).sqrMagnitude;
+
+            if (sqrDistance >= bestSqrDistance)
+                continue;
+
+            bestSqrDistance = sqrDistance;
+            _closestPoint = closestPoint;
+            foundPoint = true;
+        }
+
+        return foundPoint;
+    }
+
     private bool IsInteractionBlocked()
     {
         if (GameManager.instance == null)
@@ -278,6 +335,22 @@ public class PlayerInteract : MonoBehaviour
             return true;
 
         return GameManager.instance.IsGameplayBlocked();
+    }
+
+    private bool IsCurrentInteractableInRange()
+    {
+        if (playerRoot == null)
+            return false;
+
+        Vector3 referencePosition = currentPromptPoint != null
+            ? currentPromptPoint.position
+            : TryGetClosestInteractablePoint(currentInteractableTransform, out Vector3 closestPoint)
+                ? closestPoint
+                : currentInteractableTransform != null
+                    ? currentInteractableTransform.position
+                    : playerRoot.position;
+
+        return Vector3.Distance(playerRoot.position, referencePosition) <= maxInteractionDistance;
     }
 
     private void ClearCurrentInteractable()
