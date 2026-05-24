@@ -34,6 +34,9 @@ public class MoneyLender : MonoBehaviour
     [SerializeField] private VisualEffect fireworkVFXPrefab;
     [SerializeField] private Transform fireworkSpawnPoint;
     [SerializeField] private float fireworkVFXLifetime = 3f;
+    [SerializeField] private bool useFireworkVFXPool = true;
+    [SerializeField] private string fireworkVFXPoolKey = "FireworkVFX";
+    [SerializeField, Min(1)] private int fireworkVFXPoolSize = 2;
 
     [Header("Quest Completion SFX")]
     [SerializeField, InspectorName("Quest Complete SFX")] private AudioClip fireworkSfx;
@@ -60,6 +63,7 @@ public class MoneyLender : MonoBehaviour
         ResolveReferences();
         CalculateNewPayment();
         CalculateNewDebtPayment();
+        PrepareFireworkVFXPool();
     }
 
     private void OnEnable()
@@ -363,17 +367,24 @@ public class MoneyLender : MonoBehaviour
         if (fireworkVFXPrefab == null || fireworkSpawnPoint == null)
             return;
 
-        VisualEffect instance = Instantiate(
+        VisualEffect instance = PooledVisualEffectUtility.Spawn(
             fireworkVFXPrefab,
+            fireworkVFXPoolKey,
             fireworkSpawnPoint.position,
-            fireworkSpawnPoint.rotation
+            fireworkSpawnPoint.rotation,
+            null,
+            useFireworkVFXPool,
+            fireworkVFXPoolSize,
+            fireworkVFXLifetime,
+            true,
+            out _
         );
 
-        instance.gameObject.SetActive(true);
+        if (instance == null)
+            return;
+
         instance.Reinit();
         instance.Play();
-
-        Destroy(instance.gameObject, fireworkVFXLifetime);
     }
 
     private void StartTutorialFinishFireworks()
@@ -387,13 +398,22 @@ public class MoneyLender : MonoBehaviour
         if (fireworkVFXPrefab == null || fireworkSpawnPoint == null)
             return;
 
-        VisualEffect instance = Instantiate(
+        VisualEffect instance = PooledVisualEffectUtility.Spawn(
             fireworkVFXPrefab,
+            fireworkVFXPoolKey,
             fireworkSpawnPoint.position,
-            fireworkSpawnPoint.rotation
+            fireworkSpawnPoint.rotation,
+            null,
+            useFireworkVFXPool,
+            fireworkVFXPoolSize,
+            fireworkVFXLifetime,
+            false,
+            out _
         );
 
-        instance.gameObject.SetActive(true);
+        if (instance == null)
+            return;
+
         instance.Reinit();
         instance.Play();
     }
@@ -409,6 +429,17 @@ public class MoneyLender : MonoBehaviour
             return;
 
         AudioManager.Instance.PlaySfx(fireworkSfx, fireworkSfxVolume);
+    }
+
+    private void PrepareFireworkVFXPool()
+    {
+        PooledVisualEffectUtility.EnsurePool(
+            fireworkVFXPoolKey,
+            fireworkVFXPrefab,
+            fireworkVFXPoolSize,
+            useFireworkVFXPool,
+            true
+        );
     }
 
     public int GetCurrentFishWeightPayment()

@@ -23,6 +23,9 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float stepHeight = 0.05f;
     [SerializeField] private float stepVFXLifetime = 2f;
     [SerializeField] private int maxStepVFXInstances = 10;
+    [SerializeField] private bool useStepVFXPool = true;
+    [SerializeField] private string stepVFXPoolKey = "StepVFX";
+    [SerializeField, Min(1)] private int stepVFXPoolSize = 10;
     [SerializeField, InspectorName("Footstep SFX")] private AudioClip footstepSfx;
     [SerializeField] private AudioSource footstepAudioSource;
     [SerializeField, Range(0f, 1f), InspectorName("Footstep SFX Volume")] private float footstepSfxVolume = 0.7f;
@@ -36,12 +39,13 @@ public class PlayerMove : MonoBehaviour
     private float stepTimer;
     private Transform PlayerPosition;
 
-    private readonly List<VisualEffect> activeStepVFX = new();
+    private readonly List<GameObject> activeStepVFX = new();
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
         SetupFootstepAudioSource();
+        PrepareStepVFXPool();
     }
 
     private void Start()
@@ -151,26 +155,34 @@ public class PlayerMove : MonoBehaviour
         if (stepVFXPrefab == null)
             return;
 
+        activeStepVFX.RemoveAll(_vfxObject => _vfxObject == null || !_vfxObject.activeInHierarchy);
+
         if (activeStepVFX.Count >= maxStepVFXInstances)
         {
             if (activeStepVFX[0] != null)
-                Destroy(activeStepVFX[0].gameObject);
+                PooledVisualEffectUtility.Release(activeStepVFX[0]);
 
             activeStepVFX.RemoveAt(0);
         }
 
-        VisualEffect instance = Instantiate(
+        VisualEffect instance = PooledVisualEffectUtility.Spawn(
             stepVFXPrefab,
+            stepVFXPoolKey,
             position,
             rotation,
-            transform
+            transform,
+            useStepVFXPool,
+            stepVFXPoolSize,
+            stepVFXLifetime,
+            true,
+            out GameObject rootObject
         );
 
+        if (instance == null)
+            return;
+
         instance.Play();
-
-        activeStepVFX.Add(instance);
-
-        Destroy(instance.gameObject, stepVFXLifetime);
+        activeStepVFX.Add(rootObject != null ? rootObject : instance.gameObject);
     }
 
     private void PlayFootstepSfx(Vector3 _position)
@@ -212,6 +224,19 @@ public class PlayerMove : MonoBehaviour
         footstepAudioSource.playOnAwake = false;
         footstepAudioSource.loop = false;
         footstepAudioSource.spatialBlend = footstepSpatialBlend;
+    }
+
+    private void PrepareStepVFXPool()
+    {
+        int poolSize = Mathf.Max(1, stepVFXPoolSize, maxStepVFXInstances);
+
+        PooledVisualEffectUtility.EnsurePool(
+            stepVFXPoolKey,
+            stepVFXPrefab,
+            poolSize,
+            useStepVFXPool,
+            true
+        );
     }
 
     private Vector3 GetStepFeedbackPosition(Vector3 _moveDirection)
