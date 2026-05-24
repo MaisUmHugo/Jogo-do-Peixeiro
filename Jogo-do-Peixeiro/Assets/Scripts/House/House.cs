@@ -5,6 +5,7 @@ public class House : MonoBehaviour, IInteractable
 {
     [Header("References")]
     [SerializeField] private DayCycle dayCycle;
+    [SerializeField] private ForcedSleepController forcedSleepController;
     [SerializeField] private GameObject sleepUI;
     [SerializeField] private Button confirmSleepButton;
     [SerializeField] private Button cancelSleepButton;
@@ -57,6 +58,9 @@ public class House : MonoBehaviour, IInteractable
 
         UIModalManager.PopModal(ref modalToken);
 
+        if (forcedSleepController != null && forcedSleepController.StartRegularSleep(dayCycle))
+            return;
+
         if (dayCycle != null)
             dayCycle.NextDay();
 
@@ -79,6 +83,9 @@ public class House : MonoBehaviour, IInteractable
     {
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<DayCycle>(FindObjectsInactive.Include);
+
+        if (forcedSleepController == null)
+            forcedSleepController = FindFirstObjectByType<ForcedSleepController>(FindObjectsInactive.Include);
 
         if (sleepUI == null)
             sleepUI = FindInactiveSceneObjectByName("SleepPanel");

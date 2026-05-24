@@ -84,6 +84,9 @@ public class UIModalManager : MonoBehaviour
     private static int blockPauseCount;
     private static int cameraLockCount;
     private static float previousTimeScale = 1f;
+    private static int backHandledFrame = -1;
+
+    public static bool WasBackHandledThisFrame => backHandledFrame == Time.frameCount;
 
     private void Awake()
     {
@@ -137,21 +140,29 @@ public class UIModalManager : MonoBehaviour
 
     public static bool TryHandleBack()
     {
+        if (WasBackHandledThisFrame)
+            return true;
+
         if (modalEntries.Count == 0)
             return false;
 
-        for (int i = modalEntries.Count - 1; i >= 0; i--)
-        {
-            Action backAction = modalEntries[i].BackAction;
+        ModalEntry topEntry = modalEntries[modalEntries.Count - 1];
+        MarkBackHandledThisFrame();
 
-            if (backAction == null)
-                continue;
+        topEntry.BackAction?.Invoke();
+        return true;
+    }
 
-            backAction.Invoke();
-            return true;
-        }
+    public static bool IsTopModal(int _token)
+    {
+        return _token != InvalidToken &&
+               modalEntries.Count > 0 &&
+               modalEntries[modalEntries.Count - 1].Token == _token;
+    }
 
-        return IsPauseBlocked;
+    public static void MarkBackHandledThisFrame()
+    {
+        backHandledFrame = Time.frameCount;
     }
 
     public static void PopModal(ref int _token)

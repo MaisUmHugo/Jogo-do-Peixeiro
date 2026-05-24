@@ -77,7 +77,8 @@ public class BoatController : MonoBehaviour
 
     public void EnterBoat()
     {
-        if (isPlayerOnBoat) return;
+        if (!CanEnterBoat())
+            return;
 
         Debug.Log("Entrou no barco");
         isPlayerOnBoat = true;
@@ -95,9 +96,8 @@ public class BoatController : MonoBehaviour
         if (characterController != null)
             characterController.enabled = false;
 
-        player.transform.SetParent(seatPoint);
-        player.transform.position = seatPoint.position;
-        player.transform.rotation = seatPoint.rotation;
+        player.transform.SetParent(seatPoint, false);
+        ApplyPlayerSeatTransform();
 
         if (playerController != null)
             playerController.enabled = false;
@@ -123,17 +123,11 @@ public class BoatController : MonoBehaviour
         }
 
         // 3. Lógica do Player saindo
-        if (player != null && _exitPoint != null)
-        {
-            player.transform.position = _exitPoint.position;
-            player.transform.rotation = _exitPoint.rotation * Quaternion.Euler(OffsetRotacao);
-        }
-        else if (player != null)
-        {
-            player.transform.position = transform.position + transform.right * 2f;
-        }
-
         ExitBoatState();
+        PlacePlayerAtDockExit(_exitPoint, _parkPoint);
+
+        if (playerMove != null && player != null)
+            playerMove.SetSafeRespawnPosition(player.transform.position);
     }
 
     public void ReturnToParkPoint(Transform _parkPoint)
@@ -196,6 +190,9 @@ public class BoatController : MonoBehaviour
         if (_setGameState && GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnFoot);
 
+        if (playerAnimationController != null)
+            playerAnimationController.ResetBoatVisualOffset();
+
         if (player != null)
             player.transform.SetParent(originalParent, true);
 
@@ -221,6 +218,17 @@ public class BoatController : MonoBehaviour
     public bool IsPlayerOnBoat()
     {
         return isPlayerOnBoat;
+    }
+
+    public bool CanEnterBoat()
+    {
+        ResolvePlayerReferences();
+
+        return !isPlayerOnBoat &&
+               GameManager.instance != null &&
+               GameManager.instance.currentState == GameManager.GameState.OnFoot &&
+               player != null &&
+               seatPoint != null;
     }
 
     private void ResolvePlayerReferences()
@@ -253,7 +261,53 @@ public class BoatController : MonoBehaviour
         {
             playerAnimationController.ResetFishingAnimationState();
             playerAnimationController.ResetFishingVisualOffset();
+            playerAnimationController.ResetBoatVisualOffset();
         }
+    }
+
+    private void ApplyPlayerSeatTransform()
+    {
+        if (player == null || seatPoint == null)
+            return;
+
+        player.transform.localPosition = Vector3.zero;
+        player.transform.localRotation = Quaternion.identity;
+
+        if (playerAnimationController != null)
+            playerAnimationController.ApplyBoatVisualOffset();
+    }
+
+    private void PlacePlayerAtDockExit(Transform _exitPoint, Transform _parkPoint)
+    {
+        if (player == null)
+            return;
+
+        bool wasCharacterControllerEnabled = characterController != null && characterController.enabled;
+
+        if (characterController != null && wasCharacterControllerEnabled)
+            characterController.enabled = false;
+
+        if (_exitPoint != null)
+        {
+            player.transform.SetPositionAndRotation(
+                _exitPoint.position,
+                _exitPoint.rotation * Quaternion.Euler(OffsetRotacao)
+            );
+        }
+        else
+        {
+            Transform fallbackPoint = _parkPoint != null ? _parkPoint : transform;
+
+            player.transform.SetPositionAndRotation(
+                fallbackPoint.position + fallbackPoint.right * 2f,
+                fallbackPoint.rotation * Quaternion.Euler(OffsetRotacao)
+            );
+        }
+
+        if (characterController != null)
+            characterController.enabled = wasCharacterControllerEnabled;
+
+        Physics.SyncTransforms();
     }
 
     private void EnsurePlayerAnimatorEnabled()

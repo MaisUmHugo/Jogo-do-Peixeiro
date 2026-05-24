@@ -81,10 +81,12 @@ public class PaymentUI : MonoBehaviour
     [SerializeField] private bool useTutorialPaymentWhenAvailable = true;
 
     [Header("Audio")]
-    [SerializeField] private AudioClip doorOpenSfx;
-    [SerializeField] private AudioClip doorCloseSfx;
-    [SerializeField, Range(0f, 1f)] private float doorOpenSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f)] private float doorCloseSfxVolume = 1f;
+    [SerializeField, InspectorName("Door Open SFX")] private AudioClip doorOpenSfx;
+    [SerializeField, InspectorName("Door Close SFX")] private AudioClip doorCloseSfx;
+    [SerializeField, InspectorName("Special Delivery SFX")] private AudioClip specialDeliveryOpenSfx;
+    [SerializeField, Range(0f, 1f), InspectorName("Door Open SFX Volume")] private float doorOpenSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Door Close SFX Volume")] private float doorCloseSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Special Delivery SFX Volume")] private float specialDeliveryOpenSfxVolume = 1f;
 
     private readonly List<FishData> ownedFish = new List<FishData>();
     private float fishWeight;
@@ -217,7 +219,10 @@ public class PaymentUI : MonoBehaviour
         SetGameUiState(GameManager.GameState.InUI, false, true);
 
         if (!wasOpen)
+        {
             PlayDoorSfx(doorOpenSfx, doorOpenSfxVolume);
+            PlaySpecialDeliveryOpenSfxIfNeeded();
+        }
 
         Refresh();
         SelectInitialControl();
@@ -555,9 +560,14 @@ public class PaymentUI : MonoBehaviour
 
     private void HandlePausePressed()
     {
-        if (!isOpen)
+        if (!isOpen ||
+            UIModalManager.WasBackHandledThisFrame ||
+            !UIModalManager.IsTopModal(modalToken))
+        {
             return;
+        }
 
+        UIModalManager.MarkBackHandledThisFrame();
         Close();
     }
 
@@ -686,7 +696,7 @@ public class PaymentUI : MonoBehaviour
         SetText(specialDeliveryTitleText, "Entrega especial");
         SetText(specialDeliveryQuestText, GetQuestLine());
         SetText(specialDeliveryDeadlineText, GetDeadlineLine());
-        SetText(specialDeliveryDebtText, $"Divida total: {GetDebtValueText()}");
+        SetText(specialDeliveryDebtText, GetSpecialDeliveryDebtLine());
         SetSpecialDeliveryVisuals(true);
 
         ClearDefaultPaymentSeparatedTexts();
@@ -723,8 +733,11 @@ public class PaymentUI : MonoBehaviour
 
     private string GetQuestLine()
     {
-        if (campaignProgress == null || campaignProgress.GameMode != GameProgressMode.Campaign)
+        if (campaignProgress == null)
             return string.Empty;
+
+        if (campaignProgress.GameMode == GameProgressMode.Endless)
+            return $"Modo sem fim - Entrega {campaignProgress.CurrentQuestIndex}";
 
         if (campaignProgress.IsCampaignCompleted)
             return "Campanha concluida";
@@ -745,7 +758,6 @@ public class PaymentUI : MonoBehaviour
     private string GetDeadlineLine()
     {
         if (campaignProgress == null ||
-            campaignProgress.GameMode != GameProgressMode.Campaign ||
             campaignProgress.IsCampaignCompleted)
         {
             return string.Empty;
@@ -759,7 +771,6 @@ public class PaymentUI : MonoBehaviour
     private string GetGoalLine()
     {
         if (campaignProgress == null ||
-            campaignProgress.GameMode != GameProgressMode.Campaign ||
             campaignProgress.IsCampaignCompleted)
         {
             return string.Empty;
@@ -768,7 +779,18 @@ public class PaymentUI : MonoBehaviour
         if (campaignProgress.HasFailedCurrentQuest)
             return "Meta falhou";
 
-        return $"Meta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget} | Falta: R$ {campaignProgress.QuestDebtPaymentRemaining}";
+        if (campaignProgress.CurrentQuestRequiresSpecialDelivery)
+        {
+            string fishName = GetFishDisplayName(campaignProgress.SpecialDeliveryFish);
+            string deliveryText = $"Entrega especial: {campaignProgress.SpecialDeliveryQuantity}x {fishName}";
+
+            if (campaignProgress.QuestDebtPaymentTarget > 0)
+                return $"{deliveryText} | Meta: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
+
+            return deliveryText;
+        }
+
+        return $"Meta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
     }
 
     private string GetDebtLine()
@@ -779,6 +801,16 @@ public class PaymentUI : MonoBehaviour
     private string GetDebtValueText()
     {
         return currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
+    }
+
+    private string GetSpecialDeliveryDebtLine()
+    {
+        string totalDebtLine = $"Divida total: {GetDebtValueText()}";
+
+        if (campaignProgress == null || campaignProgress.QuestDebtPaymentTarget <= 0)
+            return totalDebtLine;
+
+        return $"{totalDebtLine}\nMeta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
     }
 
     #endregion
@@ -799,6 +831,9 @@ public class PaymentUI : MonoBehaviour
     private bool TryHandleCampaignSpecialDelivery()
     {
         if (!IsCampaignSpecialDeliveryActive())
+            return false;
+
+        if (campaignProgress.QuestDebtPaymentRemaining > 0)
             return false;
 
         if (campaignProgress.HasFailedCurrentQuest)
@@ -842,6 +877,7 @@ public class PaymentUI : MonoBehaviour
         return _paymentResult switch
         {
             MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
+            MoneyLender.DebtPaymentResult.MoneyTargetCompleted => "Meta em dinheiro paga. Entregue o peixe especial.",
             MoneyLender.DebtPaymentResult.Completed => "Meta da quest paga.",
             MoneyLender.DebtPaymentResult.PaidOff => "Divida quitada.",
             _ => "Dinheiro insuficiente."
@@ -851,7 +887,6 @@ public class PaymentUI : MonoBehaviour
     private bool IsCampaignSpecialDeliveryActive()
     {
         return campaignProgress != null &&
-               campaignProgress.GameMode == GameProgressMode.Campaign &&
                !campaignProgress.IsCampaignCompleted &&
                campaignProgress.CurrentQuestRequiresSpecialDelivery;
     }
@@ -878,14 +913,18 @@ public class PaymentUI : MonoBehaviour
 
         if (IsCampaignSpecialDeliveryActive())
         {
-            SetButtonText(payButton, "Entregar");
             FishScriptableObject specialFish = campaignProgress.SpecialDeliveryFish;
             int requiredQuantity = campaignProgress.SpecialDeliveryQuantity;
             int ownedQuantity = shipInventory != null && specialFish != null ? shipInventory.CountFish(specialFish) : 0;
+            bool needsDebtPayment = campaignProgress.QuestDebtPaymentRemaining > 0;
+
+            SetButtonText(payButton, needsDebtPayment ? "Pagar" : "Entregar");
             payButton.interactable = !campaignProgress.HasFailedCurrentQuest &&
-                                     specialFish != null &&
-                                     requiredQuantity > 0 &&
-                                     ownedQuantity >= requiredQuantity;
+                                     (needsDebtPayment
+                                         ? currentDebtPayment > 0 && playerMoney > 0
+                                         : specialFish != null &&
+                                           requiredQuantity > 0 &&
+                                           ownedQuantity >= requiredQuantity);
             return;
         }
 
@@ -959,25 +998,18 @@ public class PaymentUI : MonoBehaviour
             return string.Empty;
 
         int ownedQuantity = shipInventory != null && _specialFish != null ? shipInventory.CountFish(_specialFish) : 0;
-        int requiredQuantity = Mathf.Max(0, campaignProgress.SpecialDeliveryQuantity);
-        int missingQuantity = Mathf.Max(0, requiredQuantity - ownedQuantity);
         int ownedWeight = GetOwnedSpecificFishWeight(_specialFish);
-        string fishLabel = ownedQuantity == 1 ? "peixe" : "peixes";
-        string missingFishLabel = missingQuantity == 1 ? "peixe" : "peixes";
-        string missingText = missingQuantity > 0 ? $" | Faltam: {missingQuantity} {missingFishLabel}" : " | Pedido completo";
         string weightText = campaignProgress.SpecialDeliveryRequiredWeight > 0
             ? GetSpecialDeliveryOwnedWeightText(ownedWeight)
             : string.Empty;
 
-        return $"Possui: {ownedQuantity}/{requiredQuantity} {fishLabel}{missingText}{weightText}";
+        return $"Possui: {ownedQuantity} no inventario{weightText}";
     }
 
     private string GetSpecialDeliveryOwnedWeightText(int _ownedWeight)
     {
         int requiredWeight = Mathf.Max(0, campaignProgress.SpecialDeliveryRequiredWeight);
-        int missingWeight = Mathf.Max(0, requiredWeight - _ownedWeight);
-        string missingWeightText = missingWeight > 0 ? $" | Faltam: {missingWeight} kg" : string.Empty;
-        return $" | Peso: {_ownedWeight}/{requiredWeight} kg{missingWeightText}";
+        return $" | Peso: {_ownedWeight}/{requiredWeight} kg";
     }
 
     private int GetOwnedSpecificFishWeight(FishScriptableObject _specialFish)
@@ -1333,6 +1365,19 @@ public class PaymentUI : MonoBehaviour
             return;
 
         AudioManager.Instance.PlaySfx(_clip, _volume);
+    }
+
+    private void PlaySpecialDeliveryOpenSfxIfNeeded()
+    {
+        if (!ShouldPlaySpecialDeliveryOpenSfx())
+            return;
+
+        PlayDoorSfx(specialDeliveryOpenSfx, specialDeliveryOpenSfxVolume);
+    }
+
+    private bool ShouldPlaySpecialDeliveryOpenSfx()
+    {
+        return IsCampaignSpecialDeliveryActive() || ShouldUseTutorialPayment();
     }
 
     #endregion

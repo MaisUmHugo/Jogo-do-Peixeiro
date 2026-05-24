@@ -15,8 +15,15 @@ public class MainMenuManager : MonoBehaviour
 
     [Header("Music")]
     [SerializeField] private AudioClip menuMusic;
-    [SerializeField] private string fallbackMenuMusicResourcePath = "Music/Menu_Jogo_Peixeiro";
     [SerializeField] private bool playMenuMusicOnStart = true;
+
+    [Header("Menu SFX")]
+    [SerializeField, InspectorName("Button Submit SFX")] private AudioClip buttonSubmitSfx;
+    [SerializeField, InspectorName("Selection Changed SFX")] private AudioClip selectionChangedSfx;
+    [SerializeField, Range(0f, 1f), InspectorName("Button Submit SFX Volume")] private float buttonSubmitSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Selection Changed SFX Volume")] private float selectionChangedSfxVolume = 0.65f;
+    [SerializeField, InspectorName("Auto Bind Button Submit SFX")] private bool autoBindButtonSubmitSfx = true;
+    [SerializeField, InspectorName("Play Selection Changed SFX")] private bool playSelectionChangedSfx = true;
 
     [Header("Panels")]
     [SerializeField] private GameObject menuPanel;
@@ -95,15 +102,24 @@ public class MainMenuManager : MonoBehaviour
     private bool hasEndlessModeButtonOriginalPosition;
     private ColorBlock endlessModeButtonDefaultColors;
     private bool hasEndlessModeButtonDefaultColors;
+    private Button[] menuSfxButtons;
+    private bool areMenuSfxButtonsBound;
+    private GameObject lastSelectedForSfx;
 
     #endregion
 
     #region Unity Lifecycle
 
+    private void Awake()
+    {
+        BindMenuButtonSfx();
+    }
+
     private void Start()
     {
         Time.timeScale = 1f;
 
+        BindMenuButtonSfx();
         PlayMenuMusic();
         RefreshSaveCache();
         ShowMenu();
@@ -111,10 +127,17 @@ public class MainMenuManager : MonoBehaviour
 
     private void Update()
     {
+        UpdateMenuSelectionSfx();
+
         if (modeSelectPanel == null || !modeSelectPanel.activeInHierarchy)
             return;
 
         UpdateModeSelectDescriptionFromSelection(false);
+    }
+
+    private void OnDestroy()
+    {
+        UnbindMenuButtonSfx();
     }
 
     #endregion
@@ -198,6 +221,20 @@ public class MainMenuManager : MonoBehaviour
         GameObject targetPanel = savePreviewPanel != null ? savePreviewPanel : modeActionPanel;
         ShowOnly(targetPanel);
         UISelectionHelper.Select(savePreviewFirstSelected, targetPanel);
+    }
+
+    public void RefreshModeAvailabilityForDebug()
+    {
+        RefreshSaveCache();
+
+        if (modeSelectPanel != null && modeSelectPanel.activeInHierarchy)
+            UpdateModeSelectState();
+
+        if (modeActionPanel != null && modeActionPanel.activeInHierarchy)
+            UpdateModeActionPanel();
+
+        if (savePreviewPanel != null && savePreviewPanel.activeInHierarchy)
+            UpdateSavePreview();
     }
 
     public void ContinueSelectedSave()
@@ -358,7 +395,12 @@ public class MainMenuManager : MonoBehaviour
         DebtSystem debtSystem = DebtSystem.GetOrCreate();
 
         if (debtSystem != null)
-            debtSystem.ResetDebt();
+        {
+            if (selectedMode == GameProgressMode.Endless)
+                debtSystem.SetDebt(campaignProgress.CampaignCompletionDebtAmount);
+            else
+                debtSystem.ResetDebt();
+        }
 
         SceneManager.LoadScene(gameSceneName);
     }
@@ -706,11 +748,105 @@ public class MainMenuManager : MonoBehaviour
         if (!playMenuMusicOnStart || AudioManager.Instance == null)
             return;
 
-        AudioClip clip = menuMusic != null
-            ? menuMusic
-            : Resources.Load<AudioClip>(fallbackMenuMusicResourcePath);
+        AudioManager.Instance.PlayMusic(menuMusic);
+    }
 
-        AudioManager.Instance.PlayMusic(clip);
+    private void BindMenuButtonSfx()
+    {
+        if (areMenuSfxButtonsBound || !autoBindButtonSubmitSfx)
+            return;
+
+        menuSfxButtons = GetComponentsInChildren<Button>(true);
+
+        if (menuSfxButtons == null)
+            return;
+
+        for (int i = 0; i < menuSfxButtons.Length; i++)
+        {
+            if (menuSfxButtons[i] != null)
+                menuSfxButtons[i].onClick.AddListener(PlayButtonSubmitSfx);
+        }
+
+        areMenuSfxButtonsBound = true;
+    }
+
+    private void UnbindMenuButtonSfx()
+    {
+        if (!areMenuSfxButtonsBound || menuSfxButtons == null)
+            return;
+
+        for (int i = 0; i < menuSfxButtons.Length; i++)
+        {
+            if (menuSfxButtons[i] != null)
+                menuSfxButtons[i].onClick.RemoveListener(PlayButtonSubmitSfx);
+        }
+
+        areMenuSfxButtonsBound = false;
+    }
+
+    private void PlayButtonSubmitSfx()
+    {
+        PlayMenuSfx(buttonSubmitSfx, buttonSubmitSfxVolume);
+    }
+
+    private void UpdateMenuSelectionSfx()
+    {
+        if (!playSelectionChangedSfx || selectionChangedSfx == null || EventSystem.current == null)
+            return;
+
+        GameObject selected = EventSystem.current.currentSelectedGameObject;
+
+        if (selected == lastSelectedForSfx)
+            return;
+
+        if (lastSelectedForSfx == null)
+        {
+            lastSelectedForSfx = selected;
+            return;
+        }
+
+        lastSelectedForSfx = selected;
+
+        if (!IsMenuSelectable(selected))
+            return;
+
+        PlayMenuSfx(selectionChangedSfx, selectionChangedSfxVolume);
+    }
+
+    private bool IsMenuSelectable(GameObject selected)
+    {
+        if (selected == null)
+            return false;
+
+        Transform selectedTransform = selected.transform;
+
+        return IsChildOf(selectedTransform, transform) ||
+               IsChildOf(selectedTransform, menuPanel) ||
+               IsChildOf(selectedTransform, modeSelectPanel) ||
+               IsChildOf(selectedTransform, modeActionPanel) ||
+               IsChildOf(selectedTransform, savePreviewPanel) ||
+               IsChildOf(selectedTransform, optionsPanel) ||
+               IsChildOf(selectedTransform, controlsPanel) ||
+               IsChildOf(selectedTransform, confirmPanel) ||
+               IsChildOf(selectedTransform, creditsPanel);
+    }
+
+    private bool IsChildOf(Transform child, Component parent)
+    {
+        return parent != null && child != null && child.IsChildOf(parent.transform);
+    }
+
+    private bool IsChildOf(Transform child, GameObject parent)
+    {
+        return parent != null && child != null && child.IsChildOf(parent.transform);
+    }
+
+    private void PlayMenuSfx(AudioClip clip, float volume)
+    {
+        if (AudioManager.Instance == null || clip == null)
+            return;
+
+        AudioManager.Instance.PlaySfx(clip, volume);
     }
 
     private void ShowMenu()

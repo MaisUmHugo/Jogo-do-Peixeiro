@@ -10,7 +10,7 @@ public class AudioManager : MonoBehaviour
 
     [Header("Sources")]
     [SerializeField] private AudioSource _bgmSource;
-    [SerializeField] private AudioSource _sfxSource;
+    [SerializeField, InspectorName("SFX Source")] private AudioSource _sfxSource;
 
     private const string MasterVolumeKey = "MasterVolume";
     private const string BgmVolumeKey = "BGMVolume";
@@ -31,16 +31,41 @@ public class AudioManager : MonoBehaviour
         Instance = this;
         DontDestroyOnLoad(gameObject);
 
-        LoadVolumes();
+        ApplySavedVolumes();
+    }
+
+    private void OnEnable()
+    {
+        ApplySavedVolumes();
+    }
+
+    private void Start()
+    {
+        ApplySavedVolumes();
+    }
+
+    private void OnDestroy()
+    {
+        if (Instance == this)
+            Instance = null;
     }
 
     public void PlayMusic(AudioClip clip, bool loop = true)
     {
+        ApplySavedVolumes();
+
         if (_bgmSource == null || clip == null)
             return;
 
         if (_bgmSource.clip == clip)
+        {
+            _bgmSource.loop = loop;
+
+            if (!_bgmSource.isPlaying)
+                _bgmSource.Play();
+
             return;
+        }
 
         _bgmSource.clip = clip;
         _bgmSource.loop = loop;
@@ -92,6 +117,14 @@ public class AudioManager : MonoBehaviour
         Destroy(sfxObject, clip.length / Mathf.Max(0.01f, audioSource.pitch));
     }
 
+    public void ApplySfxOutput(AudioSource audioSource)
+    {
+        if (audioSource == null || _sfxSource == null || audioSource.outputAudioMixerGroup != null)
+            return;
+
+        audioSource.outputAudioMixerGroup = _sfxSource.outputAudioMixerGroup;
+    }
+
     public void SetMasterVolume(float value)
     {
         SetVolume(MasterExposedName, value);
@@ -128,12 +161,17 @@ public class AudioManager : MonoBehaviour
         return PlayerPrefs.GetFloat(SfxVolumeKey, 0.5f);
     }
 
-    private void LoadVolumes()
+    public void ApplySavedVolumes()
     {
         float master = PlayerPrefs.GetFloat(MasterVolumeKey, 0.5f);
         float bgm = PlayerPrefs.GetFloat(BgmVolumeKey, 0.5f);
         float sfx = PlayerPrefs.GetFloat(SfxVolumeKey, 0.5f);
 
+        ApplyVolumes(master, bgm, sfx);
+    }
+
+    private void ApplyVolumes(float master, float bgm, float sfx)
+    {
         SetVolume(MasterExposedName, master);
         SetVolume(BgmExposedName, bgm);
         SetVolume(SfxExposedName, sfx);

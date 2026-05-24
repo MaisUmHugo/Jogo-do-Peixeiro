@@ -23,9 +23,9 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float stepHeight = 0.05f;
     [SerializeField] private float stepVFXLifetime = 2f;
     [SerializeField] private int maxStepVFXInstances = 10;
-    [SerializeField] private AudioClip footstepSfx;
+    [SerializeField, InspectorName("Footstep SFX")] private AudioClip footstepSfx;
     [SerializeField] private AudioSource footstepAudioSource;
-    [SerializeField, Range(0f, 1f)] private float footstepSfxVolume = 0.7f;
+    [SerializeField, Range(0f, 1f), InspectorName("Footstep SFX Volume")] private float footstepSfxVolume = 0.7f;
     [SerializeField] private float footstepPitchMin = 0.9f;
     [SerializeField] private float footstepPitchMax = 1.1f;
     [SerializeField, Range(0f, 1f)] private float footstepSpatialBlend = 1f;
@@ -51,7 +51,7 @@ public class PlayerMove : MonoBehaviour
 
     public void HandleMove(Vector2 _moveInput)
     {
-        if (cameraTransform == null)
+        if (cameraTransform == null || characterController == null || !characterController.enabled)
             return;
 
         Vector3 cameraForward = cameraTransform.forward;
@@ -101,8 +101,16 @@ public class PlayerMove : MonoBehaviour
     {
         verticalVelocity = 0f;
         stepTimer = 0f;
-        posicaoInicial = transform.position;
+
+        if (CanUseCurrentPositionAsSafeRespawn())
+            SetSafeRespawnPosition(transform.position);
+
         ResetStepFeedback();
+    }
+
+    public void SetSafeRespawnPosition(Vector3 _position)
+    {
+        posicaoInicial = _position;
     }
 
     private void HandleStepVFX(Vector3 _moveDirection)
@@ -180,8 +188,8 @@ public class PlayerMove : MonoBehaviour
         if (ShouldStopStepFeedback())
             ResetStepFeedback();
 
-        if (transform.position.y <= -5f)
-            transform.position = posicaoInicial;
+        if (transform.position.y <= -5f && ShouldRunFallFailsafe())
+            RespawnAtSafePosition();
     }
 
     private void SetupFootstepAudioSource()
@@ -227,6 +235,60 @@ public class PlayerMove : MonoBehaviour
         return GameManager.instance.currentState != GameManager.GameState.OnFoot;
     }
 
+    private bool CanUseCurrentPositionAsSafeRespawn()
+    {
+        if (transform.position.y <= -5f)
+            return false;
+
+        if (GameManager.instance == null)
+            return true;
+
+        return GameManager.instance.currentState == GameManager.GameState.OnFoot;
+    }
+
+    private bool ShouldRunFallFailsafe()
+    {
+        if (GameManager.instance == null)
+            return true;
+
+        return GameManager.instance.currentState == GameManager.GameState.OnFoot;
+    }
+
+    private void RespawnAtSafePosition()
+    {
+        bool shouldReenableController = characterController != null && characterController.enabled;
+
+        if (characterController != null)
+            characterController.enabled = false;
+
+        transform.position = posicaoInicial;
+        verticalVelocity = 0f;
+
+        ResetAttachedRigidbodies();
+
+        if (characterController != null)
+            characterController.enabled = shouldReenableController;
+
+        ResetStepFeedback();
+        Physics.SyncTransforms();
+    }
+
+    private void ResetAttachedRigidbodies()
+    {
+        Rigidbody[] rigidbodies = GetComponentsInChildren<Rigidbody>();
+
+        for (int i = 0; i < rigidbodies.Length; i++)
+        {
+            Rigidbody body = rigidbodies[i];
+
+            if (body == null)
+                continue;
+
+            body.linearVelocity = Vector3.zero;
+            body.angularVelocity = Vector3.zero;
+        }
+    }
+
     private void ResetStepFeedback()
     {
         stepTimer = 0f;
@@ -238,12 +300,7 @@ public class PlayerMove : MonoBehaviour
     {
         if (hit.gameObject.layer == LayerMask.NameToLayer("Water"))
         {
-            
-            characterController.enabled = false;
-            transform.position = posicaoInicial;
-            characterController.enabled = true;
-
-            verticalVelocity = 0f;
+            RespawnAtSafePosition();
         }
     }
 }

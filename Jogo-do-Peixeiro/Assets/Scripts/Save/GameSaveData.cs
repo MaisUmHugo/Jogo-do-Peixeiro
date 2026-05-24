@@ -62,6 +62,8 @@ public class CampaignSaveData
     public string specialDeliveryFishId;
     public int specialDeliveryQuantity;
     public int specialDeliveryRequiredWeight;
+    public int specialDeliveryDebtReduction;
+    public int endlessDeliveriesWithoutSpecialRequest;
 }
 
 [Serializable]

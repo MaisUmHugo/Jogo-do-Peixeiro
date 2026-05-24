@@ -21,6 +21,12 @@ public class FishingRod : MonoBehaviour
     [Header("Input")]
     [SerializeField] private bool useInteractToRecallHook = true;
 
+    [Header("Player Facing")]
+    [SerializeField] private bool rotatePlayerTowardFishingSpot = true;
+    [SerializeField, HideInInspector] private Transform playerFacingRoot;
+    [SerializeField] private bool restorePlayerFacingAfterFishing = true;
+    [SerializeField] private float playerFacingYawOffset;
+
     [Header("Hook")]
     [SerializeField] private Transform hookPrefab;
     [SerializeField] private float hookSpeed = 25f;
@@ -45,12 +51,12 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private float fishPullVFXLifetime = 1.2f;
 
     [Header("Audio")]
-    [SerializeField] private AudioClip castSfx;
-    [SerializeField] private AudioClip splashSfx;
-    [SerializeField] private AudioClip fishPullSfx;
-    [SerializeField, Range(0f, 1f)] private float castSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f)] private float splashSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f)] private float fishPullSfxVolume = 0.65f;
+    [SerializeField, InspectorName("Cast SFX")] private AudioClip castSfx;
+    [SerializeField, InspectorName("Splash SFX")] private AudioClip splashSfx;
+    [SerializeField, InspectorName("Fish Pull SFX")] private AudioClip fishPullSfx;
+    [SerializeField, Range(0f, 1f), InspectorName("Cast SFX Volume")] private float castSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Splash SFX Volume")] private float splashSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Fish Pull SFX Volume")] private float fishPullSfxVolume = 0.65f;
 
     private bool hookTraveling;
     private bool hookReturning;
@@ -64,6 +70,9 @@ public class FishingRod : MonoBehaviour
     private Vector3 fishMovementTarget;
     private int lastFishMovementPromptId = -1;
     private Vector3[] arcCache;
+    private Vector3 currentPlayerFacingTargetPoint;
+    private PlayerAnimationController playerAnimationController;
+    private bool hasPlayerFacingTarget;
 
     #endregion
 
@@ -134,6 +143,11 @@ public class FishingRod : MonoBehaviour
         UpdateHookLine();
     }
 
+    private void LateUpdate()
+    {
+        UpdatePlayerFacingDirection();
+    }
+
     public bool CanCastToSpot(FishingSpot _spot)
     {
         if (_spot == null ||
@@ -170,6 +184,7 @@ public class FishingRod : MonoBehaviour
 
         Vector3 targetPoint = _spot.GetCastTargetPosition(_spot.transform.position);
         currentTargetSpot = _spot;
+        StartPlayerFacingTarget(targetPoint);
         hookTraveling = true;
         SetRodVisualVisible(true);
         arcCache = CalculateArcPoints(rodTip.position, targetPoint);
@@ -363,6 +378,7 @@ public class FishingRod : MonoBehaviour
         currentTargetSpot = null;
         lastFishMovementPromptId = -1;
         hookRoutine = null;
+        ClearPlayerFacingTarget();
     }
 
     #endregion
@@ -431,6 +447,59 @@ public class FishingRod : MonoBehaviour
             return true;
 
         return GameManager.instance != null && GameManager.instance.IsGameplayBlocked();
+    }
+
+    private void StartPlayerFacingTarget(Vector3 _targetPoint)
+    {
+        currentPlayerFacingTargetPoint = _targetPoint;
+        hasPlayerFacingTarget = true;
+        UpdatePlayerFacingDirection();
+    }
+
+    private void UpdatePlayerFacingDirection()
+    {
+        if (!hasPlayerFacingTarget)
+            return;
+
+        if (!rotatePlayerTowardFishingSpot)
+        {
+            ClearPlayerFacingTarget();
+            return;
+        }
+
+        if (GameManager.instance == null || GameManager.instance.IsGameplayBlocked())
+            return;
+
+        bool shouldUpdateFacing = hookTraveling ||
+                                  hookWaitingInWater ||
+                                  (FishingManager.instance != null && FishingManager.instance.IsFishing);
+
+        if (shouldUpdateFacing)
+        {
+            PlayerAnimationController animationController = ResolvePlayerAnimationController();
+            if (animationController != null)
+                animationController.SetFishingFacingTarget(currentPlayerFacingTargetPoint, playerFacingYawOffset);
+        }
+    }
+
+    private void ClearPlayerFacingTarget()
+    {
+        hasPlayerFacingTarget = false;
+
+        PlayerAnimationController animationController = ResolvePlayerAnimationController();
+        if (animationController != null && restorePlayerFacingAfterFishing)
+            animationController.ClearFishingFacingTarget();
+    }
+
+    private PlayerAnimationController ResolvePlayerAnimationController()
+    {
+        if (playerAnimationController != null)
+            return playerAnimationController;
+
+        if (playerAnimationController == null)
+            playerAnimationController = FindFirstObjectByType<PlayerAnimationController>(FindObjectsInactive.Include);
+
+        return playerAnimationController;
     }
 
     #endregion

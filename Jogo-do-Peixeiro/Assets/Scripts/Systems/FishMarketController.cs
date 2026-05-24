@@ -8,6 +8,10 @@ public class FishMarketController : MonoBehaviour, IInteractable
     [SerializeField] private string promptText = "Falar";
     [SerializeField] private bool sellDirectlyWhenNoUi = true;
 
+    [Header("Audio")]
+    [SerializeField, InspectorName("Direct Sell SFX")] private AudioClip directSellSfx;
+    [SerializeField, Range(0f, 1f), InspectorName("Direct Sell SFX Volume")] private float directSellSfxVolume = 1f;
+
     public string PromptText => promptText;
     public Transform PromptPoint => transform;
 
@@ -49,10 +53,19 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
         if (fishMarket.TrySellAllFish(out int earnedMoney))
         {
+            PlayDirectSellSfx();
             HUDWarningUI.Instance?.ShowWarning($"Peixes vendidos: R$ {earnedMoney}");
             return;
         }
 
         HUDWarningUI.Instance?.ShowWarning("Nenhum peixe no barco.");
+    }
+
+    private void PlayDirectSellSfx()
+    {
+        if (AudioManager.Instance == null || directSellSfx == null)
+            return;
+
+        AudioManager.Instance.PlaySfx(directSellSfx, directSellSfxVolume);
     }
 }

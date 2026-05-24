@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using TMPro;
@@ -8,6 +9,8 @@ using UnityEngine.UI;
 public class DockOwnerUI : MonoBehaviour
 {
     #region Types And Fields
+
+    public static event Action<DockOwnerUI> AnyClosed;
 
     private enum DockOwnerTab
     {
@@ -61,6 +64,12 @@ public class DockOwnerUI : MonoBehaviour
     [Header("Purchase Confirmation")]
     [SerializeField] private DockOwnerPurchaseConfirmUI purchaseConfirmUI;
 
+    [Header("Audio")]
+    [SerializeField, InspectorName("Sell SFX")] private AudioClip sellSfx;
+    [SerializeField, InspectorName("Purchase SFX")] private AudioClip purchaseSfx;
+    [SerializeField, Range(0f, 1f), InspectorName("Sell SFX Volume")] private float sellSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Purchase SFX Volume")] private float purchaseSfxVolume = 1f;
+
     [Header("Common")]
     [SerializeField] private TMP_Text statusText;
     [SerializeField, Min(0.1f)] private float statusMessageDuration = 1.15f;
@@ -71,6 +80,8 @@ public class DockOwnerUI : MonoBehaviour
     [SerializeField] private Selectable sellFirstSelected;
     [SerializeField] private Selectable upgradesFirstSelected;
     [SerializeField] private Selectable baitsFirstSelected;
+    [SerializeField, Min(1f)] private float mouseWheelScrollPixels = 140f;
+    [SerializeField, Min(0f)] private float manualScrollSelectionFollowDelay = 0.8f;
 
     [Header("References")]
     [SerializeField] private FishMarket fishMarket;
@@ -91,6 +102,7 @@ public class DockOwnerUI : MonoBehaviour
     private bool suppressSelectAllFishToggle;
     private GameObject lastScrolledSellSelection;
     private GameObject lastScrolledUpgradeSelection;
+    private float suppressSelectionScrollUntil;
     private Coroutine statusFeedbackRoutine;
     private bool hasStatusBasePosition;
     private Vector2 statusBasePosition;
@@ -133,6 +145,7 @@ public class DockOwnerUI : MonoBehaviour
         if (baitShopUI != null)
             baitShopUI.HandleMoveInput(isOpen && currentTab == DockOwnerTab.Baits);
 
+        HandleMouseWheelScroll();
         KeepSellSelectionVisible();
         KeepUpgradeSelectionVisible();
     }
@@ -231,6 +244,7 @@ public class DockOwnerUI : MonoBehaviour
         }
 
         selectedFishForSale.Clear();
+        PlaySellSfx();
         SetStatus($"Peixes vendidos: R$ {earnedMoney}.");
         Refresh();
         SelectCurrentTabControl();
@@ -725,6 +739,7 @@ public class DockOwnerUI : MonoBehaviour
         if (!keepSellSelectionVisibleInScroll ||
             !isOpen ||
             currentTab != DockOwnerTab.Sell ||
+            Time.unscaledTime < suppressSelectionScrollUntil ||
             EventSystem.current == null)
         {
             lastScrolledSellSelection = null;
@@ -763,6 +778,7 @@ public class DockOwnerUI : MonoBehaviour
         if (!keepUpgradeSelectionVisibleInScroll ||
             !isOpen ||
             currentTab != DockOwnerTab.Upgrades ||
+            Time.unscaledTime < suppressSelectionScrollUntil ||
             EventSystem.current == null)
         {
             lastScrolledUpgradeSelection = null;
@@ -798,6 +814,47 @@ public class DockOwnerUI : MonoBehaviour
             upgradesSelectionScrollPadding,
             ref lastScrolledUpgradeSelection
         );
+    }
+
+    private void HandleMouseWheelScroll()
+    {
+        if (!isOpen || (purchaseConfirmUI != null && purchaseConfirmUI.IsOpen))
+            return;
+
+        float scrollDelta = UISelectionHelper.GetMouseScrollDeltaY();
+
+        if (Mathf.Abs(scrollDelta) <= 0.01f)
+            return;
+
+        ScrollRect scrollRect = GetActiveMouseWheelScrollRect();
+
+        if (!UISelectionHelper.ApplyMouseWheelScroll(scrollRect, scrollDelta, mouseWheelScrollPixels))
+            return;
+
+        suppressSelectionScrollUntil = Time.unscaledTime + manualScrollSelectionFollowDelay;
+
+        if (scrollRect == sellFishScrollRect)
+            lastScrolledSellSelection = null;
+
+        if (scrollRect == upgradesScrollRect)
+            lastScrolledUpgradeSelection = null;
+    }
+
+    private ScrollRect GetActiveMouseWheelScrollRect()
+    {
+        switch (currentTab)
+        {
+            case DockOwnerTab.Sell:
+                ResolveSellFishScrollRect();
+                return sellFishScrollRect;
+
+            case DockOwnerTab.Upgrades:
+                ResolveUpgradeScrollRect();
+                return upgradesScrollRect;
+
+            default:
+                return null;
+        }
     }
 
     private RectTransform GetUpgradeScrollTarget(GameObject _selectedObject)
@@ -962,6 +1019,9 @@ public class DockOwnerUI : MonoBehaviour
             _ => TryFailPurchase(out result)
         };
 
+        if (success)
+            PlayPurchaseSfx();
+
         SetStatus(success ? GetUpgradeSuccessText(_upgradeType) : GetUpgradePurchaseStatusText(result));
         Refresh();
     }
@@ -1117,6 +1177,7 @@ public class DockOwnerUI : MonoBehaviour
     {
         CloseImmediate();
         SetGameUiState(GameManager.GameState.OnFoot, true, false);
+        AnyClosed?.Invoke(this);
     }
 
     private void CloseImmediate()
@@ -1152,9 +1213,14 @@ public class DockOwnerUI : MonoBehaviour
 
     private void HandlePausePressed()
     {
-        if (!isOpen)
+        if (!isOpen ||
+            UIModalManager.WasBackHandledThisFrame ||
+            !UIModalManager.IsTopModal(modalToken))
+        {
             return;
+        }
 
+        UIModalManager.MarkBackHandledThisFrame();
         HandleBackPressed();
     }
 
@@ -1411,6 +1477,7 @@ public class DockOwnerUI : MonoBehaviour
 
     private void HandleBaitPurchased(BaitData _bait, int _quantity)
     {
+        PlayPurchaseSfx();
         Refresh();
     }
 
@@ -1528,6 +1595,24 @@ public class DockOwnerUI : MonoBehaviour
     {
         if (_button != null)
             _button.interactable = _interactable;
+    }
+
+    private void PlaySellSfx()
+    {
+        PlayUiSfx(sellSfx, sellSfxVolume);
+    }
+
+    private void PlayPurchaseSfx()
+    {
+        PlayUiSfx(purchaseSfx, purchaseSfxVolume);
+    }
+
+    private void PlayUiSfx(AudioClip _clip, float _volume)
+    {
+        if (AudioManager.Instance == null || _clip == null)
+            return;
+
+        AudioManager.Instance.PlaySfx(_clip, _volume);
     }
 
     private void SetStatus(string _message)

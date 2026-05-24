@@ -31,6 +31,7 @@ public class DayCycle : MonoBehaviour
 
     [Header("Dias")]
     [SerializeField] private int currentDay = 1;
+    [Tooltip("Valor legado. O prazo das quests e controlado pelo CampaignProgressSystem.")]
     [SerializeField] private int totalDays = 3;
     [SerializeField] private TextMeshProUGUI DayText;
     [SerializeField] private int elapsedDays = 1;
@@ -43,8 +44,8 @@ public class DayCycle : MonoBehaviour
     [SerializeField] private bool keepDayProgressHandleInsideTrack = true;
     [SerializeField, Range(0f, 24f)] private float dayVisualStartHour = 6f;
     [SerializeField, Range(0f, 24f)] private float dayVisualEndHour = 18f;
-    [SerializeField] private Color dayPrimaryTextColor = new Color(0.16f, 0.35f, 0.85f, 1f);
-    [SerializeField] private Color daySecondaryTextColor = Color.black;
+    [SerializeField] private Color dayPrimaryTextColor = new Color(0.28f, 0.16f, 0.04f, 1f);
+    [SerializeField] private Color daySecondaryTextColor = new Color(0.07f, 0.08f, 0.09f, 1f);
     [SerializeField] private Color nightPrimaryTextColor = new Color(1f, 0.82f, 0.2f, 1f);
     [SerializeField] private Color nightSecondaryTextColor = Color.white;
 
@@ -110,7 +111,7 @@ public class DayCycle : MonoBehaviour
     void UpdateDayUI()
     {
         if (DayText != null)
-            DayText.text = $"Dia {currentDay}/{totalDays}";
+            DayText.text = $"Dia {currentDay}";
     }
 
     public void SetDayCycleHudVisible(bool _visible)
@@ -362,8 +363,8 @@ public class DayCycle : MonoBehaviour
 
     public void SetCycleState(int _currentDay, int _elapsedDays, float _normalizedTime)
     {
-        currentDay = Mathf.Clamp(_currentDay, 1, Mathf.Max(1, totalDays));
-        elapsedDays = Mathf.Max(1, _elapsedDays);
+        currentDay = Mathf.Max(1, Mathf.Max(_currentDay, _elapsedDays));
+        elapsedDays = Mathf.Max(1, Mathf.Max(_elapsedDays, currentDay));
         currentTime = Mathf.Repeat(_normalizedTime, 1f);
         Clock = currentTime * 24f;
         ResetSleepDeadlineState();
@@ -379,9 +380,6 @@ public class DayCycle : MonoBehaviour
     {
         currentDay++;
         elapsedDays++;
-
-        if (currentDay > totalDays)
-            currentDay = 1;
 
         if (_resetToMorning)
         {

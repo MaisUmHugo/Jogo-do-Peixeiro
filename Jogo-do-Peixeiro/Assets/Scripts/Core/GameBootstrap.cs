@@ -11,11 +11,6 @@ public class GameBootstrap : MonoBehaviour
     //[SerializeField] private PoolManager _poolManagerPrefab;
     [SerializeField] private InputDeviceDetector _inputDeviceDetectorPrefab;
 
-    [Header("Game Music")]
-    [SerializeField] private AudioClip _gameMusic;
-    [SerializeField] private string _fallbackGameMusicResourcePath = "Music/Jogo_Peixeiro";
-    [SerializeField] private bool _playGameMusicOnStart = true;
-
     private void Awake()
     {
         CreateIfMissing(GameManager.instance, _gameManagerPrefab);
@@ -35,22 +30,8 @@ public class GameBootstrap : MonoBehaviour
 
     private void Start()
     {
-        PlayGameMusic();
-
         if (GameSaveManager.Instance != null)
             GameSaveManager.Instance.LoadRequestedSaveIfNeeded();
-    }
-
-    private void PlayGameMusic()
-    {
-        if (!_playGameMusicOnStart || AudioManager.Instance == null)
-            return;
-
-        AudioClip clip = _gameMusic != null
-            ? _gameMusic
-            : Resources.Load<AudioClip>(_fallbackGameMusicResourcePath);
-
-        AudioManager.Instance.PlayMusic(clip);
     }
 
     private void CreateIfMissing<T>(T _instance, T _prefab) where T : MonoBehaviour

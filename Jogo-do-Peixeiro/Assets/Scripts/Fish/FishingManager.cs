@@ -319,8 +319,7 @@ public class FishingManager : MonoBehaviour
 
         HasFishBitten = true;
 
-        if (_activeBait != null && (_baitInventory == null || !_baitInventory.TryConsumeEquippedBait()))
-            _activeBait = null;
+        ConsumeActiveBait();
 
         RegisterBittenFish(_selectedFishType);
 
@@ -424,6 +423,7 @@ public class FishingManager : MonoBehaviour
     {
         return _requireSkillCheckToFinish &&
                _useSkillCheck &&
+               _fishSkillCheck != null &&
                _progressNormalized >= _skillCheckFinishGateProgress;
     }
 
@@ -674,9 +674,23 @@ public class FishingManager : MonoBehaviour
         if (_baitInventory == null || _baitInventory.EquippedBait == null)
             return null;
 
-        return _baitInventory.HasBait(_baitInventory.EquippedBait)
-            ? _baitInventory.EquippedBait
-            : null;
+        if (_baitInventory.HasBait(_baitInventory.EquippedBait))
+            return _baitInventory.EquippedBait;
+
+        _baitInventory.ClearEquippedBait();
+        return null;
+    }
+
+    private void ConsumeActiveBait()
+    {
+        if (_activeBait == null)
+            return;
+
+        if (_baitInventory == null)
+            _baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
+
+        if (_baitInventory == null || !_baitInventory.TryConsumeBait(_activeBait))
+            _activeBait = null;
     }
 
     private void GivePendingFish()

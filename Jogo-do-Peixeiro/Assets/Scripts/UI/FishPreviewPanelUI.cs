@@ -305,7 +305,7 @@ public class FishPreviewPanelUI : MonoBehaviour
         if (isInputSubscribed || InputHandler.instance == null)
             return;
 
-        InputHandler.instance.onPausePressed += Close;
+        InputHandler.instance.onPausePressed += HandlePausePressed;
         InputDeviceDetector.DeviceTypeChanged += HandleDeviceTypeChanged;
         isInputSubscribed = true;
     }
@@ -315,9 +315,22 @@ public class FishPreviewPanelUI : MonoBehaviour
         if (!isInputSubscribed || InputHandler.instance == null)
             return;
 
-        InputHandler.instance.onPausePressed -= Close;
+        InputHandler.instance.onPausePressed -= HandlePausePressed;
         InputDeviceDetector.DeviceTypeChanged -= HandleDeviceTypeChanged;
         isInputSubscribed = false;
+    }
+
+    private void HandlePausePressed()
+    {
+        if (!isOpen ||
+            UIModalManager.WasBackHandledThisFrame ||
+            !UIModalManager.IsTopModal(modalToken))
+        {
+            return;
+        }
+
+        UIModalManager.MarkBackHandledThisFrame();
+        Close();
     }
 
     private void PushModalState()

@@ -24,6 +24,7 @@ public class DockOwnerBaitShopUI : MonoBehaviour
     [SerializeField] private TMP_Text quantityTitleText;
     [SerializeField] private TMP_Text quantityText;
     [SerializeField] private TMP_Text quantityPriceText;
+    [SerializeField] private TMP_Text quantityTotalPriceText;
     [SerializeField] private TMP_Text quantityOwnedText;
     [SerializeField] private TMP_Text quantityWarningText;
     [SerializeField] private Button quantityConfirmButton;
@@ -409,6 +410,7 @@ public class DockOwnerBaitShopUI : MonoBehaviour
     {
         pendingBaitSlotIndex = _slotIndex;
         selectionBeforePopup = UISelectionHelper.CurrentSelectableInScope(selectionScope);
+        ResetPurchaseQuantityForPopup(_slotIndex);
         isEditingQuantityValue = true;
         lastQuantityValueSubmitFrame = Time.frameCount;
         lastQuantityMoveDirection = 0;
@@ -420,6 +422,22 @@ public class DockOwnerBaitShopUI : MonoBehaviour
             GetQuantityPopupFirstSelectable(),
             QuantityRoot
         );
+    }
+
+    private void ResetPurchaseQuantityForPopup(int _slotIndex)
+    {
+        BaitData[] baits = GetBaitsForSale();
+
+        if (_slotIndex < 0 || _slotIndex >= baits.Length)
+            return;
+
+        EnsureQuantityArray(GetSlotCount());
+
+        if (baitPurchaseQuantities == null || _slotIndex >= baitPurchaseQuantities.Length)
+            return;
+
+        baitPurchaseQuantities[_slotIndex] = GetMaxPurchaseQuantity(baits[_slotIndex]) > 0 ? 1 : 0;
+        SetBaitUI();
     }
 
     private void RefreshQuantityPopup()
@@ -439,6 +457,7 @@ public class DockOwnerBaitShopUI : MonoBehaviour
         int quantity = GetPurchaseQuantity(pendingBaitSlotIndex, bait);
         int maxQuantity = GetMaxPurchaseQuantity(bait);
         int ownedQuantity = baitInventory != null ? baitInventory.GetQuantity(bait) : 0;
+        int unitCost = GetPurchaseCost(bait, 1);
         int totalCost = GetPurchaseCost(bait, quantity);
 
         if (quantityIconImage != null)
@@ -455,7 +474,12 @@ public class DockOwnerBaitShopUI : MonoBehaviour
             quantityText.text = quantity.ToString();
 
         if (quantityPriceText != null)
-            quantityPriceText.text = $"Total: R$ {totalCost}";
+            quantityPriceText.text = quantityTotalPriceText != null
+                ? $"Preco: R$ {unitCost}"
+                : $"Preco: R$ {unitCost}\nTotal: R$ {totalCost}";
+
+        if (quantityTotalPriceText != null)
+            quantityTotalPriceText.text = $"Total: R$ {totalCost}";
 
         if (quantityOwnedText != null)
             quantityOwnedText.text = $"No inventario: {ownedQuantity}";

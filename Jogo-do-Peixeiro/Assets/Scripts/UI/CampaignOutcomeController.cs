@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class CampaignOutcomeController : MonoBehaviour
@@ -25,6 +26,7 @@ public class CampaignOutcomeController : MonoBehaviour
     private bool isSubscribed;
     private bool hasShownQuestFailure;
     private bool hasShownCampaignCompletion;
+    private Coroutine pendingQuestFailureRoutine;
 
     #endregion
 
@@ -49,6 +51,12 @@ public class CampaignOutcomeController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (pendingQuestFailureRoutine != null)
+        {
+            StopCoroutine(pendingQuestFailureRoutine);
+            pendingQuestFailureRoutine = null;
+        }
+
         Unsubscribe();
     }
 
@@ -76,11 +84,19 @@ public class CampaignOutcomeController : MonoBehaviour
         if (!showQuestFailurePanel || hasShownQuestFailure || campaignProgress == null)
             return;
 
-        if (campaignProgress.GameMode != GameProgressMode.Campaign || campaignProgress.IsCampaignCompleted)
+        if (campaignProgress.IsCampaignCompleted)
             return;
 
         if (IsQuestFailureHandledByTutorialGuidance())
             return;
+
+        if (ForcedSleepController.IsAnySleepTransitionRunning())
+        {
+            if (pendingQuestFailureRoutine == null)
+                pendingQuestFailureRoutine = StartCoroutine(ShowQuestFailureAfterSleep());
+
+            return;
+        }
 
         hasShownQuestFailure = true;
 
@@ -91,6 +107,15 @@ public class CampaignOutcomeController : MonoBehaviour
         }
 
         outcomePanel.ShowFailure(questFailureTitle, questFailureMessage, pauseOnQuestFailure);
+    }
+
+    private IEnumerator ShowQuestFailureAfterSleep()
+    {
+        while (ForcedSleepController.IsAnySleepTransitionRunning())
+            yield return null;
+
+        pendingQuestFailureRoutine = null;
+        TryShowQuestFailure();
     }
 
     private void HandleCampaignCompleted()
@@ -163,7 +188,8 @@ public class CampaignOutcomeController : MonoBehaviour
         if (campaignProgress == null)
             return;
 
-        if (campaignProgress.GameMode != GameProgressMode.Campaign)
+        if (campaignProgress.GameMode != GameProgressMode.Campaign &&
+            campaignProgress.GameMode != GameProgressMode.Endless)
             return;
 
         if (campaignProgress.IsCampaignCompleted)

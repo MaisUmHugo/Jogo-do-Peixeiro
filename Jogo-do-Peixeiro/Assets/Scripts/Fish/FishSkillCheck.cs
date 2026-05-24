@@ -121,6 +121,7 @@ public class FishSkillCheck : MonoBehaviour
     private bool _isSessionActive;
     private bool _shouldInvertCurrentSkillCheck;
     private bool _didInvertCurrentSkillCheck;
+    private bool _isSubscribedToInput;
 
     public void SetUpgradeModifiers(float _indicatorSpeedMultiplier, float _successZoneMultiplier)
     {
@@ -172,10 +173,14 @@ public class FishSkillCheck : MonoBehaviour
 
         gameObject.SetActive(true);
         enabled = true;
+
+        SubscribeInput();
     }
 
     public void StopSkillCheck()
     {
+        UnsubscribeInput();
+
         _isSessionActive = false;
         IsSkillCheckActive = false;
         ResetIndicatorState();
@@ -189,14 +194,12 @@ public class FishSkillCheck : MonoBehaviour
 
     private void OnEnable()
     {
-        if (InputHandler.instance != null)
-            InputHandler.instance.onSkillCheckPressed += CheckClick;
+        SubscribeInput();
     }
 
     private void OnDisable()
     {
-        if (InputHandler.instance != null)
-            InputHandler.instance.onSkillCheckPressed -= CheckClick;
+        UnsubscribeInput();
     }
 
     private void Update()
@@ -508,5 +511,28 @@ public class FishSkillCheck : MonoBehaviour
 
         if (_fishingManager != null)
             _fishingManager.OnSkillCheckFail();
+    }
+
+    private void SubscribeInput()
+    {
+        if (_isSubscribedToInput)
+            return;
+
+        if (InputHandler.instance == null)
+            return;
+
+        InputHandler.instance.onSkillCheckPressed += CheckClick;
+        _isSubscribedToInput = true;
+    }
+
+    private void UnsubscribeInput()
+    {
+        if (!_isSubscribedToInput)
+            return;
+
+        if (InputHandler.instance != null)
+            InputHandler.instance.onSkillCheckPressed -= CheckClick;
+
+        _isSubscribedToInput = false;
     }
 }

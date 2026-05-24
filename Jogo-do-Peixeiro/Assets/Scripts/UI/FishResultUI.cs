@@ -313,11 +313,20 @@ public class FishResultUI : MonoBehaviour
 
     private void TryClose()
     {
+        if (UIModalManager.WasBackHandledThisFrame ||
+            (modalToken != UIModalManager.InvalidToken && !UIModalManager.IsTopModal(modalToken)))
+        {
+            return;
+        }
+
         if (!isShowing || !canSkip)
             return;
 
         if (IsMouseLeftButtonHeld())
             return;
+
+        if (modalToken != UIModalManager.InvalidToken)
+            UIModalManager.MarkBackHandledThisFrame();
 
         gameObject.SetActive(false);
     }

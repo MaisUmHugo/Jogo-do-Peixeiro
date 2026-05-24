@@ -3,6 +3,8 @@
 [RequireComponent(typeof(Rigidbody))]
 public class BoatMotor : MonoBehaviour
 {
+    private const string BoatWaterAudioSourceName = "BoatWaterAudioSource";
+
     public float engineForce = 30f;
     public float turnForce = 12f;
     public float maxSpeed = 12f;
@@ -11,6 +13,16 @@ public class BoatMotor : MonoBehaviour
     [SerializeField] private bool anchorWhileFishing = true;
     [SerializeField] private bool requireNeutralInputAfterFishing = true;
     [SerializeField] private float neutralInputThreshold = 0.15f;
+
+    [Header("Audio")]
+    [SerializeField, InspectorName("Boat Water Loop SFX")] private AudioClip boatWaterLoopSfx;
+    [SerializeField] private AudioSource boatWaterAudioSource;
+    [SerializeField, Range(0f, 1f), InspectorName("Boat Water Min SFX Volume")] private float boatWaterMinVolume = 0.15f;
+    [SerializeField, Range(0f, 1f), InspectorName("Boat Water Max SFX Volume")] private float boatWaterMaxVolume = 0.65f;
+    [SerializeField] private float boatWaterMinPitch = 0.9f;
+    [SerializeField] private float boatWaterMaxPitch = 1.12f;
+    [SerializeField] private float boatWaterSpeedForMaxVolume = 8f;
+    [SerializeField, Range(0f, 1f)] private float boatWaterSpatialBlend = 1f;
 
     private Rigidbody rb;
     private Vector2 input;
@@ -27,6 +39,7 @@ public class BoatMotor : MonoBehaviour
     {
         rb = GetComponent<Rigidbody>();
         CaptureBaseSpeedValues();
+        SetupBoatWaterAudioSource();
     }
 
     public void SetSpeedUpgradeMultiplier(float _multiplier)
@@ -57,6 +70,8 @@ public class BoatMotor : MonoBehaviour
 
     void Update()
     {
+        UpdateBoatWaterSfx();
+
         if (GameManager.instance == null || InputHandler.instance == null) return;
 
         // Só recebe input quando estiver navegando (OnBoat)
@@ -179,6 +194,76 @@ public class BoatMotor : MonoBehaviour
         baseEngineForce = engineForce;
         baseMaxSpeed = maxSpeed;
         hasCapturedBaseSpeedValues = true;
+    }
+
+    private void SetupBoatWaterAudioSource()
+    {
+        if (boatWaterAudioSource == null)
+        {
+            Transform sourceTransform = transform.Find(BoatWaterAudioSourceName);
+
+            if (sourceTransform != null)
+                boatWaterAudioSource = sourceTransform.GetComponent<AudioSource>();
+        }
+
+        if (boatWaterAudioSource == null)
+        {
+            GameObject sourceObject = new GameObject(BoatWaterAudioSourceName);
+            sourceObject.transform.SetParent(transform, false);
+            boatWaterAudioSource = sourceObject.AddComponent<AudioSource>();
+        }
+
+        boatWaterAudioSource.playOnAwake = false;
+        boatWaterAudioSource.loop = true;
+        boatWaterAudioSource.spatialBlend = boatWaterSpatialBlend;
+        AudioManager.Instance?.ApplySfxOutput(boatWaterAudioSource);
+    }
+
+    private void UpdateBoatWaterSfx()
+    {
+        if (boatWaterLoopSfx == null)
+        {
+            StopBoatWaterSfx();
+            return;
+        }
+
+        if (boatWaterAudioSource == null)
+            SetupBoatWaterAudioSource();
+
+        if (boatWaterAudioSource == null)
+            return;
+
+        AudioManager.Instance?.ApplySfxOutput(boatWaterAudioSource);
+
+        bool shouldPlay =
+            GameManager.instance != null &&
+            (GameManager.instance.currentState == GameManager.GameState.OnBoat ||
+             GameManager.instance.currentState == GameManager.GameState.Fishing);
+
+        if (!shouldPlay)
+        {
+            StopBoatWaterSfx();
+            return;
+        }
+
+        float speed = rb != null ? rb.linearVelocity.magnitude : 0f;
+        float speedPercent = Mathf.Clamp01(speed / Mathf.Max(0.01f, boatWaterSpeedForMaxVolume));
+
+        if (boatWaterAudioSource.clip != boatWaterLoopSfx)
+            boatWaterAudioSource.clip = boatWaterLoopSfx;
+
+        boatWaterAudioSource.volume = Mathf.Lerp(boatWaterMinVolume, boatWaterMaxVolume, speedPercent);
+        boatWaterAudioSource.pitch = Mathf.Lerp(boatWaterMinPitch, boatWaterMaxPitch, speedPercent);
+        boatWaterAudioSource.spatialBlend = boatWaterSpatialBlend;
+
+        if (!boatWaterAudioSource.isPlaying)
+            boatWaterAudioSource.Play();
+    }
+
+    private void StopBoatWaterSfx()
+    {
+        if (boatWaterAudioSource != null && boatWaterAudioSource.isPlaying)
+            boatWaterAudioSource.Stop();
     }
 
     private void AnchorBoat()

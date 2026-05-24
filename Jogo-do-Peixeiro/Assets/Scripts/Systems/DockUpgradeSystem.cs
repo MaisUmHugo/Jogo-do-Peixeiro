@@ -29,16 +29,16 @@ public class DockUpgradeSystem : MonoBehaviour
     [Header("Boat Capacity")]
     [SerializeField, Min(0)] private int capacityLevel;
     [SerializeField] private float[] capacityByLevel = { 25f, 40f, 65f, 85f, 100f, 120f };
-    [SerializeField] private int[] capacityUpgradeCosts = { 180, 450, 850, 1300, 1900 };
+    [SerializeField] private int[] capacityUpgradeCosts = { 130, 260, 400, 660, 1190 };
 
     [Header("Boat Speed")]
     [SerializeField, Min(0)] private int boatSpeedLevel;
-    [SerializeField] private int[] boatSpeedUpgradeCosts = { 220, 520, 950, 1450, 2100 };
+    [SerializeField] private int[] boatSpeedUpgradeCosts = { 190, 380, 590, 975, 1755 };
     [SerializeField, Range(0f, 1f)] private float boatSpeedIncreasePerLevel = 0.15f;
 
     [Header("Rod")]
     [SerializeField, Min(0)] private int rodLevel;
-    [SerializeField] private int[] rodUpgradeCosts = { 180, 420, 800, 1250, 1850 };
+    [SerializeField] private int[] rodUpgradeCosts = { 150, 300, 465, 767, 1380 };
     [SerializeField, Range(0f, 1f)] private float rodIndicatorSpeedReductionPerLevel = 0.1f;
     [SerializeField, Range(0f, 1f)] private float rodSuccessZoneIncreasePerLevel = 0.15f;
 

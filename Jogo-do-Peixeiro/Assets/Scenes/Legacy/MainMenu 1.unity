@@ -5959,6 +5959,8 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   gameSceneName: Game
+  menuMusic: {fileID: 8300000, guid: 4953822d968c3dc4a8ec5395adcfcedc, type: 3}
+  playMenuMusicOnStart: 1
   menuPanel: {fileID: 693702192}
   optionsPanel: {fileID: 814681565}
   controlsPanel: {fileID: 1534351151}

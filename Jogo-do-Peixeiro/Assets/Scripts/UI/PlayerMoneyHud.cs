@@ -10,6 +10,7 @@ public class PlayerMoneyHud : MonoBehaviour
     [SerializeField] private TMP_Text campaignQuestText;
     [SerializeField] private TMP_Text campaignDeadlineText;
     [SerializeField] private TMP_Text campaignGoalText;
+    [SerializeField] private Image campaignDebtIcon;
 
     [Header("References")]
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
@@ -19,6 +20,7 @@ public class PlayerMoneyHud : MonoBehaviour
 
     [Header("Settings")]
     [SerializeField] private bool showDebtWithMoneyWhenMissingText = true;
+    [SerializeField] private bool showTotalDebtInHud;
     [SerializeField] private bool showCampaignHud = true;
     [SerializeField] private bool autoResolveCampaignHudTexts = true;
     [SerializeField] private bool useDayCycleTextColors = true;
@@ -80,10 +82,11 @@ public class PlayerMoneyHud : MonoBehaviour
         string moneyLine = $"R$: {currentMoney:0}";
         string debtLine = GetDebtLine();
 
-        if (debtText != null && !debtText.gameObject.activeSelf)
-            debtText.gameObject.SetActive(true);
+        if (debtText != null)
+            debtText.gameObject.SetActive(showTotalDebtInHud);
 
-        bool shouldShowDebtWithMoney = showDebtWithMoneyWhenMissingText &&
+        bool shouldShowDebtWithMoney = showTotalDebtInHud &&
+                                       showDebtWithMoneyWhenMissingText &&
                                        (debtText == null || !debtText.gameObject.activeInHierarchy);
 
         if (moneyText != null)
@@ -93,7 +96,7 @@ public class PlayerMoneyHud : MonoBehaviour
                 : moneyLine;
         }
 
-        if (debtText != null)
+        if (debtText != null && showTotalDebtInHud)
             debtText.text = debtLine;
 
         if (campaignText != null)
@@ -105,6 +108,7 @@ public class PlayerMoneyHud : MonoBehaviour
         SetCampaignText(campaignQuestText, GetCampaignQuestLine());
         SetCampaignText(campaignDeadlineText, GetCampaignDeadlineLine());
         SetCampaignText(campaignGoalText, GetCampaignGoalLine());
+        SetCampaignDebtIconVisible(ShouldShowQuestDebtIcon());
         ApplyHudTextColors();
     }
 
@@ -178,6 +182,9 @@ public class PlayerMoneyHud : MonoBehaviour
 
         if (campaignGoalText == null)
             campaignGoalText = FindTextByName(searchRoot, "MetaText", "Meta Text", "GoalText", "CampaignGoalText", "ObjectiveGoalText", "Meta");
+
+        if (campaignDebtIcon == null)
+            campaignDebtIcon = FindImageByName(searchRoot, "QuestDebtIcon", "DebtIcon", "ObjectiveDebtIcon", "MetaIcon");
     }
 
     private TMP_Text FindTextByName(Transform _root, params string[] _names)
@@ -198,6 +205,30 @@ public class PlayerMoneyHud : MonoBehaviour
             {
                 if (string.Equals(text.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
                     return text;
+            }
+        }
+
+        return null;
+    }
+
+    private Image FindImageByName(Transform _root, params string[] _names)
+    {
+        if (_root == null || _names == null)
+            return null;
+
+        Image[] images = _root.GetComponentsInChildren<Image>(true);
+
+        for (int i = 0; i < images.Length; i++)
+        {
+            Image image = images[i];
+
+            if (image == null)
+                continue;
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (string.Equals(image.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
+                    return image;
             }
         }
 
@@ -409,7 +440,7 @@ public class PlayerMoneyHud : MonoBehaviour
             return string.Empty;
 
         if (campaignProgress.GameMode == GameProgressMode.Endless)
-            return "Modo livre";
+            return $"Modo sem fim - Entrega {campaignProgress.CurrentQuestIndex}";
 
         if (campaignProgress.IsCampaignCompleted)
             return "Campanha concluida";
@@ -432,26 +463,19 @@ public class PlayerMoneyHud : MonoBehaviour
         if (!showCampaignHud || campaignProgress == null)
             return string.Empty;
 
-        if (campaignProgress.GameMode == GameProgressMode.Endless || campaignProgress.IsCampaignCompleted)
+        if (campaignProgress.IsCampaignCompleted)
             return string.Empty;
 
         if (campaignProgress.HasFailedCurrentQuest)
             return $"Prazo: <color={debtColor}>encerrado</color>";
 
         string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? GetPrimaryTextColorHex() : GetSecondaryTextColorHex();
-        string deadlineLine = $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
-        string inventoryLine = GetInventoryWeightLine();
-        return string.IsNullOrWhiteSpace(inventoryLine)
-            ? deadlineLine
-            : $"{deadlineLine} | {inventoryLine}";
+        return $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
     }
 
     private string GetCampaignGoalLine()
     {
         if (!showCampaignHud || campaignProgress == null)
-            return string.Empty;
-
-        if (campaignProgress.GameMode == GameProgressMode.Endless)
             return string.Empty;
 
         if (campaignProgress.IsCampaignCompleted)
@@ -461,27 +485,53 @@ public class PlayerMoneyHud : MonoBehaviour
             return "<color=#D94A4A>Meta falhou</color>";
 
         if (campaignProgress.CurrentQuestRequiresSpecialDelivery)
-        {
-            string fishName = GetFishDisplayName(campaignProgress.SpecialDeliveryFish);
+            return $"{GetQuestDebtRemainingText(campaignProgress.QuestDebtPaymentRemaining)} | {GetSpecialDeliveryProgressLine()}";
 
-            string weightText = campaignProgress.SpecialDeliveryRequiredWeight > 0
-                ? $" e {campaignProgress.SpecialDeliveryRequiredWeight}kg"
-                : string.Empty;
+        return GetQuestDebtRemainingText(campaignProgress.QuestDebtPaymentRemaining);
+    }
 
-            return $"Objetivo: entregue {campaignProgress.SpecialDeliveryQuantity}x {fishName}{weightText} ao Cobrador";
-        }
+    private string GetQuestDebtRemainingText(int _remainingAmount)
+    {
+        int remainingAmount = Mathf.Max(0, _remainingAmount);
+        string color = remainingAmount > 0 ? debtColor : paidDebtColor;
+        string sign = remainingAmount > 0 ? "-" : string.Empty;
+        return $"<color={color}>({sign}R$ {remainingAmount})</color>";
+    }
 
-        int paidAmount = campaignProgress.QuestDebtPaidAmount;
-        int targetAmount = campaignProgress.QuestDebtPaymentTarget;
-        int remainingAmount = campaignProgress.QuestDebtPaymentRemaining;
-        string objective = currentMoney >= remainingAmount && remainingAmount > 0
-            ? "pague o Cobrador"
-            : "pesque e venda";
+    private string GetSpecialDeliveryProgressLine()
+    {
+        FishScriptableObject specialFish = campaignProgress != null ? campaignProgress.SpecialDeliveryFish : null;
+        string fishName = GetFishDisplayName(specialFish);
+        int requiredQuantity = campaignProgress != null ? Mathf.Max(0, campaignProgress.SpecialDeliveryQuantity) : 0;
+        int ownedQuantity = GetOwnedSpecialDeliveryFishCount(specialFish);
 
-        if (remainingAmount <= 0)
-            objective = "pague o Cobrador";
+        return $"Peixe objetivo: {fishName} {ownedQuantity}/{requiredQuantity}";
+    }
 
-        return $"Objetivo: {objective} | Pago: R$ {paidAmount}/{targetAmount} | Falta: R$ {remainingAmount}";
+    private int GetOwnedSpecialDeliveryFishCount(FishScriptableObject _specialFish)
+    {
+        if (_specialFish == null)
+            return 0;
+
+        if (shipInventory == null)
+            shipInventory = FindFirstObjectByType<ShipInventory>();
+
+        return shipInventory != null ? shipInventory.CountFish(_specialFish) : 0;
+    }
+
+    private bool ShouldShowQuestDebtIcon()
+    {
+        return showCampaignHud &&
+               campaignProgress != null &&
+               !campaignProgress.IsCampaignCompleted &&
+               !campaignProgress.HasFailedCurrentQuest &&
+               campaignProgress.QuestDebtPaymentTarget > 0;
+    }
+
+    private void SetCampaignDebtIconVisible(bool _visible)
+    {
+        if (campaignDebtIcon != null)
+            campaignDebtIcon.gameObject.SetActive(_visible);
     }
 
     private string GetInventoryWeightLine()
