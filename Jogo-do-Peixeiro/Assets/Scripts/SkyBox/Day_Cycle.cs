@@ -56,6 +56,7 @@ public class DayCycle : MonoBehaviour
     [SerializeField, Range(0f, 24f)] private float wakeUpHour = 6f;
     [SerializeField] private string bedtimeWarningMessage = "Está ficando tarde. Volte para dormir.";
     [SerializeField] private string forcedSleepMessage = "Você apagou de sono e acordou às 6 AM.";
+    [SerializeField] private bool forceSleepWhenDayWraps = true;
 
     private bool hasShownBedtimeWarning;
     private bool hasForcedSleepThisNight;
@@ -88,19 +89,33 @@ public class DayCycle : MonoBehaviour
 
     void Update()
     {
+        if (isForcedSleepPending)
+            return;
+
         float previousTime = currentTime;
         currentTime += Time.deltaTime / dayDuration;
         bool wrappedDay = false;
+        bool startedForcedSleepOnWrap = false;
 
         while (currentTime >= 1f)
         {
             currentTime -= 1f;
+            wrappedDay = true;
+
+            if (ShouldForceSleepOnDayWrap())
+            {
+                ForceSleep();
+                startedForcedSleepOnWrap = true;
+                break;
+            }
+
             AdvanceDay(false);
             hasAdvancedDaySinceLastWake = true;
-            wrappedDay = true;
         }
 
-        UpdateSleepDeadline(previousTime, currentTime, wrappedDay);
+        if (!startedForcedSleepOnWrap)
+            UpdateSleepDeadline(previousTime, currentTime, wrappedDay);
+
         UpdateSun();
         UpdateSkybox();
         UpdateTime();
@@ -410,6 +425,14 @@ public class DayCycle : MonoBehaviour
 
         if (!hasForcedSleepThisNight && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, forcedSleepHour))
             ForceSleep();
+    }
+
+    private bool ShouldForceSleepOnDayWrap()
+    {
+        return forceSleepAfterDeadline &&
+               forceSleepWhenDayWraps &&
+               !hasForcedSleepThisNight &&
+               !isForcedSleepPending;
     }
 
     private bool HasCrossedHour(float _previousTime, float _currentTime, bool _wrappedDay, float _targetHour)
