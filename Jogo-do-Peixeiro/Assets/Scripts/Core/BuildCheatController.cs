@@ -32,9 +32,13 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private string _addSpecialDeliveryFishKeyboardBinding = "<Keyboard>/f2";
     [SerializeField] private string _teleportToBoatKeyboardBinding = "<Keyboard>/f3";
     [SerializeField] private string _teleportToDockKeyboardBinding = "<Keyboard>/f4";
+    [SerializeField] private string _spawnFishPullVfxKeyboardBinding = "<Keyboard>/f5";
 
     [Header("Teleport")]
     [SerializeField, Min(0f)] private float _teleportHeightOffset = 0.05f;
+
+    [Header("VFX Debug")]
+    [SerializeField, Min(0f)] private float _fishPullVfxSpawnDistance = 5f;
 
     [Header("Gamepad Bindings")]
     [SerializeField] private string _cycleFishingAreaGamepadBinding = "<Gamepad>/dpad/up";
@@ -60,6 +64,7 @@ public class BuildCheatController : MonoBehaviour
     private InputAction _addSpecialDeliveryFishAction;
     private InputAction _teleportToBoatAction;
     private InputAction _teleportToDockAction;
+    private InputAction _spawnFishPullVfxAction;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
@@ -171,6 +176,11 @@ public class BuildCheatController : MonoBehaviour
             "Cheat Teleport To Dock",
             _teleportToDockKeyboardBinding,
             null);
+
+        _spawnFishPullVfxAction = CreateButtonAction(
+            "Cheat Spawn Fish Pull VFX",
+            _spawnFishPullVfxKeyboardBinding,
+            null);
     }
 
     private InputAction CreateButtonAction(string _actionName, string _keyboardBinding, string _gamepadBinding)
@@ -229,6 +239,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_teleportToDockAction != null)
             _teleportToDockAction.performed += HandleTeleportToDock;
+
+        if (_spawnFishPullVfxAction != null)
+            _spawnFishPullVfxAction.performed += HandleSpawnFishPullVfx;
     }
 
     private void UnregisterActionCallbacks()
@@ -271,6 +284,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_teleportToDockAction != null)
             _teleportToDockAction.performed -= HandleTeleportToDock;
+
+        if (_spawnFishPullVfxAction != null)
+            _spawnFishPullVfxAction.performed -= HandleSpawnFishPullVfx;
     }
 
     private void EnableActions()
@@ -288,6 +304,7 @@ public class BuildCheatController : MonoBehaviour
         _addSpecialDeliveryFishAction?.Enable();
         _teleportToBoatAction?.Enable();
         _teleportToDockAction?.Enable();
+        _spawnFishPullVfxAction?.Enable();
     }
 
     private void DisposeActions()
@@ -305,6 +322,7 @@ public class BuildCheatController : MonoBehaviour
         DisposeAction(ref _addSpecialDeliveryFishAction);
         DisposeAction(ref _teleportToBoatAction);
         DisposeAction(ref _teleportToDockAction);
+        DisposeAction(ref _spawnFishPullVfxAction);
     }
 
     private void DisposeAction(ref InputAction _inputAction)
@@ -380,6 +398,11 @@ public class BuildCheatController : MonoBehaviour
     private void HandleTeleportToDock(InputAction.CallbackContext _context)
     {
         TryRunShiftCheat(TeleportToDockCheat);
+    }
+
+    private void HandleSpawnFishPullVfx(InputAction.CallbackContext _context)
+    {
+        TryRunShiftCheat(SpawnFishPullVfxCheat);
     }
 
     private void TryRunCheat(System.Action _cheatAction, bool _allowInMainMenu = false)
@@ -513,6 +536,72 @@ public class BuildCheatController : MonoBehaviour
         moneyManager.ReceiveMoney(_moneyCheatAmount);
         SaveGameIfPossible();
         ShowCheatFeedback($"Cheat: +{_moneyCheatAmount:0} moedas.");
+    }
+
+    private void SpawnFishPullVfxCheat()
+    {
+        FishingRod fishingRod = FindFirstObjectByType<FishingRod>(FindObjectsInactive.Include);
+
+        if (fishingRod == null)
+        {
+            ShowCheatFeedback("Cheat: FishingRod nao encontrado.");
+            return;
+        }
+
+        if (!TryGetFishPullVfxSpawnPose(out Vector3 spawnPosition, out Vector3 spawnDirection))
+        {
+            ShowCheatFeedback("Cheat: sem referencia para posicionar o Fish Pull VFX.");
+            return;
+        }
+
+        if (!fishingRod.DebugSpawnFishPullVFXAtWater(spawnPosition, spawnDirection))
+        {
+            ShowCheatFeedback("Cheat: Fish Pull VFX nao configurado no FishingRod.");
+            return;
+        }
+
+        ShowCheatFeedback("Cheat: Fish Pull VFX spawnado na agua.");
+    }
+
+    private bool TryGetFishPullVfxSpawnPose(out Vector3 _position, out Vector3 _direction)
+    {
+        _position = Vector3.zero;
+        _direction = Vector3.forward;
+
+        Transform reference = GetFishPullVfxReference();
+
+        if (reference == null)
+            return false;
+
+        _direction = reference.forward;
+        _direction.y = 0f;
+
+        if (_direction.sqrMagnitude <= 0.0001f)
+            _direction = Vector3.forward;
+
+        _direction.Normalize();
+        _position = reference.position + _direction * _fishPullVfxSpawnDistance;
+
+        if (WaveManager.instance != null)
+            _position.y = WaveManager.instance.GetWaveHeight(_position.x, _position.z);
+
+        return true;
+    }
+
+    private Transform GetFishPullVfxReference()
+    {
+        BoatController boatController = FindFirstObjectByType<BoatController>(FindObjectsInactive.Include);
+
+        if (boatController != null && boatController.IsPlayerOnBoat())
+            return boatController.transform;
+
+        PlayerMove playerMove = FindFirstObjectByType<PlayerMove>(FindObjectsInactive.Include);
+
+        if (playerMove != null)
+            return playerMove.transform;
+
+        Camera mainCamera = Camera.main;
+        return mainCamera != null ? mainCamera.transform : null;
     }
 
     private void CompleteCampaign()
