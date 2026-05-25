@@ -25,6 +25,7 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private bool rotatePlayerTowardFishingSpot = true;
     [SerializeField, HideInInspector] private Transform playerFacingRoot;
     [SerializeField] private bool restorePlayerFacingAfterFishing = true;
+    [SerializeField] private bool snapPlayerFacingWhenCasting = true;
     [SerializeField] private float playerFacingYawOffset;
 
     [Header("Hook")]
@@ -57,11 +58,19 @@ public class FishingRod : MonoBehaviour
     [Tooltip("Offset vertical extra aplicado somente em área profunda/dark water. Use valor negativo para baixar o FishVFX.")]
     [SerializeField] private float deepFishPullVFXWaterYOffset = -0.25f;
 
+    [Header("Lava Fish Movement Visual")]
+    [Tooltip("Prefab usado no Fish Pull quando o FishingSpot atual estiver na area de lava. Se vazio, usa o Fish Pull VFX normal.")]
+    [SerializeField] private VisualEffect lavaFishPullVFXPrefab;
+    [SerializeField] private Vector3 lavaFishPullVFXOffset = new Vector3(0f, 0.08f, 0f);
+    [Tooltip("Offset vertical extra aplicado somente no Fish Pull da lava.")]
+    [SerializeField] private float lavaFishPullVFXWaterYOffset;
+
     [Header("VFX Pool")]
     [SerializeField] private bool useVFXPool = true;
     [SerializeField] private string splashVFXPoolKey = "SplashVFX";
     [SerializeField, Min(1)] private int splashVFXPoolSize = 4;
     [SerializeField] private string fishPullVFXPoolKey = "FishPullVFX";
+    [SerializeField] private string lavaFishPullVFXPoolKey = "LavaFishPullVFX";
     [SerializeField, Min(1)] private int fishPullVFXPoolSize = 6;
 
     [Header("Áudio")]
@@ -496,15 +505,18 @@ public class FishingRod : MonoBehaviour
         if (GameManager.instance == null || GameManager.instance.IsGameplayBlocked())
             return;
 
-        bool shouldUpdateFacing = hookTraveling ||
-                                  hookWaitingInWater ||
-                                  (FishingManager.instance != null && FishingManager.instance.IsFishing);
+        bool shouldUpdateFacing = hookTraveling;
 
         if (shouldUpdateFacing)
         {
             PlayerAnimationController animationController = ResolvePlayerAnimationController();
             if (animationController != null)
+            {
                 animationController.SetFishingFacingTarget(currentPlayerFacingTargetPoint, playerFacingYawOffset);
+
+                if (snapPlayerFacingWhenCasting)
+                    animationController.SnapFishingFacingToTarget();
+            }
         }
     }
 
@@ -632,7 +644,7 @@ public class FishingRod : MonoBehaviour
 
     private void SpawnFishPullVFX()
     {
-        if (fishPullVFXPrefab == null || currentHook == null)
+        if (GetFishPullVFXPrefab() == null || currentHook == null)
             return;
 
         Vector2 fishMove = fishDirectionPull != null
@@ -655,10 +667,12 @@ public class FishingRod : MonoBehaviour
 
     public bool DebugSpawnFishPullVFXAtWater(Vector3 _worldPosition, Vector3 _worldDirection)
     {
-        if (fishPullVFXPrefab == null)
+        VisualEffect vfxPrefab = GetFishPullVFXPrefab();
+
+        if (vfxPrefab == null)
             return false;
 
-        Vector3 spawnPosition = _worldPosition + fishPullVFXOffset;
+        Vector3 spawnPosition = _worldPosition + GetFishPullVFXOffset();
 
         if (WaveManager.instance != null)
             spawnPosition.y = WaveManager.instance.GetWaveHeight(spawnPosition.x, spawnPosition.z) + GetFishPullVFXWaterYOffset();
@@ -677,8 +691,8 @@ public class FishingRod : MonoBehaviour
             : Quaternion.identity;
 
         VisualEffect instance = PooledVisualEffectUtility.Spawn(
-            fishPullVFXPrefab,
-            fishPullVFXPoolKey,
+            GetFishPullVFXPrefab(),
+            GetFishPullVFXPoolKey(),
             _position,
             spawnRotation,
             null,
@@ -700,7 +714,9 @@ public class FishingRod : MonoBehaviour
 
     private void UpdateCurrentFishPullVFX(bool _replay, bool _allowCreate = true)
     {
-        if (!keepFishPullVFXWhileFishing || fishPullVFXPrefab == null || currentHook == null)
+        VisualEffect vfxPrefab = GetFishPullVFXPrefab();
+
+        if (!keepFishPullVFXWhileFishing || vfxPrefab == null || currentHook == null)
             return;
 
         Vector3 position = GetFishPullVFXPosition();
@@ -718,8 +734,8 @@ public class FishingRod : MonoBehaviour
                 return;
 
             currentFishPullVFXInstance = PooledVisualEffectUtility.Spawn(
-                fishPullVFXPrefab,
-                fishPullVFXPoolKey,
+                vfxPrefab,
+                GetFishPullVFXPoolKey(),
                 position,
                 rotation,
                 null,
@@ -763,7 +779,7 @@ public class FishingRod : MonoBehaviour
 
     private Vector3 GetFishPullVFXPosition()
     {
-        Vector3 position = currentHook.position + fishPullVFXOffset;
+        Vector3 position = currentHook.position + GetFishPullVFXOffset();
 
         if (ShouldAlignFishPullVFXToWaterSurface() && WaveManager.instance != null)
             position.y = WaveManager.instance.GetWaveHeight(position.x, position.z) + GetFishPullVFXWaterYOffset();
@@ -773,9 +789,11 @@ public class FishingRod : MonoBehaviour
 
     private float GetFishPullVFXWaterYOffset()
     {
-        float offset = fishPullVFXOffset.y;
+        float offset = GetFishPullVFXOffset().y;
 
-        if (currentTargetSpot != null && IsDeepFishingArea(currentTargetSpot.FishingArea))
+        if (IsCurrentFishingAreaLava())
+            offset += lavaFishPullVFXWaterYOffset;
+        else if (currentTargetSpot != null && IsDeepFishingArea(currentTargetSpot.FishingArea))
             offset += deepFishPullVFXWaterYOffset;
 
         return offset;
@@ -786,8 +804,51 @@ public class FishingRod : MonoBehaviour
         if (!alignFishPullVFXToWaterSurface)
             return false;
 
-        return !alignFishPullVFXOnlyInDeepArea ||
+        return IsCurrentFishingAreaLava() ||
+               !alignFishPullVFXOnlyInDeepArea ||
                (currentTargetSpot != null && IsDeepFishingArea(currentTargetSpot.FishingArea));
+    }
+
+    private VisualEffect GetFishPullVFXPrefab()
+    {
+        if (IsCurrentFishingAreaLava() && lavaFishPullVFXPrefab != null)
+            return lavaFishPullVFXPrefab;
+
+        return fishPullVFXPrefab;
+    }
+
+    private string GetFishPullVFXPoolKey()
+    {
+        if (IsCurrentFishingAreaLava() &&
+            lavaFishPullVFXPrefab != null &&
+            !string.IsNullOrWhiteSpace(lavaFishPullVFXPoolKey))
+        {
+            return lavaFishPullVFXPoolKey;
+        }
+
+        return fishPullVFXPoolKey;
+    }
+
+    private Vector3 GetFishPullVFXOffset()
+    {
+        return IsCurrentFishingAreaLava() && lavaFishPullVFXPrefab != null
+            ? lavaFishPullVFXOffset
+            : fishPullVFXOffset;
+    }
+
+    private bool IsCurrentFishingAreaLava()
+    {
+        FishingAreaDefinition area = currentTargetSpot != null
+            ? currentTargetSpot.FishingArea
+            : GetActiveFishingArea();
+
+        return IsLavaFishingArea(area);
+    }
+
+    private static FishingAreaDefinition GetActiveFishingArea()
+    {
+        FishingSpotSpawner spawner = FindFirstObjectByType<FishingSpotSpawner>(FindObjectsInactive.Include);
+        return spawner != null ? spawner.ActiveFishingArea : null;
     }
 
     private static bool IsDeepFishingArea(FishingAreaDefinition _area)
@@ -798,6 +859,14 @@ public class FishingRod : MonoBehaviour
         return ContainsDeepKeyword(_area.AreaId) || ContainsDeepKeyword(_area.DisplayName);
     }
 
+    private static bool IsLavaFishingArea(FishingAreaDefinition _area)
+    {
+        if (_area == null)
+            return false;
+
+        return ContainsLavaKeyword(_area.AreaId) || ContainsLavaKeyword(_area.DisplayName);
+    }
+
     private static bool ContainsDeepKeyword(string _text)
     {
         if (string.IsNullOrWhiteSpace(_text))
@@ -805,6 +874,14 @@ public class FishingRod : MonoBehaviour
 
         string normalizedText = _text.ToLowerInvariant();
         return normalizedText.Contains("deep") || normalizedText.Contains("profund");
+    }
+
+    private static bool ContainsLavaKeyword(string _text)
+    {
+        if (string.IsNullOrWhiteSpace(_text))
+            return false;
+
+        return _text.ToLowerInvariant().Contains("lava");
     }
 
     private void PrepareVFXPools()
@@ -820,6 +897,14 @@ public class FishingRod : MonoBehaviour
         PooledVisualEffectUtility.EnsurePool(
             fishPullVFXPoolKey,
             fishPullVFXPrefab,
+            fishPullVFXPoolSize,
+            useVFXPool,
+            true
+        );
+
+        PooledVisualEffectUtility.EnsurePool(
+            lavaFishPullVFXPoolKey,
+            lavaFishPullVFXPrefab,
             fishPullVFXPoolSize,
             useVFXPool,
             true
