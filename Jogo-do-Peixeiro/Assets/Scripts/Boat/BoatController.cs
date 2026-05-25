@@ -151,6 +151,46 @@ public class BoatController : MonoBehaviour
             boatMotor.ResetMotorState();
     }
 
+    public void PlaceForSceneTransition(Transform _boatPoint, Transform _playerPoint, bool _putPlayerOnBoat)
+    {
+        ResolvePlayerReferences();
+
+        if (isPlayerOnBoat)
+            ExitBoatForTeleport();
+
+        Transform boatPoint = _boatPoint != null ? _boatPoint : transform;
+        transform.SetPositionAndRotation(
+            boatPoint.position,
+            boatPoint.rotation * Quaternion.Euler(OffsetRotacao)
+        );
+
+        SetBoatPhysics(false);
+
+        if (rb != null)
+        {
+            rb.linearVelocity = Vector3.zero;
+            rb.angularVelocity = Vector3.zero;
+            rb.Sleep();
+        }
+
+        if (boatMotor != null)
+            boatMotor.ResetMotorState();
+
+        if (_putPlayerOnBoat)
+        {
+            if (GameManager.instance != null)
+                GameManager.instance.SetState(GameManager.GameState.OnFoot);
+
+            EnterBoat();
+            return;
+        }
+
+        PlacePlayerAtSceneTransitionPoint(_playerPoint);
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
+    }
+
     public void ExitBoatWithoutMovingPlayer()
     {
         if (!isPlayerOnBoat)
@@ -306,6 +346,38 @@ public class BoatController : MonoBehaviour
 
         if (characterController != null)
             characterController.enabled = wasCharacterControllerEnabled;
+
+        Physics.SyncTransforms();
+    }
+
+    private void PlacePlayerAtSceneTransitionPoint(Transform _playerPoint)
+    {
+        if (player == null)
+            return;
+
+        Transform target = _playerPoint != null ? _playerPoint : transform;
+        bool wasCharacterControllerEnabled = characterController != null && characterController.enabled;
+
+        if (characterController != null && wasCharacterControllerEnabled)
+            characterController.enabled = false;
+
+        player.transform.SetParent(originalParent, true);
+        player.transform.SetPositionAndRotation(target.position, target.rotation * Quaternion.Euler(OffsetRotacao));
+
+        if (playerController != null)
+            playerController.enabled = true;
+
+        if (characterController != null)
+            characterController.enabled = true;
+
+        if (boatCamera != null)
+            boatCamera.SetActive(false);
+
+        ResetPlayerRuntimeState();
+        EnsurePlayerAnimatorEnabled();
+
+        if (playerMove != null)
+            playerMove.SetSafeRespawnPosition(player.transform.position);
 
         Physics.SyncTransforms();
     }

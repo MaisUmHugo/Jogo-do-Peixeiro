@@ -174,7 +174,7 @@ Transform:
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children:
-  - {fileID: 5560985415062135241}
+  - {fileID: 2619340565632417365}
   - {fileID: 2982478540859666413}
   - {fileID: 7852568663513631700}
   - {fileID: 4265671502279387161}
@@ -264,6 +264,14 @@ MonoBehaviour:
   anchorWhileFishing: 1
   requireNeutralInputAfterFishing: 1
   neutralInputThreshold: 0.15
+  boatWaterLoopSfx: {fileID: 0}
+  boatWaterAudioSource: {fileID: 0}
+  boatWaterMinVolume: 0.15
+  boatWaterMaxVolume: 0.65
+  boatWaterMinPitch: 0.9
+  boatWaterMaxPitch: 1.12
+  boatWaterSpeedForMaxVolume: 8
+  boatWaterSpatialBlend: 1
 --- !u!114 &1627622844671503687
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -408,7 +416,7 @@ MonoBehaviour:
   heightOffset: 1
   outOfWaterWeight: 3
   canFloat: 1
---- !u!1001 &3630147581242270293
+--- !u!1001 &2581544590607063486
 PrefabInstance:
   m_ObjectHideFlags: 0
   serializedVersion: 2
@@ -416,61 +424,57 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 7098386901417622287}
     m_Modifications:
-    - target: {fileID: 1578970270286595564, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
-      propertyPath: m_Name
-      value: BarcoMotor
-      objectReference: {fileID: 0}
-    - target: {fileID: 6051292907083923350, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 496d234ff9a219f41bbbdccb95d0b98e, type: 2}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalPosition.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalPosition.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalPosition.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalRotation.w
-      value: 0.7071067
+      value: 1
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalRotation.x
-      value: -0.7071068
+      value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalRotation.y
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalRotation.z
-      value: -0
+      value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.y
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
+    - target: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 919132149155446097, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+      propertyPath: m_Name
+      value: BarcoMotor
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
     m_AddedComponents: []
-  m_SourcePrefab: {fileID: 100100000, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
---- !u!4 &5560985415062135241 stripped
+  m_SourcePrefab: {fileID: 100100000, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+--- !u!4 &2619340565632417365 stripped
 Transform:
-  m_CorrespondingSourceObject: {fileID: 9172787047790298012, guid: b8b405e618aa6a3478c0a6467f7b8648, type: 3}
-  m_PrefabInstance: {fileID: 3630147581242270293}
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+  m_PrefabInstance: {fileID: 2581544590607063486}
   m_PrefabAsset: {fileID: 0}
