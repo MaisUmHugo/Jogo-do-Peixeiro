@@ -33,9 +33,11 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private string _teleportToBoatKeyboardBinding = "<Keyboard>/f3";
     [SerializeField] private string _teleportToDockKeyboardBinding = "<Keyboard>/f4";
     [SerializeField] private string _spawnFishPullVfxKeyboardBinding = "<Keyboard>/f5";
+    [SerializeField] private string _teleportToArrivalPointKeyboardBinding = "<Keyboard>/f6";
 
     [Header("Teleport")]
     [SerializeField, Min(0f)] private float _teleportHeightOffset = 0.05f;
+    [SerializeField] private string _debugArrivalPointId;
 
     [Header("VFX Debug")]
     [SerializeField, Min(0f)] private float _fishPullVfxSpawnDistance = 5f;
@@ -65,6 +67,7 @@ public class BuildCheatController : MonoBehaviour
     private InputAction _teleportToBoatAction;
     private InputAction _teleportToDockAction;
     private InputAction _spawnFishPullVfxAction;
+    private InputAction _teleportToArrivalPointAction;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
@@ -181,6 +184,11 @@ public class BuildCheatController : MonoBehaviour
             "Cheat Spawn Fish Pull VFX",
             _spawnFishPullVfxKeyboardBinding,
             null);
+
+        _teleportToArrivalPointAction = CreateButtonAction(
+            "Cheat Teleport To Arrival Point",
+            _teleportToArrivalPointKeyboardBinding,
+            null);
     }
 
     private InputAction CreateButtonAction(string _actionName, string _keyboardBinding, string _gamepadBinding)
@@ -242,6 +250,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_spawnFishPullVfxAction != null)
             _spawnFishPullVfxAction.performed += HandleSpawnFishPullVfx;
+
+        if (_teleportToArrivalPointAction != null)
+            _teleportToArrivalPointAction.performed += HandleTeleportToArrivalPoint;
     }
 
     private void UnregisterActionCallbacks()
@@ -287,6 +298,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_spawnFishPullVfxAction != null)
             _spawnFishPullVfxAction.performed -= HandleSpawnFishPullVfx;
+
+        if (_teleportToArrivalPointAction != null)
+            _teleportToArrivalPointAction.performed -= HandleTeleportToArrivalPoint;
     }
 
     private void EnableActions()
@@ -305,6 +319,7 @@ public class BuildCheatController : MonoBehaviour
         _teleportToBoatAction?.Enable();
         _teleportToDockAction?.Enable();
         _spawnFishPullVfxAction?.Enable();
+        _teleportToArrivalPointAction?.Enable();
     }
 
     private void DisposeActions()
@@ -323,6 +338,7 @@ public class BuildCheatController : MonoBehaviour
         DisposeAction(ref _teleportToBoatAction);
         DisposeAction(ref _teleportToDockAction);
         DisposeAction(ref _spawnFishPullVfxAction);
+        DisposeAction(ref _teleportToArrivalPointAction);
     }
 
     private void DisposeAction(ref InputAction _inputAction)
@@ -403,6 +419,11 @@ public class BuildCheatController : MonoBehaviour
     private void HandleSpawnFishPullVfx(InputAction.CallbackContext _context)
     {
         TryRunShiftCheat(SpawnFishPullVfxCheat);
+    }
+
+    private void HandleTeleportToArrivalPoint(InputAction.CallbackContext _context)
+    {
+        TryRunShiftCheat(TeleportToArrivalPointCheat);
     }
 
     private void TryRunCheat(System.Action _cheatAction, bool _allowInMainMenu = false)
@@ -745,6 +766,25 @@ public class BuildCheatController : MonoBehaviour
         TeleportToDock();
     }
 
+    private void TeleportToArrivalPointCheat()
+    {
+        SceneTransitionArrivalPoint arrivalPoint = ResolveArrivalPoint(_debugArrivalPointId);
+
+        if (arrivalPoint == null)
+        {
+            ShowCheatFeedback(GetMissingArrivalPointFeedback());
+            return;
+        }
+
+        if (!arrivalPoint.TryApplyArrival(false))
+        {
+            ShowCheatFeedback($"Cheat: não foi possível aplicar Arrival Point '{arrivalPoint.ArrivalPointId}'.");
+            return;
+        }
+
+        ShowCheatFeedback($"Cheat: teleporte -> Arrival Point '{arrivalPoint.ArrivalPointId}'.");
+    }
+
     private bool TeleportToBoat()
     {
         BoatController boat = FindFirstObjectByType<BoatController>(FindObjectsInactive.Include);
@@ -860,6 +900,58 @@ public class BuildCheatController : MonoBehaviour
         }
 
         return fallbackDock;
+    }
+
+    private SceneTransitionArrivalPoint ResolveArrivalPoint(string _arrivalPointId)
+    {
+        SceneTransitionArrivalPoint[] arrivalPoints = FindObjectsByType<SceneTransitionArrivalPoint>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        if (arrivalPoints == null || arrivalPoints.Length == 0)
+            return null;
+
+        SceneTransitionArrivalPoint fallback = null;
+
+        for (int i = 0; i < arrivalPoints.Length; i++)
+        {
+            SceneTransitionArrivalPoint point = arrivalPoints[i];
+
+            if (point == null)
+                continue;
+
+            fallback ??= point;
+
+            if (!string.IsNullOrWhiteSpace(_arrivalPointId) && point.ArrivalPointId == _arrivalPointId)
+                return point;
+        }
+
+        return string.IsNullOrWhiteSpace(_arrivalPointId) ? fallback : null;
+    }
+
+    private string GetMissingArrivalPointFeedback()
+    {
+        SceneTransitionArrivalPoint[] arrivalPoints = FindObjectsByType<SceneTransitionArrivalPoint>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        if (arrivalPoints == null || arrivalPoints.Length == 0)
+            return "Cheat: nenhum Arrival Point encontrado na cena.";
+
+        List<string> ids = new List<string>();
+
+        for (int i = 0; i < arrivalPoints.Length; i++)
+        {
+            if (arrivalPoints[i] == null)
+                continue;
+
+            ids.Add(string.IsNullOrWhiteSpace(arrivalPoints[i].ArrivalPointId)
+                ? "(sem id)"
+                : arrivalPoints[i].ArrivalPointId);
+        }
+
+        string requestedId = string.IsNullOrWhiteSpace(_debugArrivalPointId) ? "(primeiro)" : _debugArrivalPointId;
+        return $"Cheat: Arrival Point '{requestedId}' não encontrado. Disponíveis: {string.Join(", ", ids)}.";
     }
 
     private Transform ResolvePlayerTransform()
