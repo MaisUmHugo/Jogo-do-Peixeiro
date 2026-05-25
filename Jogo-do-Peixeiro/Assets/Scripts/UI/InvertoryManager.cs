@@ -68,6 +68,7 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private Button discardConfirmYesButton;
     [SerializeField] private Button discardConfirmNoButton;
     [SerializeField] private string discardConfirmTextFormat = "Descartar {0} {1}?";
+    [SerializeField] private bool hideTabButtonsWhileDiscardConfirm = true;
     [SerializeField] private InventoryFishSlotUI[] discardFishGridSlots;
     [SerializeField] private Transform discardFishGridContent;
     [SerializeField] private InventoryFishSlotUI discardFishSlotTemplate;
@@ -986,8 +987,7 @@ public class InvertoryManager : MonoBehaviour
 
         SetTabObjectsActive(fishTabObjects, fishTabPanel, currentTab == InventoryTab.Fish);
         SetTabObjectsActive(baitsTabObjects, baitsTabPanel, currentTab == InventoryTab.Baits);
-        SetButtonInteractable(fishTabButton, currentTab != InventoryTab.Fish);
-        SetButtonInteractable(baitsTabButton, currentTab != InventoryTab.Baits);
+        UpdateTabButtonsState();
         SetBaitControlsVisible(currentTab == InventoryTab.Baits);
         UpdateDiscardControls();
         RefreshInventoryTexts();
@@ -1403,6 +1403,7 @@ public class InvertoryManager : MonoBehaviour
         bool isDiscardFlowActive = isFishTab && isDiscardMode;
         bool showDiscardMode = isDiscardFlowActive && !isDiscardConfirmVisible;
 
+        UpdateTabButtonsState();
         SetButtonVisible(discardModeButton, isFishTab && !isDiscardMode);
         SetButtonVisible(confirmDiscardButton, showDiscardMode);
         SetButtonVisible(cancelDiscardButton, showDiscardMode);
@@ -1424,6 +1425,24 @@ public class InvertoryManager : MonoBehaviour
 
         if (discardConfirmText != null)
             discardConfirmText.text = GetDiscardConfirmText();
+    }
+
+    private void UpdateTabButtonsState()
+    {
+        bool showTabs = !hideTabButtonsWhileDiscardConfirm || !isDiscardConfirmVisible;
+
+        SetButtonVisible(fishTabButton, showTabs);
+        SetButtonVisible(baitsTabButton, showTabs);
+
+        if (!showTabs)
+        {
+            SetButtonInteractable(fishTabButton, false);
+            SetButtonInteractable(baitsTabButton, false);
+            return;
+        }
+
+        SetButtonInteractable(fishTabButton, currentTab != InventoryTab.Fish);
+        SetButtonInteractable(baitsTabButton, currentTab != InventoryTab.Baits);
     }
 
     private void SetDiscardConfirmPanelVisible(bool _visible)
