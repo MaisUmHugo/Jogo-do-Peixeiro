@@ -17,11 +17,12 @@ public class GenerateWaterMesh : MonoBehaviour
     public bool useLavaMaterial;
     public Material lavaMaterial;
 
-    [Header("Referencia")]
+    [Header("Referência")]
     public Transform referenceObject;
 
     [Header("Escurecimento")]
     public string boatTag = "Boat";
+    public bool invertDepthDirection;
     public float darkStartDistance = 10f;
     public float darkMaxDistance = 100f;
     [Range(0f, 1f)] public float deepAreaThreshold = 0.35f;
@@ -145,7 +146,10 @@ public class GenerateWaterMesh : MonoBehaviour
     public float GetDarknessAtWorldPosition(Vector3 _worldPosition)
     {
         Transform reference = referenceObject != null ? referenceObject : transform;
-        float zDistance = _worldPosition.z - reference.position.z;
+        float zDistance = invertDepthDirection
+            ? reference.position.z - _worldPosition.z
+            : _worldPosition.z - reference.position.z;
+
         return Mathf.InverseLerp(darkStartDistance, darkMaxDistance, zDistance);
     }
 

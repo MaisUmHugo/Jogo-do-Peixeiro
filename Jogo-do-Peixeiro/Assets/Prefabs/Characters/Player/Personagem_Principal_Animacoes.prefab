@@ -418,6 +418,7 @@ MonoBehaviour:
   fishMovementFollowSpeed: 4
   fishPullVFXPrefab: {fileID: 988624952468143614, guid: 02bbf4058b825674e95dce116b01554a, type: 3}
   fishPullVFXLifetime: 1.2
+  deepFishPullVFXWaterYOffset: -0.25
   castSfx: {fileID: 8300000, guid: ea172530ddd85df48968ec9aa5d8f474, type: 3}
   splashSfx: {fileID: 8300000, guid: f656bf1ae368d074a91b41c88b2af95a, type: 3}
   fishPullSfx: {fileID: 0}

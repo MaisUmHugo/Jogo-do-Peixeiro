@@ -138,6 +138,7 @@ MonoBehaviour:
   darkWaterMaterial: {fileID: 0}
   referenceObject: {fileID: 0}
   boatTag: Boat
+  invertDepthDirection: 0
   darkStartDistance: 10
   darkMaxDistance: 100
   deepAreaThreshold: 0.35
