@@ -44,7 +44,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5859333733985695733}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -79,7 +79,7 @@ Transform:
   m_GameObject: {fileID: 1032465395336783445}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0, y: 0.459, z: 0.707}
+  m_LocalPosition: {x: 0, y: 0.564, z: 0.994}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -129,7 +129,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5859333733985695733}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -286,8 +286,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   player: {fileID: 0}
   boatCamera: {fileID: 0}
-  seatPoint: {fileID: 0}
-  OffsetRotacao: {x: 0, y: 0, z: 0}
+  seatPoint: {fileID: 8922274417654140815}
+  OffsetRotacao: {x: 0, y: 180, z: 0}
   playerController: {fileID: 0}
   characterController: {fileID: 0}
   playerMove: {fileID: 0}
@@ -352,7 +352,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5859333733985695733}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -406,7 +406,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 5b22df6665f21fa42ab22cb31a1ac034, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  rb: {fileID: 0}
+  rb: {fileID: 5859333733985695733}
   depthBeforeSubmerged: 0.25
   displacementAmount: 1.2
   waterDrag: 5
@@ -468,13 +468,52 @@ PrefabInstance:
       propertyPath: m_Name
       value: BarcoMotor
       objectReference: {fileID: 0}
+    - target: {fileID: 4477465230128580201, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 4477465230128580201, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 4477465230128580201, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: -90
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
-    m_AddedComponents: []
+    m_AddedComponents:
+    - targetCorrespondingSourceObject: {fileID: -7080008205057387153, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 373871376662042909}
   m_SourcePrefab: {fileID: 100100000, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
 --- !u!4 &2619340565632417365 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
   m_PrefabInstance: {fileID: 2581544590607063486}
   m_PrefabAsset: {fileID: 0}
+--- !u!1 &4498461799255051473 stripped
+GameObject:
+  m_CorrespondingSourceObject: {fileID: -7080008205057387153, guid: d3879e42b4d4f864fae85fc45714dba1, type: 3}
+  m_PrefabInstance: {fileID: 2581544590607063486}
+  m_PrefabAsset: {fileID: 0}
+--- !u!114 &373871376662042909
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4498461799255051473}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 360f5e868fc5c3642b2e8f9f147341c6, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  rotationAxis: 2
+  rotationSpeed: 10
+  scaleWithBoatSpeed: 1
+  boatRigidbody: {fileID: 0}
+  boatMotor: {fileID: 0}
+  speedForMaxRotation: 0
+  speedSmoothing: 8
