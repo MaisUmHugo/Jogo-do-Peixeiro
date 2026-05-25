@@ -12,6 +12,7 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private GameObject pausePanel;
     [SerializeField] private GameObject confirmPanel;
     [SerializeField] private GameObject controlsPanel;
+    [SerializeField] private FishCollectionUI fishCollectionUI;
 
     [Header("Pause Visibility")]
     [SerializeField] private GameObject[] panelsToHideWhilePaused;
@@ -66,6 +67,7 @@ public class PauseManager : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(false);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         if (controlsPanel != null) controlsPanel.SetActive(false);
+        if (fishCollectionUI != null) fishCollectionUI.Close();
     }
 
     private void OnDestroy()
@@ -118,6 +120,12 @@ public class PauseManager : MonoBehaviour
             return;
         }
 
+        if (fishCollectionUI != null && fishCollectionUI.IsOpen)
+        {
+            CloseFishCollectionFromPause();
+            return;
+        }
+
         // toggle pause
         if (GameManager.instance.currentState == GameManager.GameState.Paused)
             ResumeGame();
@@ -136,6 +144,12 @@ public class PauseManager : MonoBehaviour
         if (controlsPanel != null && controlsPanel.activeSelf)
         {
             CloseControlsFromPause();
+            return;
+        }
+
+        if (fishCollectionUI != null && fishCollectionUI.IsOpen)
+        {
+            CloseFishCollectionFromPause();
             return;
         }
 
@@ -178,6 +192,7 @@ public class PauseManager : MonoBehaviour
         if (pausePanel != null) pausePanel.SetActive(true);
         if (confirmPanel != null) confirmPanel.SetActive(false);
         if (controlsPanel != null) controlsPanel.SetActive(false);
+        if (fishCollectionUI != null) fishCollectionUI.Close();
 
         SelectPausePanel();
     }
@@ -230,6 +245,36 @@ public class PauseManager : MonoBehaviour
         // volta para o pause
         if (controlsPanel != null) controlsPanel.SetActive(false);
         if (pausePanel != null) pausePanel.SetActive(true);
+
+        SelectPausePanel();
+    }
+
+    public void OpenFishCollectionFromPause()
+    {
+        if (fishCollectionUI == null)
+            return;
+
+        StorePauseSelection();
+
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
+
+        if (confirmPanel != null)
+            confirmPanel.SetActive(false);
+
+        if (controlsPanel != null)
+            controlsPanel.SetActive(false);
+
+        fishCollectionUI.Open(pausePanel);
+    }
+
+    public void CloseFishCollectionFromPause()
+    {
+        if (fishCollectionUI != null)
+            fishCollectionUI.Close();
+
+        if (pausePanel != null)
+            pausePanel.SetActive(true);
 
         SelectPausePanel();
     }
@@ -370,7 +415,8 @@ public class PauseManager : MonoBehaviour
     {
         return IsSameOrParent(panel, pausePanel) ||
                IsSameOrParent(panel, confirmPanel) ||
-               IsSameOrParent(panel, controlsPanel);
+               IsSameOrParent(panel, controlsPanel) ||
+               (fishCollectionUI != null && IsSameOrParent(panel, fishCollectionUI.gameObject));
     }
 
     private bool IsSameOrParent(GameObject candidate, GameObject child)
@@ -402,6 +448,9 @@ public class PauseManager : MonoBehaviour
         UISelectionHelper.ClearSelection(pausePanel);
         UISelectionHelper.ClearSelection(confirmPanel);
         UISelectionHelper.ClearSelection(controlsPanel);
+
+        if (fishCollectionUI != null)
+            UISelectionHelper.ClearSelection(fishCollectionUI.gameObject);
     }
 
     private void StorePauseSelection()
