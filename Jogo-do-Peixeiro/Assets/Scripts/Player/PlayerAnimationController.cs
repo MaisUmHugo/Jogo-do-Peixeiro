@@ -23,6 +23,15 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField, Min(0f)] private float _positionMoveResetThreshold = 0.01f;
     [SerializeField, Min(0f)] private float _moveSpeedDampTime = 0.08f;
 
+    [Header("Movement Visual Hop")]
+    [SerializeField] private bool _enableMovementVisualHop = true;
+    [SerializeField] private Transform _movementHopTarget;
+    [SerializeField, Min(0f)] private float _movementHopHeight = 0.04f;
+    [SerializeField, Min(0f)] private float _movementHopFrequency = 9f;
+    [SerializeField, Min(0f)] private float _movementHopReturnSpeed = 12f;
+    [SerializeField, Min(0f)] private float _afkIdleStartHopHeight = 0.04f;
+    [SerializeField, Min(0.01f)] private float _afkIdleStartHopDuration = 0.28f;
+
     [Header("Idle AFK")]
     [SerializeField, Min(0f)] private float _afkIdleDelay = 8f;
     [SerializeField] private int _defaultIdleStage;
@@ -76,6 +85,12 @@ public class PlayerAnimationController : MonoBehaviour
     private bool _hasLastPosition;
     private bool _isAfkIdleActive;
     private bool _leftAfkIdleByMoveInput;
+    private Transform _movementHopParent;
+    private Vector3 _movementHopBaseLocalPosition;
+    private bool _hasMovementHopBase;
+    private float _movementHopPhase;
+    private float _currentMovementHopOffset;
+    private float _afkIdleStartHopTimer;
     private Vector3 _lastPosition;
 
     public Vector2 CurrentMoveInput { get; private set; }
@@ -92,6 +107,11 @@ public class PlayerAnimationController : MonoBehaviour
         _fishingOffsetSmoothTime = Mathf.Max(0f, _fishingOffsetSmoothTime);
         _fishingOffsetResetThreshold = Mathf.Max(0f, _fishingOffsetResetThreshold);
         _fishingFacingMaxDegreesPerSecond = Mathf.Max(0f, _fishingFacingMaxDegreesPerSecond);
+        _movementHopHeight = Mathf.Max(0f, _movementHopHeight);
+        _movementHopFrequency = Mathf.Max(0f, _movementHopFrequency);
+        _movementHopReturnSpeed = Mathf.Max(0f, _movementHopReturnSpeed);
+        _afkIdleStartHopHeight = Mathf.Max(0f, _afkIdleStartHopHeight);
+        _afkIdleStartHopDuration = Mathf.Max(0.01f, _afkIdleStartHopDuration);
     }
 
     private void Awake()
@@ -113,6 +133,11 @@ public class PlayerAnimationController : MonoBehaviour
 
         UpdateAnimatorState();
         UpdateBoatVisualOffset();
+    }
+
+    private void LateUpdate()
+    {
+        UpdateMovementVisualHop();
     }
 
     private void OnAnimatorMove()
@@ -176,6 +201,22 @@ public class PlayerAnimationController : MonoBehaviour
         _fishingFacingTargetWorldPosition = _targetWorldPosition;
         _fishingFacingYawOffset = _yawOffset;
         _hasFishingFacingTarget = true;
+    }
+
+    public void SnapFishingFacingToTarget()
+    {
+        if (!_hasFishingFacingTarget)
+            return;
+
+        Transform offsetTarget = ResolveBoatOffsetTarget();
+
+        if (offsetTarget == null)
+            return;
+
+        if (!_hasBoatOffsetBase || offsetTarget.parent != _boatOffsetParent)
+            CaptureBoatOffsetBase(offsetTarget);
+
+        offsetTarget.localRotation = GetBoatVisualLocalRotation(offsetTarget);
     }
 
     public void ClearFishingFacingTarget()
@@ -246,6 +287,99 @@ public class PlayerAnimationController : MonoBehaviour
             return _fishingOffsetTarget;
 
         return _animator != null ? _animator.transform : null;
+    }
+
+    private void UpdateMovementVisualHop()
+    {
+        Transform hopTarget = ResolveMovementHopTarget();
+
+        if (hopTarget == null)
+            return;
+
+        if (_hasMovementHopBase && hopTarget.parent != _movementHopParent)
+        {
+            ClearMovementHopState();
+            return;
+        }
+
+        bool shouldHop = ShouldApplyMovementHop();
+
+        if (!shouldHop && !_hasMovementHopBase && Mathf.Abs(_currentMovementHopOffset) <= 0.001f)
+            return;
+
+        if (!_hasMovementHopBase)
+            CaptureMovementHopBase(hopTarget);
+
+        float targetOffset = GetMovementHopTargetOffset(shouldHop);
+        float followT = _movementHopReturnSpeed > 0f
+            ? 1f - Mathf.Exp(-_movementHopReturnSpeed * Time.deltaTime)
+            : 1f;
+
+        _currentMovementHopOffset = Mathf.Lerp(_currentMovementHopOffset, targetOffset, followT);
+
+        Vector3 localPosition = _movementHopBaseLocalPosition;
+        localPosition.y += _currentMovementHopOffset;
+        hopTarget.localPosition = localPosition;
+
+        if (!shouldHop && Mathf.Abs(_currentMovementHopOffset) <= 0.001f)
+        {
+            hopTarget.localPosition = _movementHopBaseLocalPosition;
+            ClearMovementHopState();
+        }
+    }
+
+    private Transform ResolveMovementHopTarget()
+    {
+        if (_movementHopTarget != null)
+            return _movementHopTarget;
+
+        return _animator != null ? _animator.transform : null;
+    }
+
+    private bool ShouldApplyMovementHop()
+    {
+        if (!_enableMovementVisualHop || GameManager.instance == null)
+            return false;
+
+        if (GameManager.instance.currentState != GameManager.GameState.OnFoot)
+            return false;
+
+        return IsMoving || _afkIdleStartHopTimer > 0f;
+    }
+
+    private float GetMovementHopTargetOffset(bool _shouldHop)
+    {
+        if (!_shouldHop)
+            return 0f;
+
+        if (IsMoving)
+        {
+            _movementHopPhase += Time.deltaTime * _movementHopFrequency * Mathf.Lerp(0.8f, 1.2f, CurrentMoveSpeed);
+            return Mathf.Abs(Mathf.Sin(_movementHopPhase)) * _movementHopHeight * CurrentMoveSpeed;
+        }
+
+        if (_afkIdleStartHopTimer <= 0f)
+            return 0f;
+
+        _afkIdleStartHopTimer = Mathf.Max(0f, _afkIdleStartHopTimer - Time.deltaTime);
+        float normalized = 1f - (_afkIdleStartHopTimer / Mathf.Max(0.01f, _afkIdleStartHopDuration));
+        return Mathf.Sin(normalized * Mathf.PI) * _afkIdleStartHopHeight;
+    }
+
+    private void CaptureMovementHopBase(Transform _hopTarget)
+    {
+        _movementHopParent = _hopTarget.parent;
+        _movementHopBaseLocalPosition = _hopTarget.localPosition;
+        _hasMovementHopBase = true;
+    }
+
+    private void ClearMovementHopState()
+    {
+        _hasMovementHopBase = false;
+        _movementHopParent = null;
+        _movementHopPhase = 0f;
+        _currentMovementHopOffset = 0f;
+        _afkIdleStartHopTimer = 0f;
     }
 
     private void UpdateBoatVisualOffset()
@@ -519,6 +653,7 @@ public class PlayerAnimationController : MonoBehaviour
         {
             _idleTimer = 0f;
             _isAfkIdleActive = false;
+            _afkIdleStartHopTimer = 0f;
             SetInteger(_idleStageParameter, _defaultIdleStage);
             return;
         }
@@ -530,7 +665,11 @@ public class PlayerAnimationController : MonoBehaviour
             ? _afkIdleStage
             : _defaultIdleStage;
 
+        bool wasAfkIdleActive = _isAfkIdleActive;
         _isAfkIdleActive = idleStage == _afkIdleStage;
+
+        if (!wasAfkIdleActive && _isAfkIdleActive)
+            _afkIdleStartHopTimer = _afkIdleStartHopDuration;
 
         SetInteger(_idleStageParameter, idleStage);
     }
