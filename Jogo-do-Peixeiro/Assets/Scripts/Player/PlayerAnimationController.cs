@@ -653,7 +653,7 @@ public class PlayerAnimationController : MonoBehaviour
         _loggedMissingParameters.Add(_parameterHash);
 
         Debug.LogWarning(
-            $"[PlayerAnimationController] Animator parameter '{_parameterName}' ({_expectedType}) nao encontrado. " +
+            $"[PlayerAnimationController] Animator parameter '{_parameterName}' ({_expectedType}) não encontrado. " +
             "Crie o parametro no Animator Controller ou deixe o nome vazio para ignorar.",
             this
         );

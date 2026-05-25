@@ -54,6 +54,8 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private bool alignFishPullVFXToWaterSurface = true;
     [SerializeField] private bool alignFishPullVFXOnlyInDeepArea = true;
     [SerializeField] private Vector3 fishPullVFXOffset = new Vector3(0f, 0.08f, 0f);
+    [Tooltip("Offset vertical extra aplicado somente em área profunda/dark water. Use valor negativo para baixar o FishVFX.")]
+    [SerializeField] private float deepFishPullVFXWaterYOffset = -0.25f;
 
     [Header("VFX Pool")]
     [SerializeField] private bool useVFXPool = true;
@@ -62,7 +64,7 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private string fishPullVFXPoolKey = "FishPullVFX";
     [SerializeField, Min(1)] private int fishPullVFXPoolSize = 6;
 
-    [Header("Audio")]
+    [Header("Áudio")]
     [SerializeField, InspectorName("Cast SFX")] private AudioClip castSfx;
     [SerializeField, InspectorName("Splash SFX")] private AudioClip splashSfx;
     [SerializeField, InspectorName("Fish Pull SFX")] private AudioClip fishPullSfx;
@@ -659,7 +661,7 @@ public class FishingRod : MonoBehaviour
         Vector3 spawnPosition = _worldPosition + fishPullVFXOffset;
 
         if (WaveManager.instance != null)
-            spawnPosition.y = WaveManager.instance.GetWaveHeight(spawnPosition.x, spawnPosition.z) + fishPullVFXOffset.y;
+            spawnPosition.y = WaveManager.instance.GetWaveHeight(spawnPosition.x, spawnPosition.z) + GetFishPullVFXWaterYOffset();
 
         SpawnOneShotFishPullVFXAt(spawnPosition, _worldDirection);
         return true;
@@ -764,9 +766,19 @@ public class FishingRod : MonoBehaviour
         Vector3 position = currentHook.position + fishPullVFXOffset;
 
         if (ShouldAlignFishPullVFXToWaterSurface() && WaveManager.instance != null)
-            position.y = WaveManager.instance.GetWaveHeight(position.x, position.z) + fishPullVFXOffset.y;
+            position.y = WaveManager.instance.GetWaveHeight(position.x, position.z) + GetFishPullVFXWaterYOffset();
 
         return position;
+    }
+
+    private float GetFishPullVFXWaterYOffset()
+    {
+        float offset = fishPullVFXOffset.y;
+
+        if (currentTargetSpot != null && IsDeepFishingArea(currentTargetSpot.FishingArea))
+            offset += deepFishPullVFXWaterYOffset;
+
+        return offset;
     }
 
     private bool ShouldAlignFishPullVFXToWaterSurface()

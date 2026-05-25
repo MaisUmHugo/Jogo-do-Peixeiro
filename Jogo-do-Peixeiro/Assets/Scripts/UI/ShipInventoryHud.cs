@@ -266,7 +266,7 @@ public class ShipInventoryHud : MonoBehaviour
         if (!logMissingReferences || hasLoggedMissingInventory)
             return;
 
-        Debug.LogWarning("[ShipInventoryHud] Falta ShipInventory. Arraste o inventario do barco no Inspector ou mantenha um ShipInventory ativo na cena.", this);
+        Debug.LogWarning("[ShipInventoryHud] Falta ShipInventory. Arraste o inventário do barco no Inspector ou mantenha um ShipInventory ativo na cena.", this);
         hasLoggedMissingInventory = true;
     }
 

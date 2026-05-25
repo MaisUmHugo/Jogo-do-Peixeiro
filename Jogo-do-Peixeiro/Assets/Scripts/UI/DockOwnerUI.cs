@@ -64,7 +64,7 @@ public class DockOwnerUI : MonoBehaviour
     [Header("Purchase Confirmation")]
     [SerializeField] private DockOwnerPurchaseConfirmUI purchaseConfirmUI;
 
-    [Header("Audio")]
+    [Header("Áudio")]
     [SerializeField, InspectorName("Sell SFX")] private AudioClip sellSfx;
     [SerializeField, InspectorName("Purchase SFX")] private AudioClip purchaseSfx;
     [SerializeField, Range(0f, 1f), InspectorName("Sell SFX Volume")] private float sellSfxVolume = 1f;
@@ -197,7 +197,7 @@ public class DockOwnerUI : MonoBehaviour
     {
         if (fishMarket == null)
         {
-            SetStatus("Mercado nao encontrado.");
+            SetStatus("Mercado não encontrado.");
             return;
         }
 
@@ -214,7 +214,7 @@ public class DockOwnerUI : MonoBehaviour
         int selectedValue = GetSelectedFishSaleValue();
         OpenPurchaseConfirmation(
             "Confirmar venda",
-            $"Vender {selectedCount} peixe(s) por R$ {selectedValue}?",
+            $"Vender {selectedCount} {GetFishCountLabel(selectedCount)} por R$ {selectedValue}?",
             CompleteSellSelected
         );
     }
@@ -223,7 +223,7 @@ public class DockOwnerUI : MonoBehaviour
     {
         if (fishMarket == null)
         {
-            SetStatus("Mercado nao encontrado.");
+            SetStatus("Mercado não encontrado.");
             return;
         }
 
@@ -238,7 +238,7 @@ public class DockOwnerUI : MonoBehaviour
 
         if (!fishMarket.TrySellFishList(selectedFishForSale, out int earnedMoney))
         {
-            SetStatus("Nao foi possivel vender os peixes selecionados.");
+            SetStatus("Não foi possível vender os peixes selecionados.");
             Refresh();
             return;
         }
@@ -490,7 +490,7 @@ public class DockOwnerUI : MonoBehaviour
         SetUpgradeRow(
             capacityUpgradeRow,
             "Peso",
-            "Aumenta o peso maximo do barco.",
+            "Aumenta o peso máximo do barco.",
             $"Nivel {dockUpgradeSystem.CapacityLevel}/{dockUpgradeSystem.MaxCapacityLevel}",
             dockUpgradeSystem.IsCapacityUpgradeMaxed
                 ? $"Capacidade: {currentCapacity:0} kg"
@@ -977,7 +977,7 @@ public class DockOwnerUI : MonoBehaviour
 
         if (dockUpgradeSystem == null)
         {
-            SetStatus("Sistema de upgrades nao encontrado.");
+            SetStatus("Sistema de upgrades não encontrado.");
             return;
         }
 
@@ -1005,7 +1005,7 @@ public class DockOwnerUI : MonoBehaviour
 
         if (dockUpgradeSystem == null)
         {
-            SetStatus("Sistema de upgrades nao encontrado.");
+            SetStatus("Sistema de upgrades não encontrado.");
             return;
         }
 
@@ -1101,7 +1101,7 @@ public class DockOwnerUI : MonoBehaviour
     private string GetUpgradeCostText(int _cost, bool _isMaxed)
     {
         if (_isMaxed)
-            return "Maximo";
+            return "Máximo";
 
         string moneyColor = playerMoney >= _cost ? "green" : "red";
         return $"<color={moneyColor}>R$ {_cost}</color>";
@@ -1112,10 +1112,10 @@ public class DockOwnerUI : MonoBehaviour
         return _purchaseResult switch
         {
             DockUpgradePurchaseResult.MissingReferences => "Sistema de upgrades incompleto.",
-            DockUpgradePurchaseResult.MaxLevel => "Upgrade maximo atingido.",
-            DockUpgradePurchaseResult.AlreadyOwned => "Upgrade ja comprado.",
+            DockUpgradePurchaseResult.MaxLevel => "Upgrade máximo atingido.",
+            DockUpgradePurchaseResult.AlreadyOwned => "Upgrade já comprado.",
             DockUpgradePurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
-            _ => "Nao foi possivel comprar o upgrade."
+            _ => "Não foi possível comprar o upgrade."
         };
     }
 
@@ -1147,6 +1147,11 @@ public class DockOwnerUI : MonoBehaviour
     {
         _result = DockUpgradePurchaseResult.MissingReferences;
         return false;
+    }
+
+    private static string GetFishCountLabel(int _count)
+    {
+        return _count == 1 ? "peixe" : "peixes";
     }
 
     private int GetPercent(float _value)

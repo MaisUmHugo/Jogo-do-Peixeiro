@@ -20,8 +20,8 @@ public class GameOutcomePanelUI : MonoBehaviour
     [Header("Texts")]
     [SerializeField] private TMP_Text titleText;
     [SerializeField] private TMP_Text messageText;
-    [SerializeField] private string defaultCompletionTitle = "Concluido";
-    [SerializeField] private string defaultCompletionMessage = "Objetivo concluido.";
+    [SerializeField] private string defaultCompletionTitle = "Concluído";
+    [SerializeField] private string defaultCompletionMessage = "Objetivo concluído.";
     [SerializeField] private string defaultFailureTitle = "Falha";
     [SerializeField] private string defaultFailureMessage = "O objetivo falhou.";
 

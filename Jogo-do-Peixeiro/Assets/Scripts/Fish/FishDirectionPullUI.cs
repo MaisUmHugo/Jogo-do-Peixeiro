@@ -59,7 +59,7 @@ public class FishDirectionPullUI : MonoBehaviour
 
     [Header("First Pull Hint")]
     [SerializeField] private TMP_Text _holdHintText;
-    [SerializeField] private string _holdHintMessage = "SEGURE A DIRECAO";
+    [SerializeField] private string _holdHintMessage = "SEGURE A DIREÇÃO";
     [SerializeField] private Vector2 _holdHintOffset = new Vector2(0f, 58f);
     [SerializeField] private float _holdHintCorrectHoldTime = 0.45f;
     [SerializeField] private float _holdHintPulseSpeed = 6f;

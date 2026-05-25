@@ -339,13 +339,13 @@ public class DockOwnerBaitShopUI : MonoBehaviour
 
         if (_slotIndex < 0 || _slotIndex >= baits.Length)
         {
-            SetStatus("Isca nao encontrada.");
+            SetStatus("Isca não encontrada.");
             return;
         }
 
         if (baitShop == null)
         {
-            SetStatus("Loja de iscas nao encontrada.");
+            SetStatus("Loja de iscas não encontrada.");
             return;
         }
 
@@ -377,13 +377,13 @@ public class DockOwnerBaitShopUI : MonoBehaviour
 
         if (_slotIndex < 0 || _slotIndex >= baits.Length)
         {
-            SetStatus("Isca nao encontrada.");
+            SetStatus("Isca não encontrada.");
             return;
         }
 
         if (baitShop == null)
         {
-            SetStatus("Loja de iscas nao encontrada.");
+            SetStatus("Loja de iscas não encontrada.");
             return;
         }
 
@@ -475,14 +475,14 @@ public class DockOwnerBaitShopUI : MonoBehaviour
 
         if (quantityPriceText != null)
             quantityPriceText.text = quantityTotalPriceText != null
-                ? $"Preco: R$ {unitCost}"
-                : $"Preco: R$ {unitCost}\nTotal: R$ {totalCost}";
+                ? $"Preço: R$ {unitCost}"
+                : $"Preço: R$ {unitCost}\nTotal: R$ {totalCost}";
 
         if (quantityTotalPriceText != null)
             quantityTotalPriceText.text = $"Total: R$ {totalCost}";
 
         if (quantityOwnedText != null)
-            quantityOwnedText.text = $"No inventario: {ownedQuantity}";
+            quantityOwnedText.text = $"No inventário: {ownedQuantity}";
 
         if (quantityConfirmButton != null)
             quantityConfirmButton.interactable = quantity > 0;
@@ -565,10 +565,10 @@ public class DockOwnerBaitShopUI : MonoBehaviour
         int hardLimit = Mathf.Max(1, maxBaitPurchaseQuantity);
 
         if (_maxQuantity >= hardLimit)
-            return "Maximo permitido.";
+            return "Máximo permitido.";
 
         int nextQuantityCost = GetPurchaseCost(_bait, _maxQuantity + 1);
-        return nextQuantityCost > playerMoney ? "Dinheiro insuficiente." : "Maximo permitido.";
+        return nextQuantityCost > playerMoney ? "Dinheiro insuficiente." : "Máximo permitido.";
     }
 
     private void ShakeQuantityValue()
@@ -700,9 +700,9 @@ public class DockOwnerBaitShopUI : MonoBehaviour
         return _purchaseResult switch
         {
             BaitPurchaseResult.MissingReferences => "Sistema de iscas incompleto.",
-            BaitPurchaseResult.InvalidBait => "Isca invalida.",
+            BaitPurchaseResult.InvalidBait => "Isca inválida.",
             BaitPurchaseResult.NotEnoughMoney => "Dinheiro insuficiente.",
-            _ => "Nao foi possivel comprar a isca."
+            _ => "Não foi possível comprar a isca."
         };
     }
 

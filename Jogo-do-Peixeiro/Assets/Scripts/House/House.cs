@@ -34,7 +34,7 @@ public class House : MonoBehaviour, IInteractable
 
         if (sleepUI == null)
         {
-            Debug.LogWarning("[House] SleepPanel nao encontrado na cena.", this);
+            Debug.LogWarning("[House] SleepPanel não encontrado na cena.", this);
             return;
         }
 

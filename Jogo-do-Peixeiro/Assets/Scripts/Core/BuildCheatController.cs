@@ -483,7 +483,7 @@ public class BuildCheatController : MonoBehaviour
             activeAreaName = spawners[i].CycleDebugFishingArea();
         }
 
-        ShowCheatFeedback($"Cheat: area de pesca -> {activeAreaName}");
+        ShowCheatFeedback($"Cheat: área de pesca -> {activeAreaName}");
     }
 
     private void AdvanceDay()
@@ -492,12 +492,12 @@ public class BuildCheatController : MonoBehaviour
 
         if (dayCycle == null)
         {
-            ShowCheatFeedback("Cheat: DayCycle nao encontrado.");
+            ShowCheatFeedback("Cheat: DayCycle não encontrado.");
             return;
         }
 
         dayCycle.DebugAdvanceDay();
-        ShowCheatFeedback($"Cheat: dia avancado -> {dayCycle.ElapsedDays}");
+        ShowCheatFeedback($"Cheat: dia avançado -> {dayCycle.ElapsedDays}");
     }
 
     private void CompleteTask()
@@ -519,8 +519,8 @@ public class BuildCheatController : MonoBehaviour
             campaignProgress.AdvanceQuest(0);
 
         ShowCheatFeedback(completed
-            ? $"Cheat: quest concluida -> {questName}"
-            : "Cheat: nao foi possivel concluir a quest atual.");
+            ? $"Cheat: quest concluída -> {questName}"
+            : "Cheat: não foi possível concluir a quest atual.");
     }
 
     private void AddMoney()
@@ -529,7 +529,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (moneyManager == null)
         {
-            ShowCheatFeedback("Cheat: PlayerMoneyManager nao encontrado.");
+            ShowCheatFeedback("Cheat: PlayerMoneyManager não encontrado.");
             return;
         }
 
@@ -544,23 +544,23 @@ public class BuildCheatController : MonoBehaviour
 
         if (fishingRod == null)
         {
-            ShowCheatFeedback("Cheat: FishingRod nao encontrado.");
+            ShowCheatFeedback("Cheat: FishingRod não encontrado.");
             return;
         }
 
         if (!TryGetFishPullVfxSpawnPose(out Vector3 spawnPosition, out Vector3 spawnDirection))
         {
-            ShowCheatFeedback("Cheat: sem referencia para posicionar o Fish Pull VFX.");
+            ShowCheatFeedback("Cheat: sem referência para posicionar o Fish Pull VFX.");
             return;
         }
 
         if (!fishingRod.DebugSpawnFishPullVFXAtWater(spawnPosition, spawnDirection))
         {
-            ShowCheatFeedback("Cheat: Fish Pull VFX nao configurado no FishingRod.");
+            ShowCheatFeedback("Cheat: Fish Pull VFX não configurado no FishingRod.");
             return;
         }
 
-        ShowCheatFeedback("Cheat: Fish Pull VFX spawnado na agua.");
+        ShowCheatFeedback("Cheat: Fish Pull VFX spawnado na água.");
     }
 
     private bool TryGetFishPullVfxSpawnPose(out Vector3 _position, out Vector3 _direction)
@@ -610,13 +610,13 @@ public class BuildCheatController : MonoBehaviour
 
         if (campaignProgress == null)
         {
-            ShowCheatFeedback("Cheat: CampaignProgressSystem nao encontrado.");
+            ShowCheatFeedback("Cheat: CampaignProgressSystem não encontrado.");
             return;
         }
 
         campaignProgress.DebugCompleteCampaign();
         SaveGameIfPossible();
-        ShowCheatFeedback("Cheat: campanha concluida e modo sem fim liberado.");
+        ShowCheatFeedback("Cheat: campanha concluída e modo sem fim liberado.");
     }
 
     private void ForceEndlessSpecialDelivery()
@@ -625,7 +625,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (campaignProgress == null)
         {
-            ShowCheatFeedback("Cheat: CampaignProgressSystem nao encontrado.");
+            ShowCheatFeedback("Cheat: CampaignProgressSystem não encontrado.");
             return;
         }
 
@@ -634,7 +634,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (!campaignProgress.DebugForceEndlessSpecialDelivery())
         {
-            ShowCheatFeedback("Cheat: nao foi possivel gerar entrega especial sem peixe elegivel.");
+            ShowCheatFeedback("Cheat: não foi possível gerar entrega especial sem peixe elegível.");
             return;
         }
 
@@ -653,7 +653,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (campaignProgress == null)
         {
-            ShowCheatFeedback("Cheat: CampaignProgressSystem nao encontrado.");
+            ShowCheatFeedback("Cheat: CampaignProgressSystem não encontrado.");
             return;
         }
 
@@ -672,7 +672,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (tutorial == null)
         {
-            ShowCheatFeedback("Cheat: tutorial nao encontrado nesta cena.");
+            ShowCheatFeedback("Cheat: tutorial não encontrado nesta cena.");
             return;
         }
 
@@ -690,7 +690,7 @@ public class BuildCheatController : MonoBehaviour
             return;
         }
 
-        ShowCheatFeedback("Cheat: falha de prazo forcada.");
+        ShowCheatFeedback("Cheat: falha de prazo forçada.");
     }
 
     private void AddSpecialDeliveryFish()
@@ -709,7 +709,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (shipInventory == null)
         {
-            ShowCheatFeedback("Cheat: ShipInventory nao encontrado.");
+            ShowCheatFeedback("Cheat: ShipInventory não encontrado.");
             return;
         }
 
@@ -720,7 +720,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (missingQuantity <= 0)
         {
-            ShowCheatFeedback($"Cheat: entrega especial ja possui {ownedQuantity}/{requiredQuantity} {GetFishDisplayName(requestedFish)}.");
+            ShowCheatFeedback($"Cheat: entrega especial já possui {ownedQuantity}/{requiredQuantity} {GetFishDisplayName(requestedFish)}.");
             return;
         }
 
@@ -751,13 +751,13 @@ public class BuildCheatController : MonoBehaviour
 
         if (boat == null)
         {
-            ShowCheatFeedback("Cheat: BoatController nao encontrado.");
+            ShowCheatFeedback("Cheat: BoatController não encontrado.");
             return false;
         }
 
         if (GameManager.instance == null)
         {
-            ShowCheatFeedback("Cheat: GameManager nao encontrado.");
+            ShowCheatFeedback("Cheat: GameManager não encontrado.");
             return false;
         }
 
@@ -769,7 +769,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (!boat.IsPlayerOnBoat())
         {
-            ShowCheatFeedback("Cheat: nao foi possivel entrar no barco.");
+            ShowCheatFeedback("Cheat: não foi possível entrar no barco.");
             return false;
         }
 
@@ -784,7 +784,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (dock == null)
         {
-            ShowCheatFeedback("Cheat: Dock nao encontrado.");
+            ShowCheatFeedback("Cheat: Dock não encontrado.");
             return false;
         }
 
@@ -823,7 +823,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (saveManager == null)
         {
-            ShowCheatFeedback("Cheat: GameSaveManager nao encontrado.");
+            ShowCheatFeedback("Cheat: GameSaveManager não encontrado.");
             return;
         }
 
@@ -887,7 +887,7 @@ public class BuildCheatController : MonoBehaviour
 
         if (player == null)
         {
-            ShowCheatFeedback("Cheat: player nao encontrado.");
+            ShowCheatFeedback("Cheat: player não encontrado.");
             return false;
         }
 

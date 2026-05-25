@@ -14,7 +14,7 @@ public class BoatMotor : MonoBehaviour
     [SerializeField] private bool requireNeutralInputAfterFishing = true;
     [SerializeField] private float neutralInputThreshold = 0.15f;
 
-    [Header("Audio")]
+    [Header("Áudio")]
     [SerializeField, InspectorName("Boat Water Loop SFX")] private AudioClip boatWaterLoopSfx;
     [SerializeField] private AudioSource boatWaterAudioSource;
     [SerializeField, Range(0f, 1f), InspectorName("Boat Water Min SFX Volume")] private float boatWaterMinVolume = 0.15f;

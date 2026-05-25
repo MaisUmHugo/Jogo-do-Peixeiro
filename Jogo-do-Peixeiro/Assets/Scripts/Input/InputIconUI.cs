@@ -72,7 +72,7 @@ public class InputIconUI : MonoBehaviour
         if (_hasLoggedMissingReferences)
             return;
 
-        Debug.LogWarning("[InputIconUI] Falta InputIconDatabase ou Image. Arraste as referencias no Inspector ou mantenha um InputIconDatabase ativo na cena.", this);
+            Debug.LogWarning("[InputIconUI] Falta InputIconDatabase ou Image. Arraste as referências no Inspector ou mantenha um InputIconDatabase ativo na cena.", this);
         _hasLoggedMissingReferences = true;
     }
 
@@ -81,7 +81,7 @@ public class InputIconUI : MonoBehaviour
         if (_hasLoggedMissingIcon)
             return;
 
-        Debug.LogWarning($"[InputIconUI] Icone nao encontrado para {_action} em {_lastDeviceType}. Preencha o InputIconDatabase.", this);
+                Debug.LogWarning($"[InputIconUI] Ícone não encontrado para {_action} em {_lastDeviceType}. Preencha o InputIconDatabase.", this);
         _hasLoggedMissingIcon = true;
     }
 }

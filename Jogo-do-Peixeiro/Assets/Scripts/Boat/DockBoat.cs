@@ -62,7 +62,7 @@ public class Dock : MonoBehaviour, IInteractable
         {
             if (boatParkPoint == null)
             {
-                Debug.LogWarning("[Dock] boatParkPoint nao configurado. Preencha no Inspector ou use Reference Dock.");
+            Debug.LogWarning("[Dock] boatParkPoint não configurado. Preencha no Inspector ou use Reference Dock.");
                 return;
             }
 

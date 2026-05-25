@@ -72,8 +72,8 @@ MonoBehaviour:
   pauseGameOnFailure: 1
   generalOutcomePanel: {fileID: 0}
   useGeneralOutcomePanel: 1
-  tutorialCompleteTitle: Tutorial concluido
-  tutorialCompleteMessage: Voce concluiu o tutorial.
+  tutorialCompleteTitle: Tutorial concluído
+  tutorialCompleteMessage: Você concluiu o tutorial.
   tutorialFailureTitle: Falha na quest
   tutorialFailureMessage: O prazo acabou antes de concluir a meta.
   useDialogs: 0

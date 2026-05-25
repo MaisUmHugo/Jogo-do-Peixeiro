@@ -217,10 +217,10 @@ MonoBehaviour:
   blockPauseWhileShowing: 1
   lockCameraWhileShowing: 1
   rotateHintText: {fileID: 7055301512154611920}
-  mouseRotateHint: Segure o botao esquerdo do mouse para girar o peixe...
-  controllerRotateHint: Use o analogico direito para girar o peixe...
+  mouseRotateHint: Segure o botão esquerdo do mouse para girar o peixe...
+  controllerRotateHint: Use o analógico direito para girar o peixe...
   closeHintText: {fileID: 7038733216035542377}
-  closeHintMessage: Aperte qualquer botao para fechar.
+  closeHintMessage: Aperte qualquer botão para fechar.
   hintPulseSpeed: 4
   hintPulseScale: 0.08
   hintMinimumAlpha: 0.65
@@ -1201,7 +1201,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Segure o botao esquerdo do mouse para girar o peixe...
+  m_text: Segure o botão esquerdo do mouse para girar o peixe...
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}

@@ -119,7 +119,7 @@ public class MoneyLender : MonoBehaviour
 
         if (paymentAmount <= 0)
         {
-            Debug.Log("Divida ja esta paga.");
+            Debug.Log("Dívida já está paga.");
             return false;
         }
 
@@ -127,7 +127,7 @@ public class MoneyLender : MonoBehaviour
 
         if (availableMoney <= 0)
         {
-            Debug.Log("Dinheiro insuficiente para pagar a divida.");
+            Debug.Log("Dinheiro insuficiente para pagar a dívida.");
             return false;
         }
 
@@ -136,7 +136,7 @@ public class MoneyLender : MonoBehaviour
         if (!playerMoneyManager.TrySpendMoney(paidAmount))
         {
             paidAmount = 0;
-            Debug.Log("Dinheiro insuficiente para pagar a divida.");
+            Debug.Log("Dinheiro insuficiente para pagar a dívida.");
             return false;
         }
 
@@ -187,7 +187,7 @@ public class MoneyLender : MonoBehaviour
             CalculateNewDebtPayment();
             CampaignProgressSystem.GetOrCreate().RegisterDebtPayment(paidAmount, questTargetBeforePayment, currentDebtPayment);
             PlayFireworkVFX();
-            Debug.Log($"Pagou R$ {paidAmount} e quitou a divida.");
+            Debug.Log($"Pagou R$ {paidAmount} e quitou a dívida.");
             return true;
         }
 
@@ -198,14 +198,14 @@ public class MoneyLender : MonoBehaviour
             AdvancePaymentCycle();
             CampaignProgressSystem.GetOrCreate().RegisterDebtPayment(paidAmount, questTargetBeforePayment, currentDebtPayment);
             PlayFireworkVFX();
-            Debug.Log($"Pagou R$ {paidAmount} da divida.");
+        Debug.Log($"Pagou R$ {paidAmount} da dívida.");
             return true;
         }
 
         paymentResult = DebtPaymentResult.Partial;
         CalculateNewDebtPayment();
         CampaignProgressSystem.GetOrCreate().RegisterDebtPayment(paidAmount, questTargetBeforePayment, currentDebtPayment);
-        Debug.Log($"Pagamento parcial de R$ {paidAmount} da divida.");
+        Debug.Log($"Pagamento parcial de R$ {paidAmount} da dívida.");
         return true;
     }
 

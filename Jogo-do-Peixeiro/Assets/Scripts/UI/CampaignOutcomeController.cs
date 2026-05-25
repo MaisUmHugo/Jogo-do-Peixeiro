@@ -20,8 +20,8 @@ public class CampaignOutcomeController : MonoBehaviour
     [SerializeField] private bool showCampaignCompletionPanel = true;
     [SerializeField] private bool pauseOnCampaignCompletion = true;
     [SerializeField] private bool saveGameOnCampaignCompletion = true;
-    [SerializeField] private string campaignCompletionTitle = "Divida quitada";
-    [SerializeField, TextArea] private string campaignCompletionMessage = "O cobrador pega o dinheiro, sorri e revela as outras dividas acumuladas. Divida atual: R$ {0}. O modo sem fim foi liberado no menu principal.";
+    [SerializeField] private string campaignCompletionTitle = "Dívida quitada";
+    [SerializeField, TextArea] private string campaignCompletionMessage = "O cobrador pega o dinheiro, sorri e revela as outras dívidas acumuladas. Dívida atual: R$ {0}. O modo sem fim foi liberado no menu principal.";
 
     private bool isSubscribed;
     private bool hasShownQuestFailure;
@@ -102,7 +102,7 @@ public class CampaignOutcomeController : MonoBehaviour
 
         if (outcomePanel == null)
         {
-            Debug.LogWarning("[CampaignOutcomeController] OutcomePanel nao configurado.", this);
+            Debug.LogWarning("[CampaignOutcomeController] OutcomePanel não configurado.", this);
             return;
         }
 
@@ -135,7 +135,7 @@ public class CampaignOutcomeController : MonoBehaviour
 
         if (outcomePanel == null)
         {
-            Debug.LogWarning("[CampaignOutcomeController] OutcomePanel nao configurado.", this);
+            Debug.LogWarning("[CampaignOutcomeController] OutcomePanel não configurado.", this);
             return;
         }
 

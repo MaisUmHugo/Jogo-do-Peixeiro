@@ -15,7 +15,7 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField] private bool hideHudWhileOpen = true;
     [SerializeField] private bool blockPauseWhileOpen = true;
 
-    [Header("Audio")]
+    [Header("Áudio")]
     [SerializeField, InspectorName("Door Open SFX")] private AudioClip doorOpenSfx;
     [SerializeField, InspectorName("Door Close SFX")] private AudioClip doorCloseSfx;
     [SerializeField, InspectorName("Special Delivery SFX")] private AudioClip specialDeliveryOpenSfx;
@@ -151,8 +151,8 @@ public class MoneyLenderUI : MonoBehaviour
         return _paymentResult switch
         {
             MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
-            MoneyLender.DebtPaymentResult.Completed => "Divida reduzida.",
-            MoneyLender.DebtPaymentResult.PaidOff => "Divida quitada.",
+            MoneyLender.DebtPaymentResult.Completed => "Dívida reduzida.",
+            MoneyLender.DebtPaymentResult.PaidOff => "Dívida quitada.",
             _ => "Dinheiro insuficiente."
         };
     }
@@ -199,7 +199,7 @@ public class MoneyLenderUI : MonoBehaviour
         string debtValue = debtBalance > 0 ? $"-R$ {debtBalance}" : "R$ 0";
 
         if (requiredWeightText != null)
-            requiredWeightText.text = $"Divida: {debtValue} | Pagamento: R$ {debtPayment}";
+            requiredWeightText.text = $"Dívida: {debtValue} | Pagamento: R$ {debtPayment}";
 
         if (currentWeightText != null)
             currentWeightText.text = $"Dinheiro: R$ {(playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f):0}";

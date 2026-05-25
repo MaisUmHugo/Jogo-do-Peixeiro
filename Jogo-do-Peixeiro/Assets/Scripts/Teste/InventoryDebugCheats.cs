@@ -78,7 +78,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (baitInventory == null)
         {
-            Debug.LogWarning("[InventoryDebugCheats] BaitInventory nao encontrado.", this);
+            Debug.LogWarning("[InventoryDebugCheats] BaitInventory não encontrado.", this);
             return;
         }
 
@@ -110,7 +110,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (shipInventory == null)
         {
-            Debug.LogWarning("[InventoryDebugCheats] ShipInventory nao encontrado.", this);
+            Debug.LogWarning("[InventoryDebugCheats] ShipInventory não encontrado.", this);
             return;
         }
 
@@ -138,7 +138,7 @@ public class InventoryDebugCheats : MonoBehaviour
                 addedCount++;
         }
 
-        Debug.Log($"[InventoryDebugCheats] Adicionou {addedCount} peixe(s) aleatorio(s) ao inventario.", this);
+        Debug.Log($"[InventoryDebugCheats] Adicionou {addedCount} {GetFishCountLabel(addedCount)} {GetRandomLabel(addedCount)} ao inventário.", this);
     }
 
     private bool AddFishToInventory(FishData _fish)
@@ -266,6 +266,16 @@ public class InventoryDebugCheats : MonoBehaviour
     private bool IsValidKey(Key _key)
     {
         return _key != Key.None && System.Enum.IsDefined(typeof(Key), _key);
+    }
+
+    private static string GetFishCountLabel(int _count)
+    {
+        return _count == 1 ? "peixe" : "peixes";
+    }
+
+    private static string GetRandomLabel(int _count)
+    {
+        return _count == 1 ? "aleatório" : "aleatórios";
     }
 
 #if UNITY_EDITOR

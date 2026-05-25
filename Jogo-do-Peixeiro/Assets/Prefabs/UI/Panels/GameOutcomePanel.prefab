@@ -743,7 +743,7 @@ MonoBehaviour:
   closeOnAwake: 1
   titleText: {fileID: 698151325388835772}
   messageText: {fileID: 3904942773335956391}
-  defaultCompletionTitle: Concluido
+  defaultCompletionTitle: Concluído
   defaultCompletionMessage: "Campanha conclu\xEDda, obrigado por jogar!"
   defaultFailureTitle: Falha
   defaultFailureMessage: O prazo acabou antes de pagar a meta.

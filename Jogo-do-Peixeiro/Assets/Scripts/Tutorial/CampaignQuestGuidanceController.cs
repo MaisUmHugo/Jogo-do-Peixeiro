@@ -1321,7 +1321,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
                 break;
 
             case TutorialStep.SellFish:
-                tutorialUI.SetObjectiveText("Venda os peixes no dono da doca.");
+                tutorialUI.SetObjectiveText("Venda os peixes na loja do dono da doca.");
                 break;
 
             case TutorialStep.PayDebt:

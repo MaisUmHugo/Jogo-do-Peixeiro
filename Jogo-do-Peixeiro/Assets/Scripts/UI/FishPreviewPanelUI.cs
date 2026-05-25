@@ -46,8 +46,8 @@ public class FishPreviewPanelUI : MonoBehaviour
 
     [Header("Rotate Hint")]
     [SerializeField] private TMP_Text rotateHintText;
-    [SerializeField] private string mouseRotateHint = "Segure o botao esquerdo do mouse para girar o peixe.";
-    [SerializeField] private string controllerRotateHint = "Use o analogico direito para girar o peixe.";
+    [SerializeField] private string mouseRotateHint = "Segure o botão esquerdo do mouse para girar o peixe.";
+    [SerializeField] private string controllerRotateHint = "Use o analógico direito para girar o peixe.";
     [SerializeField] private float hintPulseSpeed = 4f;
     [SerializeField] private float hintPulseScale = 0.08f;
     [SerializeField, Range(0f, 1f)] private float hintMinimumAlpha = 0.65f;

@@ -311,7 +311,7 @@ public class ForcedSleepController : MonoBehaviour
         if (removedCount > 0)
         {
             StorePendingFishLoss(removedCount, removedWeight, _wasPlayerOnBoat);
-            Debug.Log($"Sono forçado removeu {removedCount} peixe(s), {removedWeight:0.#}kg de carga.");
+            Debug.Log($"Sono forçado removeu {removedCount} {GetFishCountLabel(removedCount)}, {removedWeight:0.#}kg de carga.");
         }
     }
 
@@ -328,7 +328,7 @@ public class ForcedSleepController : MonoBehaviour
         if (removedCount > 0)
         {
             StorePendingFishLoss(removedCount, removedWeight, _wasPlayerOnBoat);
-            Debug.Log($"Sono forçado removeu {removedCount} peixe(s), {removedWeight:0.#}kg de carga.");
+            Debug.Log($"Sono forçado removeu {removedCount} {GetFishCountLabel(removedCount)}, {removedWeight:0.#}kg de carga.");
         }
     }
 
@@ -530,6 +530,11 @@ public class ForcedSleepController : MonoBehaviour
         _fadeCanvasGroup.alpha = _alpha;
         _fadeCanvasGroup.blocksRaycasts = _alpha > 0.01f;
         _fadeCanvasGroup.interactable = _alpha > 0.01f;
+    }
+
+    private static string GetFishCountLabel(int _count)
+    {
+        return _count == 1 ? "peixe" : "peixes";
     }
 
     private void SetFadeTextVisible(bool _visible)

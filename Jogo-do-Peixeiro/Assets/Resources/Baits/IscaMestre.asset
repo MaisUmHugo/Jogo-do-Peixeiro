@@ -14,7 +14,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   saveId: master_bait
   baitName: Isca Mestre
-  description: Ponteiro do skill check 50% mais lento e todo acerto vira critico.
+  description: Ponteiro do skill check 50% mais lento e todo acerto vira crítico.
   inventoryIcon: {fileID: 21300000, guid: f6d9cec6a0de1304298f5d45374e7ce9, type: 3}
   purchasePrice: 120
   purchaseQuantity: 1

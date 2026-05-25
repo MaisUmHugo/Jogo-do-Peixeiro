@@ -38,7 +38,7 @@ public class PlayerInteract : MonoBehaviour
         if (playerRoot == null)
         {
             playerRoot = transform.parent != null ? transform.parent : transform;
-            Debug.LogWarning("[PlayerInteract] playerRoot nao encontrado automaticamente. Preencha o campo no Inspector.");
+            Debug.LogWarning("[PlayerInteract] playerRoot não encontrado automaticamente. Preencha o campo no Inspector.");
         }
 
         if (playerCamera == null)

@@ -5,14 +5,14 @@ using UnityEngine.VFX;
 
 public class FishingSpot : MonoBehaviour, IPoolable
 {
-    [Header("Area")]
+    [Header("Área")]
     [SerializeField] private FishingAreaDefinition fishingArea;
     [SerializeField] private FishScriptableObject[] availableFish;
-    [Tooltip("Somente visualizacao: mostra os peixes que serao usados, vindos da Fishing Area ou do fallback Available Fish.")]
+    [Tooltip("Somente visualização: mostra os peixes que serão usados, vindos da Fishing Area ou do fallback Available Fish.")]
     [SerializeField] private FishScriptableObject[] effectiveAvailableFishPreview;
     [SerializeField] private string effectiveFishingAreaPreview;
     [TextArea, SerializeField] private string effectiveAvailableFishNamesPreview;
-    [Tooltip("Quando ligado, o spot some depois de uma pescaria resolvida com mordida/captura. Cancelar antes da mordida nao consome o spot.")]
+    [Tooltip("Quando ligado, o spot some depois de uma pescaria resolvida com mordida/captura. Cancelar antes da mordida não consome o spot.")]
     [SerializeField] private bool deactivateAfterFishingStarts;
 
     [SerializeField] private float minHorizontalDistance = 4f;
@@ -23,22 +23,22 @@ public class FishingSpot : MonoBehaviour, IPoolable
     [SerializeField] private string escapeWarningMessage = "Os peixes fugiram";
 
     [Header("Boat Escape")]
-    [Tooltip("Distancia horizontal ate o centro/boia em que os peixes fogem. A area de interacao continua pescavel.")]
+    [Tooltip("Distância horizontal até o centro/boia em que os peixes fogem. A área de interação continua pescável.")]
     [SerializeField] private float escapeDistance = 1.5f;
     [SerializeField, HideInInspector] private float escapeFadeDuration = 0.18f;
 
     [Header("Cast Target")]
     [SerializeField] private Transform castTargetPoint;
 
-    [Header("Area VFX")]
+    [Header("Área VFX")]
     [SerializeField] private GameObject areaVFXObject;
     [SerializeField] private GameObject areaVFXPrefab;
     [SerializeField] private Transform areaVFXPoint;
     [SerializeField] private bool alignAreaVFXToWaterSurface = true;
     [SerializeField] private bool alignAreaVFXOnlyInDeepArea = true;
-    [Tooltip("Offset aplicado depois de alinhar o Area VFX na superficie da agua.")]
+    [Tooltip("Offset aplicado depois de alinhar o Area VFX na superfície da água.")]
     [SerializeField] private float areaVFXWaterYOffset;
-    [Tooltip("Offset extra aplicado somente em area profunda/dark water. Use valor negativo para baixar o VFX.")]
+    [Tooltip("Offset extra aplicado somente em área profunda/dark water. Use valor negativo para baixar o VFX.")]
     [SerializeField] private float deepAreaVFXWaterYOffset = -0.25f;
     [SerializeField] private bool parentAreaVFXToSpot = true;
     [SerializeField] private bool playAreaVFXOnEnable = true;
@@ -348,7 +348,7 @@ public class FishingSpot : MonoBehaviour, IPoolable
     private static string GetAreaPreviewName(FishingAreaDefinition _area)
     {
         if (_area == null)
-            return "Sem area";
+            return "Sem área";
 
         if (!string.IsNullOrWhiteSpace(_area.DisplayName))
             return _area.DisplayName;
@@ -362,7 +362,7 @@ public class FishingSpot : MonoBehaviour, IPoolable
     private static string BuildFishNamesPreview(FishScriptableObject[] _fishList)
     {
         if (_fishList == null || _fishList.Length == 0)
-            return "Nenhum peixe disponivel";
+            return "Nenhum peixe disponível";
 
         StringBuilder builder = new StringBuilder();
 

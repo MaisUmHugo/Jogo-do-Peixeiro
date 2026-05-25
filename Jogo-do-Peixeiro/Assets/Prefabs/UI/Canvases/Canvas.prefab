@@ -65,7 +65,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: Voce apagou de sono...
+  m_text: Você apagou de sono...
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -1333,7 +1333,7 @@ MonoBehaviour:
   discardConfirmText: {fileID: 8372199839075577631}
   discardConfirmYesButton: {fileID: 3244612255360729736}
   discardConfirmNoButton: {fileID: 2718197468968911201}
-  discardConfirmTextFormat: Vai descartar {0} peixe(s)?
+  discardConfirmTextFormat: Vai descartar {0} {1}?
   discardFishGridSlots: []
   discardFishGridContent: {fileID: 4895036608846976777}
   discardFishSlotTemplate: {fileID: 4097744718132459561, guid: 359daf3487bc8e14da5225e847785cbe, type: 3}

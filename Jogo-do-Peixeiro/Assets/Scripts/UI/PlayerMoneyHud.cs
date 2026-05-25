@@ -115,9 +115,9 @@ public class PlayerMoneyHud : MonoBehaviour
     private string GetDebtLine()
     {
         if (currentDebt <= 0)
-            return $"<color={paidDebtColor}>Divida: R$ 0</color>";
+            return $"<color={paidDebtColor}>Dívida: R$ 0</color>";
 
-        return $"<color={debtColor}>Divida: -R$ {currentDebt}</color>";
+        return $"<color={debtColor}>Dívida: -R$ {currentDebt}</color>";
     }
 
     private void ResolveReferences()
@@ -443,7 +443,7 @@ public class PlayerMoneyHud : MonoBehaviour
             return $"Modo sem fim - Entrega {campaignProgress.CurrentQuestIndex}";
 
         if (campaignProgress.IsCampaignCompleted)
-            return "Campanha concluida";
+            return "Campanha concluída";
 
         string questLabel = $"Quest {campaignProgress.CurrentQuestIndex}";
 
@@ -469,8 +469,9 @@ public class PlayerMoneyHud : MonoBehaviour
         if (campaignProgress.HasFailedCurrentQuest)
             return $"Prazo: <color={debtColor}>encerrado</color>";
 
-        string deadlineColor = campaignProgress.DaysRemainingInCurrentQuest <= 1 ? GetPrimaryTextColorHex() : GetSecondaryTextColorHex();
-        return $"Prazo: <color={deadlineColor}>{campaignProgress.DaysRemainingInCurrentQuest} dia(s)</color>";
+        int daysRemaining = campaignProgress.DaysRemainingInCurrentQuest;
+        string deadlineColor = daysRemaining <= 1 ? GetPrimaryTextColorHex() : GetSecondaryTextColorHex();
+        return $"Prazo: <color={deadlineColor}>{daysRemaining} {GetDayLabel(daysRemaining)}</color>";
     }
 
     private string GetCampaignGoalLine()
@@ -479,7 +480,7 @@ public class PlayerMoneyHud : MonoBehaviour
             return string.Empty;
 
         if (campaignProgress.IsCampaignCompleted)
-            return $"<color={debtColor}>Nova divida: -R$ {currentDebt}</color>";
+            return $"<color={debtColor}>Nova dívida: -R$ {currentDebt}</color>";
 
         if (campaignProgress.HasFailedCurrentQuest)
             return "<color=#D94A4A>Meta falhou</color>";
@@ -556,5 +557,10 @@ public class PlayerMoneyHud : MonoBehaviour
             return "peixe especial";
 
         return !string.IsNullOrWhiteSpace(_fish.fishName) ? _fish.fishName : _fish.name;
+    }
+
+    private static string GetDayLabel(int _days)
+    {
+        return _days == 1 ? "dia" : "dias";
     }
 }

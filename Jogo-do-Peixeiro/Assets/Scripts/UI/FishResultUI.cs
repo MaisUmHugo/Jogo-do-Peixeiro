@@ -49,12 +49,12 @@ public class FishResultUI : MonoBehaviour
 
     [Header("Rotate Hint")]
     [SerializeField] private TMP_Text rotateHintText;
-    [SerializeField] private string mouseRotateHint = "Segure o botao esquerdo do mouse para girar o peixe.";
-    [SerializeField] private string controllerRotateHint = "Use o analogico direito para girar o peixe.";
+    [SerializeField] private string mouseRotateHint = "Segure o botão esquerdo do mouse para girar o peixe.";
+    [SerializeField] private string controllerRotateHint = "Use o analógico direito para girar o peixe.";
 
     [Header("Close Hint")]
     [SerializeField] private TMP_Text closeHintText;
-    [SerializeField] private string closeHintMessage = "Aperte qualquer botao para fechar.";
+    [SerializeField] private string closeHintMessage = "Aperte qualquer botão para fechar.";
 
     [Header("Hint Pulse")]
     [SerializeField] private float hintPulseSpeed = 4f;

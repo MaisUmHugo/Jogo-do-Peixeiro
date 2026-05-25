@@ -46,7 +46,7 @@ public static class BaitCatalog
             CreateRuntimeBait(
                 "master_bait",
                 "Isca Mestre",
-                "Ponteiro do skill check 50% mais lento e todo acerto vira critico.",
+                "Ponteiro do skill check 50% mais lento e todo acerto vira crítico.",
                 120,
                 1,
                 1f,

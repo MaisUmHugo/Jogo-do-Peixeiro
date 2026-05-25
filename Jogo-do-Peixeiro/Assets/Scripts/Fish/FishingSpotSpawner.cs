@@ -45,7 +45,7 @@ public class FishingSpotSpawner : MonoBehaviour
         }
     }
 
-    [Header("Area")]
+    [Header("Área")]
     [SerializeField] private FishingAreaDefinition _fishingArea;
     [SerializeField] private FishingSpot _spotPrefab;
 
@@ -72,15 +72,15 @@ public class FishingSpotSpawner : MonoBehaviour
     [SerializeField] private bool _clearOtherAreaSpotsOnAreaChanged = true;
     [SerializeField] private bool _forceSpawnNearReferenceOnAreaChanged = true;
     [SerializeField] private bool _showAreaChangedWarning;
-    [SerializeField] private string _areaChangedWarningFormat = "Nova area de pesca: {0}";
+    [SerializeField] private string _areaChangedWarningFormat = "Nova área de pesca: {0}";
 
     [Header("Spawn")]
     [SerializeField] private bool _spawnAtStart = true;
     [SerializeField] private int _activeSpotCount = 3;
     [SerializeField] private float _respawnDelay = 12f;
-    [Tooltip("Spots gerados somem depois de uma pescaria resolvida com mordida/captura. Cancelar antes da mordida nao consome o spot.")]
+    [Tooltip("Spots gerados somem depois de uma pescaria resolvida com mordida/captura. Cancelar antes da mordida não consome o spot.")]
     [SerializeField] private bool _spawnedSpotsDeactivateAfterFishingStarts = true;
-    [Tooltip("Quando ligado, spots que fogem ou foram usados sao destruidos. Desligue se for integrar object pool.")]
+    [Tooltip("Quando ligado, spots que fogem ou foram usados são destruídos. Desligue se for integrar object pool.")]
     [SerializeField] private bool _destroyDeactivatedSpots = true;
     [SerializeField] private float _minDistanceBetweenSpots = 8f;
     [SerializeField] private int _maxSpawnAttempts = 25;
@@ -105,6 +105,7 @@ public class FishingSpotSpawner : MonoBehaviour
 
     [Header("Reference Relative Spawn")]
     [SerializeField] private bool _spawnNearReference;
+    [SerializeField] private bool _fallbackToOpenWaterWhenReferenceSpawnFails = true;
     [SerializeField] private Transform _spawnReference;
     [SerializeField] private float _minDistanceFromReference = 18f;
     [SerializeField] private float _maxDistanceFromReference = 45f;
@@ -246,7 +247,7 @@ public class FishingSpotSpawner : MonoBehaviour
             nextArea = _deepFishingArea != null ? _deepFishingArea : _fishingArea;
 
         if (nextArea == null)
-            return "Sem area configurada";
+            return "Sem área configurada";
 
         SetActiveFishingArea(nextArea, true);
         return nextArea.DisplayName;
@@ -349,9 +350,25 @@ public class FishingSpotSpawner : MonoBehaviour
 
     private bool TrySpawnSpot(bool _forceNearReference)
     {
+        if (TrySpawnSpotInternal(_forceNearReference, false))
+            return true;
+
+        if (_fallbackToOpenWaterWhenReferenceSpawnFails &&
+            (_forceNearReference || _spawnNearReference) &&
+            TrySpawnSpotInternal(false, true))
+        {
+            return true;
+        }
+
+        Debug.LogWarning("Falha ao gerar FishingSpot: sem posicao valida.");
+        return false;
+    }
+
+    private bool TrySpawnSpotInternal(bool _forceNearReference, bool _ignoreReferenceSpawn)
+    {
         for (int i = 0; i < _maxSpawnAttempts; i++)
         {
-            Vector3 spawnPosition = GetRandomSpawnPosition(_forceNearReference);
+            Vector3 spawnPosition = GetRandomSpawnPosition(_forceNearReference, _ignoreReferenceSpawn);
 
             if (!TryProjectToWater(spawnPosition, out Vector3 waterPosition, out RaycastHit waterHit))
                 continue;
@@ -384,13 +401,17 @@ public class FishingSpotSpawner : MonoBehaviour
             return true;
         }
 
-        Debug.LogWarning("Falha ao gerar FishingSpot: sem posição válida.");
         return false;
     }
 
     private Vector3 GetRandomSpawnPosition(bool _forceNearReference)
     {
-        if (_forceNearReference || _spawnNearReference)
+        return GetRandomSpawnPosition(_forceNearReference, false);
+    }
+
+    private Vector3 GetRandomSpawnPosition(bool _forceNearReference, bool _ignoreReferenceSpawn)
+    {
+        if (!_ignoreReferenceSpawn && (_forceNearReference || _spawnNearReference))
             return GetReferenceRelativeSpawnPosition(_forceNearReference);
 
         if (_spawnPoints != null && _spawnPoints.Length > 0)
@@ -606,7 +627,7 @@ public class FishingSpotSpawner : MonoBehaviour
     {
         string areaName = _area != null && !string.IsNullOrWhiteSpace(_area.DisplayName)
             ? _area.DisplayName
-            : "nova area";
+            : "nova área";
 
         if (string.IsNullOrWhiteSpace(_areaChangedWarningFormat))
             return areaName;

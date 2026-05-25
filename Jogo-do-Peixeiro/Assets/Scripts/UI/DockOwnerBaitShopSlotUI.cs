@@ -50,10 +50,10 @@ public class DockOwnerBaitShopSlotUI : MonoBehaviour
         }
 
         if (ownedQuantityText != null)
-            ownedQuantityText.text = $"No inventario: {_ownedQuantity}";
+            ownedQuantityText.text = $"No inventário: {_ownedQuantity}";
 
         if (priceText != null)
-            priceText.text = _unitCost > 0 ? $"Preco: R$ {_unitCost}" : "Gratis";
+            priceText.text = _unitCost > 0 ? $"Preço: R$ {_unitCost}" : "Grátis";
 
         if (iconImage != null)
         {

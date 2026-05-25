@@ -196,7 +196,7 @@ public class GameSaveManager : MonoBehaviour
         if (data != null)
             return true;
 
-        Debug.LogWarning($"Save invalido: {path}");
+            Debug.LogWarning($"Save inválido: {path}");
         return false;
     }
 
@@ -434,7 +434,7 @@ public class GameSaveManager : MonoBehaviour
 
             if (fishType == null)
             {
-                Debug.LogWarning($"Peixe salvo nao encontrado: {savedFish.fishId}");
+                Debug.LogWarning($"Peixe salvo não encontrado: {savedFish.fishId}");
                 continue;
             }
 
@@ -482,7 +482,7 @@ public class GameSaveManager : MonoBehaviour
 
             if (bait == null)
             {
-                Debug.LogWarning($"Isca salva nao encontrada: {savedBait.baitId}");
+                Debug.LogWarning($"Isca salva não encontrada: {savedBait.baitId}");
                 continue;
             }
 

@@ -443,7 +443,7 @@ public class MainMenuManager : MonoBehaviour
 
         SetText(savePreviewModeText, data != null ? $"Modo: {GetSaveModeDisplayName(data.gameMode)}" : "Modo: --");
         SetText(savePreviewQuestText, data != null ? GetSaveQuestLine(data) : "Progresso: --");
-        SetText(savePreviewDebtText, data != null ? $"Divida: -R$ {Mathf.Max(0, data.currentDebt)}" : "Divida: --");
+        SetText(savePreviewDebtText, data != null ? $"Dívida: -R$ {Mathf.Max(0, data.currentDebt)}" : "Dívida: --");
         SetText(savePreviewMoneyText, data != null ? $"Dinheiro: R$ {data.playerMoney:0}" : "Dinheiro: --");
         SetText(savePreviewPlayTimeText, data != null ? $"Tempo jogado: {FormatPlayTime(data.playTimeSeconds)}" : "Tempo jogado: --");
         SetText(savePreviewDayText, data != null && data.dayCycle != null ? $"Dia: {data.dayCycle.currentDay}" : "Dia: --");
@@ -537,13 +537,13 @@ public class MainMenuManager : MonoBehaviour
         {
             if (cachedSaveData.gameMode != GameProgressMode.Campaign)
             {
-                reason = "O save atual e do modo sem fim.";
+                reason = "O save atual é do modo sem fim.";
                 return false;
             }
 
             if (campaignSave != null && campaignSave.isCampaignCompleted)
             {
-                reason = "Campanha concluida. Inicie uma nova campanha.";
+                reason = "Campanha concluída. Inicie uma nova campanha.";
                 return false;
             }
 
@@ -708,7 +708,7 @@ public class MainMenuManager : MonoBehaviour
             return "Progresso: Campanha";
 
         if (campaignSave.isCampaignCompleted)
-            return "Progresso: Campanha concluida";
+            return "Progresso: Campanha concluída";
 
         if (campaignSave.hasFailedCurrentQuest)
             return $"Progresso: Quest {campaignSave.currentQuestIndex} falhou";

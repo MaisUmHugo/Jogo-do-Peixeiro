@@ -14,7 +14,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
     [SerializeField, Min(0.1f)] private float interactionRange = 4f;
     [SerializeField] private bool requireOnFootState = true;
 
-    [Header("Audio")]
+    [Header("Áudio")]
     [SerializeField, InspectorName("Direct Sell SFX")] private AudioClip directSellSfx;
     [SerializeField, Range(0f, 1f), InspectorName("Direct Sell SFX Volume")] private float directSellSfxVolume = 1f;
 
@@ -63,7 +63,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
         if (!sellDirectlyWhenNoUi)
         {
-            HUDWarningUI.Instance?.ShowWarning("Painel do dono da doca nao encontrado.");
+            HUDWarningUI.Instance?.ShowWarning("Painel do dono da doca não encontrado.");
             return;
         }
 

@@ -80,7 +80,7 @@ public class PaymentUI : MonoBehaviour
     [SerializeField] private TextCanvaManager textCanvaManager;
     [SerializeField] private bool useTutorialPaymentWhenAvailable = true;
 
-    [Header("Audio")]
+    [Header("Áudio")]
     [SerializeField, InspectorName("Door Open SFX")] private AudioClip doorOpenSfx;
     [SerializeField, InspectorName("Door Close SFX")] private AudioClip doorCloseSfx;
     [SerializeField, InspectorName("Special Delivery SFX")] private AudioClip specialDeliveryOpenSfx;
@@ -232,7 +232,7 @@ public class PaymentUI : MonoBehaviour
     {
         if (moneyLender == null)
         {
-            SetStatus("Cobrador nao encontrado.");
+            SetStatus("Cobrador não encontrado.");
             return;
         }
 
@@ -679,10 +679,10 @@ public class PaymentUI : MonoBehaviour
     {
         string debtValue = GetDebtValueText();
 
-        SetText(defaultTitleText, "Divida");
+        SetText(defaultTitleText, "Dívida");
         SetText(defaultQuestText, GetQuestLine());
         SetText(defaultDeadlineText, GetDeadlineLine());
-        SetText(defaultDebtText, $"Divida total: {debtValue}");
+        SetText(defaultDebtText, $"Dívida total: {debtValue}");
         SetText(defaultGoalText, GetGoalLine());
         SetText(defaultMoneyText, $"Dinheiro: R$ {playerMoney:0}");
 
@@ -740,7 +740,7 @@ public class PaymentUI : MonoBehaviour
             return $"Modo sem fim - Entrega {campaignProgress.CurrentQuestIndex}";
 
         if (campaignProgress.IsCampaignCompleted)
-            return "Campanha concluida";
+            return "Campanha concluída";
 
         string questLabel = $"Quest {campaignProgress.CurrentQuestIndex}";
 
@@ -763,9 +763,10 @@ public class PaymentUI : MonoBehaviour
             return string.Empty;
         }
 
+        int daysRemaining = campaignProgress.DaysRemainingInCurrentQuest;
         return campaignProgress.HasFailedCurrentQuest
             ? "Prazo: encerrado"
-            : $"Prazo: {campaignProgress.DaysRemainingInCurrentQuest} dia(s)";
+            : $"Prazo: {daysRemaining} {GetDayLabel(daysRemaining)}";
     }
 
     private string GetGoalLine()
@@ -795,7 +796,7 @@ public class PaymentUI : MonoBehaviour
 
     private string GetDebtLine()
     {
-        return $"Divida total: {GetDebtValueText()}";
+        return $"Dívida total: {GetDebtValueText()}";
     }
 
     private string GetDebtValueText()
@@ -803,9 +804,14 @@ public class PaymentUI : MonoBehaviour
         return currentDebtBalance > 0 ? $"-R$ {currentDebtBalance}" : "R$ 0";
     }
 
+    private static string GetDayLabel(int _days)
+    {
+        return _days == 1 ? "dia" : "dias";
+    }
+
     private string GetSpecialDeliveryDebtLine()
     {
-        string totalDebtLine = $"Divida total: {GetDebtValueText()}";
+        string totalDebtLine = $"Dívida total: {GetDebtValueText()}";
 
         if (campaignProgress == null || campaignProgress.QuestDebtPaymentTarget <= 0)
             return totalDebtLine;
@@ -853,7 +859,7 @@ public class PaymentUI : MonoBehaviour
         }
 
         bool success = moneyLender.TryGetSpecificFishPayment(specialFish, campaignProgress.SpecialDeliveryQuantity);
-        SetStatus(success ? "Entrega especial concluida." : "Peixe especial insuficiente.");
+        SetStatus(success ? "Entrega especial concluída." : "Você não tem peixes suficientes.");
 
         if (success)
         {
@@ -879,7 +885,7 @@ public class PaymentUI : MonoBehaviour
             MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
             MoneyLender.DebtPaymentResult.MoneyTargetCompleted => "Meta em dinheiro paga. Entregue o peixe especial.",
             MoneyLender.DebtPaymentResult.Completed => "Meta da quest paga.",
-            MoneyLender.DebtPaymentResult.PaidOff => "Divida quitada.",
+            MoneyLender.DebtPaymentResult.PaidOff => "Dívida quitada.",
             _ => "Dinheiro insuficiente."
         };
     }
@@ -1003,7 +1009,7 @@ public class PaymentUI : MonoBehaviour
             ? GetSpecialDeliveryOwnedWeightText(ownedWeight)
             : string.Empty;
 
-        return $"Possui: {ownedQuantity} no inventario{weightText}";
+        return $"Possui: {ownedQuantity} no inventário{weightText}";
     }
 
     private string GetSpecialDeliveryOwnedWeightText(int _ownedWeight)
@@ -1046,7 +1052,7 @@ public class PaymentUI : MonoBehaviour
 
         if (fishPreviewPanel == null)
         {
-            SetStatus("Painel de peixe nao configurado.");
+            SetStatus("Painel de peixe não configurado.");
             return;
         }
 

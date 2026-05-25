@@ -67,7 +67,7 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private TMP_Text discardConfirmText;
     [SerializeField] private Button discardConfirmYesButton;
     [SerializeField] private Button discardConfirmNoButton;
-    [SerializeField] private string discardConfirmTextFormat = "Descartar {0} peixe(s)?";
+    [SerializeField] private string discardConfirmTextFormat = "Descartar {0} {1}?";
     [SerializeField] private InventoryFishSlotUI[] discardFishGridSlots;
     [SerializeField] private Transform discardFishGridContent;
     [SerializeField] private InventoryFishSlotUI discardFishSlotTemplate;
@@ -1225,7 +1225,7 @@ public class InvertoryManager : MonoBehaviour
     private string GetBaitInventoryText()
     {
         if (baitInventory == null || baitInventory.BaitStacks.Count == 0)
-            return "Nenhuma isca no inventario.";
+            return "Nenhuma isca no inventário.";
 
         StringBuilder builder = new StringBuilder();
 
@@ -1248,7 +1248,7 @@ public class InvertoryManager : MonoBehaviour
         }
 
         builder.AppendLine();
-        builder.AppendLine("Equipe uma isca pelos botoes da aba de iscas.");
+        builder.AppendLine("Equipe uma isca pelos botões da aba de iscas.");
         return builder.ToString();
     }
 
@@ -1423,7 +1423,7 @@ public class InvertoryManager : MonoBehaviour
         SetButtonInteractable(cancelDiscardButton, true);
 
         if (discardConfirmText != null)
-            discardConfirmText.text = string.Format(discardConfirmTextFormat, selectedFishIndexes.Count);
+            discardConfirmText.text = GetDiscardConfirmText();
     }
 
     private void SetDiscardConfirmPanelVisible(bool _visible)
@@ -1436,7 +1436,22 @@ public class InvertoryManager : MonoBehaviour
             return;
 
         if (discardConfirmText != null)
-            discardConfirmText.text = string.Format(discardConfirmTextFormat, selectedFishIndexes.Count);
+            discardConfirmText.text = GetDiscardConfirmText();
+    }
+
+    private string GetDiscardConfirmText()
+    {
+        int selectedCount = selectedFishIndexes.Count;
+        string format = string.IsNullOrWhiteSpace(discardConfirmTextFormat)
+            ? "Descartar {0} {1}?"
+            : discardConfirmTextFormat.Replace("peixe(s)", "{1}");
+
+        return string.Format(format, selectedCount, GetFishCountLabel(selectedCount));
+    }
+
+    private static string GetFishCountLabel(int _count)
+    {
+        return _count == 1 ? "peixe" : "peixes";
     }
 
     private void SetButtonVisible(Button _button, bool _visible)
@@ -1793,7 +1808,7 @@ public class InvertoryManager : MonoBehaviour
         if (missingReferences.Count == 0)
             return;
 
-        Debug.LogWarning($"[InvertoryManager] Referencias de UI faltando: {string.Join(", ", missingReferences)}. Crie esses botoes na cena/prefab ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser cria-los em runtime.", this);
+        Debug.LogWarning($"[InvertoryManager] Referências de UI faltando: {string.Join(", ", missingReferences)}. Crie esses botões na cena/prefab ou arraste no Inspector. Ative Allow Runtime Fallback apenas se quiser criá-los em runtime.", this);
         hasLoggedMissingRuntimeControls = true;
     }
 
