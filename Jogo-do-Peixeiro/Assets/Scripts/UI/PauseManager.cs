@@ -87,14 +87,14 @@ public class PauseManager : MonoBehaviour
             return;
         }
 
+        if (UIModalManager.TryHandleBack())
+            return;
+
         if (GameManager.instance.currentState != GameManager.GameState.Paused &&
             InvertoryManager.TryHandleOpenInventoryPauseInput())
         {
             return;
         }
-
-        if (UIModalManager.TryHandleBack())
-            return;
 
         if (InputHandler.instance != null && InputHandler.instance.WasBackInputStartedOverUi)
             return;
@@ -156,6 +156,8 @@ public class PauseManager : MonoBehaviour
 
         GameManager.instance.SetState(GameManager.GameState.Paused);
 
+        HideConfiguredPanelsForPause();
+
         if (pauseTimeWithModalManager || hideHudWithModalManager)
         {
             UIModalRequest modalRequest = UIModalRequest.Create(
@@ -171,8 +173,6 @@ public class PauseManager : MonoBehaviour
         {
             Time.timeScale = 0f;
         }
-
-        HideConfiguredPanelsForPause();
 
         // ativa painel de pause e desativa outros
         if (pausePanel != null) pausePanel.SetActive(true);

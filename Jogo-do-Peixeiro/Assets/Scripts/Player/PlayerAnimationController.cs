@@ -41,11 +41,29 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField] private string _pullDirectionParameter = "PullDirection";
 
     [Header("Fishing Offset")]
+    [SerializeField] private Transform _fishingOffsetTarget;
     [SerializeField] private float _fishingYOffset = -0.8f;
     [SerializeField] private float _fishingOffsetSmoothTime = 1.4f;
+    [SerializeField] private float _fishingOffsetResetThreshold = 0.01f;
+
+    [Header("Boat Visual Offset")]
+    [SerializeField] private Transform _boatOffsetTarget;
+    [SerializeField] private Vector3 _boatPositionOffset;
+    [SerializeField] private Vector3 _boatRotationOffset;
+    [SerializeField, Min(0f)] private float _fishingFacingMaxDegreesPerSecond = 540f;
 
     private float _currentFishingOffset;
     private float _fishingOffsetVelocity;
+    private Transform _fishingOffsetParent;
+    private Vector3 _fishingOffsetBaseLocalPosition;
+    private bool _hasFishingOffsetBase;
+    private Transform _boatOffsetParent;
+    private Vector3 _boatOffsetBaseLocalPosition;
+    private Quaternion _boatOffsetBaseLocalRotation;
+    private bool _hasBoatOffsetBase;
+    private Vector3 _fishingFacingTargetWorldPosition;
+    private float _fishingFacingYawOffset;
+    private bool _hasFishingFacingTarget;
 
     [Header("Debug")]
     [SerializeField] private bool _logMissingParameters = true;
@@ -71,6 +89,9 @@ public class PlayerAnimationController : MonoBehaviour
         _positionMoveResetThreshold = Mathf.Max(0f, _positionMoveResetThreshold);
         _moveSpeedDampTime = Mathf.Max(0f, _moveSpeedDampTime);
         _afkIdleDelay = Mathf.Max(0f, _afkIdleDelay);
+        _fishingOffsetSmoothTime = Mathf.Max(0f, _fishingOffsetSmoothTime);
+        _fishingOffsetResetThreshold = Mathf.Max(0f, _fishingOffsetResetThreshold);
+        _fishingFacingMaxDegreesPerSecond = Mathf.Max(0f, _fishingFacingMaxDegreesPerSecond);
     }
 
     private void Awake()
@@ -91,6 +112,7 @@ public class PlayerAnimationController : MonoBehaviour
             return;
 
         UpdateAnimatorState();
+        UpdateBoatVisualOffset();
     }
 
     private void OnAnimatorMove()
@@ -98,21 +120,252 @@ public class PlayerAnimationController : MonoBehaviour
         if (_animator == null)
             return;
 
+        UpdateFishingVisualOffset();
+    }
+
+    public void ResetFishingVisualOffset()
+    {
+        Transform offsetTarget = ResolveFishingOffsetTarget();
+
+        if (offsetTarget != null &&
+            _hasFishingOffsetBase &&
+            offsetTarget.parent == _fishingOffsetParent)
+        {
+            offsetTarget.localPosition = GetCurrentFishingBaseLocalPosition(offsetTarget);
+        }
+
+        ClearFishingOffsetState();
+    }
+
+    public void ApplyBoatVisualOffset()
+    {
+        Transform offsetTarget = ResolveBoatOffsetTarget();
+
+        if (offsetTarget == null)
+            return;
+
+        if (!_hasBoatOffsetBase || offsetTarget.parent != _boatOffsetParent)
+            CaptureBoatOffsetBase(offsetTarget);
+
+        offsetTarget.localPosition = _boatOffsetBaseLocalPosition + _boatPositionOffset;
+        offsetTarget.localRotation = GetSmoothedBoatVisualLocalRotation(offsetTarget);
+    }
+
+    public void ResetBoatVisualOffset()
+    {
+        Transform offsetTarget = ResolveBoatOffsetTarget();
+
+        if (offsetTarget != null &&
+            _hasBoatOffsetBase &&
+            offsetTarget.parent == _boatOffsetParent)
+        {
+            offsetTarget.localPosition = _boatOffsetBaseLocalPosition;
+            offsetTarget.localRotation = _boatOffsetBaseLocalRotation;
+        }
+
+        ClearBoatOffsetState();
+    }
+
+    public Transform GetBoatVisualOffsetTarget()
+    {
+        return ResolveBoatOffsetTarget();
+    }
+
+    public void SetFishingFacingTarget(Vector3 _targetWorldPosition, float _yawOffset)
+    {
+        _fishingFacingTargetWorldPosition = _targetWorldPosition;
+        _fishingFacingYawOffset = _yawOffset;
+        _hasFishingFacingTarget = true;
+    }
+
+    public void ClearFishingFacingTarget()
+    {
+        _hasFishingFacingTarget = false;
+    }
+
+    private void UpdateFishingVisualOffset()
+    {
         float targetOffset = 0f;
+        bool isFishing = GameManager.instance != null && IsFishingState(GameManager.instance.currentState);
+        Transform offsetTarget = ResolveFishingOffsetTarget();
 
-        if (GameManager.instance != null && IsFishingState(GameManager.instance.currentState))
+        if (offsetTarget == null)
+            return;
+
+        if (!isFishing && !_hasFishingOffsetBase && Mathf.Abs(_currentFishingOffset) <= _fishingOffsetResetThreshold)
+            return;
+
+        if (_hasFishingOffsetBase && offsetTarget.parent != _fishingOffsetParent)
+        {
+            ClearFishingOffsetState();
+            return;
+        }
+
+        if (isFishing)
+        {
+            if (!_hasFishingOffsetBase)
+                CaptureFishingOffsetBase(offsetTarget);
+
             targetOffset = _fishingYOffset;
+        }
 
-        _currentFishingOffset = Mathf.SmoothDamp(
-            _currentFishingOffset,
-            targetOffset,
-            ref _fishingOffsetVelocity,
-            _fishingOffsetSmoothTime
+        if (_fishingOffsetSmoothTime <= 0f)
+        {
+            _currentFishingOffset = targetOffset;
+            _fishingOffsetVelocity = 0f;
+        }
+        else
+        {
+            _currentFishingOffset = Mathf.SmoothDamp(
+                _currentFishingOffset,
+                targetOffset,
+                ref _fishingOffsetVelocity,
+                _fishingOffsetSmoothTime
+            );
+        }
+
+        if (_hasFishingOffsetBase)
+        {
+            Vector3 pos = GetCurrentFishingBaseLocalPosition(offsetTarget);
+            pos.y += _currentFishingOffset;
+            offsetTarget.localPosition = pos;
+        }
+
+        if (!isFishing && Mathf.Abs(_currentFishingOffset) <= _fishingOffsetResetThreshold)
+        {
+            if (_hasFishingOffsetBase)
+                offsetTarget.localPosition = GetCurrentFishingBaseLocalPosition(offsetTarget);
+
+            ClearFishingOffsetState();
+        }
+    }
+
+    private Transform ResolveFishingOffsetTarget()
+    {
+        if (_fishingOffsetTarget != null)
+            return _fishingOffsetTarget;
+
+        return _animator != null ? _animator.transform : null;
+    }
+
+    private void UpdateBoatVisualOffset()
+    {
+        bool shouldApplyBoatOffset = GameManager.instance != null &&
+                                     IsBoatVisualOffsetState(GameManager.instance.currentState);
+
+        if (shouldApplyBoatOffset)
+        {
+            ApplyBoatVisualOffset();
+            return;
+        }
+
+        if (_hasBoatOffsetBase)
+            ResetBoatVisualOffset();
+    }
+
+    private bool IsBoatVisualOffsetState(GameManager.GameState _state)
+    {
+        return _state == GameManager.GameState.OnBoat ||
+               IsFishingState(_state) ||
+               ((_state == GameManager.GameState.InUI || _state == GameManager.GameState.Paused) && _hasBoatOffsetBase);
+    }
+
+    private Transform ResolveBoatOffsetTarget()
+    {
+        if (_boatOffsetTarget != null)
+            return _boatOffsetTarget;
+
+        return _animator != null ? _animator.transform : null;
+    }
+
+    private Quaternion GetBoatVisualLocalRotation(Transform _offsetTarget)
+    {
+        Quaternion baseRotation = _boatOffsetBaseLocalRotation * Quaternion.Euler(_boatRotationOffset);
+
+        if (!_hasFishingFacingTarget || _offsetTarget == null || _offsetTarget.parent == null)
+            return baseRotation;
+
+        Vector3 localDirection = _offsetTarget.parent.InverseTransformDirection(
+            _fishingFacingTargetWorldPosition - _offsetTarget.position
         );
+        localDirection.y = 0f;
 
-        Vector3 pos = _animator.transform.localPosition;
-        pos.y = _currentFishingOffset;
-        _animator.transform.localPosition = pos;
+        if (localDirection.sqrMagnitude <= 0.0001f)
+            return baseRotation;
+
+        Vector3 baseEuler = baseRotation.eulerAngles;
+        float targetYaw = Quaternion.LookRotation(localDirection.normalized, Vector3.up).eulerAngles.y;
+
+        return Quaternion.Euler(
+            baseEuler.x,
+            targetYaw + _fishingFacingYawOffset,
+            baseEuler.z
+        );
+    }
+
+    private Quaternion GetSmoothedBoatVisualLocalRotation(Transform _offsetTarget)
+    {
+        Quaternion targetRotation = GetBoatVisualLocalRotation(_offsetTarget);
+
+        if (!_hasFishingFacingTarget ||
+            _fishingFacingMaxDegreesPerSecond <= 0f ||
+            !Application.isPlaying)
+        {
+            return targetRotation;
+        }
+
+        return Quaternion.RotateTowards(
+            _offsetTarget.localRotation,
+            targetRotation,
+            _fishingFacingMaxDegreesPerSecond * Time.deltaTime
+        );
+    }
+
+    private Vector3 GetCurrentFishingBaseLocalPosition(Transform _offsetTarget)
+    {
+        if (IsSameBoatOffsetTarget(_offsetTarget))
+            return _boatOffsetBaseLocalPosition + _boatPositionOffset;
+
+        return _fishingOffsetBaseLocalPosition;
+    }
+
+    private bool IsSameBoatOffsetTarget(Transform _offsetTarget)
+    {
+        return _offsetTarget != null &&
+               _hasBoatOffsetBase &&
+               _offsetTarget == ResolveBoatOffsetTarget() &&
+               _offsetTarget.parent == _boatOffsetParent;
+    }
+
+    private void CaptureFishingOffsetBase(Transform _offsetTarget)
+    {
+        _fishingOffsetParent = _offsetTarget.parent;
+        _fishingOffsetBaseLocalPosition = _offsetTarget.localPosition;
+        _hasFishingOffsetBase = true;
+    }
+
+    private void ClearFishingOffsetState()
+    {
+        _currentFishingOffset = 0f;
+        _fishingOffsetVelocity = 0f;
+        _fishingOffsetParent = null;
+        _hasFishingOffsetBase = false;
+    }
+
+    private void CaptureBoatOffsetBase(Transform _offsetTarget)
+    {
+        _boatOffsetParent = _offsetTarget.parent;
+        _boatOffsetBaseLocalPosition = _offsetTarget.localPosition;
+        _boatOffsetBaseLocalRotation = _offsetTarget.localRotation;
+        _hasBoatOffsetBase = true;
+    }
+
+    private void ClearBoatOffsetState()
+    {
+        _boatOffsetParent = null;
+        _boatOffsetBaseLocalPosition = Vector3.zero;
+        _boatOffsetBaseLocalRotation = Quaternion.identity;
+        _hasBoatOffsetBase = false;
     }
 
     public void TriggerCastRod()
@@ -163,7 +416,7 @@ public class PlayerAnimationController : MonoBehaviour
 
         bool isOnFoot = state == GameManager.GameState.OnFoot;
         bool isFishing = IsFishingState(state);
-        bool isOnBoat = state == GameManager.GameState.OnBoat || isFishing;
+        bool isOnBoat = IsBoatAnimationState(state, isFishing);
         bool hasFishBitten = FishingManager.instance != null && FishingManager.instance.HasFishBitten;
 
         _leftAfkIdleByMoveInput = false;
@@ -188,6 +441,15 @@ public class PlayerAnimationController : MonoBehaviour
     {
         return _state == GameManager.GameState.Fishing ||
                (FishingManager.instance != null && FishingManager.instance.IsFishing);
+    }
+
+    private bool IsBoatAnimationState(GameManager.GameState _state, bool _isFishing)
+    {
+        if (_state == GameManager.GameState.OnBoat || _isFishing)
+            return true;
+
+        return (_state == GameManager.GameState.InUI || _state == GameManager.GameState.Paused) &&
+               _hasBoatOffsetBase;
     }
 
     private void UpdateMovementState(bool _isOnFoot)
@@ -279,7 +541,10 @@ public class PlayerAnimationController : MonoBehaviour
             TriggerCastRod();
 
         if (!_isFishing && _wasFishing)
+        {
             ResetFishingAnimationState();
+            ResetFishingVisualOffset();
+        }
 
         _wasFishing = _isFishing;
     }

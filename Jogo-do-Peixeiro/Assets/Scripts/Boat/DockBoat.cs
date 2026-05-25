@@ -13,12 +13,23 @@ public class Dock : MonoBehaviour, IInteractable
     [SerializeField] private Dock referenceDock;
     [SerializeField] private float dockRange = 6f;
 
+    private Transform cachedPlayerTransform;
+
     public Transform BoatParkPoint
     {
         get
         {
             ResolveReferences();
             return boatParkPoint;
+        }
+    }
+
+    public Transform ExitPoint
+    {
+        get
+        {
+            ResolveReferences();
+            return exitPoint;
         }
     }
 
@@ -36,6 +47,9 @@ public class Dock : MonoBehaviour, IInteractable
 
         if (GameManager.instance.currentState == GameManager.GameState.OnFoot)
         {
+            if (!IsPlayerInDockRange())
+                return;
+
             if (TutorialEvents.ShouldBlockBoatEntry())
             {
                 TutorialEvents.NotifyBoatEntryBlocked();
@@ -52,9 +66,7 @@ public class Dock : MonoBehaviour, IInteractable
                 return;
             }
 
-            float distanceToDock = Vector3.Distance(boat.transform.position, boatParkPoint.position);
-
-            if (distanceToDock > dockRange)
+            if (!IsBoatInDockRange())
             {
                 Debug.Log("Barco muito longe do dock para estacionar.");
                 return;
@@ -73,16 +85,10 @@ public class Dock : MonoBehaviour, IInteractable
             return false;
 
         if (GameManager.instance.currentState == GameManager.GameState.OnFoot)
-            return true;
+            return IsPlayerInDockRange() && boat.CanEnterBoat();
 
         if (GameManager.instance.currentState == GameManager.GameState.OnBoat)
-        {
-            if (boatParkPoint == null)
-                return false;
-
-            float distance = Vector3.Distance(boat.transform.position, boatParkPoint.position);
-            return distance <= dockRange;
-        }
+            return IsBoatInDockRange();
 
         return false;
     }
@@ -108,6 +114,46 @@ public class Dock : MonoBehaviour, IInteractable
 
         if (boatParkPoint == null || exitPoint == null)
             CopyMissingReferencesFromOtherDock();
+    }
+
+    private bool IsPlayerInDockRange()
+    {
+        Transform playerTransform = ResolvePlayerTransform();
+        Transform referencePoint = exitPoint != null ? exitPoint : boatParkPoint != null ? boatParkPoint : transform;
+
+        if (playerTransform == null || referencePoint == null)
+            return false;
+
+        return Vector3.Distance(playerTransform.position, referencePoint.position) <= dockRange;
+    }
+
+    private bool IsBoatInDockRange()
+    {
+        if (boat == null || boatParkPoint == null)
+            return false;
+
+        return Vector3.Distance(boat.transform.position, boatParkPoint.position) <= dockRange;
+    }
+
+    private Transform ResolvePlayerTransform()
+    {
+        if (cachedPlayerTransform != null)
+            return cachedPlayerTransform;
+
+        PlayerController playerController = FindFirstObjectByType<PlayerController>(FindObjectsInactive.Include);
+
+        if (playerController != null)
+        {
+            cachedPlayerTransform = playerController.transform;
+            return cachedPlayerTransform;
+        }
+
+        PlayerMove playerMove = FindFirstObjectByType<PlayerMove>(FindObjectsInactive.Include);
+
+        if (playerMove != null)
+            cachedPlayerTransform = playerMove.transform;
+
+        return cachedPlayerTransform;
     }
 
     private void CopyMissingReferences(Dock _dock)

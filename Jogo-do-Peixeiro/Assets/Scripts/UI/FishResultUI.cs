@@ -163,8 +163,7 @@ public class FishResultUI : MonoBehaviour
         if (mesh != null)
             mesh.mesh = fishMesh;
 
-        if (objectRenderer != null)
-            objectRenderer.material = fishMaterial;
+        FishVisualUtility.ApplyMaterial(_fish.typeOfFish, objectRenderer, false);
 
         ShowRarityStars(fishRarity);
         ResetFishRotation();
@@ -314,11 +313,20 @@ public class FishResultUI : MonoBehaviour
 
     private void TryClose()
     {
+        if (UIModalManager.WasBackHandledThisFrame ||
+            (modalToken != UIModalManager.InvalidToken && !UIModalManager.IsTopModal(modalToken)))
+        {
+            return;
+        }
+
         if (!isShowing || !canSkip)
             return;
 
         if (IsMouseLeftButtonHeld())
             return;
+
+        if (modalToken != UIModalManager.InvalidToken)
+            UIModalManager.MarkBackHandledThisFrame();
 
         gameObject.SetActive(false);
     }

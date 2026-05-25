@@ -25,6 +25,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
     [Header("Keyboard Shortcuts")]
     [SerializeField] private bool enableKeyboardShortcuts = true;
+    [SerializeField] private bool requireShiftModifier = true;
     [SerializeField] private Key addRandomFishKey = Key.F6;
     [SerializeField] private Key addRandomFishBatchKey = Key.F7;
     [SerializeField] private Key addBaitsKey = Key.F8;
@@ -43,6 +44,9 @@ public class InventoryDebugCheats : MonoBehaviour
     private void Update()
     {
         if (!enableKeyboardShortcuts || Keyboard.current == null)
+            return;
+
+        if (requireShiftModifier && !IsShiftPressed())
             return;
 
         if (WasKeyPressed(addRandomFishKey))
@@ -239,6 +243,12 @@ public class InventoryDebugCheats : MonoBehaviour
             return false;
 
         return Keyboard.current[_key].wasPressedThisFrame;
+    }
+
+    private bool IsShiftPressed()
+    {
+        Keyboard keyboard = Keyboard.current;
+        return keyboard != null && (keyboard.leftShiftKey.isPressed || keyboard.rightShiftKey.isPressed);
     }
 
     private void EnsureValidShortcutKeys()

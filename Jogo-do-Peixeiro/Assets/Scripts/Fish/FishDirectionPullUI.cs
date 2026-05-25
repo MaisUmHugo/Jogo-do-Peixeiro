@@ -59,12 +59,13 @@ public class FishDirectionPullUI : MonoBehaviour
 
     [Header("First Pull Hint")]
     [SerializeField] private TMP_Text _holdHintText;
-    [SerializeField] private string _holdHintMessage = "SEGURE";
+    [SerializeField] private string _holdHintMessage = "SEGURE A DIRECAO";
     [SerializeField] private Vector2 _holdHintOffset = new Vector2(0f, 58f);
     [SerializeField] private float _holdHintCorrectHoldTime = 0.45f;
     [SerializeField] private float _holdHintPulseSpeed = 6f;
     [SerializeField] private float _holdHintPulseScale = 0.12f;
     [SerializeField] private Color _holdHintColor = Color.white;
+    [SerializeField, Min(1)] private int _successfulPullsBeforeHidingHint = 5;
 
     [Header("Side Prompt Height")]
     [SerializeField, Range(0f, 1f)] private float _sidePullHeightCentering = 0.75f;
@@ -80,6 +81,8 @@ public class FishDirectionPullUI : MonoBehaviour
     private int _lastPromptId = -1;
     private bool _hasIconTargetPosition;
     private bool _hasLearnedHoldInput;
+    private int _successfulHoldHintCount;
+    private int _lastSuccessfulHoldPromptId = -1;
     private float _correctHoldTimer;
     private bool _hasLoggedMissingIcon;
     private bool _hasLoggedMissingBackplate;
@@ -113,6 +116,7 @@ public class FishDirectionPullUI : MonoBehaviour
         _holdHintCorrectHoldTime = Mathf.Max(0.01f, _holdHintCorrectHoldTime);
         _holdHintPulseSpeed = Mathf.Max(0f, _holdHintPulseSpeed);
         _holdHintPulseScale = Mathf.Max(0f, _holdHintPulseScale);
+        _successfulPullsBeforeHidingHint = Mathf.Max(1, _successfulPullsBeforeHidingHint);
         _sidePullHeightCentering = Mathf.Clamp01(_sidePullHeightCentering);
 
         if (Application.isPlaying && isActiveAndEnabled)
@@ -295,11 +299,18 @@ public class FishDirectionPullUI : MonoBehaviour
         {
             _correctHoldTimer += Time.unscaledDeltaTime;
 
-            if (_correctHoldTimer >= _holdHintCorrectHoldTime)
+            if (_correctHoldTimer >= _holdHintCorrectHoldTime &&
+                _lastSuccessfulHoldPromptId != _directionPull.CurrentPromptId)
             {
-                _hasLearnedHoldInput = true;
-                SetHoldHintVisible(false);
-                return;
+                _lastSuccessfulHoldPromptId = _directionPull.CurrentPromptId;
+                _successfulHoldHintCount++;
+
+                if (_successfulHoldHintCount >= _successfulPullsBeforeHidingHint)
+                {
+                    _hasLearnedHoldInput = true;
+                    SetHoldHintVisible(false);
+                    return;
+                }
             }
         }
         else

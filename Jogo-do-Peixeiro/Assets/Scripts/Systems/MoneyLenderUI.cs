@@ -16,10 +16,12 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField] private bool blockPauseWhileOpen = true;
 
     [Header("Audio")]
-    [SerializeField] private AudioClip doorOpenSfx;
-    [SerializeField] private AudioClip doorCloseSfx;
-    [SerializeField, Range(0f, 1f)] private float doorOpenSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f)] private float doorCloseSfxVolume = 1f;
+    [SerializeField, InspectorName("Door Open SFX")] private AudioClip doorOpenSfx;
+    [SerializeField, InspectorName("Door Close SFX")] private AudioClip doorCloseSfx;
+    [SerializeField, InspectorName("Special Delivery SFX")] private AudioClip specialDeliveryOpenSfx;
+    [SerializeField, Range(0f, 1f), InspectorName("Door Open SFX Volume")] private float doorOpenSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Door Close SFX Volume")] private float doorCloseSfxVolume = 1f;
+    [SerializeField, Range(0f, 1f), InspectorName("Special Delivery SFX Volume")] private float specialDeliveryOpenSfxVolume = 1f;
 
     private MoneyLender currentMoneyLender;
     private CampaignQuestGuidanceController tutorialController;
@@ -100,7 +102,10 @@ public class MoneyLenderUI : MonoBehaviour
         Cursor.visible = true;
 
         if (!wasOpen)
+        {
             PlayDoorSfx(doorOpenSfx, doorOpenSfxVolume);
+            PlaySpecialDeliveryOpenSfxIfNeeded();
+        }
 
         Refresh();
     }
@@ -159,9 +164,14 @@ public class MoneyLenderUI : MonoBehaviour
 
     private void HandlePausePressed()
     {
-        if (!isOpen)
+        if (!isOpen ||
+            UIModalManager.WasBackHandledThisFrame ||
+            !UIModalManager.IsTopModal(modalToken))
+        {
             return;
+        }
 
+        UIModalManager.MarkBackHandledThisFrame();
         Close();
     }
 
@@ -257,5 +267,13 @@ public class MoneyLenderUI : MonoBehaviour
             return;
 
         AudioManager.Instance.PlaySfx(_clip, _volume);
+    }
+
+    private void PlaySpecialDeliveryOpenSfxIfNeeded()
+    {
+        if (!isTutorialPayment)
+            return;
+
+        PlayDoorSfx(specialDeliveryOpenSfx, specialDeliveryOpenSfxVolume);
     }
 }

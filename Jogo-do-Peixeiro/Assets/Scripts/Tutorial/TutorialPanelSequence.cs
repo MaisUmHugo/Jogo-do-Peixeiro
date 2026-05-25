@@ -7,6 +7,7 @@ using UnityEngine.UI;
 public class TutorialPanelSlide
 {
     public Sprite image;
+    public string title;
     [TextArea] public string text;
 }
 
@@ -15,6 +16,7 @@ public class TutorialPanelSequence : MonoBehaviour
     [Header("References")]
     [SerializeField] private GameObject _panelRoot;
     [SerializeField] private Image _slideImage;
+    [SerializeField] private TMP_Text _slideTitleText;
     [SerializeField] private TMP_Text _slideText;
 
     [Header("Slides")]
@@ -103,8 +105,12 @@ public class TutorialPanelSequence : MonoBehaviour
         if (_slideImage != null)
         {
             _slideImage.sprite = slide.image;
+            _slideImage.preserveAspect = true;
             _slideImage.gameObject.SetActive(slide.image != null);
         }
+
+        if (_slideTitleText != null)
+            _slideTitleText.text = string.IsNullOrWhiteSpace(slide.title) ? "COMO JOGAR?" : slide.title;
 
         if (_slideText != null)
             _slideText.text = slide.text;

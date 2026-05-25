@@ -49,59 +49,69 @@ MonoBehaviour:
   questDefinitions:
   - questName: Quest 1 - Tutorial
     durationDays: 3
-    debtPaymentTarget: 50
+    debtPaymentTarget: 153
     isTutorialQuest: 1
-    unlocksFreePlayOnComplete: 1
+    unlocksFreePlayOnComplete: 0
     requiresSpecialMoneyLenderDelivery: 0
     specialDeliveryFish: {fileID: 0}
+    specialDeliveryRarity: 0
     specialDeliveryQuantity: 0
     specialDeliveryRequiredWeight: 0
     completesCampaign: 0
   - questName: Quest 2
     durationDays: 3
-    debtPaymentTarget: 225
+    debtPaymentTarget: 162
     isTutorialQuest: 0
     unlocksFreePlayOnComplete: 0
     requiresSpecialMoneyLenderDelivery: 0
     specialDeliveryFish: {fileID: 0}
+    specialDeliveryRarity: 0
     specialDeliveryQuantity: 0
     specialDeliveryRequiredWeight: 0
     completesCampaign: 0
   - questName: Quest 3
     durationDays: 3
-    debtPaymentTarget: 300
+    debtPaymentTarget: 191
     isTutorialQuest: 0
     unlocksFreePlayOnComplete: 0
     requiresSpecialMoneyLenderDelivery: 0
     specialDeliveryFish: {fileID: 0}
+    specialDeliveryRarity: 0
     specialDeliveryQuantity: 0
     specialDeliveryRequiredWeight: 0
     completesCampaign: 0
   - questName: Quest 4
     durationDays: 3
-    debtPaymentTarget: 375
+    debtPaymentTarget: 239
     isTutorialQuest: 0
     unlocksFreePlayOnComplete: 0
     requiresSpecialMoneyLenderDelivery: 0
     specialDeliveryFish: {fileID: 0}
+    specialDeliveryRarity: 0
     specialDeliveryQuantity: 0
     specialDeliveryRequiredWeight: 0
     completesCampaign: 0
   - questName: Quest 5 - Entrega especial
     durationDays: 3
-    debtPaymentTarget: 0
+    debtPaymentTarget: 245
     isTutorialQuest: 0
     unlocksFreePlayOnComplete: 0
     requiresSpecialMoneyLenderDelivery: 1
     specialDeliveryFish: {fileID: 0}
-    specialDeliveryQuantity: 0
+    specialDeliveryRarity: 2
+    specialDeliveryQuantity: 1
     specialDeliveryRequiredWeight: 0
     completesCampaign: 1
   campaignCompletionDebtAmount: 999999
+  useGddDebtFormula: 1
+  debtFormulaBaseAmount: 150
+  debtFormulaRandomMin: 0.02
+  debtFormulaRandomMax: 0.1
+  debtFormulaProgressionDivisor: 16
   currentQuestIndex: 1
   questDurationDays: 3
   daysElapsedInCurrentQuest: 0
-  questDebtPaymentTarget: 50
+  questDebtPaymentTarget: 153
   questDebtPaidAmount: 0
   hasFailedCurrentQuest: 0
   hasUnlockedFreePlay: 0
@@ -110,3 +120,14 @@ MonoBehaviour:
   specialDeliveryFish: {fileID: 0}
   specialDeliveryQuantity: 0
   specialDeliveryRequiredWeight: 0
+  specialDeliveryDebtReduction: 0
+  specialDeliveryFishPool: []
+  defaultSpecialDeliveryQuantity: 1
+  endlessSpecialDeliveryChanceIncrease: 0.1
+  endlessSpecialDeliveryMaxChance: 0.7
+  endlessSpecialDeliveryBaseQuantity: 1
+  endlessSpecialDeliveryQuantityStep: 5
+  endlessSpecialDeliveryMinRarity: 1
+  endlessSpecialDeliveryMaxRarity: 3
+  endlessDeliveriesWithoutSpecialRequest: 0
+  saveOnQuestAdvanced: 1

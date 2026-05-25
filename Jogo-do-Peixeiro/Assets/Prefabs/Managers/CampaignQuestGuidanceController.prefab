@@ -50,8 +50,8 @@ MonoBehaviour:
   handleMoneyLenderDuringTutorial: 1
   failWhenDeadlineEnds: 0
   useCampaignEconomyFlow: 1
-  useBasicPanelSequence: 0
-  tutorialFishingArea: {fileID: 11400000, guid: 784ba0b353c166542a3ff14aa27b93cb, type: 2}
+  useBasicPanelSequence: 1
+  tutorialFishingArea: {fileID: 11400000, guid: 1ab00900a89c7674fa3f32550e836240, type: 2}
   fallbackAvailableFish: []
   minRequestedQuantity: 1
   maxRequestedQuantity: 2
@@ -76,6 +76,7 @@ MonoBehaviour:
   tutorialCompleteMessage: Voce concluiu o tutorial.
   tutorialFailureTitle: Falha na quest
   tutorialFailureMessage: O prazo acabou antes de concluir a meta.
+  useDialogs: 0
   firstTalkDialog:
     lines: []
     speakerName: Cobrador
@@ -98,5 +99,6 @@ MonoBehaviour:
     - Boa camarada.. tudo nos conformes.
   moneyLenderCabinMarker: {fileID: 0}
   dockMarker: {fileID: 0}
+  dockOwnerMarker: {fileID: 0}
   moneyLenderMarker: {fileID: 0}
   mainMenuSceneName: Main Menu

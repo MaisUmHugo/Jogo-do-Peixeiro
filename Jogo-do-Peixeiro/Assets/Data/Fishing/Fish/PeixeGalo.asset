@@ -20,6 +20,6 @@ MonoBehaviour:
   basePrice: 24
   spawnWeight: 4
   canBeRequestedByMoneyLender: 1
-  availabilityPeriod: 1
-  fishName: Peixe Galo
-  description: Peixe que aparece pela manha.
+  availabilityPeriod: 3
+  fishName: Peixe-galo
+  description: O canto deste peixe é descrito como uma serenata linda. Uma pena que som não viaja bem pela água.

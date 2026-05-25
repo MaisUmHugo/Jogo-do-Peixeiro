@@ -95,6 +95,120 @@ public class ShipInventory : MonoBehaviour
         AttFishWeight();
     }
 
+    public int RemoveFishUntilWeightLost(float _targetWeightLoss, out float _removedWeight)
+    {
+        _removedWeight = 0f;
+
+        if (_targetWeightLoss <= 0f || ownedFish.Count == 0)
+            return 0;
+
+        int removedCount = 0;
+
+        while (ownedFish.Count > 0 && _removedWeight < _targetWeightLoss)
+        {
+            FishData fish = ownedFish[0];
+            _removedWeight += fish != null ? fish.weight : 0f;
+            ownedFish.RemoveAt(0);
+            removedCount++;
+        }
+
+        if (removedCount > 0)
+            AttFishWeight();
+
+        return removedCount;
+    }
+
+    public int RemoveFishByRarityPriority(int _targetCount, int[] _rarityPriority, out float _removedWeight)
+    {
+        _removedWeight = 0f;
+
+        if (_targetCount <= 0 || ownedFish.Count == 0)
+            return 0;
+
+        int removedCount = 0;
+        HashSet<int> handledRarities = new HashSet<int>();
+
+        if (_rarityPriority != null)
+        {
+            foreach (int rarity in _rarityPriority)
+            {
+                if (TryRemoveByRarity(rarity, ref removedCount, _targetCount, ref _removedWeight))
+                    handledRarities.Add(rarity);
+
+                if (removedCount >= _targetCount)
+                    break;
+            }
+        }
+
+        while (removedCount < _targetCount && ownedFish.Count > 0)
+        {
+            int bestIndex = GetHighestRarityFishIndex(handledRarities);
+
+            if (bestIndex < 0)
+                break;
+
+            RemoveFishAtForLoss(bestIndex, ref removedCount, ref _removedWeight);
+        }
+
+        if (removedCount > 0)
+            AttFishWeight();
+
+        return removedCount;
+    }
+
+    private bool TryRemoveByRarity(int _rarity, ref int _removedCount, int _targetCount, ref float _removedWeight)
+    {
+        bool removedAny = false;
+
+        while (_removedCount < _targetCount)
+        {
+            int fishIndex = ownedFish.FindIndex(fish => fish != null && fish.typeOfFish != null && fish.typeOfFish.rarity == _rarity);
+
+            if (fishIndex < 0)
+                break;
+
+            RemoveFishAtForLoss(fishIndex, ref _removedCount, ref _removedWeight);
+            removedAny = true;
+        }
+
+        return removedAny;
+    }
+
+    private int GetHighestRarityFishIndex(HashSet<int> _ignoredRarities)
+    {
+        int bestIndex = -1;
+        int bestRarity = int.MinValue;
+
+        for (int i = 0; i < ownedFish.Count; i++)
+        {
+            FishData fish = ownedFish[i];
+
+            if (fish == null || fish.typeOfFish == null)
+                continue;
+
+            int rarity = fish.typeOfFish.rarity;
+
+            if (_ignoredRarities != null && _ignoredRarities.Contains(rarity))
+                continue;
+
+            if (rarity > bestRarity)
+            {
+                bestRarity = rarity;
+                bestIndex = i;
+            }
+        }
+
+        return bestIndex;
+    }
+
+    private void RemoveFishAtForLoss(int _fishIndex, ref int _removedCount, ref float _removedWeight)
+    {
+        FishData fish = ownedFish[_fishIndex];
+        _removedWeight += fish != null ? fish.weight : 0f;
+        ownedFish.RemoveAt(_fishIndex);
+        _removedCount++;
+    }
+
     public void ReplaceFish(IEnumerable<FishData> _fishList)
     {
         ownedFish.Clear();

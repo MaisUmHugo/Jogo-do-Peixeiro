@@ -22,4 +22,4 @@ MonoBehaviour:
   canBeRequestedByMoneyLender: 1
   availabilityPeriod: 0
   fishName: Peixe Obsidiana
-  description: Peixe raro de aguas profundas, pesado e valioso.
+  description: Pontudo e surpreendentemente frágil. Juntar 14 deles não cria um portal.

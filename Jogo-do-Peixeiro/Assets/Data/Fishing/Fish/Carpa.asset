@@ -20,6 +20,6 @@ MonoBehaviour:
   basePrice: 10
   spawnWeight: 10
   canBeRequestedByMoneyLender: 1
-  availabilityPeriod: 0
+  availabilityPeriod: 3
   fishName: Carpa
-  description: Peixe comum e confiavel para comecar a pagar a divida.
+  description: Peixe comum de lagoas. Dizem ser o progenitor dos peixes.

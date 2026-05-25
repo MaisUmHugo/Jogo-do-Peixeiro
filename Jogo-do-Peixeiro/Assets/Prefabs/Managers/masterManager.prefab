@@ -180,6 +180,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b1de09fbb42873c4f946225a652dde1e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  gameMusic: {fileID: 8300000, guid: 1fc49ffead1df4b43a65c0addf9d2862, type: 3}
+  playGameMusicOnGameplayScenes: 1
   currentState: 0
 --- !u!1 &9133988375270950665
 GameObject:

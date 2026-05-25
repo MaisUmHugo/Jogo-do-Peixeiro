@@ -2,9 +2,14 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
+#if ENABLE_INPUT_SYSTEM
+using UnityEngine.InputSystem;
+#endif
 
 public static class UISelectionHelper
 {
+    private const float MinimumVerticalScrollSensitivity = 35f;
+
     public static void Select(Selectable _preferred, GameObject _scope = null)
     {
         Selectable target = GetUsableSelectable(_preferred, _scope);
@@ -76,6 +81,7 @@ public static class UISelectionHelper
         _scrollRect.horizontal = false;
         _scrollRect.vertical = true;
         _scrollRect.movementType = ScrollRect.MovementType.Clamped;
+        _scrollRect.scrollSensitivity = Mathf.Max(_scrollRect.scrollSensitivity, MinimumVerticalScrollSensitivity);
 
         if (_scrollRect.horizontalScrollbar != null)
         {
@@ -100,6 +106,62 @@ public static class UISelectionHelper
 
         anchoredPosition.x = 0f;
         content.anchoredPosition = anchoredPosition;
+    }
+
+    public static float GetMouseScrollDeltaY()
+    {
+#if ENABLE_INPUT_SYSTEM
+        if (Mouse.current != null)
+        {
+            float inputSystemScroll = NormalizeScrollDelta(Mouse.current.scroll.ReadValue().y);
+
+            if (Mathf.Abs(inputSystemScroll) > 0.01f)
+                return inputSystemScroll;
+        }
+#endif
+
+#if ENABLE_LEGACY_INPUT_MANAGER
+        return NormalizeScrollDelta(Input.mouseScrollDelta.y);
+#else
+        return 0f;
+#endif
+    }
+
+    public static bool ApplyMouseWheelScroll(ScrollRect _scrollRect, float _scrollDeltaY, float _scrollPixels)
+    {
+        if (_scrollRect == null ||
+            !_scrollRect.gameObject.activeInHierarchy ||
+            Mathf.Abs(_scrollDeltaY) <= 0.01f)
+        {
+            return false;
+        }
+
+        ConfigureVerticalOnlyScrollRect(_scrollRect);
+
+        RectTransform content = _scrollRect.content;
+        RectTransform viewport = _scrollRect.viewport != null
+            ? _scrollRect.viewport
+            : _scrollRect.GetComponent<RectTransform>();
+
+        if (content == null || viewport == null)
+            return false;
+
+        Canvas.ForceUpdateCanvases();
+
+        float hiddenHeight = content.rect.height - viewport.rect.height;
+
+        if (hiddenHeight <= 0.01f)
+            return false;
+
+        float normalizedDelta = _scrollDeltaY * Mathf.Max(1f, _scrollPixels) / hiddenHeight;
+        float targetPosition = Mathf.Clamp01(_scrollRect.verticalNormalizedPosition + normalizedDelta);
+
+        if (Mathf.Approximately(targetPosition, _scrollRect.verticalNormalizedPosition))
+            return false;
+
+        _scrollRect.verticalNormalizedPosition = targetPosition;
+        _scrollRect.velocity = Vector2.zero;
+        return true;
     }
 
     public static void ConfigureVerticalContentNavigation(
@@ -179,6 +241,14 @@ public static class UISelectionHelper
     private static Selectable GetUsableExit(Selectable _selectable)
     {
         return IsUsable(_selectable) ? _selectable : null;
+    }
+
+    private static float NormalizeScrollDelta(float _delta)
+    {
+        if (Mathf.Abs(_delta) > 10f)
+            return _delta / 120f;
+
+        return _delta;
     }
 
     private static bool IsInScope(GameObject _target, GameObject _scope)

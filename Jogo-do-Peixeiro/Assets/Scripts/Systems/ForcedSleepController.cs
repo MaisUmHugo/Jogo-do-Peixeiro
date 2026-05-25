@@ -1,9 +1,12 @@
+using System;
 using System.Collections;
 using TMPro;
 using UnityEngine;
 
 public class ForcedSleepController : MonoBehaviour
 {
+    public static event Action<ShipInventory, int, float, bool> FishLostDuringForcedSleep;
+
     [Header("References")]
     [SerializeField] private DayCycle _dayCycle;
     [SerializeField] private Transform _playerRoot;
@@ -12,6 +15,7 @@ public class ForcedSleepController : MonoBehaviour
     [SerializeField] private PlayerMove _playerMove;
     [SerializeField] private PlayerInteract _playerInteract;
     [SerializeField] private BoatController _boatController;
+    [SerializeField] private ShipInventory _shipInventory;
 
     [Header("Sleep")]
     [SerializeField] private Transform _forcedSleepPoint;
@@ -23,15 +27,50 @@ public class ForcedSleepController : MonoBehaviour
     [SerializeField] private bool _returnBoatToParkPointOnForcedSleep = true;
     [SerializeField] private Transform _boatParkPoint;
 
+    [Header("Forced Sleep Cargo Loss")]
+    [SerializeField] private bool _loseFishOnForcedSleep = true;
+    [SerializeField, Range(0f, 1f)] private float _forcedSleepFishLossRatio = 0.25f;
+    [SerializeField, Min(0)] private int _forcedSleepFishLossCount = 3;
+    [SerializeField] private int[] _forcedSleepFishLossRarityPriority = { 3, 2, 1 };
+    [SerializeField] private string _forcedSleepBoatFishLossWarning = "Você dormiu no barco e perdeu {0} {1}.";
+    [SerializeField] private string _forcedSleepFishLossWarning = "Sono forçado: você perdeu {0} {1}.";
+
+    [Header("Forced Sleep Explanation")]
+    [SerializeField] private TutorialPanelSequence _forcedSleepExplanationPanelSequence;
+    [SerializeField] private bool _showForcedSleepExplanationOnce = true;
+
     [Header("Fade Transition")]
     [SerializeField] private CanvasGroup _fadeCanvasGroup;
     [SerializeField] private TMP_Text _fadeText;
-    [SerializeField] private string _forcedSleepText = "Voce apagou de sono...";
+    [SerializeField] private string _forcedSleepText = "Você apagou de sono...";
+    [SerializeField] private string _regularSleepText = "Dormindo...";
     [SerializeField] private float _fadeInDuration = 0.6f;
     [SerializeField] private float _fadeHoldDuration = 0.8f;
     [SerializeField] private float _fadeOutDuration = 0.6f;
 
     private bool _isRunning;
+    private int _pendingLostFishCount;
+    private float _pendingLostFishWeight;
+    private bool _pendingFishLossWasOnBoat;
+    private bool _hasShownForcedSleepExplanation;
+
+    public bool IsRunning => _isRunning;
+
+    public static bool IsAnySleepTransitionRunning()
+    {
+        ForcedSleepController[] controllers = FindObjectsByType<ForcedSleepController>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None
+        );
+
+        for (int i = 0; i < controllers.Length; i++)
+        {
+            if (controllers[i] != null && controllers[i].IsRunning)
+                return true;
+        }
+
+        return false;
+    }
 
     private void Awake()
     {
@@ -58,10 +97,38 @@ public class ForcedSleepController : MonoBehaviour
         if (_isRunning)
             return;
 
+        if (ShouldShowForcedSleepExplanation())
+        {
+            _hasShownForcedSleepExplanation = true;
+            SetGameState(GameManager.GameState.InUI);
+            _forcedSleepExplanationPanelSequence.Show(BeginForcedSleepRoutine);
+            return;
+        }
+
+        BeginForcedSleepRoutine();
+    }
+
+    private void BeginForcedSleepRoutine()
+    {
+        if (_isRunning)
+            return;
+
         StartCoroutine(ForcedSleepRoutine());
     }
 
-    private IEnumerator ForcedSleepRoutine()
+    public bool StartRegularSleep(DayCycle _targetDayCycle = null)
+    {
+        if (_isRunning)
+            return false;
+
+        if (_targetDayCycle != null)
+            _dayCycle = _targetDayCycle;
+
+        StartCoroutine(RegularSleepRoutine());
+        return true;
+    }
+
+    private IEnumerator RegularSleepRoutine()
     {
         _isRunning = true;
         ResolveReferences();
@@ -69,20 +136,48 @@ public class ForcedSleepController : MonoBehaviour
         SetGameState(GameManager.GameState.InUI);
         ClosePanels();
         ResetInput();
-        PrepareFadeText();
+        PrepareFadeText(_regularSleepText);
+        yield return FadeTo(1f, _fadeInDuration);
+
+        if (_dayCycle != null)
+            _dayCycle.NextDay();
+
+        RegisterCurrentPositionAsSafeRespawn();
+        ResetInput();
+        yield return new WaitForSecondsRealtime(_fadeHoldDuration);
+        yield return FadeTo(0f, _fadeOutDuration);
+        SetFadeTextVisible(false);
+
+        SetGameState(GameManager.GameState.OnFoot);
+        _isRunning = false;
+    }
+
+    private IEnumerator ForcedSleepRoutine()
+    {
+        _isRunning = true;
+        ResolveReferences();
+        ResetPendingFishLoss();
+
+        SetGameState(GameManager.GameState.InUI);
+        ClosePanels();
+        ResetInput();
+        PrepareFadeText(_forcedSleepText);
         yield return FadeTo(1f, _fadeInDuration);
         CompleteDayCycleSleep();
 
         if (FishingManager.instance != null && FishingManager.instance.IsFishing)
             FishingManager.instance.CancelFishing();
 
-        if (_boatController != null && _boatController.IsPlayerOnBoat())
+        bool wasPlayerOnBoat = _boatController != null && _boatController.IsPlayerOnBoat();
+
+        if (wasPlayerOnBoat)
         {
             _boatController.ExitBoatForTeleport();
             ResolvePlayerReferences(true);
         }
 
         ReturnBoatToParkPoint();
+        ApplyForcedSleepFishLoss(wasPlayerOnBoat);
 
         SetPlayerControllerEnabled(false);
         SetCharacterControllerEnabled(false);
@@ -104,6 +199,7 @@ public class ForcedSleepController : MonoBehaviour
         SetPlayerControllerEnabled(true);
         ResetInput();
         Physics.SyncTransforms();
+        RegisterCurrentPositionAsSafeRespawn();
 
         if (_playerInteract != null)
             _playerInteract.RefreshInteractablesAfterTeleport();
@@ -114,6 +210,7 @@ public class ForcedSleepController : MonoBehaviour
 
         SetGameState(GameManager.GameState.OnFoot);
         _isRunning = false;
+        FlushPendingFishLossNotification();
     }
 
     private void CompleteDayCycleSleep()
@@ -131,6 +228,12 @@ public class ForcedSleepController : MonoBehaviour
         _playerRoot.rotation = _forcedSleepPoint.rotation;
     }
 
+    private void RegisterCurrentPositionAsSafeRespawn()
+    {
+        if (_playerMove != null && _playerRoot != null)
+            _playerMove.SetSafeRespawnPosition(_playerRoot.position);
+    }
+
     private void ResolveReferences()
     {
         if (_dayCycle == null)
@@ -143,6 +246,9 @@ public class ForcedSleepController : MonoBehaviour
 
         if (_boatParkPoint == null)
             _boatParkPoint = FindBoatParkPoint();
+
+        if (_shipInventory == null)
+            _shipInventory = FindFirstObjectByType<ShipInventory>(FindObjectsInactive.Include);
     }
 
     private Transform FindBoatParkPoint()
@@ -183,6 +289,99 @@ public class ForcedSleepController : MonoBehaviour
 
         _boatController.ReturnToParkPoint(_boatParkPoint);
         Physics.SyncTransforms();
+    }
+
+    private void ApplyForcedSleepFishLoss(bool _wasPlayerOnBoat)
+    {
+        if (!_loseFishOnForcedSleep || _shipInventory == null)
+            return;
+
+        if (_forcedSleepFishLossCount <= 0)
+        {
+            ApplyLegacyForcedSleepWeightLoss(_wasPlayerOnBoat);
+            return;
+        }
+
+        int removedCount = _shipInventory.RemoveFishByRarityPriority(
+            _forcedSleepFishLossCount,
+            _forcedSleepFishLossRarityPriority,
+            out float removedWeight
+        );
+
+        if (removedCount > 0)
+        {
+            StorePendingFishLoss(removedCount, removedWeight, _wasPlayerOnBoat);
+            Debug.Log($"Sono forçado removeu {removedCount} peixe(s), {removedWeight:0.#}kg de carga.");
+        }
+    }
+
+    private void ApplyLegacyForcedSleepWeightLoss(bool _wasPlayerOnBoat)
+    {
+        float currentWeight = _shipInventory.GetCurrentWeight();
+        float targetWeightLoss = currentWeight * Mathf.Clamp01(_forcedSleepFishLossRatio);
+
+        if (targetWeightLoss <= 0f)
+            return;
+
+        int removedCount = _shipInventory.RemoveFishUntilWeightLost(targetWeightLoss, out float removedWeight);
+
+        if (removedCount > 0)
+        {
+            StorePendingFishLoss(removedCount, removedWeight, _wasPlayerOnBoat);
+            Debug.Log($"Sono forçado removeu {removedCount} peixe(s), {removedWeight:0.#}kg de carga.");
+        }
+    }
+
+    private void StorePendingFishLoss(int _removedCount, float _removedWeight, bool _wasPlayerOnBoat)
+    {
+        _pendingLostFishCount += Mathf.Max(0, _removedCount);
+        _pendingLostFishWeight += Mathf.Max(0f, _removedWeight);
+        _pendingFishLossWasOnBoat |= _wasPlayerOnBoat;
+    }
+
+    private void FlushPendingFishLossNotification()
+    {
+        if (_pendingLostFishCount <= 0)
+            return;
+
+        ShowForcedSleepFishLossWarning();
+        FishLostDuringForcedSleep?.Invoke(
+            _shipInventory,
+            _pendingLostFishCount,
+            _pendingLostFishWeight,
+            _pendingFishLossWasOnBoat
+        );
+
+        ResetPendingFishLoss();
+    }
+
+    private void ShowForcedSleepFishLossWarning()
+    {
+        string fishLabel = _pendingLostFishCount == 1 ? "peixe" : "peixes";
+        string format = _pendingFishLossWasOnBoat
+            ? _forcedSleepBoatFishLossWarning
+            : _forcedSleepFishLossWarning;
+        string message = string.Format(format, _pendingLostFishCount, fishLabel);
+
+        if (HUDWarningUI.Instance != null)
+            HUDWarningUI.Instance.ShowWarning(message);
+        else
+            Debug.Log(message);
+    }
+
+    private void ResetPendingFishLoss()
+    {
+        _pendingLostFishCount = 0;
+        _pendingLostFishWeight = 0f;
+        _pendingFishLossWasOnBoat = false;
+    }
+
+    private bool ShouldShowForcedSleepExplanation()
+    {
+        if (_forcedSleepExplanationPanelSequence == null)
+            return false;
+
+        return !_showForcedSleepExplanationOnce || !_hasShownForcedSleepExplanation;
     }
 
     private void ResolvePlayerReferences(bool _forceRefresh)
@@ -284,11 +483,11 @@ public class ForcedSleepController : MonoBehaviour
             GameManager.instance.SetState(_state);
     }
 
-    private void PrepareFadeText()
+    private void PrepareFadeText(string _text)
     {
         if (_fadeText != null)
         {
-            _fadeText.text = _forcedSleepText;
+            _fadeText.text = _text;
             SetFadeTextVisible(true);
         }
     }

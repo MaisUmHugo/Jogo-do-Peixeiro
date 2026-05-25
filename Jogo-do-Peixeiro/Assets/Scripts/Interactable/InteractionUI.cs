@@ -35,6 +35,9 @@ public class InteractionUI : MonoBehaviour
         if (_interactIconImage == null && interactButton != null)
             _interactIconImage = interactButton.GetComponentInChildren<Image>();
 
+        if (_iconDatabase == null)
+            _iconDatabase = FindFirstObjectByType<InputIconDatabase>(FindObjectsInactive.Include);
+
         UpdateIcon(true);
         Hide();
     }
@@ -115,6 +118,9 @@ public class InteractionUI : MonoBehaviour
 
     private void UpdateIcon(bool _force)
     {
+        if (_iconDatabase == null)
+            _iconDatabase = FindFirstObjectByType<InputIconDatabase>(FindObjectsInactive.Include);
+
         if (_iconDatabase == null || _interactIconImage == null)
             return;
 

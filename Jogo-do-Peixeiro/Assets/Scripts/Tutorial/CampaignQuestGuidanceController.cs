@@ -1,4 +1,5 @@
 using System;
+using System.Collections;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
@@ -35,6 +36,17 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private bool failWhenDeadlineEnds = true;
     [SerializeField] private bool useCampaignEconomyFlow = true;
     [SerializeField] private bool useBasicPanelSequence;
+    [Tooltip("Desliga temporariamente os slides iniciais mesmo se useBasicPanelSequence estiver ligado no prefab/cena.")]
+    [SerializeField] private bool skipBasicPanelSequenceForNow = true;
+
+    [Header("Tutorial Slides")]
+    [SerializeField] private bool showTutorialSlidePanels = true;
+    [SerializeField] private TutorialPanelSequence introPanelSequence;
+    [SerializeField] private TutorialPanelSequence questReceivedPanelSequence;
+    [SerializeField] private TutorialPanelSequence boatAndFishingPanelSequence;
+    [SerializeField] private TutorialPanelSequence dockShopPanelSequence;
+    [SerializeField] private TutorialPanelSequence debtPaymentPanelSequence;
+    [SerializeField] private bool showEachTutorialSlidePanelOnce = true;
 
     [Header("Mission")]
     [SerializeField] private FishingAreaDefinition tutorialFishingArea;
@@ -51,18 +63,20 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private TutorialPanelSequence basicPanelSequence;
     [SerializeField] private DayCycle dayCycle;
     [SerializeField] private ShipInventory shipInventory;
+    [SerializeField] private PlayerMoneyManager playerMoneyManager;
     [SerializeField] private CampaignProgressSystem campaignProgress;
 
     [Header("Outcome Panel")]
     [SerializeField] private bool pauseGameOnCompletion;
     [SerializeField] private bool pauseGameOnFailure = true;
     [SerializeField] private GameOutcomePanelUI generalOutcomePanel;
-    [SerializeField] private string tutorialCompleteTitle = "Tutorial concluido";
-    [SerializeField] private string tutorialCompleteMessage = "Voce concluiu o tutorial.";
+    [SerializeField] private string tutorialCompleteTitle = "Tutorial concluído";
+    [SerializeField] private string tutorialCompleteMessage = "Você concluiu o tutorial.";
     [SerializeField] private string tutorialFailureTitle = "Falha na quest";
     [SerializeField] private string tutorialFailureMessage = "O prazo acabou antes de concluir a meta.";
 
     [Header("Dialogs")]
+    [SerializeField] private bool useDialogs;
     [SerializeField] private DialogSequenceData firstTalkDialog;
     [SerializeField] private DialogSequenceData noDeliveryDialog;
     [SerializeField] private DialogSequenceData readyToDeliverDialog;
@@ -71,6 +85,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [Header("Objective Markers")]
     [SerializeField] private GameObject moneyLenderCabinMarker;
     [SerializeField] private GameObject dockMarker;
+    [SerializeField] private GameObject dockOwnerMarker;
     [SerializeField] private GameObject moneyLenderMarker;
 
     [Header("Scene")]
@@ -85,6 +100,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     private bool isFinishingDelivery;
     private bool isShowingEndPanel;
     private bool isCampaignSubscribed;
+    private Coroutine pendingOutcomeRoutine;
+    private bool hasShownIntroSlides;
+    private bool hasShownQuestReceivedSlides;
+    private bool hasShownBoatAndFishingSlides;
+    private bool hasShownDockShopSlides;
+    private bool hasShownDebtPaymentSlides;
+    private bool shouldShowDebtPaymentSlidesOnDockOwnerClose;
 
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
@@ -138,7 +160,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         TutorialEvents.BoatEntered += NotifyEnteredBoat;
         TutorialEvents.BoatExited += NotifyExitedBoat;
         TutorialEvents.FishCaught += NotifyFishCaught;
+        ForcedSleepController.FishLostDuringForcedSleep += HandleForcedSleepFishLoss;
         FishMarket.OnAnySaleCompleted += HandleFishMarketSaleCompleted;
+        DockOwnerUI.AnyClosed += HandleDockOwnerClosed;
         TrySubscribeCampaignProgress();
 
         if (dayCycle != null)
@@ -147,13 +171,21 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void OnDisable()
     {
+        if (pendingOutcomeRoutine != null)
+        {
+            StopCoroutine(pendingOutcomeRoutine);
+            pendingOutcomeRoutine = null;
+        }
+
         TutorialEvents.MoneyLenderInteractionRequested -= HandleMoneyLenderInteraction;
         TutorialEvents.BoatEntryBlockRequested -= ShouldBlockBoatEntry;
         TutorialEvents.BoatEntryBlocked -= HandleBoatEntryBlocked;
         TutorialEvents.BoatEntered -= NotifyEnteredBoat;
         TutorialEvents.BoatExited -= NotifyExitedBoat;
         TutorialEvents.FishCaught -= NotifyFishCaught;
+        ForcedSleepController.FishLostDuringForcedSleep -= HandleForcedSleepFishLoss;
         FishMarket.OnAnySaleCompleted -= HandleFishMarketSaleCompleted;
+        DockOwnerUI.AnyClosed -= HandleDockOwnerClosed;
         UnsubscribeCampaignProgress();
 
         if (dayCycle != null)
@@ -174,6 +206,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         SetObjectiveVisible(true);
         SetStep(TutorialStep.GoToMoneyLenderCabin);
+        ShowIntroSlides();
     }
 
     private void Update()
@@ -188,6 +221,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     public void SetStep(TutorialStep _newStep)
     {
+        if (_newStep == TutorialStep.ReadBasicPanels && !ShouldUseBasicPanelSequence())
+            _newStep = TutorialStep.GoToBoat;
+
         if (IsTutorialFinished && _newStep != TutorialStep.Finished)
             return;
 
@@ -197,6 +233,29 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         currentStep = _newStep;
         UpdateObjectiveText();
         UpdateMarkers();
+        HandleTutorialSlideEventsForStep(_newStep);
+    }
+
+    public void DebugDisableTutorial()
+    {
+        runTutorial = false;
+        IsTutorialFinished = true;
+        IsTutorialFailed = false;
+        isFinishingDelivery = false;
+        isShowingEndPanel = false;
+        currentStep = TutorialStep.Finished;
+
+        if (pendingOutcomeRoutine != null)
+        {
+            StopCoroutine(pendingOutcomeRoutine);
+            pendingOutcomeRoutine = null;
+        }
+
+        if (generalOutcomePanel != null && generalOutcomePanel.IsShowing)
+            generalOutcomePanel.Close();
+
+        ClearMarkers();
+        SetObjectiveVisible(false);
     }
 
     public void NotifyReachedMoneyLenderCabin()
@@ -212,7 +271,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (currentStep == TutorialStep.GoToBoat)
             SetStep(IsCampaignEconomyFlowActive() && HasEnoughFishValueForQuestGoal()
-                ? TutorialStep.ReturnToDock
+                ? TutorialStep.GoToDockOwner
                 : TutorialStep.GoToFishingSpot);
     }
 
@@ -230,7 +289,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             }
 
             SetStep(HasEnoughFishValueForQuestGoal()
-                ? TutorialStep.ReturnToDock
+                ? TutorialStep.GoToDockOwner
                 : TutorialStep.GoToBoat);
             return;
         }
@@ -372,9 +431,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (!hasSoldFishToDockOwner)
         {
             if (HasEnoughFishValueForQuestGoal())
-                ShowWarning("Venda os peixes no dono da doca antes de pagar o cobrador.");
+            {
+                AdvanceToDockOwnerMarket("Venda os peixes no mercado do dono da doca antes de pagar o cobrador.");
+            }
             else
-                ShowWarning("Pesque peixes suficientes para vender e pagar a meta da divida.");
+            {
+                ShowWarning("Pesque peixes suficientes para vender e pagar a meta da dívida.");
+            }
 
             UpdateObjectiveText();
             return true;
@@ -382,6 +445,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         SetStep(TutorialStep.PayDebt);
         OpenTutorialPaymentUI(_moneyLender, _paymentUI, _moneyLenderUI);
+
+        if (_paymentUI != null)
+            _paymentUI.ShowStatusMessage("Objetivo avançou: pague a meta da dívida.");
+        else
+            ShowWarning("Objetivo avançou: pague a meta da dívida no cobrador.");
+
         return true;
     }
 
@@ -392,7 +461,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         return !hasAcceptedRequest ||
                currentStep == TutorialStep.GoToMoneyLenderCabin ||
-               (useBasicPanelSequence && currentStep == TutorialStep.ReadBasicPanels);
+               (ShouldUseBasicPanelSequence() && currentStep == TutorialStep.ReadBasicPanels);
     }
 
     private void HandleBoatEntryBlocked()
@@ -400,7 +469,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (!IsTutorialRunning)
             return;
 
-        string message = useBasicPanelSequence && currentStep == TutorialStep.ReadBasicPanels
+        string message = ShouldUseBasicPanelSequence() && currentStep == TutorialStep.ReadBasicPanels
             ? "Leia as instruções antes de pegar o barco."
             : "Fale com o cobrador antes de pegar o barco.";
 
@@ -419,7 +488,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             if (HasEnoughFishValueForQuestGoal())
             {
-                SetStep(TutorialStep.ReturnToDock);
+                AdvanceToDockOwnerMarket("Peixes suficientes. Venda no mercado do dono da doca.");
                 return;
             }
 
@@ -487,6 +556,25 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (_earnedMoney <= 0)
             return;
 
+        if (!HasEnoughMoneyForQuestGoal())
+        {
+            hasSoldFishToDockOwner = false;
+            shouldShowDebtPaymentSlidesOnDockOwnerClose = false;
+
+            int remainingPayment = GetQuestDebtPaymentRemaining();
+            int currentMoney = GetCurrentPlayerMoney();
+            int missingMoney = Mathf.Max(0, remainingPayment - currentMoney);
+
+            SetStep(HasEnoughAvailableValueForQuestGoal()
+                ? TutorialStep.GoToDockOwner
+                : TutorialStep.GoToBoat);
+
+            if (missingMoney > 0)
+                ShowWarning($"Peixes vendidos. Ainda faltam R$ {missingMoney} para pagar a meta.");
+
+            return;
+        }
+
         hasSoldFishToDockOwner = true;
 
         if (currentStep == TutorialStep.ReturnToDock ||
@@ -497,11 +585,64 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             currentStep == TutorialStep.CatchRequiredFish)
         {
             SetStep(TutorialStep.TalkToMoneyLender);
-            ShowWarning("Peixes vendidos. Volte ao cobrador e pague a divida.");
+            shouldShowDebtPaymentSlidesOnDockOwnerClose = true;
+            ShowWarning("Peixes vendidos. Volte ao cobrador e pague a dívida.");
             return;
         }
 
         UpdateObjectiveText();
+    }
+
+    private void HandleDockOwnerClosed(DockOwnerUI _dockOwnerUI)
+    {
+        if (!shouldShowDebtPaymentSlidesOnDockOwnerClose)
+            return;
+
+        shouldShowDebtPaymentSlidesOnDockOwnerClose = false;
+
+        if (!IsTutorialRunning ||
+            !hasAcceptedRequest ||
+            !IsCampaignEconomyFlowActive() ||
+            !hasSoldFishToDockOwner)
+        {
+            return;
+        }
+
+        ShowDebtPaymentSlides();
+    }
+
+    private void HandleForcedSleepFishLoss(ShipInventory _shipInventory, int _lostFishCount, float _lostFishWeight, bool _wasPlayerOnBoat)
+    {
+        if (!IsTutorialRunning ||
+            !hasAcceptedRequest ||
+            !IsCampaignEconomyFlowActive() ||
+            hasSoldFishToDockOwner ||
+            _lostFishCount <= 0)
+        {
+            return;
+        }
+
+        if (_shipInventory != null)
+            shipInventory = _shipInventory;
+
+        if (HasEnoughFishValueForQuestGoal())
+        {
+            UpdateObjectiveText();
+            return;
+        }
+
+        SetStep(TutorialStep.GoToBoat);
+    }
+
+    private void AdvanceToDockOwnerMarket(string _message = null)
+    {
+        bool alreadyPointingToMarket = currentStep == TutorialStep.GoToDockOwner ||
+                                      currentStep == TutorialStep.SellFish;
+
+        SetStep(TutorialStep.GoToDockOwner);
+
+        if (!alreadyPointingToMarket && !string.IsNullOrWhiteSpace(_message))
+            ShowWarning(_message);
     }
 
     private void HandleCampaignQuestDeadlineExpired()
@@ -523,27 +664,29 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         hasSoldFishToDockOwner = false;
         tutorialStartDay = dayCycle != null ? dayCycle.ElapsedDays : tutorialStartDay;
 
-        if (useBasicPanelSequence)
-            SetStep(TutorialStep.ReadBasicPanels);
-
         ShowDialog(firstTalkDialog, () =>
         {
-            if (useBasicPanelSequence && basicPanelSequence != null)
+            ShowQuestReceivedSlides(() =>
             {
-                basicPanelSequence.Show(() =>
+                ShowBoatAndFishingSlides(() =>
                 {
                     FinishDeliveryRequestIntro(_moneyLender, _paymentUI, _moneyLenderUI);
                 });
-                return;
-            }
-
-            FinishDeliveryRequestIntro(_moneyLender, _paymentUI, _moneyLenderUI);
+            });
         }, GetDialogFocusTarget(_moneyLender));
     }
 
     private void FinishDeliveryRequestIntro(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
         SetStep(TutorialStep.GoToBoat);
+
+        if (IsCampaignEconomyFlowActive())
+        {
+            OpenTutorialPaymentUI(_moneyLender, _paymentUI, _moneyLenderUI);
+            ShowWarning("Meta recebida. Vá até a doca e pegue o barco.");
+            return;
+        }
+
         OpenTutorialPaymentUI(_moneyLender, _paymentUI, _moneyLenderUI);
     }
 
@@ -757,6 +900,66 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     #region Tutorial Completion And Panels
 
+    private void HandleTutorialSlideEventsForStep(TutorialStep _step)
+    {
+        if (!IsTutorialRunning || !hasAcceptedRequest)
+            return;
+
+        if (_step == TutorialStep.GoToDockOwner || _step == TutorialStep.SellFish)
+            ShowDockShopSlides();
+    }
+
+    private void ShowIntroSlides(Action _onFinished = null)
+    {
+        TutorialPanelSequence sequence = introPanelSequence != null
+            ? introPanelSequence
+            : ShouldUseBasicPanelSequence()
+                ? basicPanelSequence
+                : null;
+
+        ShowTutorialPanelOnce(sequence, ref hasShownIntroSlides, _onFinished);
+    }
+
+    private void ShowQuestReceivedSlides(Action _onFinished = null)
+    {
+        ShowTutorialPanelOnce(questReceivedPanelSequence, ref hasShownQuestReceivedSlides, _onFinished);
+    }
+
+    private void ShowBoatAndFishingSlides(Action _onFinished = null)
+    {
+        ShowTutorialPanelOnce(boatAndFishingPanelSequence, ref hasShownBoatAndFishingSlides, _onFinished);
+    }
+
+    private void ShowDockShopSlides(Action _onFinished = null)
+    {
+        ShowTutorialPanelOnce(dockShopPanelSequence, ref hasShownDockShopSlides, _onFinished);
+    }
+
+    private void ShowDebtPaymentSlides(Action _onFinished = null)
+    {
+        ShowTutorialPanelOnce(debtPaymentPanelSequence, ref hasShownDebtPaymentSlides, _onFinished);
+    }
+
+    private void ShowTutorialPanelOnce(TutorialPanelSequence _sequence, ref bool _hasShown, Action _onFinished)
+    {
+        if (!CanShowTutorialPanel(_sequence, _hasShown))
+        {
+            _onFinished?.Invoke();
+            return;
+        }
+
+        _hasShown = true;
+        _sequence.Show(_onFinished);
+    }
+
+    private bool CanShowTutorialPanel(TutorialPanelSequence _sequence, bool _hasShown)
+    {
+        if (!showTutorialSlidePanels || _sequence == null)
+            return false;
+
+        return !showEachTutorialSlidePanelOnce || !_hasShown;
+    }
+
     private void ShowMissingRequestMessage(bool _showDialog = true)
     {
         int ownedRequestedFish = GetOwnedRequestedFishCount();
@@ -784,7 +987,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (shouldHideGuidanceAndContinue)
         {
-            ShowWarning("Tutorial concluido!");
+            ShowWarning("Tutorial concluído!");
             return;
         }
 
@@ -815,6 +1018,29 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     }
 
     private void ShowOutcome(bool _isFailure, string _title, string _message, bool _pauseGame)
+    {
+        if (ForcedSleepController.IsAnySleepTransitionRunning())
+        {
+            if (pendingOutcomeRoutine != null)
+                StopCoroutine(pendingOutcomeRoutine);
+
+            pendingOutcomeRoutine = StartCoroutine(ShowOutcomeAfterSleep(_isFailure, _title, _message, _pauseGame));
+            return;
+        }
+
+        ShowOutcomeImmediate(_isFailure, _title, _message, _pauseGame);
+    }
+
+    private IEnumerator ShowOutcomeAfterSleep(bool _isFailure, string _title, string _message, bool _pauseGame)
+    {
+        while (ForcedSleepController.IsAnySleepTransitionRunning())
+            yield return null;
+
+        pendingOutcomeRoutine = null;
+        ShowOutcomeImmediate(_isFailure, _title, _message, _pauseGame);
+    }
+
+    private void ShowOutcomeImmediate(bool _isFailure, string _title, string _message, bool _pauseGame)
     {
         if (textCanvaManager != null)
             textCanvaManager.CloseDialog();
@@ -856,7 +1082,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void ShowDialog(DialogSequenceData _dialogData, Action _onFinished = null, DialogCameraFocusTarget _cameraFocusTarget = null)
     {
-        if (textCanvaManager == null ||
+        if (!useDialogs ||
+            textCanvaManager == null ||
             _dialogData == null ||
             !_dialogData.HasLines)
         {
@@ -921,6 +1148,14 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         return shipInventory != null ? shipInventory.GetTotalFishValue() : 0;
     }
 
+    private int GetCurrentPlayerMoney()
+    {
+        if (playerMoneyManager == null)
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>(FindObjectsInactive.Include);
+
+        return playerMoneyManager != null ? Mathf.FloorToInt(playerMoneyManager.PlayerMoney) : 0;
+    }
+
     private int GetQuestDebtPaymentRemaining()
     {
         if (campaignProgress == null)
@@ -940,6 +1175,26 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return true;
 
         return GetCurrentFishInventoryValue() >= remainingPayment;
+    }
+
+    private bool HasEnoughMoneyForQuestGoal()
+    {
+        int remainingPayment = GetQuestDebtPaymentRemaining();
+
+        if (remainingPayment <= 0)
+            return true;
+
+        return GetCurrentPlayerMoney() >= remainingPayment;
+    }
+
+    private bool HasEnoughAvailableValueForQuestGoal()
+    {
+        int remainingPayment = GetQuestDebtPaymentRemaining();
+
+        if (remainingPayment <= 0)
+            return true;
+
+        return GetCurrentPlayerMoney() + GetCurrentFishInventoryValue() >= remainingPayment;
     }
 
     private string GetRequestedFishName()
@@ -963,17 +1218,17 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         switch (currentStep)
         {
             case TutorialStep.GoToMoneyLenderCabin:
-                tutorialUI.SetObjectiveText("Fale com o cobrador para iniciar a primeira cobranca.");
+                tutorialUI.SetObjectiveText("Fale com o cobrador.");
                 break;
 
             case TutorialStep.ReadBasicPanels:
             case TutorialStep.GoToBoat:
-                tutorialUI.SetObjectiveText("Va ate a doca e pegue o barco.");
+                tutorialUI.SetObjectiveText("Vá até a doca e pegue o barco.");
                 break;
 
             case TutorialStep.GoToFishingSpot:
             case TutorialStep.CatchRequiredFish:
-                tutorialUI.SetObjectiveText($"Pesque peixes para vender. Meta: R$ {paidAmount}/{debtTarget}. Valor no barco: R$ {fishValue}/{remainingDebtPayment}.");
+                tutorialUI.SetObjectiveText($"Pesque até juntar o valor suficiente. Valor dos peixes atuais: R$ {fishValue}/{remainingDebtPayment}. Meta: R$ {paidAmount}/{debtTarget}.");
                 break;
 
             case TutorialStep.ReturnToDock:
@@ -982,15 +1237,15 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
             case TutorialStep.GoToDockOwner:
             case TutorialStep.SellFish:
-                tutorialUI.SetObjectiveText("Venda os peixes ao dono da doca.");
+                tutorialUI.SetObjectiveText("Venda os peixes na loja do dono da doca.");
                 break;
 
             case TutorialStep.TalkToMoneyLender:
-                tutorialUI.SetObjectiveText("Volte ao cobrador para pagar a meta da divida.");
+                tutorialUI.SetObjectiveText("Volte ao cobrador.");
                 break;
 
             case TutorialStep.PayDebt:
-                tutorialUI.SetObjectiveText($"Pague a meta da divida ao cobrador. Falta: R$ {remainingDebtPayment}.");
+                tutorialUI.SetObjectiveText($"Pague a meta da dívida ao cobrador. Dívida da quest: R$ {remainingDebtPayment}.");
                 break;
 
             case TutorialStep.Failed:
@@ -1053,7 +1308,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
             case TutorialStep.TalkToMoneyLender:
                 tutorialUI.SetObjectiveText(IsCampaignEconomyFlowActive()
-                    ? "Volte ao cobrador para pagar a divida da quest."
+                    ? "Volte ao cobrador para pagar a dívida da quest."
                     : "Fale com o cobrador para entregar o pedido.");
                 break;
 
@@ -1071,7 +1326,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
             case TutorialStep.PayDebt:
                 int remainingDebtPayment = campaignProgress != null ? campaignProgress.QuestDebtPaymentRemaining : 0;
-                tutorialUI.SetObjectiveText($"Pague a divida da quest ao cobrador. Falta: R$ {remainingDebtPayment}.");
+                tutorialUI.SetObjectiveText($"Pague a dívida da quest ao cobrador. Dívida da quest: R$ {remainingDebtPayment}.");
                 break;
 
             case TutorialStep.Finished:
@@ -1095,7 +1350,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         switch (currentStep)
         {
             case TutorialStep.GoToMoneyLenderCabin:
-                SetMarkerActive(moneyLenderCabinMarker, true);
+                SetFirstAvailableMarkerActive(moneyLenderCabinMarker, moneyLenderMarker);
                 break;
 
             case TutorialStep.GoToBoat:
@@ -1107,15 +1362,18 @@ public class CampaignQuestGuidanceController : MonoBehaviour
                 break;
 
             case TutorialStep.ReturnToDock:
+                SetMarkerActive(dockMarker, true);
+                break;
+
             case TutorialStep.GoToDockOwner:
             case TutorialStep.SellFish:
-                SetMarkerActive(dockMarker, true);
+                SetFirstAvailableMarkerActive(dockOwnerMarker, dockMarker);
                 break;
 
             case TutorialStep.TalkToMoneyLender:
             case TutorialStep.DeliverFish:
             case TutorialStep.PayDebt:
-                SetMarkerActive(moneyLenderMarker, true);
+                SetFirstAvailableMarkerActive(moneyLenderMarker, moneyLenderCabinMarker);
                 break;
         }
     }
@@ -1124,7 +1382,23 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         SetMarkerActive(moneyLenderCabinMarker, false);
         SetMarkerActive(dockMarker, false);
+        SetMarkerActive(dockOwnerMarker, false);
         SetMarkerActive(moneyLenderMarker, false);
+    }
+
+    private void SetFirstAvailableMarkerActive(params GameObject[] _markers)
+    {
+        if (_markers == null)
+            return;
+
+        foreach (GameObject marker in _markers)
+        {
+            if (marker == null)
+                continue;
+
+            SetMarkerActive(marker, true);
+            return;
+        }
     }
 
     private void SetMarkerActive(GameObject _marker, bool _active)
@@ -1148,6 +1422,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
                campaignProgress.IsCurrentQuestTutorial &&
                !campaignProgress.HasFailedCurrentQuest &&
                !campaignProgress.IsCampaignCompleted;
+    }
+
+    private bool ShouldUseBasicPanelSequence()
+    {
+        return useBasicPanelSequence &&
+               !skipBasicPanelSequenceForNow &&
+               basicPanelSequence != null;
     }
 
     private bool IsCampaignEconomyTutorialEnabled()

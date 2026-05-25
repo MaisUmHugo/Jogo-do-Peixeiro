@@ -34,6 +34,7 @@ public class FishSkillCheckUI : MonoBehaviour
     [SerializeField] private Vector2 _skillCheckIconOffset;
     [SerializeField] private float _skillCheckIconPulseSpeed = 6f;
     [SerializeField] private float _skillCheckIconPulseScale = 0.12f;
+    [SerializeField, Min(1)] private int _successfulSkillChecksBeforeHidingHint = 5;
 
     [Header("Runtime Fallback")]
     [SerializeField] private bool _allowRuntimeFallback;
@@ -84,6 +85,7 @@ public class FishSkillCheckUI : MonoBehaviour
     private bool hasRandomTimingPosition;
     private bool wasSkillCheckActive;
     private bool hasLearnedSkillCheckInput;
+    private int successfulSkillCheckHintCount;
     private RectTransform skillCheckInteractIconRect;
     private bool hasLoggedMissingSkillCheckIcon;
 
@@ -101,6 +103,7 @@ public class FishSkillCheckUI : MonoBehaviour
         _skillCheckIconRadiusOffset = Mathf.Max(0f, _skillCheckIconRadiusOffset);
         _skillCheckIconPulseSpeed = Mathf.Max(0f, _skillCheckIconPulseSpeed);
         _skillCheckIconPulseScale = Mathf.Max(0f, _skillCheckIconPulseScale);
+        _successfulSkillChecksBeforeHidingHint = Mathf.Max(1, _successfulSkillChecksBeforeHidingHint);
         shakeDuration = Mathf.Max(0f, shakeDuration);
         shakeStrength = Mathf.Max(0f, shakeStrength);
         minRandomPositionDistance = Mathf.Max(0f, minRandomPositionDistance);
@@ -492,8 +495,13 @@ public class FishSkillCheckUI : MonoBehaviour
             resultado == FishSkillCheck.FeedbackResult.Great ||
             resultado == FishSkillCheck.FeedbackResult.Perfect)
         {
-            hasLearnedSkillCheckInput = true;
-            SetSkillCheckHintVisible(false);
+            successfulSkillCheckHintCount++;
+
+            if (successfulSkillCheckHintCount >= _successfulSkillChecksBeforeHidingHint)
+            {
+                hasLearnedSkillCheckInput = true;
+                SetSkillCheckHintVisible(false);
+            }
         }
 
         switch (resultado)

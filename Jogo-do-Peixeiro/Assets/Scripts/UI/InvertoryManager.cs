@@ -53,6 +53,8 @@ public class InvertoryManager : MonoBehaviour
     [SerializeField] private ScrollRect discardFishScrollRect;
     [SerializeField] private ScrollRect baitScrollRect;
     [SerializeField, Min(0f)] private float selectionScrollPadding = 24f;
+    [SerializeField, Min(1f)] private float mouseWheelScrollPixels = 140f;
+    [SerializeField, Min(0f)] private float manualScrollSelectionFollowDelay = 0.8f;
 
     [Header("Fish Discard")]
     [SerializeField] private GameObject discardModePanel;
@@ -117,6 +119,7 @@ public class InvertoryManager : MonoBehaviour
     private bool isDiscardMode;
     private bool isDiscardConfirmVisible;
     private GameObject lastScrolledSelection;
+    private float suppressSelectionScrollUntil;
 
     #endregion
 
@@ -182,6 +185,7 @@ public class InvertoryManager : MonoBehaviour
 
     private void Update()
     {
+        HandleMouseWheelScroll();
         RecoverSelectionFromMoveInput();
         KeepCurrentSelectionVisible();
     }
@@ -193,6 +197,8 @@ public class InvertoryManager : MonoBehaviour
 
         selectionRecoveryMoveThreshold = Mathf.Clamp01(selectionRecoveryMoveThreshold);
         selectionScrollPadding = Mathf.Max(0f, selectionScrollPadding);
+        mouseWheelScrollPixels = Mathf.Max(1f, mouseWheelScrollPixels);
+        manualScrollSelectionFollowDelay = Mathf.Max(0f, manualScrollSelectionFollowDelay);
     }
 
     #endregion
@@ -1012,20 +1018,12 @@ public class InvertoryManager : MonoBehaviour
         if (inventoryText != null)
             inventoryText.text = hasGridSlots && hasFish ? string.Empty : GetFishInventoryText();
 
-        if (kilogramText != null)
-        {
-            float currentWeight = shipInventory != null ? shipInventory.GetCurrentWeight() : 0f;
-            float maxWeight = shipInventory != null ? shipInventory.GetMaxCapacity() : 0f;
-            kilogramText.text = maxWeight > 0f
-                ? $"Peixes: {currentWeight:0.#}/{maxWeight:0.#} kg"
-                : $"Peixes: {currentWeight:0.#} kg";
-            kilogramText.color = GetWeightTextColor(currentWeight, maxWeight);
-        }
+        SetInventoryWeightText();
 
-        if (baitInventoryText != null)
+        if (baitInventoryText != null && baitInventoryText != inventoryText)
             baitInventoryText.text = string.Empty;
 
-        if (equippedBaitText != null)
+        if (HasDedicatedEquippedBaitText())
             equippedBaitText.text = string.Empty;
 
         ValidateSelectedFishIndexes();
@@ -1045,16 +1043,40 @@ public class InvertoryManager : MonoBehaviour
 
         string equippedText = GetEquippedBaitText();
 
-        if (kilogramText != null && hasStoredKilogramTextColor)
-            kilogramText.color = kilogramTextDefaultColor;
+        SetInventoryWeightText();
 
-        if (equippedBaitText != null)
+        if (HasDedicatedEquippedBaitText())
+        {
             equippedBaitText.text = equippedText;
-        else if (kilogramText != null)
-            kilogramText.text = equippedText;
+        }
+        else if (targetText != null && !string.IsNullOrWhiteSpace(equippedText))
+        {
+            targetText.text = string.IsNullOrWhiteSpace(targetText.text)
+                ? equippedText
+                : $"{targetText.text}\n{equippedText}";
+        }
 
         RefreshBaitButtons();
         RefreshBaitGrid();
+    }
+
+    private void SetInventoryWeightText()
+    {
+        if (kilogramText == null)
+            return;
+
+        float currentWeight = shipInventory != null ? shipInventory.GetCurrentWeight() : 0f;
+        float maxWeight = shipInventory != null ? shipInventory.GetMaxCapacity() : 0f;
+
+        kilogramText.text = maxWeight > 0f
+            ? $"Peso: {currentWeight:0.#}/{maxWeight:0.#} kg"
+            : $"Peso: {currentWeight:0.#} kg";
+        kilogramText.color = GetWeightTextColor(currentWeight, maxWeight);
+    }
+
+    private bool HasDedicatedEquippedBaitText()
+    {
+        return equippedBaitText != null && equippedBaitText != kilogramText;
     }
 
     private void RefreshFishGrid()
@@ -2051,8 +2073,13 @@ public class InvertoryManager : MonoBehaviour
 
     private void KeepCurrentSelectionVisible()
     {
-        if (!keepSelectionVisibleInScroll || !IsInventoryVisible() || EventSystem.current == null)
+        if (!keepSelectionVisibleInScroll ||
+            !IsInventoryVisible() ||
+            Time.unscaledTime < suppressSelectionScrollUntil ||
+            EventSystem.current == null)
+        {
             return;
+        }
 
         GameObject selectedObject = EventSystem.current.currentSelectedGameObject;
 
@@ -2075,6 +2102,38 @@ public class InvertoryManager : MonoBehaviour
         Canvas.ForceUpdateCanvases();
         ScrollRectToChild(scrollRect, selectedRect, selectedObject != lastScrolledSelection);
         lastScrolledSelection = selectedObject;
+    }
+
+    private void HandleMouseWheelScroll()
+    {
+        if (!IsInventoryVisible() || isDiscardConfirmVisible)
+            return;
+
+        float scrollDelta = UISelectionHelper.GetMouseScrollDeltaY();
+
+        if (Mathf.Abs(scrollDelta) <= 0.01f)
+            return;
+
+        ScrollRect scrollRect = GetActiveMouseWheelScrollRect();
+
+        if (!UISelectionHelper.ApplyMouseWheelScroll(scrollRect, scrollDelta, mouseWheelScrollPixels))
+            return;
+
+        suppressSelectionScrollUntil = Time.unscaledTime + manualScrollSelectionFollowDelay;
+        lastScrolledSelection = null;
+    }
+
+    private ScrollRect GetActiveMouseWheelScrollRect()
+    {
+        ResolveScrollRects();
+
+        if (isDiscardMode && discardModePanel != null && discardModePanel.activeInHierarchy)
+            return discardFishScrollRect;
+
+        if (currentTab == InventoryTab.Baits)
+            return baitScrollRect;
+
+        return fishScrollRect;
     }
 
     private ScrollRect GetScrollRectForSelection(GameObject _selectedObject)

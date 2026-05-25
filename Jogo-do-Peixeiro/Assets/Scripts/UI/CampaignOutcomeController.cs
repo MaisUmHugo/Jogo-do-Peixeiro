@@ -1,3 +1,4 @@
+using System.Collections;
 using UnityEngine;
 
 public class CampaignOutcomeController : MonoBehaviour
@@ -25,6 +26,7 @@ public class CampaignOutcomeController : MonoBehaviour
     private bool isSubscribed;
     private bool hasShownQuestFailure;
     private bool hasShownCampaignCompletion;
+    private Coroutine pendingQuestFailureRoutine;
 
     #endregion
 
@@ -41,8 +43,20 @@ public class CampaignOutcomeController : MonoBehaviour
         Subscribe();
     }
 
+    private void Start()
+    {
+        ResolveReferences();
+        TryShowCurrentOutcome(false);
+    }
+
     private void OnDisable()
     {
+        if (pendingQuestFailureRoutine != null)
+        {
+            StopCoroutine(pendingQuestFailureRoutine);
+            pendingQuestFailureRoutine = null;
+        }
+
         Unsubscribe();
     }
 
@@ -55,22 +69,34 @@ public class CampaignOutcomeController : MonoBehaviour
         hasShownQuestFailure = false;
     }
 
+    private void HandleProgressChanged()
+    {
+        TryShowCurrentOutcome(false);
+    }
+
     private void HandleQuestDeadlineExpired()
+    {
+        TryShowQuestFailure();
+    }
+
+    private void TryShowQuestFailure()
     {
         if (!showQuestFailurePanel || hasShownQuestFailure || campaignProgress == null)
             return;
 
-        if (campaignProgress.GameMode != GameProgressMode.Campaign || campaignProgress.IsCampaignCompleted)
+        if (campaignProgress.IsCampaignCompleted)
             return;
 
-        CampaignQuestGuidanceController guidanceController = CampaignQuestGuidanceController.instance;
-        bool tutorialGuidanceHandlesFailure = campaignProgress.IsCurrentQuestTutorial &&
-                                             guidanceController != null &&
-                                             guidanceController.isActiveAndEnabled &&
-                                             guidanceController.IsTutorialRunning;
-
-        if (tutorialGuidanceHandlesFailure)
+        if (IsQuestFailureHandledByTutorialGuidance())
             return;
+
+        if (ForcedSleepController.IsAnySleepTransitionRunning())
+        {
+            if (pendingQuestFailureRoutine == null)
+                pendingQuestFailureRoutine = StartCoroutine(ShowQuestFailureAfterSleep());
+
+            return;
+        }
 
         hasShownQuestFailure = true;
 
@@ -83,14 +109,28 @@ public class CampaignOutcomeController : MonoBehaviour
         outcomePanel.ShowFailure(questFailureTitle, questFailureMessage, pauseOnQuestFailure);
     }
 
+    private IEnumerator ShowQuestFailureAfterSleep()
+    {
+        while (ForcedSleepController.IsAnySleepTransitionRunning())
+            yield return null;
+
+        pendingQuestFailureRoutine = null;
+        TryShowQuestFailure();
+    }
+
     private void HandleCampaignCompleted()
+    {
+        TryShowCampaignCompletion(saveGameOnCampaignCompletion);
+    }
+
+    private void TryShowCampaignCompletion(bool _saveGame)
     {
         if (!showCampaignCompletionPanel || hasShownCampaignCompletion)
             return;
 
         hasShownCampaignCompletion = true;
 
-        if (saveGameOnCampaignCompletion)
+        if (_saveGame)
             GameSaveManager.GetOrCreate().SaveGame();
 
         if (outcomePanel == null)
@@ -124,6 +164,7 @@ public class CampaignOutcomeController : MonoBehaviour
         if (isSubscribed || campaignProgress == null)
             return;
 
+        campaignProgress.OnProgressChanged += HandleProgressChanged;
         campaignProgress.OnQuestAdvanced += HandleQuestAdvanced;
         campaignProgress.OnQuestDeadlineExpired += HandleQuestDeadlineExpired;
         campaignProgress.OnCampaignCompleted += HandleCampaignCompleted;
@@ -135,10 +176,42 @@ public class CampaignOutcomeController : MonoBehaviour
         if (!isSubscribed || campaignProgress == null)
             return;
 
+        campaignProgress.OnProgressChanged -= HandleProgressChanged;
         campaignProgress.OnQuestAdvanced -= HandleQuestAdvanced;
         campaignProgress.OnQuestDeadlineExpired -= HandleQuestDeadlineExpired;
         campaignProgress.OnCampaignCompleted -= HandleCampaignCompleted;
         isSubscribed = false;
+    }
+
+    private void TryShowCurrentOutcome(bool _saveCompletion)
+    {
+        if (campaignProgress == null)
+            return;
+
+        if (campaignProgress.GameMode != GameProgressMode.Campaign &&
+            campaignProgress.GameMode != GameProgressMode.Endless)
+            return;
+
+        if (campaignProgress.IsCampaignCompleted)
+        {
+            TryShowCampaignCompletion(_saveCompletion);
+            return;
+        }
+
+        if (campaignProgress.HasFailedCurrentQuest)
+            TryShowQuestFailure();
+    }
+
+    private bool IsQuestFailureHandledByTutorialGuidance()
+    {
+        if (campaignProgress == null || !campaignProgress.IsCurrentQuestTutorial)
+            return false;
+
+        CampaignQuestGuidanceController guidanceController = CampaignQuestGuidanceController.instance;
+
+        return guidanceController != null &&
+               guidanceController.isActiveAndEnabled &&
+               (guidanceController.IsTutorialRunning || guidanceController.IsTutorialFailed);
     }
 
     private int GetCurrentDebtValue()

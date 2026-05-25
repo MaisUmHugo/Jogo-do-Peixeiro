@@ -1,4 +1,4 @@
-using UnityEngine;
+ï»¿using UnityEngine;
 
 [RequireComponent(typeof(MeshFilter))]
 [RequireComponent(typeof(MeshRenderer))]
@@ -13,18 +13,23 @@ public class GenerateWaterMesh : MonoBehaviour
     public Material waterMaterial;
     public Material darkWaterMaterial;
 
-    [Header("Referência")]
+    [Header("Lava Opcional")]
+    public bool useLavaMaterial;
+    public Material lavaMaterial;
+
+    [Header("Referencia")]
     public Transform referenceObject;
 
     [Header("Escurecimento")]
     public string boatTag = "Boat";
     public float darkStartDistance = 10f;
     public float darkMaxDistance = 100f;
+    [Range(0f, 1f)] public float deepAreaThreshold = 0.35f;
 
     private Material runtimeDarkMaterial;
     private Transform boat;
 
-    void Awake()
+    private void Awake()
     {
         Mesh mesh = new Mesh();
 
@@ -80,59 +85,54 @@ public class GenerateWaterMesh : MonoBehaviour
 
         GetComponent<MeshFilter>().mesh = mesh;
 
-        runtimeDarkMaterial = new Material(darkWaterMaterial);
+        if (ShouldUseDarkWaterMaterial())
+            runtimeDarkMaterial = new Material(darkWaterMaterial);
 
-        GetComponent<MeshRenderer>().materials = new Material[]
-        {
-            waterMaterial,
-            runtimeDarkMaterial
-        };
+        MeshRenderer meshRenderer = GetComponent<MeshRenderer>();
+        Material surfaceMaterial = GetSurfaceMaterial();
+
+        if (runtimeDarkMaterial != null)
+            meshRenderer.materials = new Material[] { surfaceMaterial, runtimeDarkMaterial };
+        else
+            meshRenderer.material = surfaceMaterial;
 
         GetComponent<MeshCollider>().sharedMesh = mesh;
 
         GameObject boatObject = GameObject.FindGameObjectWithTag(boatTag);
 
         if (boatObject != null)
-        {
             boat = boatObject.transform;
-        }
     }
 
-    void Start()
+    private void Start()
     {
-        if (darkWaterMaterial != null)
-        {
-            runtimeDarkMaterial = new Material(darkWaterMaterial);
-
-            runtimeDarkMaterial.SetFloat("_Surface", 1);
-            runtimeDarkMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
-            runtimeDarkMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
-            runtimeDarkMaterial.SetInt("_ZWrite", 0);
-            runtimeDarkMaterial.DisableKeyword("_ALPHATEST_ON");
-            runtimeDarkMaterial.EnableKeyword("_ALPHABLEND_ON");
-            runtimeDarkMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
-            runtimeDarkMaterial.renderQueue = 3000;
-
-            GetComponent<MeshRenderer>().materials = new Material[]
-            {
-            waterMaterial,
-            runtimeDarkMaterial
-            };
-        }
-    }
-
-    void Update()
-    {
-        if (boat == null || referenceObject == null || runtimeDarkMaterial == null)
+        if (!ShouldUseDarkWaterMaterial())
             return;
 
-        float zDistance = boat.position.z - referenceObject.position.z;
-        //Debug.Log(zDistance);
-        float darkness = Mathf.InverseLerp(
-            darkStartDistance,
-            darkMaxDistance,
-            zDistance
-        );
+        runtimeDarkMaterial = new Material(darkWaterMaterial);
+
+        runtimeDarkMaterial.SetFloat("_Surface", 1);
+        runtimeDarkMaterial.SetInt("_SrcBlend", (int)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        runtimeDarkMaterial.SetInt("_DstBlend", (int)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        runtimeDarkMaterial.SetInt("_ZWrite", 0);
+        runtimeDarkMaterial.DisableKeyword("_ALPHATEST_ON");
+        runtimeDarkMaterial.EnableKeyword("_ALPHABLEND_ON");
+        runtimeDarkMaterial.DisableKeyword("_ALPHAPREMULTIPLY_ON");
+        runtimeDarkMaterial.renderQueue = 3000;
+
+        GetComponent<MeshRenderer>().materials = new Material[]
+        {
+            GetSurfaceMaterial(),
+            runtimeDarkMaterial
+        };
+    }
+
+    private void Update()
+    {
+        if (boat == null || runtimeDarkMaterial == null)
+            return;
+
+        float darkness = GetDarknessAtWorldPosition(boat.position);
 
         if (runtimeDarkMaterial.HasProperty("_BaseColor"))
         {
@@ -140,5 +140,32 @@ public class GenerateWaterMesh : MonoBehaviour
             baseColor.a = darkness;
             runtimeDarkMaterial.SetColor("_BaseColor", baseColor);
         }
+    }
+
+    public float GetDarknessAtWorldPosition(Vector3 _worldPosition)
+    {
+        Transform reference = referenceObject != null ? referenceObject : transform;
+        float zDistance = _worldPosition.z - reference.position.z;
+        return Mathf.InverseLerp(darkStartDistance, darkMaxDistance, zDistance);
+    }
+
+    public bool IsDeepWater(Vector3 _worldPosition)
+    {
+        return GetDarknessAtWorldPosition(_worldPosition) >= deepAreaThreshold;
+    }
+
+    private bool ShouldUseLavaMaterial()
+    {
+        return useLavaMaterial && lavaMaterial != null;
+    }
+
+    private bool ShouldUseDarkWaterMaterial()
+    {
+        return !ShouldUseLavaMaterial() && darkWaterMaterial != null;
+    }
+
+    private Material GetSurfaceMaterial()
+    {
+        return ShouldUseLavaMaterial() ? lavaMaterial : waterMaterial;
     }
 }

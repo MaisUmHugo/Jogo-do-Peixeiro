@@ -7,6 +7,7 @@ public class MoneyLender : MonoBehaviour
     {
         Failed,
         Partial,
+        MoneyTargetCompleted,
         Completed,
         PaidOff
     }
@@ -33,6 +34,13 @@ public class MoneyLender : MonoBehaviour
     [SerializeField] private VisualEffect fireworkVFXPrefab;
     [SerializeField] private Transform fireworkSpawnPoint;
     [SerializeField] private float fireworkVFXLifetime = 3f;
+    [SerializeField] private bool useFireworkVFXPool = true;
+    [SerializeField] private string fireworkVFXPoolKey = "FireworkVFX";
+    [SerializeField, Min(1)] private int fireworkVFXPoolSize = 2;
+
+    [Header("Quest Completion SFX")]
+    [SerializeField, InspectorName("Quest Complete SFX")] private AudioClip fireworkSfx;
+    [SerializeField, Range(0f, 1f), InspectorName("Quest Complete SFX Volume")] private float fireworkSfxVolume = 1f;
 
     private int currentFishWeightPayment;
     private int currentDebtPayment;
@@ -55,6 +63,7 @@ public class MoneyLender : MonoBehaviour
         ResolveReferences();
         CalculateNewPayment();
         CalculateNewDebtPayment();
+        PrepareFireworkVFXPool();
     }
 
     private void OnEnable()
@@ -103,6 +112,10 @@ public class MoneyLender : MonoBehaviour
 
         int paymentAmount = GetCurrentPayableDebtPayment();
         int questTargetBeforePayment = currentDebtPayment;
+        CampaignProgressSystem campaignProgress = ResolveCampaignProgress();
+        bool usesCampaignDebtPayment = ShouldUseCampaignDebtPayment(campaignProgress);
+        int previousCampaignQuestIndex = usesCampaignDebtPayment ? campaignProgress.CurrentQuestIndex : 0;
+        int previousCampaignRemaining = usesCampaignDebtPayment ? campaignProgress.QuestDebtPaymentRemaining : 0;
 
         if (paymentAmount <= 0)
         {
@@ -128,6 +141,40 @@ public class MoneyLender : MonoBehaviour
         }
 
         ReduceDebt(paidAmount);
+
+        if (usesCampaignDebtPayment)
+        {
+            campaignProgress.RegisterDebtPayment(paidAmount, questTargetBeforePayment, GetNextDebtPaymentFallbackTarget());
+
+            bool completedCampaignPayment =
+                campaignProgress.IsCampaignCompleted ||
+                campaignProgress.CurrentQuestIndex != previousCampaignQuestIndex ||
+                (previousCampaignRemaining > 0 && paidAmount >= previousCampaignRemaining);
+
+            CalculateNewDebtPayment();
+
+            if (completedCampaignPayment)
+            {
+                if (campaignProgress.CurrentQuestRequiresSpecialDelivery &&
+                    !campaignProgress.IsCampaignCompleted &&
+                    campaignProgress.CurrentQuestIndex == previousCampaignQuestIndex)
+                {
+                    paymentResult = DebtPaymentResult.MoneyTargetCompleted;
+                    Debug.Log($"Pagou R$ {paidAmount} da meta em dinheiro. Falta a entrega especial.");
+                    return true;
+                }
+
+                paymentResult = DebtPaymentResult.Completed;
+                PlayFireworkVFX();
+                Debug.Log($"Pagou R$ {paidAmount} da meta da quest.");
+                return true;
+            }
+
+            paymentResult = DebtPaymentResult.Partial;
+            Debug.Log($"Pagamento parcial de R$ {paidAmount} da meta da quest.");
+            return true;
+        }
+
         currentDebtPaymentPaidAmount += paidAmount;
 
         bool completedPayment = currentDebtPaymentPaidAmount >= currentDebtPayment;
@@ -175,6 +222,11 @@ public class MoneyLender : MonoBehaviour
 
     private void CalculateNewDebtPayment()
     {
+        CampaignProgressSystem campaignProgress = ResolveCampaignProgress();
+
+        if (TryCalculateCampaignDebtPayment(campaignProgress))
+            return;
+
         int baseDebtPayment = initialDebtPayment + debtPaymentIncremetion * timesPaid;
         currentDebtPayment = baseDebtPayment;
 
@@ -183,6 +235,52 @@ public class MoneyLender : MonoBehaviour
 
         currentDebtPaymentPaidAmount = Mathf.Clamp(currentDebtPaymentPaidAmount, 0, currentDebtPayment);
         OnNewDebtPayment?.Invoke(GetCurrentPayableDebtPaymentWithoutRecalculate());
+    }
+
+    private bool TryCalculateCampaignDebtPayment(CampaignProgressSystem _campaignProgress)
+    {
+        if (!ShouldUseCampaignDebtPayment(_campaignProgress))
+            return false;
+
+        timesPaid = Mathf.Max(0, _campaignProgress.CurrentQuestIndex - 1);
+        currentDebtPayment = Mathf.Max(0, _campaignProgress.QuestDebtPaymentTarget);
+        currentDebtPaymentPaidAmount = Mathf.Clamp(_campaignProgress.QuestDebtPaidAmount, 0, currentDebtPayment);
+
+        if (debtSystem != null)
+        {
+            if (!debtSystem.HasDebt)
+            {
+                currentDebtPayment = currentDebtPaymentPaidAmount;
+            }
+            else
+            {
+                int payableAmount = Mathf.Min(GetCurrentPayableDebtPaymentWithoutRecalculate(), debtSystem.CurrentDebt);
+                currentDebtPayment = currentDebtPaymentPaidAmount + Mathf.Max(0, payableAmount);
+            }
+        }
+
+        OnNewDebtPayment?.Invoke(GetCurrentPayableDebtPaymentWithoutRecalculate());
+        return true;
+    }
+
+    private bool ShouldUseCampaignDebtPayment(CampaignProgressSystem _campaignProgress)
+    {
+        return _campaignProgress != null &&
+               _campaignProgress.UsesQuestDebtPayment;
+    }
+
+    private CampaignProgressSystem ResolveCampaignProgress()
+    {
+        if (CampaignProgressSystem.Instance != null)
+            return CampaignProgressSystem.Instance;
+
+        return FindFirstObjectByType<CampaignProgressSystem>(FindObjectsInactive.Include);
+    }
+
+    private int GetNextDebtPaymentFallbackTarget()
+    {
+        int nextTimesPaid = Mathf.Max(0, timesPaid + 1);
+        return Mathf.Max(0, initialDebtPayment + debtPaymentIncremetion * nextTimesPaid);
     }
 
     public bool TryGetSpecificFishPayment()
@@ -201,9 +299,13 @@ public class MoneyLender : MonoBehaviour
             return false;
         }
 
-        ReduceDebt(specificFishDebtReduction);
-        GetSpecificFishPayment();
-        TryCompleteCampaignSpecialDelivery(_specificFish);
+        bool handledByQuest = TryCompleteCampaignSpecialDelivery(_specificFish);
+
+        if (!handledByQuest)
+        {
+            ReduceDebt(specificFishDebtReduction);
+            GetSpecificFishPayment();
+        }
 
         if (_useTutorialFireworks)
             StartTutorialFinishFireworks();
@@ -219,7 +321,7 @@ public class MoneyLender : MonoBehaviour
         AdvancePaymentCycle();
     }
 
-    private void TryCompleteCampaignSpecialDelivery(FishScriptableObject _deliveredFish)
+    private bool TryCompleteCampaignSpecialDelivery(FishScriptableObject _deliveredFish)
     {
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
 
@@ -228,10 +330,10 @@ public class MoneyLender : MonoBehaviour
             campaignProgress.SpecialDeliveryFish == null ||
             campaignProgress.SpecialDeliveryFish != _deliveredFish)
         {
-            return;
+            return false;
         }
 
-        campaignProgress.CompleteSpecialDeliveryQuest();
+        return campaignProgress.CompleteSpecialDeliveryQuest();
     }
 
     private void AdvancePaymentCycle()
@@ -260,20 +362,29 @@ public class MoneyLender : MonoBehaviour
 
     private void PlayFireworkVFX()
     {
+        PlayFireworkSfx();
+
         if (fireworkVFXPrefab == null || fireworkSpawnPoint == null)
             return;
 
-        VisualEffect instance = Instantiate(
+        VisualEffect instance = PooledVisualEffectUtility.Spawn(
             fireworkVFXPrefab,
+            fireworkVFXPoolKey,
             fireworkSpawnPoint.position,
-            fireworkSpawnPoint.rotation
+            fireworkSpawnPoint.rotation,
+            null,
+            useFireworkVFXPool,
+            fireworkVFXPoolSize,
+            fireworkVFXLifetime,
+            true,
+            out _
         );
 
-        instance.gameObject.SetActive(true);
+        if (instance == null)
+            return;
+
         instance.Reinit();
         instance.Play();
-
-        Destroy(instance.gameObject, fireworkVFXLifetime);
     }
 
     private void StartTutorialFinishFireworks()
@@ -281,18 +392,28 @@ public class MoneyLender : MonoBehaviour
         if (tutorialFinishFireworksStarted)
             return;
 
+        tutorialFinishFireworksStarted = true;
+        PlayFireworkSfx();
+
         if (fireworkVFXPrefab == null || fireworkSpawnPoint == null)
             return;
 
-        tutorialFinishFireworksStarted = true;
-
-        VisualEffect instance = Instantiate(
+        VisualEffect instance = PooledVisualEffectUtility.Spawn(
             fireworkVFXPrefab,
+            fireworkVFXPoolKey,
             fireworkSpawnPoint.position,
-            fireworkSpawnPoint.rotation
+            fireworkSpawnPoint.rotation,
+            null,
+            useFireworkVFXPool,
+            fireworkVFXPoolSize,
+            fireworkVFXLifetime,
+            false,
+            out _
         );
 
-        instance.gameObject.SetActive(true);
+        if (instance == null)
+            return;
+
         instance.Reinit();
         instance.Play();
     }
@@ -300,6 +421,25 @@ public class MoneyLender : MonoBehaviour
     public void PlayTutorialFinishFireworks()
     {
         StartTutorialFinishFireworks();
+    }
+
+    private void PlayFireworkSfx()
+    {
+        if (AudioManager.Instance == null || fireworkSfx == null)
+            return;
+
+        AudioManager.Instance.PlaySfx(fireworkSfx, fireworkSfxVolume);
+    }
+
+    private void PrepareFireworkVFXPool()
+    {
+        PooledVisualEffectUtility.EnsurePool(
+            fireworkVFXPoolKey,
+            fireworkVFXPrefab,
+            fireworkVFXPoolSize,
+            useFireworkVFXPool,
+            true
+        );
     }
 
     public int GetCurrentFishWeightPayment()

@@ -43,12 +43,14 @@ public class GameOutcomePanelUI : MonoBehaviour
     [SerializeField] private bool hideHudWhileShowing = true;
     [SerializeField] private bool blockPauseWhileShowing = true;
     [SerializeField] private bool pauseTimeWhileShowing = true;
+    [SerializeField] private bool allowBackInputToClose;
 
     [Header("Scene")]
     [SerializeField] private string mainMenuSceneName = "Main Menu";
 
     private int modalToken = UIModalManager.InvalidToken;
     private bool areButtonsBound;
+    private bool isOpening;
 
     public bool IsShowing { get; private set; }
     public GameOutcomeType CurrentOutcomeType { get; private set; }
@@ -64,7 +66,7 @@ public class GameOutcomePanelUI : MonoBehaviour
         ResolveReferences();
         BindButtons();
 
-        if (closeOnAwake)
+        if (closeOnAwake && !isOpening)
             CloseImmediate();
     }
 
@@ -106,11 +108,14 @@ public class GameOutcomePanelUI : MonoBehaviour
 
     public void Show(GameOutcomeType _outcomeType, string _title, string _message, bool _pauseTime = true)
     {
+        OpenRootObject();
         ResolveReferences();
+        BindButtons();
 
         CurrentOutcomeType = _outcomeType;
         IsShowing = true;
         PanelObject.SetActive(true);
+        BringPanelToFront();
 
         if (titleText != null)
             titleText.text = string.IsNullOrWhiteSpace(_title) ? GetDefaultTitle(_outcomeType) : _title;
@@ -127,7 +132,7 @@ public class GameOutcomePanelUI : MonoBehaviour
         Cursor.lockState = CursorLockMode.None;
         Cursor.visible = true;
 
-        UISelectionHelper.Select(GetFirstSelected(_outcomeType), PanelObject);
+        UISelectionHelper.Select(GetFirstSelected(_outcomeType), gameObject);
     }
 
     public void Close()
@@ -140,6 +145,7 @@ public class GameOutcomePanelUI : MonoBehaviour
 
     public void RestartScene()
     {
+        CampaignProgressSystem.Instance?.RetryCurrentQuest();
         CloseImmediate();
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
@@ -158,10 +164,14 @@ public class GameOutcomePanelUI : MonoBehaviour
 
     private void CloseImmediate()
     {
-        UISelectionHelper.ClearSelection(PanelObject);
+        UISelectionHelper.ClearSelection(gameObject);
         IsShowing = false;
         UIModalManager.PopModal(ref modalToken);
-        PanelObject.SetActive(false);
+
+        if (panel != null && panel != gameObject)
+            panel.SetActive(false);
+
+        gameObject.SetActive(false);
     }
 
     private void BindButtons()
@@ -209,7 +219,7 @@ public class GameOutcomePanelUI : MonoBehaviour
             hideHudWhileShowing,
             blockPauseWhileShowing,
             false,
-            Close
+            allowBackInputToClose ? Close : null
         );
 
         modalToken = UIModalManager.PushModal(request);
@@ -219,6 +229,30 @@ public class GameOutcomePanelUI : MonoBehaviour
     {
         SetObjectActive(completionButtonsGroup, _outcomeType == GameOutcomeType.Completion);
         SetObjectActive(failureButtonsGroup, _outcomeType == GameOutcomeType.Failure);
+    }
+
+    private void BringPanelToFront()
+    {
+        GameObject panelObject = gameObject;
+
+        if (panelObject == null)
+            return;
+
+        Transform panelTransform = panelObject.transform;
+        panelTransform.SetAsLastSibling();
+
+        Canvas parentCanvas = panelObject.GetComponentInParent<Canvas>();
+
+        if (parentCanvas == null)
+            return;
+
+        Transform currentParent = panelTransform.parent;
+
+        while (currentParent != null && currentParent != parentCanvas.transform)
+        {
+            currentParent.SetAsLastSibling();
+            currentParent = currentParent.parent;
+        }
     }
 
     private Selectable GetFirstSelected(GameOutcomeType _outcomeType)
@@ -248,7 +282,7 @@ public class GameOutcomePanelUI : MonoBehaviour
         if (UISelectionHelper.IsUsable(failureMainMenuButton))
             return failureMainMenuButton;
 
-        return PanelObject.GetComponentInChildren<Selectable>(true);
+        return gameObject.GetComponentInChildren<Selectable>(true);
     }
 
     #endregion
@@ -376,6 +410,16 @@ public class GameOutcomePanelUI : MonoBehaviour
     {
         if (_target != null)
             _target.SetActive(_active);
+    }
+
+    private void OpenRootObject()
+    {
+        if (gameObject.activeSelf)
+            return;
+
+        isOpening = true;
+        gameObject.SetActive(true);
+        isOpening = false;
     }
 
     #endregion

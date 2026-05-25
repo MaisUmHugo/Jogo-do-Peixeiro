@@ -14,6 +14,7 @@ public class DockOwnerUpgradeRowUI : MonoBehaviour
     [SerializeField] private TMP_Text costText;
     [SerializeField] private Button buyButton;
     [SerializeField] private RectTransform scrollTarget;
+    [SerializeField] private bool keepButtonSelectableWhenUnavailable = true;
     [SerializeField] private Image[] progressPips;
     [SerializeField] private Color filledPipColor = new Color(0.95f, 0.75f, 0.25f, 1f);
     [SerializeField] private Color emptyPipColor = new Color(1f, 1f, 1f, 0.18f);
@@ -88,7 +89,7 @@ public class DockOwnerUpgradeRowUI : MonoBehaviour
         }
 
         if (buyButton != null)
-            buyButton.interactable = _canBuy;
+            buyButton.interactable = _canBuy || keepButtonSelectableWhenUnavailable;
 
         SetProgress(_currentLevel, _maxLevel);
     }
