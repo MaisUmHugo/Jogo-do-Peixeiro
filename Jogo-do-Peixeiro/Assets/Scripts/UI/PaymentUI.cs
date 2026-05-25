@@ -964,6 +964,9 @@ public class PaymentUI : MonoBehaviour
             ? campaignProgress.SpecialDeliveryFish
             : null;
 
+        if (specialFish != null && !FishCaptureHistory.IsDiscovered(specialFish))
+            FishCaptureHistory.RegisterDiscovery(specialFish);
+
         if (specialDeliveryFishImage != null)
         {
             Sprite icon = specialFish != null ? specialFish.InventoryIcon : null;

@@ -18,6 +18,17 @@ public static class FishCaptureHistory
         captureCounts[fishId]++;
     }
 
+    public static void RegisterDiscovery(FishScriptableObject _fish)
+    {
+        string fishId = GetFishId(_fish);
+
+        if (string.IsNullOrEmpty(fishId))
+            return;
+
+        if (!captureCounts.ContainsKey(fishId))
+            captureCounts[fishId] = 0;
+    }
+
     public static int GetCaptureCount(FishScriptableObject _fish)
     {
         string fishId = GetFishId(_fish);
@@ -28,13 +39,23 @@ public static class FishCaptureHistory
         return captureCounts.TryGetValue(fishId, out int count) ? count : 0;
     }
 
+    public static bool IsDiscovered(FishScriptableObject _fish)
+    {
+        string fishId = GetFishId(_fish);
+
+        if (string.IsNullOrEmpty(fishId))
+            return false;
+
+        return captureCounts.ContainsKey(fishId);
+    }
+
     public static List<SavedFishCaptureData> CaptureSaveData()
     {
         List<SavedFishCaptureData> savedCaptures = new List<SavedFishCaptureData>();
 
         foreach (KeyValuePair<string, int> entry in captureCounts)
         {
-            if (string.IsNullOrWhiteSpace(entry.Key) || entry.Value <= 0)
+            if (string.IsNullOrWhiteSpace(entry.Key))
                 continue;
 
             savedCaptures.Add(new SavedFishCaptureData
@@ -56,12 +77,12 @@ public static class FishCaptureHistory
 
         foreach (SavedFishCaptureData savedCapture in _savedCaptures)
         {
-            if (savedCapture == null || string.IsNullOrWhiteSpace(savedCapture.fishId) || savedCapture.captureCount <= 0)
+            if (savedCapture == null || string.IsNullOrWhiteSpace(savedCapture.fishId))
                 continue;
 
             FishScriptableObject fish = FishSaveResolver.FindFishById(savedCapture.fishId);
             string fishId = fish != null ? fish.SaveId : savedCapture.fishId;
-            captureCounts[NormalizeId(fishId)] = savedCapture.captureCount;
+            captureCounts[NormalizeId(fishId)] = Mathf.Max(0, savedCapture.captureCount);
         }
     }
 
