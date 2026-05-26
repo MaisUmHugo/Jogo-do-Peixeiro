@@ -317,6 +317,17 @@ public class FishingManager : MonoBehaviour
         if (!IsFishing)
             return;
 
+        if (TutorialEvents.TryHandleFishingBiteTutorial(ContinueAfterBiteTutorial))
+            return;
+
+        ContinueAfterBiteTutorial();
+    }
+
+    private void ContinueAfterBiteTutorial()
+    {
+        if (!IsFishing)
+            return;
+
         HasFishBitten = true;
 
         ConsumeActiveBait();
