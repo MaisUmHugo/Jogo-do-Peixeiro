@@ -38,6 +38,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
     private void OnValidate()
     {
+        randomFishAmount = Mathf.Max(1, randomFishAmount);
         EnsureValidShortcutKeys();
     }
 
@@ -68,7 +69,47 @@ public class InventoryDebugCheats : MonoBehaviour
     [ContextMenu("Cheats/Add Random Fish Batch")]
     public void AddRandomFishBatch()
     {
-        AddRandomFishInternal(randomFishAmount);
+        AddAllFishTypes();
+    }
+
+    [ContextMenu("Cheats/Add All Fish Types")]
+    public void AddAllFishTypes()
+    {
+        ResolveReferences();
+
+        if (shipInventory == null)
+        {
+            Debug.LogWarning("[InventoryDebugCheats] ShipInventory nao encontrado.", this);
+            return;
+        }
+
+        FishScriptableObject[] fishTypes = GetValidUniqueFishTypes(GetFishPool());
+
+        if (fishTypes == null || fishTypes.Length == 0)
+        {
+            Debug.LogWarning("[InventoryDebugCheats] Nenhum peixe configurado para debug.", this);
+            return;
+        }
+
+        int addedCount = 0;
+
+        for (int i = 0; i < fishTypes.Length; i++)
+        {
+            FishScriptableObject fishType = fishTypes[i];
+
+            if (fishType == null)
+                continue;
+
+            FishData fish = new FishData(fishType);
+
+            if (AddFishToInventory(fish))
+            {
+                FishCaptureHistory.RegisterCatch(fishType);
+                addedCount++;
+            }
+        }
+
+        Debug.Log($"[InventoryDebugCheats] Adicionou {addedCount} {GetFishCountLabel(addedCount)} diferentes ao inventario.", this);
     }
 
     [ContextMenu("Cheats/Add Test Baits")]
@@ -160,18 +201,30 @@ public class InventoryDebugCheats : MonoBehaviour
 
     private FishScriptableObject GetRandomFishType(FishScriptableObject[] _fishTypes)
     {
+        FishScriptableObject[] validFish = GetValidUniqueFishTypes(_fishTypes);
+
+        if (validFish == null || validFish.Length == 0)
+            return null;
+
+        return validFish[Random.Range(0, validFish.Length)];
+    }
+
+    private FishScriptableObject[] GetValidUniqueFishTypes(FishScriptableObject[] _fishTypes)
+    {
         List<FishScriptableObject> validFish = new List<FishScriptableObject>();
+
+        if (_fishTypes == null)
+            return validFish.ToArray();
 
         for (int i = 0; i < _fishTypes.Length; i++)
         {
-            if (_fishTypes[i] != null)
-                validFish.Add(_fishTypes[i]);
+            FishScriptableObject fish = _fishTypes[i];
+
+            if (fish != null && !validFish.Contains(fish))
+                validFish.Add(fish);
         }
 
-        if (validFish.Count == 0)
-            return null;
-
-        return validFish[Random.Range(0, validFish.Count)];
+        return validFish.ToArray();
     }
 
     private FishScriptableObject[] GetFishPool()
