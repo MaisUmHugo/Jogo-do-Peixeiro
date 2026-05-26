@@ -5,7 +5,7 @@ public class SpinFan : MonoBehaviour
     enum Angle { X, Y, Z }
 
     [SerializeField] private Angle rotationAxis = Angle.Z;
-    public float rotationSpeed = 10f;
+    public float rotationSpeed = 720f;
 
     [Header("Boat Speed")]
     [SerializeField] private bool scaleWithBoatSpeed = true;
