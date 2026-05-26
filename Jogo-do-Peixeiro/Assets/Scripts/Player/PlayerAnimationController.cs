@@ -24,12 +24,19 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField, Min(0f)] private float _moveSpeedDampTime = 0.08f;
 
     [Header("Movement Visual Hop")]
-    [SerializeField] private bool _enableMovementVisualHop = true;
+    [SerializeField] private bool _enableMovementVisualHop;
     [SerializeField] private Transform _movementHopTarget;
     [SerializeField, Min(0f)] private float _movementHopHeight = 0.04f;
     [SerializeField, Min(0f)] private float _movementHopFrequency = 9f;
     [SerializeField, Min(0f)] private float _movementHopReturnSpeed = 12f;
+    [SerializeField] private bool _useAnimatorTimeForMovementHop = true;
+    [SerializeField, Min(1f)] private float _movementHopLoopFrames = 40f;
+    [SerializeField, Min(0f)] private float _movementHopFirstStartFrame = 0f;
+    [SerializeField, Min(0f)] private float _movementHopFirstEndFrame = 20f;
+    [SerializeField, Min(0f)] private float _movementHopSecondStartFrame = 23f;
+    [SerializeField, Min(0f)] private float _movementHopSecondEndFrame = 35f;
     [SerializeField, Min(0f)] private float _afkIdleStartHopHeight = 0.04f;
+    [SerializeField, Min(0f)] private float _afkIdleStartHopDelay = 0.5f;
     [SerializeField, Min(0.01f)] private float _afkIdleStartHopDuration = 0.28f;
 
     [Header("Idle AFK")]
@@ -90,6 +97,7 @@ public class PlayerAnimationController : MonoBehaviour
     private bool _hasMovementHopBase;
     private float _movementHopPhase;
     private float _currentMovementHopOffset;
+    private float _afkIdleStartHopDelayTimer;
     private float _afkIdleStartHopTimer;
     private Vector3 _lastPosition;
 
@@ -110,7 +118,13 @@ public class PlayerAnimationController : MonoBehaviour
         _movementHopHeight = Mathf.Max(0f, _movementHopHeight);
         _movementHopFrequency = Mathf.Max(0f, _movementHopFrequency);
         _movementHopReturnSpeed = Mathf.Max(0f, _movementHopReturnSpeed);
+        _movementHopLoopFrames = Mathf.Max(1f, _movementHopLoopFrames);
+        _movementHopFirstStartFrame = Mathf.Max(0f, _movementHopFirstStartFrame);
+        _movementHopFirstEndFrame = Mathf.Max(0f, _movementHopFirstEndFrame);
+        _movementHopSecondStartFrame = Mathf.Max(0f, _movementHopSecondStartFrame);
+        _movementHopSecondEndFrame = Mathf.Max(0f, _movementHopSecondEndFrame);
         _afkIdleStartHopHeight = Mathf.Max(0f, _afkIdleStartHopHeight);
+        _afkIdleStartHopDelay = Mathf.Max(0f, _afkIdleStartHopDelay);
         _afkIdleStartHopDuration = Mathf.Max(0.01f, _afkIdleStartHopDuration);
     }
 
@@ -311,11 +325,19 @@ public class PlayerAnimationController : MonoBehaviour
             CaptureMovementHopBase(hopTarget);
 
         float targetOffset = GetMovementHopTargetOffset(shouldHop);
-        float followT = _movementHopReturnSpeed > 0f
-            ? 1f - Mathf.Exp(-_movementHopReturnSpeed * Time.deltaTime)
-            : 1f;
 
-        _currentMovementHopOffset = Mathf.Lerp(_currentMovementHopOffset, targetOffset, followT);
+        if (IsMoving)
+        {
+            _currentMovementHopOffset = targetOffset;
+        }
+        else
+        {
+            float followT = _movementHopReturnSpeed > 0f
+                ? 1f - Mathf.Exp(-_movementHopReturnSpeed * Time.deltaTime)
+                : 1f;
+
+            _currentMovementHopOffset = Mathf.Lerp(_currentMovementHopOffset, targetOffset, followT);
+        }
 
         Vector3 localPosition = _movementHopBaseLocalPosition;
         localPosition.y += _currentMovementHopOffset;
@@ -330,10 +352,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     private Transform ResolveMovementHopTarget()
     {
-        if (_movementHopTarget != null)
-            return _movementHopTarget;
-
-        return _animator != null ? _animator.transform : null;
+        return _movementHopTarget;
     }
 
     private bool ShouldApplyMovementHop()
@@ -344,7 +363,9 @@ public class PlayerAnimationController : MonoBehaviour
         if (GameManager.instance.currentState != GameManager.GameState.OnFoot)
             return false;
 
-        return IsMoving || _afkIdleStartHopTimer > 0f;
+        return IsMoving ||
+               _afkIdleStartHopDelayTimer > 0f ||
+               _afkIdleStartHopTimer > 0f;
     }
 
     private float GetMovementHopTargetOffset(bool _shouldHop)
@@ -353,9 +374,12 @@ public class PlayerAnimationController : MonoBehaviour
             return 0f;
 
         if (IsMoving)
+            return GetWalkMovementHopOffset();
+
+        if (_afkIdleStartHopDelayTimer > 0f)
         {
-            _movementHopPhase += Time.deltaTime * _movementHopFrequency * Mathf.Lerp(0.8f, 1.2f, CurrentMoveSpeed);
-            return Mathf.Abs(Mathf.Sin(_movementHopPhase)) * _movementHopHeight * CurrentMoveSpeed;
+            _afkIdleStartHopDelayTimer = Mathf.Max(0f, _afkIdleStartHopDelayTimer - Time.deltaTime);
+            return 0f;
         }
 
         if (_afkIdleStartHopTimer <= 0f)
@@ -364,6 +388,44 @@ public class PlayerAnimationController : MonoBehaviour
         _afkIdleStartHopTimer = Mathf.Max(0f, _afkIdleStartHopTimer - Time.deltaTime);
         float normalized = 1f - (_afkIdleStartHopTimer / Mathf.Max(0.01f, _afkIdleStartHopDuration));
         return Mathf.Sin(normalized * Mathf.PI) * _afkIdleStartHopHeight;
+    }
+
+    private float GetWalkMovementHopOffset()
+    {
+        if (_useAnimatorTimeForMovementHop && _animator != null && _animator.runtimeAnimatorController != null)
+        {
+            AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
+            float frame = Mathf.Repeat(stateInfo.normalizedTime, 1f) * _movementHopLoopFrames;
+            return GetWalkFrameHopOffset(frame);
+        }
+
+        _movementHopPhase += Time.deltaTime * _movementHopFrequency * Mathf.Lerp(0.8f, 1.2f, CurrentMoveSpeed);
+        return Mathf.Abs(Mathf.Sin(_movementHopPhase)) * _movementHopHeight * CurrentMoveSpeed;
+    }
+
+    private float GetWalkFrameHopOffset(float _frame)
+    {
+        float firstHop = GetFrameWindowHopOffset(
+            _frame,
+            _movementHopFirstStartFrame,
+            _movementHopFirstEndFrame
+        );
+        float secondHop = GetFrameWindowHopOffset(
+            _frame,
+            _movementHopSecondStartFrame,
+            _movementHopSecondEndFrame
+        );
+
+        return Mathf.Max(firstHop, secondHop) * CurrentMoveSpeed;
+    }
+
+    private float GetFrameWindowHopOffset(float _frame, float _startFrame, float _endFrame)
+    {
+        if (_endFrame <= _startFrame || _frame < _startFrame || _frame > _endFrame)
+            return 0f;
+
+        float normalized = Mathf.InverseLerp(_startFrame, _endFrame, _frame);
+        return Mathf.Sin(normalized * Mathf.PI) * _movementHopHeight;
     }
 
     private void CaptureMovementHopBase(Transform _hopTarget)
@@ -379,6 +441,7 @@ public class PlayerAnimationController : MonoBehaviour
         _movementHopParent = null;
         _movementHopPhase = 0f;
         _currentMovementHopOffset = 0f;
+        _afkIdleStartHopDelayTimer = 0f;
         _afkIdleStartHopTimer = 0f;
     }
 
@@ -653,6 +716,7 @@ public class PlayerAnimationController : MonoBehaviour
         {
             _idleTimer = 0f;
             _isAfkIdleActive = false;
+            _afkIdleStartHopDelayTimer = 0f;
             _afkIdleStartHopTimer = 0f;
             SetInteger(_idleStageParameter, _defaultIdleStage);
             return;
@@ -669,7 +733,10 @@ public class PlayerAnimationController : MonoBehaviour
         _isAfkIdleActive = idleStage == _afkIdleStage;
 
         if (!wasAfkIdleActive && _isAfkIdleActive)
+        {
+            _afkIdleStartHopDelayTimer = _afkIdleStartHopDelay;
             _afkIdleStartHopTimer = _afkIdleStartHopDuration;
+        }
 
         SetInteger(_idleStageParameter, idleStage);
     }
