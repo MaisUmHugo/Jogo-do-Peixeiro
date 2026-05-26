@@ -489,7 +489,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1840443592050875011}
   serializedVersion: 2
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: -1.34, y: -0.473, z: 44.4}
   m_LocalScale: {x: 0.35, y: 0.35, z: 0.35}
   m_ConstrainProportionsScale: 0
@@ -627,7 +627,7 @@ MonoBehaviour:
   _moveSpeedDampTime: 0.08
   _enableMovementVisualHop: 1
   _movementHopTarget: {fileID: 4403657305647217535}
-  _movementHopHeight: 0.04
+  _movementHopHeight: 1
   _movementHopFrequency: 9
   _movementHopReturnSpeed: 12
   _useAnimatorTimeForMovementHop: 1
@@ -636,10 +636,10 @@ MonoBehaviour:
   _movementHopFirstEndFrame: 20
   _movementHopSecondStartFrame: 23
   _movementHopSecondEndFrame: 35
-  _afkIdleStartHopHeight: 0.04
+  _afkIdleStartHopHeight: 5
   _afkIdleStartHopDelay: 0.5
   _afkIdleStartHopDuration: 0.5
-  _afkIdleDelay: 24
+  _afkIdleDelay: 5
   _defaultIdleStage: 0
   _afkIdleStage: 1
   _ignorePositionMovementWhileAfkIdle: 1
