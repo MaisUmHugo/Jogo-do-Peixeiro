@@ -65,6 +65,8 @@ public class FishResultUI : MonoBehaviour
     private int fishRarity;
     private Mesh fishMesh;
     private Material fishMaterial;
+    private FishScriptableObject currentFishType;
+    private bool hasFishVisual;
     private bool isShowing;
     private bool canSkip;
     private bool isInputSubscribed;
@@ -156,14 +158,13 @@ public class FishResultUI : MonoBehaviour
         if (_fish == null || _fish.typeOfFish == null)
             return;
 
-        fishMesh = _fish.typeOfFish.mesh;
-        fishMaterial = _fish.typeOfFish.material;
-        fishRarity = _fish.typeOfFish.rarity;
+        currentFishType = _fish.typeOfFish;
+        fishMesh = currentFishType.mesh;
+        fishMaterial = currentFishType.material;
+        fishRarity = currentFishType.rarity;
+        hasFishVisual = FishVisualUtility.HasVisual(currentFishType);
 
-        if (mesh != null)
-            mesh.mesh = fishMesh;
-
-        FishVisualUtility.ApplyMaterial(_fish.typeOfFish, objectRenderer, false);
+        ApplyFishModel();
 
         ShowRarityStars(fishRarity);
         ResetFishRotation();
@@ -571,7 +572,7 @@ public class FishResultUI : MonoBehaviour
     private void RotateFish()
     {
 
-        if (fishMesh == null || objectRenderer == null) return;
+        if (!hasFishVisual || objectRenderer == null) return;
 
         if (ignoreFishRotationThisFrame)
         {
@@ -593,6 +594,15 @@ public class FishResultUI : MonoBehaviour
 
         ApplyFishRotation();
 
+    }
+
+    private void ApplyFishModel()
+    {
+        if (currentFishType == null)
+            return;
+
+        FishVisualUtility.ApplyModel(currentFishType, mesh, objectRenderer, false);
+        hasFishVisual = FishVisualUtility.HasVisual(currentFishType);
     }
 
     private void ResetFishRotation()
@@ -705,6 +715,7 @@ public class FishResultUI : MonoBehaviour
     {
 
         RotateStarImage();       
+        ApplyFishModel();
         RotateFish();
         UpdateHintPulses();
         UpdateNewFishTextTint();

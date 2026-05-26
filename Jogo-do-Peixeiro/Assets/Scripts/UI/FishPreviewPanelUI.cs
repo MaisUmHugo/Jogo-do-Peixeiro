@@ -137,6 +137,7 @@ public class FishPreviewPanelUI : MonoBehaviour
         if (!isOpen)
             return;
 
+        ApplyFishModel();
         RotateFish();
         PulseRotateHint();
     }
