@@ -58,10 +58,16 @@ public class SceneTransitionArrivalPoint : MonoBehaviour
         if (boat != null)
         {
             boat.PlaceForSceneTransition(resolvedBoatPoint, playerArrivalPoint, putPlayerOnBoat);
+            RefreshPlayerInteractables();
             return true;
         }
 
-        return PlacePlayerWithoutBoat();
+        bool placedPlayer = PlacePlayerWithoutBoat();
+
+        if (placedPlayer)
+            RefreshPlayerInteractables();
+
+        return placedPlayer;
     }
 
     private bool PlacePlayerWithoutBoat()
@@ -95,5 +101,13 @@ public class SceneTransitionArrivalPoint : MonoBehaviour
 
         Physics.SyncTransforms();
         return true;
+    }
+
+    private void RefreshPlayerInteractables()
+    {
+        PlayerInteract playerInteract = FindFirstObjectByType<PlayerInteract>(FindObjectsInactive.Include);
+
+        if (playerInteract != null)
+            playerInteract.RefreshInteractablesAfterTeleport();
     }
 }
