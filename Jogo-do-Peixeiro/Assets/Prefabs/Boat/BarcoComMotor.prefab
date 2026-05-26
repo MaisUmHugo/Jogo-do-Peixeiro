@@ -511,7 +511,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   rotationAxis: 2
-  rotationSpeed: 10
+  rotationSpeed: 720
   scaleWithBoatSpeed: 1
   boatRigidbody: {fileID: 0}
   boatMotor: {fileID: 0}
