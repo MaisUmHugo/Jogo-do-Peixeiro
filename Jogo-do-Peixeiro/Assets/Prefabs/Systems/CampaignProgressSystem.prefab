@@ -102,7 +102,7 @@ MonoBehaviour:
     specialDeliveryQuantity: 1
     specialDeliveryRequiredWeight: 0
     completesCampaign: 1
-  campaignCompletionDebtAmount: 999999
+  campaignCompletionDebtAmount: 100000000
   useGddDebtFormula: 1
   debtFormulaBaseAmount: 150
   debtFormulaRandomMin: 0.02

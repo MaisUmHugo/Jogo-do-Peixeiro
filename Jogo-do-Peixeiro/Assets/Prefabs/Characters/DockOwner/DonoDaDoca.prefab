@@ -1397,7 +1397,7 @@ MonoBehaviour:
   fishMarket: {fileID: 9032520524515138466}
   dockOwnerUI: {fileID: 0}
   interactionPriority: 45
-  promptText: Falar com o dono da doca
+  promptText: Falar com o Dono do Porto
   sellDirectlyWhenNoUi: 1
   interactionPoint: {fileID: 0}
   playerRoot: {fileID: 0}
