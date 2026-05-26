@@ -1220,6 +1220,14 @@ MonoBehaviour:
   zoomSpeed: 30
   focusDuringDialog: 1
   dialogFocusSpeed: 8
+  useCinemachine: 1
+  cinemachineBrain: {fileID: 0}
+  gameplayVirtualCamera: {fileID: 0}
+  autoCreateGameplayVirtualCamera: 1
+  manualUpdateCinemachine: 1
+  gameplayVirtualCameraName: CM Gameplay Camera
+  gameplayCameraPriority: 10
+  syncLensFromMainCamera: 1
 --- !u!114 &574899197
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -1442,7 +1450,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   arrivalPointId: LavaDockEntry
-  applyWhenNoPendingArrival: 1
+  applyWhenNoPendingArrival: 0
   clearPendingArrivalAfterApply: 1
   boatArrivalPoint: {fileID: 832952501}
   playerArrivalPoint: {fileID: 0}
@@ -1555,12 +1563,14 @@ MonoBehaviour:
   campaignProgress: {fileID: 0}
   outcomePanel: {fileID: 2044551107}
   debtSystem: {fileID: 1857173168}
+  cutsceneController: {fileID: 0}
   showQuestFailurePanel: 1
   pauseOnQuestFailure: 1
   questFailureTitle: Quest falhou
   questFailureMessage: O prazo acabou antes de pagar a meta. Tente novamente ou volte
     ao menu principal.
   showCampaignCompletionPanel: 1
+  playFinalCutsceneOnCampaignCompletion: 0
   pauseOnCampaignCompletion: 1
   saveGameOnCampaignCompletion: 1
   campaignCompletionTitle: "D\xEDvida quitada"
@@ -5025,3 +5035,54 @@ SceneRoots:
   - {fileID: 1968070925}
   - {fileID: 6335001845450755681}
   - {fileID: 452188766}
+--- !u!1 &730000001
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 730000002}
+  - component: {fileID: 730000003}
+  m_Layer: 0
+  m_Name: Roteiro Dialog Setup
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &730000002
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 730000001}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &730000003
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 730000001}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: f0ce6ef734784a369719f7d3e61daef1, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  library: {fileID: 11400000, guid: 33cb2e6f6c9c42fa9c66cb1d96824288, type: 2}
+  createDialogPlayer: 1
+  configureMoneyLenderExtras: 1
+  configureDockOwnerDialog: 1
+  playIntroOnStart: 0
+  playIntroPartTwoAfterPartOne: 1
+  introStartDelay: 0.25
