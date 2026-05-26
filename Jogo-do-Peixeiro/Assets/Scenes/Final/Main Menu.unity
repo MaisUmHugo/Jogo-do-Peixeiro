@@ -1425,9 +1425,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Progresso: Campanha concluída
-
-'
+  m_text: "Progresso: Campanha conclu\xEDda\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -5479,9 +5477,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Campanha concluída. Inicie uma nova campanha.
-
-'
+  m_text: "Campanha conclu\xEDda. Inicie uma nova campanha.\n"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -5830,7 +5826,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: 'Dívida: -R$ 1100'
+  m_text: "D\xEDvida: -R$ 1100"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -8816,7 +8812,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 6d21bc7ccb648b94a9e1c72eb8dce955, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  gameSceneName: Game
+  gameSceneName: GameLake
   menuMusic: {fileID: 8300000, guid: 4953822d968c3dc4a8ec5395adcfcedc, type: 3}
   playMenuMusicOnStart: 1
   buttonSubmitSfx: {fileID: 0}
@@ -10091,9 +10087,13 @@ MonoBehaviour:
   _disableTutorialKeyboardBinding: <Keyboard>/f12
   _forceQuestFailureKeyboardBinding: <Keyboard>/f1
   _addSpecialDeliveryFishKeyboardBinding: <Keyboard>/f2
-  _cycleTeleportKeyboardBinding: <Keyboard>/f3
-  _moneyLenderTeleportDistance: 2
+  _teleportToBoatKeyboardBinding: <Keyboard>/f3
+  _teleportToDockKeyboardBinding: <Keyboard>/f4
+  _spawnFishPullVfxKeyboardBinding: <Keyboard>/f5
+  _teleportToArrivalPointKeyboardBinding: <Keyboard>/f6
   _teleportHeightOffset: 0.05
+  _debugArrivalPointId: 
+  _fishPullVfxSpawnDistance: 5
   _cycleFishingAreaGamepadBinding: <Gamepad>/dpad/up
   _advanceDayGamepadBinding: <Gamepad>/dpad/right
   _completeTaskGamepadBinding: <Gamepad>/dpad/down
@@ -15289,8 +15289,11 @@ MonoBehaviour:
   size: 400
   waterMaterial: {fileID: -876546973899608171, guid: da62d6bbf110d1e4bb17099e26569424, type: 3}
   darkWaterMaterial: {fileID: 0}
+  useLavaMaterial: 0
+  lavaMaterial: {fileID: 0}
   referenceObject: {fileID: 0}
   boatTag: Boat
+  invertDepthDirection: 0
   darkStartDistance: 1e+12
   darkMaxDistance: 1e+22
   deepAreaThreshold: 0.35
