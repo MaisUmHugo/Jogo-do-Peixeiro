@@ -22,6 +22,9 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private string _completeTaskKeyboardBinding = "<Keyboard>/f3";
     [SerializeField] private string _resetSaveKeyboardBinding = "<Keyboard>/f4";
     [SerializeField] private string _addMoneyKeyboardBinding = "<Keyboard>/f5";
+    [SerializeField] private string _playOpeningCutsceneKeyboardBinding = "<Keyboard>/f6";
+    [SerializeField] private string _playMoneyLenderCutsceneKeyboardBinding = "<Keyboard>/f7";
+    [SerializeField] private string _playFinalCutsceneKeyboardBinding = "<Keyboard>/f8";
     [SerializeField] private string _completeCampaignKeyboardBinding = "<Keyboard>/f9";
     [SerializeField] private string _forceEndlessSpecialDeliveryKeyboardBinding = "<Keyboard>/f10";
     [SerializeField] private string _unlockEndlessModeKeyboardBinding = "<Keyboard>/f11";
@@ -58,6 +61,9 @@ public class BuildCheatController : MonoBehaviour
     private InputAction _completeTaskAction;
     private InputAction _resetSaveAction;
     private InputAction _addMoneyAction;
+    private InputAction _playOpeningCutsceneAction;
+    private InputAction _playMoneyLenderCutsceneAction;
+    private InputAction _playFinalCutsceneAction;
     private InputAction _completeCampaignAction;
     private InputAction _forceEndlessSpecialDeliveryAction;
     private InputAction _unlockEndlessModeAction;
@@ -139,6 +145,21 @@ public class BuildCheatController : MonoBehaviour
             "Cheat Add Money",
             _addMoneyKeyboardBinding,
             _addMoneyGamepadBinding);
+
+        _playOpeningCutsceneAction = CreateButtonAction(
+            "Cheat Play Opening Cutscene",
+            _playOpeningCutsceneKeyboardBinding,
+            null);
+
+        _playMoneyLenderCutsceneAction = CreateButtonAction(
+            "Cheat Play Money Lender Cutscene",
+            _playMoneyLenderCutsceneKeyboardBinding,
+            null);
+
+        _playFinalCutsceneAction = CreateButtonAction(
+            "Cheat Play Final Cutscene",
+            _playFinalCutsceneKeyboardBinding,
+            null);
 
         _completeCampaignAction = CreateButtonAction(
             "Cheat Complete Campaign",
@@ -224,6 +245,15 @@ public class BuildCheatController : MonoBehaviour
         if (_addMoneyAction != null)
             _addMoneyAction.performed += HandleAddMoney;
 
+        if (_playOpeningCutsceneAction != null)
+            _playOpeningCutsceneAction.performed += HandlePlayOpeningCutscene;
+
+        if (_playMoneyLenderCutsceneAction != null)
+            _playMoneyLenderCutsceneAction.performed += HandlePlayMoneyLenderCutscene;
+
+        if (_playFinalCutsceneAction != null)
+            _playFinalCutsceneAction.performed += HandlePlayFinalCutscene;
+
         if (_completeCampaignAction != null)
             _completeCampaignAction.performed += HandleCompleteCampaign;
 
@@ -272,6 +302,15 @@ public class BuildCheatController : MonoBehaviour
         if (_addMoneyAction != null)
             _addMoneyAction.performed -= HandleAddMoney;
 
+        if (_playOpeningCutsceneAction != null)
+            _playOpeningCutsceneAction.performed -= HandlePlayOpeningCutscene;
+
+        if (_playMoneyLenderCutsceneAction != null)
+            _playMoneyLenderCutsceneAction.performed -= HandlePlayMoneyLenderCutscene;
+
+        if (_playFinalCutsceneAction != null)
+            _playFinalCutsceneAction.performed -= HandlePlayFinalCutscene;
+
         if (_completeCampaignAction != null)
             _completeCampaignAction.performed -= HandleCompleteCampaign;
 
@@ -310,6 +349,9 @@ public class BuildCheatController : MonoBehaviour
         _completeTaskAction?.Enable();
         _resetSaveAction?.Enable();
         _addMoneyAction?.Enable();
+        _playOpeningCutsceneAction?.Enable();
+        _playMoneyLenderCutsceneAction?.Enable();
+        _playFinalCutsceneAction?.Enable();
         _completeCampaignAction?.Enable();
         _forceEndlessSpecialDeliveryAction?.Enable();
         _unlockEndlessModeAction?.Enable();
@@ -329,6 +371,9 @@ public class BuildCheatController : MonoBehaviour
         DisposeAction(ref _completeTaskAction);
         DisposeAction(ref _resetSaveAction);
         DisposeAction(ref _addMoneyAction);
+        DisposeAction(ref _playOpeningCutsceneAction);
+        DisposeAction(ref _playMoneyLenderCutsceneAction);
+        DisposeAction(ref _playFinalCutsceneAction);
         DisposeAction(ref _completeCampaignAction);
         DisposeAction(ref _forceEndlessSpecialDeliveryAction);
         DisposeAction(ref _unlockEndlessModeAction);
@@ -374,6 +419,21 @@ public class BuildCheatController : MonoBehaviour
     private void HandleAddMoney(InputAction.CallbackContext _context)
     {
         TryRunCheat(AddMoney);
+    }
+
+    private void HandlePlayOpeningCutscene(InputAction.CallbackContext _context)
+    {
+        TryRunCheat(PlayOpeningCutsceneCheat);
+    }
+
+    private void HandlePlayMoneyLenderCutscene(InputAction.CallbackContext _context)
+    {
+        TryRunCheat(PlayMoneyLenderCutsceneCheat);
+    }
+
+    private void HandlePlayFinalCutscene(InputAction.CallbackContext _context)
+    {
+        TryRunCheat(PlayFinalCutsceneCheat);
     }
 
     private void HandleCompleteCampaign(InputAction.CallbackContext _context)
@@ -557,6 +617,62 @@ public class BuildCheatController : MonoBehaviour
         moneyManager.ReceiveMoney(_moneyCheatAmount);
         SaveGameIfPossible();
         ShowCheatFeedback($"Cheat: +{_moneyCheatAmount:0} moedas.");
+    }
+
+    private void PlayOpeningCutsceneCheat()
+    {
+        PlayCutsceneCheat(
+            _controller => _controller.ForcePlayOpeningCutscene(),
+            _library => new[] { _library.IntroMarinaLoja },
+            "inicial da loja");
+    }
+
+    private void PlayMoneyLenderCutsceneCheat()
+    {
+        PlayCutsceneCheat(
+            _controller => _controller.ForcePlayMoneyLenderIntroCutscene(),
+            _library => new[] { _library.IntroCobradorCabana },
+            "cobrador");
+    }
+
+    private void PlayFinalCutsceneCheat()
+    {
+        PlayCutsceneCheat(
+            _controller => _controller.ForcePlayFinalCutscene(),
+            _library => new[] { _library.FimCampanhaLoja, _library.FimCampanhaAirFishers },
+            "final");
+    }
+
+    private void PlayCutsceneCheat(
+        System.Func<CampaignCutsceneController, bool> _playCutscene,
+        System.Func<RoteiroDialogLibrary, DialogSequenceAsset[]> _playDialogFallback,
+        string _label)
+    {
+        CampaignCutsceneController cutsceneController = FindFirstObjectByType<CampaignCutsceneController>(
+            FindObjectsInactive.Include);
+
+        if (cutsceneController != null)
+        {
+            if (cutsceneController.IsPlaying)
+            {
+                ShowCheatFeedback("Cheat: ja existe uma cutscene tocando.");
+                return;
+            }
+
+            if (_playCutscene != null && _playCutscene.Invoke(cutsceneController))
+            {
+                ShowCheatFeedback($"Cheat: cutscene {_label} iniciada.");
+                return;
+            }
+        }
+
+        if (RoteiroDialogPlayback.TryPlayFromLibrary(null, _playDialogFallback, null))
+        {
+            ShowCheatFeedback($"Cheat: dialogo {_label} iniciado.");
+            return;
+        }
+
+        ShowCheatFeedback($"Cheat: nao foi possivel tocar a cutscene/dialogo {_label}.");
     }
 
     private void SpawnFishPullVfxCheat()
