@@ -108,16 +108,28 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   target: {fileID: 0}
   playerTransform: {fileID: 0}
-  distance: 5
-  minDistance: 3
-  maxDistance: 8
-  height: 1.5
-  sensitivityX: 0.1
-  sensitivityY: 0.1
+  distance: 3
+  minDistance: 1
+  maxDistance: 4
+  height: 1
+  mouseSensitivity: 0.1
+  controllerSensitivity: 90
+  controllerDeadZone: 0.12
+  controllerResponseExponent: 1.25
   minPitch: -25
   maxPitch: 60
   followSpeed: 10
-  zoomSpeed: 10
+  zoomSpeed: 30
+  focusDuringDialog: 1
+  dialogFocusSpeed: 8
+  useCinemachine: 1
+  cinemachineBrain: {fileID: 0}
+  gameplayVirtualCamera: {fileID: 0}
+  autoCreateGameplayVirtualCamera: 1
+  manualUpdateCinemachine: 1
+  gameplayVirtualCameraName: CM Gameplay Camera
+  gameplayCameraPriority: 10
+  syncLensFromMainCamera: 1
 --- !u!114 &8718114649588643486
 MonoBehaviour:
   m_ObjectHideFlags: 0

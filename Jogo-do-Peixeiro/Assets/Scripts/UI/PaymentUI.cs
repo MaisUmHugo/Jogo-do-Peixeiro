@@ -678,11 +678,12 @@ public class PaymentUI : MonoBehaviour
     private void SetDefaultPaymentSeparatedTexts()
     {
         string debtValue = GetDebtValueText();
+        bool isEndlessMode = IsEndlessMode();
 
-        SetText(defaultTitleText, "Dívida");
+        SetText(defaultTitleText, isEndlessMode ? "Entrega" : "Dívida");
         SetText(defaultQuestText, GetQuestLine());
         SetText(defaultDeadlineText, GetDeadlineLine());
-        SetText(defaultDebtText, $"Dívida total: {debtValue}");
+        SetText(defaultDebtText, isEndlessMode ? string.Empty : $"Dívida total: {debtValue}");
         SetText(defaultGoalText, GetGoalLine());
         SetText(defaultMoneyText, $"Dinheiro: R$ {playerMoney:0}");
 
@@ -755,6 +756,11 @@ public class PaymentUI : MonoBehaviour
             : $"{questLabel} - {campaignProgress.CurrentQuestName}";
     }
 
+    private bool IsEndlessMode()
+    {
+        return campaignProgress != null && campaignProgress.GameMode == GameProgressMode.Endless;
+    }
+
     private string GetDeadlineLine()
     {
         if (campaignProgress == null ||
@@ -796,6 +802,9 @@ public class PaymentUI : MonoBehaviour
 
     private string GetDebtLine()
     {
+        if (IsEndlessMode())
+            return string.Empty;
+
         return $"Dívida total: {GetDebtValueText()}";
     }
 
@@ -811,12 +820,19 @@ public class PaymentUI : MonoBehaviour
 
     private string GetSpecialDeliveryDebtLine()
     {
+        string questGoalLine = campaignProgress != null && campaignProgress.QuestDebtPaymentTarget > 0
+            ? $"Meta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}"
+            : string.Empty;
+
+        if (IsEndlessMode())
+            return questGoalLine;
+
         string totalDebtLine = $"Dívida total: {GetDebtValueText()}";
 
-        if (campaignProgress == null || campaignProgress.QuestDebtPaymentTarget <= 0)
+        if (string.IsNullOrWhiteSpace(questGoalLine))
             return totalDebtLine;
 
-        return $"{totalDebtLine}\nMeta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}";
+        return $"{totalDebtLine}\n{questGoalLine}";
     }
 
     #endregion

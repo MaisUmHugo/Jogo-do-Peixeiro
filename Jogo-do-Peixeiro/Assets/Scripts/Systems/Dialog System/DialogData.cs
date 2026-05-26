@@ -47,6 +47,15 @@ public class DialogSequenceData
 
     public bool HasLines => GetLineCount() > 0;
 
+    public DialogSequenceData()
+    {
+    }
+
+    public DialogSequenceData(DialogSequenceLineData[] _lines)
+    {
+        lines = _lines;
+    }
+
     public DialogSequenceLineData[] GetLines()
     {
         if (lines != null && lines.Length > 0)

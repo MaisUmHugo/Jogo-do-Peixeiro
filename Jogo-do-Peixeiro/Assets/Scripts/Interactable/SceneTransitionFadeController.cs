@@ -37,6 +37,17 @@ public class SceneTransitionFadeController : MonoBehaviour
         controller.StartFadeIn(_duration, _delay);
     }
 
+    public static IEnumerator FadeInAndWait(float _duration, float _delay = 0f)
+    {
+        SceneTransitionFadeController controller = GetOrCreate();
+        controller.StopActiveFade();
+
+        if (_delay > 0f)
+            yield return new WaitForSecondsRealtime(_delay);
+
+        yield return controller.FadeTo(0f, _duration);
+    }
+
     public static void SetBlackImmediate()
     {
         SceneTransitionFadeController controller = GetOrCreate();

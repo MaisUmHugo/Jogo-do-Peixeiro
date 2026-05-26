@@ -82,10 +82,12 @@ public class PlayerMoneyHud : MonoBehaviour
         string moneyLine = $"R$: {currentMoney:0}";
         string debtLine = GetDebtLine();
 
-        if (debtText != null)
-            debtText.gameObject.SetActive(showTotalDebtInHud);
+        bool showTotalDebt = showTotalDebtInHud && !IsEndlessMode();
 
-        bool shouldShowDebtWithMoney = showTotalDebtInHud &&
+        if (debtText != null)
+            debtText.gameObject.SetActive(showTotalDebt);
+
+        bool shouldShowDebtWithMoney = showTotalDebt &&
                                        showDebtWithMoneyWhenMissingText &&
                                        (debtText == null || !debtText.gameObject.activeInHierarchy);
 
@@ -96,7 +98,7 @@ public class PlayerMoneyHud : MonoBehaviour
                 : moneyLine;
         }
 
-        if (debtText != null && showTotalDebtInHud)
+        if (debtText != null && showTotalDebt)
             debtText.text = debtLine;
 
         if (campaignText != null)
@@ -118,6 +120,11 @@ public class PlayerMoneyHud : MonoBehaviour
             return $"<color={paidDebtColor}>Dívida: R$ 0</color>";
 
         return $"<color={debtColor}>Dívida: -R$ {currentDebt}</color>";
+    }
+
+    private bool IsEndlessMode()
+    {
+        return campaignProgress != null && campaignProgress.GameMode == GameProgressMode.Endless;
     }
 
     private void ResolveReferences()

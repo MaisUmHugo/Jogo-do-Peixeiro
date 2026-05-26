@@ -3,8 +3,10 @@ using System;
 public static class TutorialEvents
 {
     public delegate bool MoneyLenderInteractionHandler(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI);
+    public delegate bool FishingBiteTutorialHandler(Action _continueFishing);
 
     public static event MoneyLenderInteractionHandler MoneyLenderInteractionRequested;
+    public static event FishingBiteTutorialHandler FishingBiteTutorialRequested;
     public static event Func<bool> BoatEntryBlockRequested;
     public static event Action BoatEntryBlocked;
     public static event Action BoatEntered;
@@ -34,6 +36,20 @@ public static class TutorialEvents
         foreach (MoneyLenderInteractionHandler handler in MoneyLenderInteractionRequested.GetInvocationList())
         {
             if (handler != null && handler.Invoke(_moneyLender, _paymentUI, _moneyLenderUI))
+                return true;
+        }
+
+        return false;
+    }
+
+    public static bool TryHandleFishingBiteTutorial(Action _continueFishing)
+    {
+        if (FishingBiteTutorialRequested == null)
+            return false;
+
+        foreach (FishingBiteTutorialHandler handler in FishingBiteTutorialRequested.GetInvocationList())
+        {
+            if (handler != null && handler.Invoke(_continueFishing))
                 return true;
         }
 

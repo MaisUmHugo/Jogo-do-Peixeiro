@@ -49,6 +49,9 @@ public class CampaignQuestDefinition
 
 public class CampaignProgressSystem : MonoBehaviour
 {
+    private const int DefaultCampaignCompletionDebtAmount = 100000000;
+    private const int LegacyCampaignCompletionDebtAmount = 999999;
+
     public static CampaignProgressSystem Instance { get; private set; }
 
     [Header("Mode")]
@@ -57,7 +60,7 @@ public class CampaignProgressSystem : MonoBehaviour
 
     [Header("Campaign Quest List")]
     [SerializeField] private CampaignQuestDefinition[] questDefinitions = CreateDefaultQuestDefinitions();
-    [SerializeField, Min(0)] private int campaignCompletionDebtAmount = 999999;
+    [SerializeField, Min(0)] private int campaignCompletionDebtAmount = DefaultCampaignCompletionDebtAmount;
 
     [Header("Debt Formula")]
     [SerializeField] private bool useGddDebtFormula = true;
@@ -100,6 +103,15 @@ public class CampaignProgressSystem : MonoBehaviour
     [SerializeField] private bool saveOnQuestAdvanced = true;
 
     private DayCycle boundDayCycle;
+
+    private static readonly Vector2Int[] GddCampaignDebtPaymentRanges =
+    {
+        new Vector2Int(153, 165),
+        new Vector2Int(162, 176),
+        new Vector2Int(191, 206),
+        new Vector2Int(239, 258),
+        new Vector2Int(245, 264)
+    };
 
     public event Action OnProgressChanged;
     public event Action OnQuestAdvanced;
@@ -405,7 +417,11 @@ public class CampaignProgressSystem : MonoBehaviour
         endlessUnlocked = _data.endlessUnlocked;
 
         if (_data.campaignCompletionDebtAmount > 0)
-            campaignCompletionDebtAmount = _data.campaignCompletionDebtAmount;
+        {
+            campaignCompletionDebtAmount = _data.campaignCompletionDebtAmount == LegacyCampaignCompletionDebtAmount
+                ? DefaultCampaignCompletionDebtAmount
+                : _data.campaignCompletionDebtAmount;
+        }
 
         isSpecialMoneyLenderDeliveryActive = _data.isSpecialMoneyLenderDeliveryActive;
         specialDeliveryFish = FishSaveResolver.FindFishById(_data.specialDeliveryFishId);
@@ -551,12 +567,29 @@ public class CampaignProgressSystem : MonoBehaviour
         if (!useGddDebtFormula)
             return Mathf.Max(0, _quest.debtPaymentTarget);
 
+        if (TryGetGddCampaignDebtPaymentRange(_questIndex, out Vector2Int range))
+            return UnityEngine.Random.Range(range.x, range.y + 1);
+
         int requestedRarity = _quest.requiresSpecialMoneyLenderDelivery ? _quest.specialDeliveryRarity : 0;
         float randomBonus = GetDebtFormulaRandomBonus();
         int fullTarget = CalculateDebtPaymentTarget(_questIndex - 1, 0, randomBonus);
         int target = CalculateDebtPaymentTarget(_questIndex - 1, requestedRarity, randomBonus);
         _specialDebtReduction = Mathf.Max(0, fullTarget - target);
         return target;
+    }
+
+    private static bool TryGetGddCampaignDebtPaymentRange(int _questIndex, out Vector2Int _range)
+    {
+        int index = _questIndex - 1;
+
+        if (index >= 0 && index < GddCampaignDebtPaymentRanges.Length)
+        {
+            _range = GddCampaignDebtPaymentRanges[index];
+            return true;
+        }
+
+        _range = default;
+        return false;
     }
 
     private int GenerateDebtPaymentTarget(int _completedDeliveries, int _requestedFishRarity)

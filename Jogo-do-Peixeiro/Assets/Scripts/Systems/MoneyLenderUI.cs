@@ -151,7 +151,7 @@ public class MoneyLenderUI : MonoBehaviour
         return _paymentResult switch
         {
             MoneyLender.DebtPaymentResult.Partial => $"Pagamento parcial: R$ {_paidAmount}.",
-            MoneyLender.DebtPaymentResult.Completed => "Dívida reduzida.",
+            MoneyLender.DebtPaymentResult.Completed => IsEndlessMode() ? "Meta da quest paga." : "Dívida reduzida.",
             MoneyLender.DebtPaymentResult.PaidOff => "Dívida quitada.",
             _ => "Dinheiro insuficiente."
         };
@@ -199,10 +199,21 @@ public class MoneyLenderUI : MonoBehaviour
         string debtValue = debtBalance > 0 ? $"-R$ {debtBalance}" : "R$ 0";
 
         if (requiredWeightText != null)
-            requiredWeightText.text = $"Dívida: {debtValue} | Pagamento: R$ {debtPayment}";
+        {
+            CampaignProgressSystem campaignProgress = CampaignProgressSystem.Instance;
+            requiredWeightText.text = IsEndlessMode() && campaignProgress != null
+                ? $"Meta da quest: R$ {campaignProgress.QuestDebtPaidAmount}/{campaignProgress.QuestDebtPaymentTarget}"
+                : $"Dívida: {debtValue} | Pagamento: R$ {debtPayment}";
+        }
 
         if (currentWeightText != null)
             currentWeightText.text = $"Dinheiro: R$ {(playerMoneyManager != null ? playerMoneyManager.PlayerMoney : 0f):0}";
+    }
+
+    private static bool IsEndlessMode()
+    {
+        return CampaignProgressSystem.Instance != null &&
+               CampaignProgressSystem.Instance.GameMode == GameProgressMode.Endless;
     }
 
     private void Close()

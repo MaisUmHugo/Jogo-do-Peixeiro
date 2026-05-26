@@ -8,6 +8,14 @@ using UnityEngine.UI;
 
 public class MainMenuManager : MonoBehaviour
 {
+    private const string EndlessUnlockedNoticeKey = "Peixeiro_EndlessUnlockedNotice";
+
+    public static void QueueEndlessUnlockedNotice()
+    {
+        PlayerPrefs.SetInt(EndlessUnlockedNoticeKey, 1);
+        PlayerPrefs.Save();
+    }
+
     #region Fields
 
     [Header("Scene")]
@@ -41,6 +49,7 @@ public class MainMenuManager : MonoBehaviour
     [SerializeField] private TMP_Text modeSelectDescriptionText;
     [SerializeField] private TMP_Text endlessLockedText;
     [SerializeField] private string endlessLockedMessage = "Complete a campanha para liberar o modo sem fim.";
+    [SerializeField] private string endlessUnlockedMessage = "Modo sem fim liberado!";
     [SerializeField, Min(0.1f)] private float modeSelectWarningDuration = 1.8f;
     [SerializeField, Min(0f)] private float modeSelectButtonShakeDuration = 0.2f;
     [SerializeField, Min(0f)] private float modeSelectButtonShakeStrength = 8f;
@@ -123,6 +132,7 @@ public class MainMenuManager : MonoBehaviour
         PlayMenuMusic();
         RefreshSaveCache();
         ShowMenu();
+        ShowPendingEndlessUnlockedNotice();
     }
 
     private void Update()
@@ -235,6 +245,31 @@ public class MainMenuManager : MonoBehaviour
 
         if (savePreviewPanel != null && savePreviewPanel.activeInHierarchy)
             UpdateSavePreview();
+    }
+
+    private void ShowPendingEndlessUnlockedNotice()
+    {
+        if (PlayerPrefs.GetInt(EndlessUnlockedNoticeKey, 0) != 1)
+            return;
+
+        PlayerPrefs.DeleteKey(EndlessUnlockedNoticeKey);
+        PlayerPrefs.Save();
+
+        RefreshSaveCache();
+
+        if (modeSelectPanel != null)
+        {
+            OpenModeSelect();
+            SetModeSelectWarning(endlessUnlockedMessage);
+            SetModeSelectDescription(endlessUnlockedMessage);
+
+            if (endlessModeButton != null)
+                UISelectionHelper.Select(endlessModeButton, modeSelectPanel);
+
+            return;
+        }
+
+        Debug.Log(endlessUnlockedMessage);
     }
 
     public void ContinueSelectedSave()
@@ -443,7 +478,7 @@ public class MainMenuManager : MonoBehaviour
 
         SetText(savePreviewModeText, data != null ? $"Modo: {GetSaveModeDisplayName(data.gameMode)}" : "Modo: --");
         SetText(savePreviewQuestText, data != null ? GetSaveQuestLine(data) : "Progresso: --");
-        SetText(savePreviewDebtText, data != null ? $"Dívida: -R$ {Mathf.Max(0, data.currentDebt)}" : "Dívida: --");
+        SetText(savePreviewDebtText, data != null ? GetSaveDebtPreviewLine(data) : "Dívida: --");
         SetText(savePreviewMoneyText, data != null ? $"Dinheiro: R$ {data.playerMoney:0}" : "Dinheiro: --");
         SetText(savePreviewPlayTimeText, data != null ? $"Tempo jogado: {FormatPlayTime(data.playTimeSeconds)}" : "Tempo jogado: --");
         SetText(savePreviewDayText, data != null && data.dayCycle != null ? $"Dia: {data.dayCycle.currentDay}" : "Dia: --");
@@ -699,10 +734,12 @@ public class MainMenuManager : MonoBehaviour
         if (data == null)
             return "Progresso: --";
 
-        if (data.gameMode == GameProgressMode.Endless)
-            return "Progresso: Modo livre";
-
         CampaignSaveData campaignSave = data.campaign;
+
+        if (data.gameMode == GameProgressMode.Endless)
+            return campaignSave != null
+                ? $"Progresso: Entrega {Mathf.Max(1, campaignSave.currentQuestIndex)}"
+                : "Progresso: Modo sem fim";
 
         if (campaignSave == null)
             return "Progresso: Campanha";
@@ -714,6 +751,19 @@ public class MainMenuManager : MonoBehaviour
             return $"Progresso: Quest {campaignSave.currentQuestIndex} falhou";
 
         return $"Progresso: Quest {campaignSave.currentQuestIndex}/{campaignSave.maxQuestCount}";
+    }
+
+    private string GetSaveDebtPreviewLine(GameSaveData data)
+    {
+        if (data == null)
+            return "Dívida: --";
+
+        CampaignSaveData campaignSave = data.campaign;
+
+        if (data.gameMode == GameProgressMode.Endless && campaignSave != null)
+            return $"Meta da quest: R$ {campaignSave.questDebtPaidAmount}/{campaignSave.questDebtPaymentTarget}";
+
+        return $"Dívida: -R$ {Mathf.Max(0, data.currentDebt)}";
     }
 
     private string GetModeDisplayName(GameProgressMode mode)

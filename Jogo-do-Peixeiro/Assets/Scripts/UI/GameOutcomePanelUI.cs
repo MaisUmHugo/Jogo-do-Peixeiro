@@ -145,10 +145,57 @@ public class GameOutcomePanelUI : MonoBehaviour
 
     public void RestartScene()
     {
-        CampaignProgressSystem.Instance?.RetryCurrentQuest();
+        ResetRunToStart();
         CloseImmediate();
         Time.timeScale = 1f;
         SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+    }
+
+    private void ResetRunToStart()
+    {
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
+        GameProgressMode modeToReset = campaignProgress != null
+            ? campaignProgress.GameMode
+            : GameProgressMode.Campaign;
+        GameSaveManager saveManager = GameSaveManager.GetOrCreate();
+
+        if (saveManager != null)
+        {
+            saveManager.DeleteSave(modeToReset);
+            saveManager.ResetTrackedPlayTime();
+        }
+
+        GameSaveManager.ClearLoadRequest();
+
+        if (modeToReset == GameProgressMode.Endless)
+            campaignProgress?.StartUnlockedEndlessMode();
+        else
+            campaignProgress?.StartNewCampaign();
+
+        DebtSystem debtSystem = DebtSystem.GetOrCreate();
+
+        if (debtSystem != null)
+        {
+            if (modeToReset == GameProgressMode.Endless && campaignProgress != null)
+                debtSystem.SetDebt(campaignProgress.CampaignCompletionDebtAmount);
+            else
+                debtSystem.ResetDebt();
+        }
+
+        FindFirstObjectByType<PlayerMoneyManager>(FindObjectsInactive.Include)?.SetMoney(0f);
+        FindFirstObjectByType<MoneyLender>(FindObjectsInactive.Include)?.SetPaymentCycle(0, 0);
+        FindFirstObjectByType<DockUpgradeSystem>(FindObjectsInactive.Include)?.SetUpgradeState(0, 0, 0, false);
+        FindFirstObjectByType<DayCycle>(FindObjectsInactive.Include)?.SetCycleState(1, 1, 0f);
+        FindFirstObjectByType<ShipInventory>(FindObjectsInactive.Include)?.ClearFish();
+
+        FishCaptureHistory.Reset();
+
+        BaitInventory baitInventory = BaitInventory.Instance != null
+            ? BaitInventory.Instance
+            : FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
+
+        baitInventory?.ResetToStartingBaits();
+        InputHandler.instance?.ResetGameplayInput();
     }
 
     public void GoToMainMenu()

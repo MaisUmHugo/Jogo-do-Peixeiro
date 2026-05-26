@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using UnityEngine;
+using UnityEngine.Playables;
 using UnityEngine.SceneManagement;
 
 public class CampaignQuestGuidanceController : MonoBehaviour
@@ -8,6 +9,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     #region Types And Fields
 
     public static CampaignQuestGuidanceController instance;
+    private const string TutorialSlidesCompletedKey = "Peixeiro_TutorialSlidesCompleted";
 
     public enum TutorialStep
     {
@@ -23,7 +25,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         Failed,
         GoToDockOwner,
         SellFish,
-        PayDebt
+        PayDebt,
+        TalkToDockOwner
     }
 
     [Header("Current Step")]
@@ -44,9 +47,25 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private TutorialPanelSequence introPanelSequence;
     [SerializeField] private TutorialPanelSequence questReceivedPanelSequence;
     [SerializeField] private TutorialPanelSequence boatAndFishingPanelSequence;
+    [SerializeField] private TutorialPanelSequence fishingPanelSequence;
     [SerializeField] private TutorialPanelSequence dockShopPanelSequence;
     [SerializeField] private TutorialPanelSequence debtPaymentPanelSequence;
     [SerializeField] private bool showEachTutorialSlidePanelOnce = true;
+    [SerializeField] private bool skipTutorialSlidePanelsAfterFirstCompletion = true;
+
+    [Header("Cutscene Timeline")]
+    [SerializeField] private CampaignCutsceneController cutsceneController;
+    [SerializeField] private bool playOpeningTimelineBeforeIntroSlides = true;
+    [SerializeField] private PlayableDirector openingCutsceneDirector;
+    [SerializeField] private bool playMoneyLenderTimelineBeforeDockOwner = true;
+    [SerializeField] private PlayableDirector moneyLenderIntroCutsceneDirector;
+    [SerializeField] private bool playRoteiroDialogsWhenTimelineMissing = true;
+    [SerializeField] private RoteiroDialogLibrary roteiroDialogLibrary;
+
+    [Header("Dialog Fallback Fade")]
+    [SerializeField] private bool fadeBeforeOpeningDialogFallback = true;
+    [SerializeField, Min(0f)] private float openingDialogFallbackFadeInDuration = 3f;
+    [SerializeField, Min(0f)] private float openingDialogFallbackFadeInDelay = 1.5f;
 
     [Header("Mission")]
     [SerializeField] private FishingAreaDefinition tutorialFishingArea;
@@ -87,6 +106,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private GameObject dockMarker;
     [SerializeField] private GameObject dockOwnerMarker;
     [SerializeField] private GameObject moneyLenderMarker;
+    [SerializeField] private GameObject fishingSpotMarker;
 
     [Header("Scene")]
     [SerializeField] private string mainMenuSceneName = "Main Menu";
@@ -104,9 +124,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     private bool hasShownIntroSlides;
     private bool hasShownQuestReceivedSlides;
     private bool hasShownBoatAndFishingSlides;
+    private bool hasShownFishingSlides;
     private bool hasShownDockShopSlides;
     private bool hasShownDebtPaymentSlides;
     private bool shouldShowDebtPaymentSlidesOnDockOwnerClose;
+    private bool hasPlayedMoneyLenderIntroCutscene;
+    private Coroutine tutorialTimelineRoutine;
 
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
@@ -150,6 +173,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (campaignProgress == null)
             campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (cutsceneController == null)
+            cutsceneController = FindFirstObjectByType<CampaignCutsceneController>(FindObjectsInactive.Include);
     }
 
     private void OnEnable()
@@ -160,6 +186,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         TutorialEvents.BoatEntered += NotifyEnteredBoat;
         TutorialEvents.BoatExited += NotifyExitedBoat;
         TutorialEvents.FishCaught += NotifyFishCaught;
+        TutorialEvents.FishingBiteTutorialRequested += HandleFishingBiteTutorial;
         ForcedSleepController.FishLostDuringForcedSleep += HandleForcedSleepFishLoss;
         FishMarket.OnAnySaleCompleted += HandleFishMarketSaleCompleted;
         DockOwnerUI.AnyClosed += HandleDockOwnerClosed;
@@ -177,12 +204,19 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             pendingOutcomeRoutine = null;
         }
 
+        if (tutorialTimelineRoutine != null)
+        {
+            StopCoroutine(tutorialTimelineRoutine);
+            tutorialTimelineRoutine = null;
+        }
+
         TutorialEvents.MoneyLenderInteractionRequested -= HandleMoneyLenderInteraction;
         TutorialEvents.BoatEntryBlockRequested -= ShouldBlockBoatEntry;
         TutorialEvents.BoatEntryBlocked -= HandleBoatEntryBlocked;
         TutorialEvents.BoatEntered -= NotifyEnteredBoat;
         TutorialEvents.BoatExited -= NotifyExitedBoat;
         TutorialEvents.FishCaught -= NotifyFishCaught;
+        TutorialEvents.FishingBiteTutorialRequested -= HandleFishingBiteTutorial;
         ForcedSleepController.FishLostDuringForcedSleep -= HandleForcedSleepFishLoss;
         FishMarket.OnAnySaleCompleted -= HandleFishMarketSaleCompleted;
         DockOwnerUI.AnyClosed -= HandleDockOwnerClosed;
@@ -201,6 +235,14 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             ClearMarkers();
             SetObjectiveVisible(false);
+            return;
+        }
+
+        if (IsCampaignEconomyFlowActive())
+        {
+            PrepareOpeningTutorialRequest();
+            SetObjectiveVisible(false);
+            PlayOpeningCutsceneOrRun(() => ShowIntroSlides(() => SetStep(TutorialStep.GoToMoneyLenderCabin)));
             return;
         }
 
@@ -270,9 +312,14 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
 
         if (currentStep == TutorialStep.GoToBoat)
-            SetStep(IsCampaignEconomyFlowActive() && HasEnoughFishValueForQuestGoal()
-                ? TutorialStep.GoToDockOwner
-                : TutorialStep.GoToFishingSpot);
+        {
+            ShowBoatAndFishingSlides(() =>
+            {
+                SetStep(IsCampaignEconomyFlowActive() && HasEnoughFishValueForQuestGoal()
+                    ? TutorialStep.GoToDockOwner
+                    : TutorialStep.GoToFishingSpot);
+            });
+        }
     }
 
     public void NotifyExitedBoat()
@@ -314,6 +361,20 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (currentStep == TutorialStep.GoToFishingSpot)
             SetStep(TutorialStep.CatchRequiredFish);
+    }
+
+    private bool HandleFishingBiteTutorial(Action _continueFishing)
+    {
+        if (!IsTutorialRunning ||
+            !hasAcceptedRequest ||
+            currentStep != TutorialStep.CatchRequiredFish ||
+            hasShownFishingSlides)
+        {
+            return false;
+        }
+
+        ShowFishingSlides(_continueFishing);
+        return true;
     }
 
     public void NotifyReturnedToDock()
@@ -422,9 +483,22 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private bool HandleCampaignEconomyMoneyLenderInteraction(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
+        if (currentStep == TutorialStep.GoToMoneyLenderCabin && hasAcceptedRequest)
+        {
+            PlayMoneyLenderIntroThenDockOwner();
+            return true;
+        }
+
         if (currentStep == TutorialStep.GoToMoneyLenderCabin || !hasAcceptedRequest)
         {
             StartDeliveryRequest(_moneyLender, _paymentUI, _moneyLenderUI);
+            return true;
+        }
+
+        if (currentStep == TutorialStep.TalkToDockOwner)
+        {
+            ShowWarning("Fale com o Dono do Porto antes de procurar o cobrador.");
+            UpdateObjectiveText();
             return true;
         }
 
@@ -432,7 +506,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             if (HasEnoughFishValueForQuestGoal())
             {
-                AdvanceToDockOwnerMarket("Venda os peixes no mercado do dono da doca antes de pagar o cobrador.");
+                AdvanceToDockOwnerMarket("Venda os peixes no mercado do Dono do Porto antes de pagar o cobrador.");
             }
             else
             {
@@ -461,6 +535,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         return !hasAcceptedRequest ||
                currentStep == TutorialStep.GoToMoneyLenderCabin ||
+               currentStep == TutorialStep.TalkToDockOwner ||
                (ShouldUseBasicPanelSequence() && currentStep == TutorialStep.ReadBasicPanels);
     }
 
@@ -468,6 +543,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         if (!IsTutorialRunning)
             return;
+
+        if (currentStep == TutorialStep.TalkToDockOwner)
+        {
+            ShowWarning("Fale com o Dono do Porto antes de pegar o barco.");
+            return;
+        }
 
         string message = ShouldUseBasicPanelSequence() && currentStep == TutorialStep.ReadBasicPanels
             ? "Leia as instruções antes de pegar o barco."
@@ -488,7 +569,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             if (HasEnoughFishValueForQuestGoal())
             {
-                AdvanceToDockOwnerMarket("Peixes suficientes. Venda no mercado do dono da doca.");
+                AdvanceToDockOwnerMarket("Peixes suficientes. Venda no mercado do Dono do Porto.");
                 return;
             }
 
@@ -595,6 +676,17 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void HandleDockOwnerClosed(DockOwnerUI _dockOwnerUI)
     {
+        if (IsTutorialRunning &&
+            hasAcceptedRequest &&
+            currentStep == TutorialStep.TalkToDockOwner)
+        {
+            ShowDockShopSlides(() =>
+            {
+                ShowQuestReceivedSlides(() => SetStep(TutorialStep.GoToBoat));
+            });
+            return;
+        }
+
         if (!shouldShowDebtPaymentSlidesOnDockOwnerClose)
             return;
 
@@ -656,6 +748,170 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     #endregion
 
     #region Delivery Request Flow
+
+    private void PlayMoneyLenderIntroThenDockOwner()
+    {
+        if (hasPlayedMoneyLenderIntroCutscene)
+        {
+            SetStep(TutorialStep.TalkToDockOwner);
+            return;
+        }
+
+        hasPlayedMoneyLenderIntroCutscene = true;
+        SetObjectiveVisible(false);
+
+        PlayMoneyLenderIntroCutsceneOrRun(() =>
+        {
+            ShowDebtPaymentSlides(() => SetStep(TutorialStep.TalkToDockOwner));
+        });
+    }
+
+    private void PlayOpeningCutsceneOrRun(Action _onFinished)
+    {
+        PlayCutsceneControllerOrFallback(
+            _tryPlayControllerCutscene: controller => controller.TryPlayOpeningCutscene(_onFinished),
+            _fallbackDirector: openingCutsceneDirector,
+            _selectFallbackDialogs: _library => new[] { _library.IntroMarinaLoja },
+            _shouldPlayFallback: playOpeningTimelineBeforeIntroSlides,
+            _onFinished: _onFinished,
+            _fadeBeforeDialogFallback: fadeBeforeOpeningDialogFallback);
+    }
+
+    private void PlayMoneyLenderIntroCutsceneOrRun(Action _onFinished)
+    {
+        PlayCutsceneControllerOrFallback(
+            _tryPlayControllerCutscene: controller => controller.TryPlayMoneyLenderIntroCutscene(_onFinished),
+            _fallbackDirector: moneyLenderIntroCutsceneDirector,
+            _selectFallbackDialogs: _library => new[] { _library.IntroCobradorCabana },
+            _shouldPlayFallback: playMoneyLenderTimelineBeforeDockOwner,
+            _onFinished: _onFinished,
+            _fadeBeforeDialogFallback: false);
+    }
+
+    private void PlayCutsceneControllerOrFallback(
+        Func<CampaignCutsceneController, bool> _tryPlayControllerCutscene,
+        PlayableDirector _fallbackDirector,
+        Func<RoteiroDialogLibrary, DialogSequenceAsset[]> _selectFallbackDialogs,
+        bool _shouldPlayFallback,
+        Action _onFinished,
+        bool _fadeBeforeDialogFallback = false)
+    {
+        CampaignCutsceneController controller = GetCutsceneController();
+
+        if (controller != null)
+        {
+            if (_tryPlayControllerCutscene != null && _tryPlayControllerCutscene.Invoke(controller))
+                return;
+        }
+
+        if (TryPlayTutorialTimeline(_fallbackDirector, _shouldPlayFallback, _onFinished))
+            return;
+
+        if (TryPlayRoteiroDialogFallback(_selectFallbackDialogs, _onFinished, _fadeBeforeDialogFallback))
+            return;
+
+        _onFinished?.Invoke();
+    }
+
+    private bool TryPlayTutorialTimeline(PlayableDirector _director, bool _shouldPlay, Action _onFinished)
+    {
+        if (!_shouldPlay || _director == null || _director.playableAsset == null)
+            return false;
+
+        if (tutorialTimelineRoutine != null)
+            StopCoroutine(tutorialTimelineRoutine);
+
+        tutorialTimelineRoutine = StartCoroutine(PlayTutorialTimelineRoutine(_director, _onFinished));
+        return true;
+    }
+
+    private bool TryPlayRoteiroDialogFallback(
+        Func<RoteiroDialogLibrary, DialogSequenceAsset[]> _selectFallbackDialogs,
+        Action _onFinished,
+        bool _fadeBeforeDialogFallback)
+    {
+        if (!playRoteiroDialogsWhenTimelineMissing || _selectFallbackDialogs == null)
+            return false;
+
+        if (roteiroDialogLibrary == null)
+            roteiroDialogLibrary = RoteiroDialogPlayback.LoadLibrary();
+
+        if (_fadeBeforeDialogFallback && isActiveAndEnabled)
+        {
+            tutorialTimelineRoutine = StartCoroutine(PlayRoteiroDialogFallbackWithFadeRoutine(_selectFallbackDialogs, _onFinished));
+            return true;
+        }
+
+        return RoteiroDialogPlayback.TryPlayFromLibrary(roteiroDialogLibrary, _selectFallbackDialogs, _onFinished);
+    }
+
+    private IEnumerator PlayRoteiroDialogFallbackWithFadeRoutine(
+        Func<RoteiroDialogLibrary, DialogSequenceAsset[]> _selectFallbackDialogs,
+        Action _onFinished)
+    {
+        SceneTransitionFadeController.SetBlackImmediate();
+        yield return SceneTransitionFadeController.FadeInAndWait(
+            openingDialogFallbackFadeInDuration,
+            openingDialogFallbackFadeInDelay);
+
+        tutorialTimelineRoutine = null;
+
+        if (!RoteiroDialogPlayback.TryPlayFromLibrary(roteiroDialogLibrary, _selectFallbackDialogs, _onFinished))
+            _onFinished?.Invoke();
+    }
+
+    private CampaignCutsceneController GetCutsceneController()
+    {
+        if (cutsceneController != null)
+            return cutsceneController;
+
+        cutsceneController = FindFirstObjectByType<CampaignCutsceneController>(FindObjectsInactive.Include);
+        return cutsceneController;
+    }
+
+    private IEnumerator PlayTutorialTimelineRoutine(PlayableDirector _director, Action _onFinished)
+    {
+        bool finished = false;
+
+        void HandleStopped(PlayableDirector stoppedDirector)
+        {
+            if (stoppedDirector == _director)
+                finished = true;
+        }
+
+        _director.stopped += HandleStopped;
+        _director.extrapolationMode = DirectorWrapMode.None;
+        _director.time = 0;
+        _director.Evaluate();
+        _director.Play();
+
+        try
+        {
+            while (!finished)
+                yield return null;
+        }
+        finally
+        {
+            _director.stopped -= HandleStopped;
+
+            if (tutorialTimelineRoutine != null)
+                tutorialTimelineRoutine = null;
+        }
+
+        _onFinished?.Invoke();
+    }
+
+    private void PrepareOpeningTutorialRequest()
+    {
+        if (hasAcceptedRequest)
+            return;
+
+        MoneyLender moneyLender = FindFirstObjectByType<MoneyLender>(FindObjectsInactive.Include);
+        PickRandomRequest(moneyLender);
+        hasAcceptedRequest = true;
+        hasSoldFishToDockOwner = false;
+        tutorialStartDay = dayCycle != null ? dayCycle.ElapsedDays : tutorialStartDay;
+    }
 
     private void StartDeliveryRequest(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI)
     {
@@ -917,39 +1173,58 @@ public class CampaignQuestGuidanceController : MonoBehaviour
                 ? basicPanelSequence
                 : null;
 
-        ShowTutorialPanelOnce(sequence, ref hasShownIntroSlides, _onFinished);
+        ShowTutorialPanelOnce(sequence, ref hasShownIntroSlides, _onFinished, 0, 2);
     }
 
     private void ShowQuestReceivedSlides(Action _onFinished = null)
     {
-        ShowTutorialPanelOnce(questReceivedPanelSequence, ref hasShownQuestReceivedSlides, _onFinished);
+        ShowTutorialPanelOnce(questReceivedPanelSequence, ref hasShownQuestReceivedSlides, _onFinished, 3, 1);
     }
 
     private void ShowBoatAndFishingSlides(Action _onFinished = null)
     {
-        ShowTutorialPanelOnce(boatAndFishingPanelSequence, ref hasShownBoatAndFishingSlides, _onFinished);
+        ShowTutorialPanelOnce(boatAndFishingPanelSequence, ref hasShownBoatAndFishingSlides, _onFinished, 4, 1);
+    }
+
+    private void ShowFishingSlides(Action _onFinished = null)
+    {
+        ShowTutorialPanelOnce(fishingPanelSequence, ref hasShownFishingSlides, _onFinished, 5, 2);
     }
 
     private void ShowDockShopSlides(Action _onFinished = null)
     {
-        ShowTutorialPanelOnce(dockShopPanelSequence, ref hasShownDockShopSlides, _onFinished);
+        ShowTutorialPanelOnce(dockShopPanelSequence, ref hasShownDockShopSlides, _onFinished, 2, 1);
     }
 
     private void ShowDebtPaymentSlides(Action _onFinished = null)
     {
-        ShowTutorialPanelOnce(debtPaymentPanelSequence, ref hasShownDebtPaymentSlides, _onFinished);
+        ShowTutorialPanelOnce(debtPaymentPanelSequence, ref hasShownDebtPaymentSlides, _onFinished, 7, 2);
     }
 
-    private void ShowTutorialPanelOnce(TutorialPanelSequence _sequence, ref bool _hasShown, Action _onFinished)
+    private void ShowTutorialPanelOnce(
+        TutorialPanelSequence _sequence,
+        ref bool _hasShown,
+        Action _onFinished,
+        int _fallbackStartSlide = 0,
+        int _fallbackSlideCount = 0)
     {
-        if (!CanShowTutorialPanel(_sequence, _hasShown))
+        TutorialPanelSequence sequenceToShow = _sequence != null ? _sequence : basicPanelSequence;
+
+        if (!CanShowTutorialPanel(sequenceToShow, _hasShown))
         {
             _onFinished?.Invoke();
             return;
         }
 
         _hasShown = true;
-        _sequence.Show(_onFinished);
+
+        if (_sequence == null && _fallbackSlideCount > 0)
+        {
+            sequenceToShow.ShowRange(_fallbackStartSlide, _fallbackSlideCount, _onFinished);
+            return;
+        }
+
+        sequenceToShow.Show(_onFinished);
     }
 
     private bool CanShowTutorialPanel(TutorialPanelSequence _sequence, bool _hasShown)
@@ -957,7 +1232,25 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (!showTutorialSlidePanels || _sequence == null)
             return false;
 
+        if (HasCompletedTutorialSlidesBefore())
+            return false;
+
         return !showEachTutorialSlidePanelOnce || !_hasShown;
+    }
+
+    private bool HasCompletedTutorialSlidesBefore()
+    {
+        return skipTutorialSlidePanelsAfterFirstCompletion &&
+               PlayerPrefs.GetInt(TutorialSlidesCompletedKey, 0) == 1;
+    }
+
+    private void MarkTutorialSlidesCompleted()
+    {
+        if (!skipTutorialSlidePanelsAfterFirstCompletion)
+            return;
+
+        PlayerPrefs.SetInt(TutorialSlidesCompletedKey, 1);
+        PlayerPrefs.Save();
     }
 
     private void ShowMissingRequestMessage(bool _showDialog = true)
@@ -980,6 +1273,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         IsTutorialFinished = true;
         isFinishingDelivery = false;
         bool shouldHideGuidanceAndContinue = IsCampaignEconomyTutorialEnabled();
+        MarkTutorialSlidesCompleted();
 
         SetStep(TutorialStep.Finished);
         ClearMarkers();
@@ -1217,6 +1511,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         switch (currentStep)
         {
+            case TutorialStep.TalkToDockOwner:
+                tutorialUI.SetObjectiveText("Fale com o Dono do Porto.");
+                break;
+
             case TutorialStep.GoToMoneyLenderCabin:
                 tutorialUI.SetObjectiveText("Fale com o cobrador.");
                 break;
@@ -1237,7 +1535,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
             case TutorialStep.GoToDockOwner:
             case TutorialStep.SellFish:
-                tutorialUI.SetObjectiveText("Venda os peixes na loja do dono da doca.");
+                tutorialUI.SetObjectiveText("Venda os peixes na loja do Dono do Porto.");
                 break;
 
             case TutorialStep.TalkToMoneyLender:
@@ -1280,6 +1578,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         switch (currentStep)
         {
+            case TutorialStep.TalkToDockOwner:
+                tutorialUI.SetObjectiveText("Fale com o Dono do Porto.");
+                break;
+
             case TutorialStep.GoToMoneyLenderCabin:
                 tutorialUI.SetObjectiveText("Fale com o cobrador.");
                 break;
@@ -1302,7 +1604,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
             case TutorialStep.ReturnToDock:
                 tutorialUI.SetObjectiveText(IsCampaignEconomyFlowActive()
-                    ? "Volte para a doca e venda os peixes ao dono da doca."
+                    ? "Volte para a doca e venda os peixes ao Dono do Porto."
                     : "Volte para a doca.");
                 break;
 
@@ -1317,11 +1619,11 @@ public class CampaignQuestGuidanceController : MonoBehaviour
                 break;
 
             case TutorialStep.GoToDockOwner:
-                tutorialUI.SetObjectiveText("Fale com o dono da doca para vender os peixes.");
+                tutorialUI.SetObjectiveText("Fale com o Dono do Porto para vender os peixes.");
                 break;
 
             case TutorialStep.SellFish:
-                tutorialUI.SetObjectiveText("Venda os peixes na loja do dono da doca.");
+                tutorialUI.SetObjectiveText("Venda os peixes na loja do Dono do Porto.");
                 break;
 
             case TutorialStep.PayDebt:
@@ -1349,6 +1651,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         switch (currentStep)
         {
+            case TutorialStep.TalkToDockOwner:
+                SetFirstAvailableMarkerActive(dockOwnerMarker, dockMarker);
+                break;
+
             case TutorialStep.GoToMoneyLenderCabin:
                 SetFirstAvailableMarkerActive(moneyLenderCabinMarker, moneyLenderMarker);
                 break;
@@ -1359,6 +1665,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
             case TutorialStep.GoToFishingSpot:
             case TutorialStep.CatchRequiredFish:
+                SetMarkerActive(fishingSpotMarker, true);
                 break;
 
             case TutorialStep.ReturnToDock:
@@ -1384,6 +1691,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         SetMarkerActive(dockMarker, false);
         SetMarkerActive(dockOwnerMarker, false);
         SetMarkerActive(moneyLenderMarker, false);
+        SetMarkerActive(fishingSpotMarker, false);
     }
 
     private void SetFirstAvailableMarkerActive(params GameObject[] _markers)

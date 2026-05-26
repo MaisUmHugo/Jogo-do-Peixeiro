@@ -176,6 +176,14 @@ public class BaitInventory : MonoBehaviour
         NotifyChanged();
     }
 
+    public void ResetToStartingBaits()
+    {
+        baitStacks.Clear();
+        EquippedBait = null;
+        InitializeStartingBaits();
+        NotifyChanged();
+    }
+
     private void InitializeStartingBaits()
     {
         if (baitStacks.Count > 0)

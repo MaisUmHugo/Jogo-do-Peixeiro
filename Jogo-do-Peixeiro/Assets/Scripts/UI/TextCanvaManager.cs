@@ -26,6 +26,7 @@ public class TextCanvaManager : MonoBehaviour
     private DialogCameraFocusTarget defaultCameraFocusTarget;
     private DialogCameraFocusTarget currentCameraFocusTarget;
     private int dialogStartedFrame = -1;
+    private int lastAdvanceFrame = -1;
     private bool isSubscribedToInput;
     public float TextSpeed;
     public bool IsDialogActive { get; private set; }
@@ -50,6 +51,15 @@ public class TextCanvaManager : MonoBehaviour
         TrySubscribeInput();
     }
 
+    private void Update()
+    {
+        if (!IsDialogActive)
+            return;
+
+        if (WasKeyboardAdvancePressedThisFrame() || WasMouseAdvancePressedThisFrame())
+            AdvanceDialog();
+    }
+
     private void OnDisable()
     {
         UnsubscribeInput();
@@ -65,6 +75,11 @@ public class TextCanvaManager : MonoBehaviour
     {
         if (!IsDialogActive)
             return;
+
+        if (Time.frameCount == dialogStartedFrame || Time.frameCount == lastAdvanceFrame)
+            return;
+
+        lastAdvanceFrame = Time.frameCount;
 
         if (!isWritting)
         {
@@ -119,6 +134,7 @@ public class TextCanvaManager : MonoBehaviour
         onDialogFinished = _onFinished;
         defaultCameraFocusTarget = _cameraFocusTarget;
         dialogStartedFrame = Time.frameCount;
+        lastAdvanceFrame = -1;
 
         dialogLines.AddRange(_dialog.GetLines());
 
@@ -145,6 +161,7 @@ public class TextCanvaManager : MonoBehaviour
         textIndex = 0;
         dialogLines.Clear();
         isWritting = false;
+        lastAdvanceFrame = -1;
         SetDialogActive(false);
         NotifyDialogFinished();
         callback?.Invoke();
@@ -227,10 +244,29 @@ public class TextCanvaManager : MonoBehaviour
 
     private void HandleInteractPressed()
     {
-        if (Time.frameCount == dialogStartedFrame)
-            return;
-
         AdvanceDialog();
+    }
+
+    private bool WasKeyboardAdvancePressedThisFrame()
+    {
+        Keyboard keyboard = Keyboard.current;
+
+        if (keyboard == null)
+            return false;
+
+        return keyboard.spaceKey.wasPressedThisFrame ||
+               keyboard.enterKey.wasPressedThisFrame ||
+               keyboard.numpadEnterKey.wasPressedThisFrame;
+    }
+
+    private bool WasMouseAdvancePressedThisFrame()
+    {
+        Mouse mouse = Mouse.current;
+
+        if (mouse == null || !mouse.leftButton.wasPressedThisFrame)
+            return false;
+
+        return true;
     }
 
     private void TrySubscribeInput()

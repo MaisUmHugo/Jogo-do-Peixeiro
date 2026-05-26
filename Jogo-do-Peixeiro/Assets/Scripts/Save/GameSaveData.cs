@@ -57,7 +57,7 @@ public class CampaignSaveData
     public bool hasUnlockedFreePlay;
     public bool isCampaignCompleted;
     public bool endlessUnlocked;
-    public int campaignCompletionDebtAmount = 999999;
+    public int campaignCompletionDebtAmount = 100000000;
     public bool isSpecialMoneyLenderDeliveryActive;
     public string specialDeliveryFishId;
     public int specialDeliveryQuantity;

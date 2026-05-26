@@ -4,24 +4,35 @@ public static class SceneTransitionRequest
 {
     private const string ArrivalPointIdKey = "SceneTransitionArrivalPointId";
 
+    private static string pendingArrivalPointId;
+
     public static void RequestArrival(string _arrivalPointId)
     {
         if (string.IsNullOrWhiteSpace(_arrivalPointId))
-            PlayerPrefs.DeleteKey(ArrivalPointIdKey);
+            pendingArrivalPointId = string.Empty;
         else
-            PlayerPrefs.SetString(ArrivalPointIdKey, _arrivalPointId);
+            pendingArrivalPointId = _arrivalPointId;
 
-        PlayerPrefs.Save();
+        ClearLegacyPendingArrival();
     }
 
     public static bool TryGetPendingArrivalId(out string _arrivalPointId)
     {
-        _arrivalPointId = PlayerPrefs.GetString(ArrivalPointIdKey, string.Empty);
+        _arrivalPointId = pendingArrivalPointId;
         return !string.IsNullOrWhiteSpace(_arrivalPointId);
     }
 
     public static void ClearPendingArrival()
     {
+        pendingArrivalPointId = string.Empty;
+        ClearLegacyPendingArrival();
+    }
+
+    private static void ClearLegacyPendingArrival()
+    {
+        if (!PlayerPrefs.HasKey(ArrivalPointIdKey))
+            return;
+
         PlayerPrefs.DeleteKey(ArrivalPointIdKey);
         PlayerPrefs.Save();
     }
