@@ -2041,7 +2041,7 @@ Transform:
   m_GameObject: {fileID: 967273091}
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 9.4, y: 7.13708, z: -120.5}
+  m_LocalPosition: {x: 9.4, y: 7.13708, z: -91.1}
   m_LocalScale: {x: 304.6, y: 102.6, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -3166,14 +3166,15 @@ MonoBehaviour:
   randomFishAmount: 5
   ignoreShipCapacity: 1
   autoFindFishAssetsInEditor: 1
+  autoFindFishAssetsAtRuntime: 1
   baitPool: []
   baitQuantityToAdd: 5
   useDefaultBaitsWhenEmpty: 1
   enableKeyboardShortcuts: 1
   requireShiftModifier: 1
-  addRandomFishKey: 99
-  addRandomFishBatchKey: 100
-  addBaitsKey: 101
+  addRandomFishKey: 101
+  addRandomFishBatchKey: 102
+  addBaitsKey: 103
 --- !u!114 &1351974022
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -3208,6 +3209,7 @@ MonoBehaviour:
   _teleportToDockKeyboardBinding: <Keyboard>/f4
   _spawnFishPullVfxKeyboardBinding: <Keyboard>/f5
   _teleportToArrivalPointKeyboardBinding: <Keyboard>/f6
+  _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: LakeCaveReturn
   _fishPullVfxSpawnDistance: 5
@@ -4871,7 +4873,7 @@ PrefabInstance:
     m_Modifications:
     - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: darkMaxDistance
-      value: 10
+      value: 40
       objectReference: {fileID: 0}
     - target: {fileID: -4232455260501201346, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: referenceObject
@@ -4933,6 +4935,18 @@ PrefabInstance:
       propertyPath: m_Name
       value: Water
       objectReference: {fileID: 0}
+    - target: {fileID: 5914047214984535719, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: m_Materials.Array.size
+      value: 2
+      objectReference: {fileID: 0}
+    - target: {fileID: 5914047214984535719, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 732ce62b8d54d124a98538b66e921c73, type: 2}
+    - target: {fileID: 5914047214984535719, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
+      propertyPath: 'm_Materials.Array.data[1]'
+      value: 
+      objectReference: {fileID: -876546973899608171, guid: da62d6bbf110d1e4bb17099e26569424, type: 3}
     - target: {fileID: 6512015880985938741, guid: a19b78f5002c95f42b5aadd8e80f0634, type: 3}
       propertyPath: speed
       value: 0.4
