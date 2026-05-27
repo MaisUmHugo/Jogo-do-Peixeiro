@@ -16,14 +16,14 @@ MonoBehaviour:
   description: "Fala extra do cobrador."
   lines:
   - speakerName: "Marina"
-    sentence: "Sabe, às vezes acho que você teria mais amigos se não ficasse obrigando pessoas a trabalhar para te dar dinheiro."
+    sentence: "Sabe, às vezes acho que você teria mais amigos se não ficasse obrigando pessoas a trabalhar pra te dar dinheiro."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
     sentence: "Caramba, eu nunca pensei nisso. Realmente muda muito meu ponto de vista da vida."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Sério? Quer dizer que eu não preciso mais pagar?"
+    sentence: "Sério? Quer dizer que eu não preciso mais pagar??"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Claro que precisa. Eu só quis dizer que não preciso de amigos com todo o dinheiro que eu tenho. Agora paga logo, vai."
+    sentence: "Claro que precisa. Eu só quis dizer que eu não preciso de amigos com todo o dinheiro que eu tenho. Agora paga logo, vai."
     cameraFocusTarget: {fileID: 0}

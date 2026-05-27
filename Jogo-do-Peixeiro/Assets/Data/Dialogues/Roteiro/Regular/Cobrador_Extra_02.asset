@@ -19,8 +19,8 @@ MonoBehaviour:
     sentence: "Então, Marina, como vai a pesca?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Ah! Tá indo..."
+    sentence: "Ah! Tá indo-"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Eu não me importo. Agora, cadê o meu dinheiro?"
+    sentence: "Eu não me importo. Agora cadê o meu dinheiro?"
     cameraFocusTarget: {fileID: 0}

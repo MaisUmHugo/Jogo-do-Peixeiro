@@ -22,5 +22,5 @@ MonoBehaviour:
     sentence: "Por que será?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Gente rica compra animais para mostruário. Se eu me importasse com o que eles fazem, eu não teria dinheiro. Agora você ia me pagar, não ia?"
+    sentence: "Gente rica compra animais pra mostruário. Se eu me importasse com o que eles fazem, eu não teria dinheiro. Agora, você ia me pagar, não ia?"
     cameraFocusTarget: {fileID: 0}

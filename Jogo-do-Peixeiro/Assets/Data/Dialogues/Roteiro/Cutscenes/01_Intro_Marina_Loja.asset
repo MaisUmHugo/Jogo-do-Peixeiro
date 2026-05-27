@@ -16,8 +16,8 @@ MonoBehaviour:
   description: "Cutscene inicial, parte 1. Tela escura clareia com Marina em frente à loja."
   lines:
   - speakerName: "Marina"
-    sentence: "Finalmente arrumei minhas coisas. Cheguei à ilha mó cansada, mas tudo valeu a pena. A loja tá prontinha, melhor do que eu imaginava também! E quase nem precisei gastar para montar ela, hehe."
+    sentence: "Finalmente arrumei minhas coisas. Cheguei na ilha mó cansada, mas tudo valeu a pena. A loja tá prontinha, melhor do que eu imaginava também! E mal tive que gastar pra fazer ela, hehe."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Opa, verdade. O cobrador me chamou para a cabana dele. Melhor ir lá checar."
+    sentence: "Opa, verdade. O Cobrador me chamou para a cabana dele. Melhor ir lá checar."
     cameraFocusTarget: {fileID: 0}

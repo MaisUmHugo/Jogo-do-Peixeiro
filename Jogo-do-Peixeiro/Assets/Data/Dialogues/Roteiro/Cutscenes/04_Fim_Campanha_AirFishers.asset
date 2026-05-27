@@ -16,34 +16,34 @@ MonoBehaviour:
   description: "Cutscene final, parte 2. O cobrador revela a dívida dos Air Fishers e abre o modo sem fim."
   lines:
   - speakerName: "Marina"
-    sentence: "Por que você me chamou aqui de novo, cobrador? Eu já paguei a loja, não paguei?"
+    sentence: "Por que você me chamou aqui de novo, Cobrador...? Eu já paguei a loja, não paguei?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "De fato, você pagou a loja, Marina. Mas acho que se esqueceu dos Air Fishers que comprou com o meu dinheiro..."
+    sentence: "De fato, você pagou a loja, Marina. Mas acho que se esqueceu dos Air Fishers que comprou com meu dinheiro..."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Oooh, aqueles tênis superlegais, né? Eles são mó estilosos, hehe."
+    sentence: "Oooh, aqueles tênis superlegais, né? Eles são mó estilosos, não são? Hehe."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Tão estilosos que você... se recusa a usar?"
+    sentence: "Tão estilosos que você se... recusa a usar eles?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "Claro, uai. Não quero estragar eles!"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Bem, isso não importa muito. Por acaso você viu o preço deles?"
+    sentence: "Bem, isso não importa muito. Você, por acaso, viu o preço deles?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "Claro, 100 moedas. Isso daí eu já tenho guardado."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "... Eram 100 milhões de moedas, Marina."
+    sentence: "... Eram 100 MILHÕES de moedas, Marina."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "..............."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Recomendo que você volte a pescar, a não ser que não queira mais esses tênis."
+    sentence: "Eu recomendo que você volte a pescar, a não ser que você não queira mais esses tênis."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "EU PAGO! EU PAGO! TUDO MENOS ISSO, POR FAVOR!"

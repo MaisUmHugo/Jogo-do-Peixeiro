@@ -16,7 +16,7 @@ MonoBehaviour:
   description: "Fala extra do cobrador."
   lines:
   - speakerName: "Cobrador"
-    sentence: "Demorou. Eu já estava pensando que você tentou fugir sem pagar, hahaha. Péssima escolha."
+    sentence: "Demorou. Tava pensando que você tentou fugir sem pagar, hahaha. Péssima escolha."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
     sentence: "De qualquer maneira, pode ir pagando."

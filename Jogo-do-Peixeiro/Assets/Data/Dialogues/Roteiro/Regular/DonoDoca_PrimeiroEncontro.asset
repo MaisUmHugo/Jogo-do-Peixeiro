@@ -19,13 +19,13 @@ MonoBehaviour:
     sentence: "Opa, bom dia, senhor. Tudo bem?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
-    sentence: "Uma cara nova nessa ilhazinha? Raridade hoje em dia. Do que você precisa, amiga?"
+    sentence: "Uma cara nova nessa ilhazinha? Raridade hoje em dia. Do que precisa, amiga?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "B-bem, eu acabei me metendo numa enrascada e..."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
-    sentence: "Você pegou dinheiro do cobrador e agora precisa pescar para pagar a dívida antes que ele pegue de volta tudo que fez, te deixe sem estabelecimento e sem lugar para morar, te forçando a viver no mato da ilha."
+    sentence: "Você pegou dinheiro do Cobrador e agora tem que pescar peixes para conseguir dinheiro e pagar a dívida antes que ele pegue de volta tudo que ele fez, te deixe sem um estabelecimento e sem um local para morar, te forçando a morar no mato da ilha."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
     sentence: "Correto?"
@@ -43,10 +43,10 @@ MonoBehaviour:
     sentence: "Bem, já que você está aqui, quer dizer que ele te disse que eu compraria seus peixes. E sim, eu compro."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Sério? Caramba, muito obrigada!"
+    sentence: "Sério??? Caramba, muito obrigada!!"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
-    sentence: "Não tem de quê, amiga. Se precisar de iscas ou de alguém para melhorar seus equipamentos, pode falar comigo. Ajudo no que puder."
+    sentence: "Não tem de quê, amiga. Se precisar de iscas ou de alguém que melhore seus equipamentos, pode falar comigo. Ajudo no que puder."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
     sentence: "Agora pegue seu barco e comece a pescar, se quiser manter sua loja, claro."

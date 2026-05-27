@@ -16,13 +16,13 @@ MonoBehaviour:
   description: "Cutscene inicial, parte 2. Marina fala com o cobrador e a câmera aponta para a doca."
   lines:
   - speakerName: "Marina"
-    sentence: "OPA, COBRADOR, TU TÁ AÍ, MANO?"
+    sentence: "OPA, COBRADOR, TU TÁ AÍ, MANO??"
     cameraFocusTarget: {fileID: 0}
   - speakerName: ""
     sentence: "..."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Às vezes ele saiu para comer alguma coisa. Vou ver se..."
+    sentence: "Às vezes ele saiu pra comer algo. Vou ver se-"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
     sentence: "Opa, opa. Perdão pela demora, eu estava... ocupado."
@@ -34,13 +34,13 @@ MonoBehaviour:
     sentence: "De certa forma, mas isso não importa."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Então, o que achou da loja? Fiz questão de pegar apenas a madeira de maior qualidade para o acabamento."
+    sentence: "Mas então, o que achou da loja? Fiz questão de pegar apenas a madeira de maior qualidade para o acabamento."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Ficou supimpa, hein. Eu poderia morar lá e ficaria de boa."
+    sentence: "Ficou supimpa, hein. Poderia morar lá e ficaria de boa."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Mas você não mora lá? Pediu para eu colocar uma cama e tudo."
+    sentence: "Mas você não mora lá? Pediu pra eu colocar uma cama e tudo."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "Claro, uai. Onde mais eu moraria?"
@@ -49,7 +49,7 @@ MonoBehaviour:
     sentence: "... Quer saber? Eu não vou perguntar."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "De qualquer maneira, ainda temos um último assunto a conversar antes de nosso contrato acabar, que obviamente é..."
+    sentence: "De qualquer maneira, ainda temos um último assunto a conversar antes de nosso contrato acabar, que obviamente é-"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "Um valeu e um obrigado? Poxa, muito obrigada, né? Hahaha."
@@ -58,28 +58,28 @@ MonoBehaviour:
     sentence: "... O pagamento, Marina. Estou falando do quanto você me deve."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "Ah... esqueci dessa parte, hehe..."
+    sentence: "Oh... esqueci dessa parte, hehe..."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
     sentence: "Bem, a quantia que você me deve é mais ou menos 1100 moedas."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "1100? EU MAL FAÇO 100 EM UM MÊS!"
+    sentence: "1100?? EU MAL FAÇO 100 EM UM MÊS!"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "É sério? Que pena. Esse foi o custo. Então ou você paga, ou diz adeus para sua lojinha preciosa."
+    sentence: "É sério? Que pena. Esse foi o custo. Então, ou você paga, ou diz adeus para sua lojinha preciosa."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "M-mas... eu não tenho como pagar..."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Olha, podemos fazer um trato. Você vai me pagando em partes, e eu não pego a sua loja. Cada entrega tem prazo de 3 dias. Me ouviu?"
+    sentence: "Olha, a gente pode fazer um trato. Você vai me pagando em partes e eu não pego a sua loja, mas cada entrega tem prazo de 3 dias. Me ouviu?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "C-claro! Mas eu não sei como conseguiria o dinheiro. A venda dos peixes só começa no fim do mês. Eu pesco mais agora para guardar..."
+    sentence: "C-claro! Mas eu não sei como eu conseguiria o dinheiro. A venda dos peixes só começa no fim do mês, eu pesco mais agora pra guardar..."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Cobrador"
-    sentence: "Está vendo a doca lá? Ouvi dizer que o dono daquele lugar compra peixes. Você é uma pescadora, não é? Então comece a pescar logo."
+    sentence: "Tá vendo a doca lá? Ouvi dizer que o dono daquele lugar compra peixes. Você é uma pescadora, não é? Então começa a pescar logo."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "O-ok! Obrigada!"

@@ -22,11 +22,11 @@ MonoBehaviour:
     sentence: "Seu dono! Que bom te ver aqui. Vai ficar mais fácil vender os peixes, hehe."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "... Espera. Mas se eu peguei seu barco, como você chegou aqui?"
+    sentence: "... Pera, mas se eu peguei seu barco, como que você chegou aqui?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
     sentence: "Andando."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
-    sentence: "... Ok?"
+    sentence: "... Ok??"
     cameraFocusTarget: {fileID: 0}

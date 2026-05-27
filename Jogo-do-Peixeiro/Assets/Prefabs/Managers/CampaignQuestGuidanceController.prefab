@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   currentStep: 0
   runTutorial: 1
-  blockBoatUntilMoneyLender: 1
+  blockBoatUntilMoneyLender: 0
   handleMoneyLenderDuringTutorial: 1
   failWhenDeadlineEnds: 0
   useCampaignEconomyFlow: 1

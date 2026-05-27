@@ -28,7 +28,7 @@ MonoBehaviour:
     sentence: "............"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
-    sentence: "Posso ajudar...?"
+    sentence: "Posso te ajudar...?"
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Marina"
     sentence: "Ah, não. Eu só gosto de observar pessoas."
