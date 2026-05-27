@@ -1,8 +1,17 @@
 using UnityEngine;
 using UnityEngine.Audio;
+using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class AudioManager : MonoBehaviour
 {
+    private enum UIButtonFeedbackKind
+    {
+        Hover,
+        Selection,
+        Click
+    }
+
     public static AudioManager Instance { get; private set; }
 
     [Header("Mixer")]
@@ -12,6 +21,18 @@ public class AudioManager : MonoBehaviour
     [SerializeField] private AudioSource _bgmSource;
     [SerializeField, InspectorName("SFX Source")] private AudioSource _sfxSource;
 
+    [Header("UI SFX")]
+    [SerializeField] private bool _autoAttachUIButtonSfx = true;
+    [SerializeField, InspectorName("Button Hover SFX")] private AudioClip _uiButtonHoverSfx;
+    [SerializeField, InspectorName("Button Selection SFX")] private AudioClip _uiButtonSelectionSfx;
+    [SerializeField, InspectorName("Button Click SFX")] private AudioClip _uiButtonClickSfx;
+    [SerializeField, Range(0f, 1f)] private float _uiButtonHoverVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float _uiButtonSelectionVolume = 1f;
+    [SerializeField, Range(0f, 1f)] private float _uiButtonClickVolume = 1f;
+    [SerializeField, Min(0.05f)] private float _uiButtonScanInterval = 0.25f;
+    [SerializeField, Min(0f)] private float _uiButtonPostSceneScanDuration = 2f;
+    [SerializeField, Min(0f)] private float _uiDuplicateSuppressTime = 0.06f;
+
     private const string MasterVolumeKey = "MasterVolume";
     private const string BgmVolumeKey = "BGMVolume";
     private const string SfxVolumeKey = "SFXVolume";
@@ -19,6 +40,19 @@ public class AudioManager : MonoBehaviour
     private const string MasterExposedName = "MasterVolume";
     private const string BgmExposedName = "BGMVolume";
     private const string SfxExposedName = "SFXVolume";
+
+    private float _nextUIButtonScanTime;
+    private float _uiButtonScanStopTime;
+    private bool _isUIButtonScanBurstActive;
+    private GameObject _lastUIButtonFeedbackObject;
+    private UIButtonFeedbackKind _lastUIButtonFeedbackKind;
+    private float _lastUIButtonFeedbackTime = -10f;
+
+    public bool IsGlobalUIButtonFeedbackEnabled =>
+        _autoAttachUIButtonSfx &&
+        (_uiButtonHoverSfx != null ||
+         _uiButtonSelectionSfx != null ||
+         _uiButtonClickSfx != null);
 
     private void Awake()
     {
@@ -32,16 +66,50 @@ public class AudioManager : MonoBehaviour
         DontDestroyOnLoad(gameObject);
 
         ApplySavedVolumes();
+        BeginUIButtonScanBurst(false);
     }
 
     private void OnEnable()
     {
         ApplySavedVolumes();
+
+        if (Instance == this)
+            SceneManager.sceneLoaded += HandleSceneLoaded;
+
+        BeginUIButtonScanBurst(false);
+    }
+
+    private void OnDisable()
+    {
+        if (Instance == this)
+            SceneManager.sceneLoaded -= HandleSceneLoaded;
     }
 
     private void Start()
     {
         ApplySavedVolumes();
+        BeginUIButtonScanBurst(true);
+    }
+
+    private void Update()
+    {
+        if (!_autoAttachUIButtonSfx || !_isUIButtonScanBurstActive)
+            return;
+
+        float now = Time.unscaledTime;
+
+        if (now < _nextUIButtonScanTime)
+            return;
+
+        RefreshUIButtonAudioFeedback();
+
+        if (now >= _uiButtonScanStopTime)
+        {
+            _isUIButtonScanBurstActive = false;
+            return;
+        }
+
+        _nextUIButtonScanTime = now + Mathf.Max(0.05f, _uiButtonScanInterval);
     }
 
     private void OnDestroy()
@@ -92,6 +160,28 @@ public class AudioManager : MonoBehaviour
         _sfxSource.pitch = 1f;
     }
 
+    public void PlayUIButtonHover(GameObject source)
+    {
+        PlayUIButtonFeedback(_uiButtonHoverSfx, _uiButtonHoverVolume, source, UIButtonFeedbackKind.Hover);
+    }
+
+    public void PlayUIButtonSelection(GameObject source)
+    {
+        AudioClip clip = _uiButtonSelectionSfx != null ? _uiButtonSelectionSfx : _uiButtonHoverSfx;
+        PlayUIButtonFeedback(clip, _uiButtonSelectionVolume, source, UIButtonFeedbackKind.Selection);
+    }
+
+    public void PlayUIButtonClick(GameObject source)
+    {
+        AudioClip clip = _uiButtonClickSfx != null
+            ? _uiButtonClickSfx
+            : _uiButtonSelectionSfx != null
+                ? _uiButtonSelectionSfx
+                : _uiButtonHoverSfx;
+
+        PlayUIButtonFeedback(clip, _uiButtonClickVolume, source, UIButtonFeedbackKind.Click);
+    }
+
     public void PlaySfxAtPosition(AudioClip clip, Vector3 position, float volume = 1f, float pitchMin = 0.95f, float pitchMax = 1.05f)
     {
         if (clip == null)
@@ -123,6 +213,11 @@ public class AudioManager : MonoBehaviour
             return;
 
         audioSource.outputAudioMixerGroup = _sfxSource.outputAudioMixerGroup;
+    }
+
+    public void RefreshUIButtonAudioFeedback()
+    {
+        AttachUIButtonAudioFeedback();
     }
 
     public void SetMasterVolume(float value)
@@ -185,5 +280,83 @@ public class AudioManager : MonoBehaviour
         value = Mathf.Clamp(value, 0.0001f, 1f);
         float dbValue = Mathf.Log10(value) * 20f;
         _mainMixer.SetFloat(exposedName, dbValue);
+    }
+
+    private void HandleSceneLoaded(Scene _scene, LoadSceneMode _mode)
+    {
+        BeginUIButtonScanBurst(true);
+    }
+
+    private void BeginUIButtonScanBurst(bool _scanImmediately)
+    {
+        if (!_autoAttachUIButtonSfx)
+            return;
+
+        float now = Time.unscaledTime;
+        _isUIButtonScanBurstActive = true;
+        _uiButtonScanStopTime = now + Mathf.Max(0f, _uiButtonPostSceneScanDuration);
+
+        if (_scanImmediately)
+        {
+            RefreshUIButtonAudioFeedback();
+            _nextUIButtonScanTime = now + Mathf.Max(0.05f, _uiButtonScanInterval);
+            return;
+        }
+
+        _nextUIButtonScanTime = 0f;
+    }
+
+    private void AttachUIButtonAudioFeedback()
+    {
+        if (!_autoAttachUIButtonSfx)
+            return;
+
+        Button[] buttons = FindObjectsByType<Button>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < buttons.Length; i++)
+        {
+            Button button = buttons[i];
+
+            if (button == null || !button.gameObject.scene.IsValid())
+                continue;
+
+            if (button.GetComponent<UIButtonAudioFeedback>() == null)
+                button.gameObject.AddComponent<UIButtonAudioFeedback>();
+        }
+    }
+
+    private void PlayUIButtonFeedback(
+        AudioClip clip,
+        float volume,
+        GameObject source,
+        UIButtonFeedbackKind kind)
+    {
+        if (clip == null || ShouldSuppressUIButtonFeedback(source, kind))
+            return;
+
+        PlaySfx(clip, volume, 1f, 1f);
+    }
+
+    private bool ShouldSuppressUIButtonFeedback(GameObject source, UIButtonFeedbackKind kind)
+    {
+        if (source == null)
+            return false;
+
+        float now = Time.unscaledTime;
+        bool sameSource = _lastUIButtonFeedbackObject == source;
+        bool closeToLastFeedback = now - _lastUIButtonFeedbackTime <= _uiDuplicateSuppressTime;
+        bool shouldSuppress =
+            sameSource &&
+            closeToLastFeedback &&
+            (kind == _lastUIButtonFeedbackKind ||
+             (kind == UIButtonFeedbackKind.Selection && _lastUIButtonFeedbackKind == UIButtonFeedbackKind.Hover));
+
+        if (shouldSuppress)
+            return true;
+
+        _lastUIButtonFeedbackObject = source;
+        _lastUIButtonFeedbackKind = kind;
+        _lastUIButtonFeedbackTime = now;
+        return false;
     }
 }
