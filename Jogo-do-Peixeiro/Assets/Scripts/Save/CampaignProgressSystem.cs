@@ -228,6 +228,7 @@ public class CampaignProgressSystem : MonoBehaviour
         hasFailedCurrentQuest = false;
         isCampaignCompleted = false;
         hasUnlockedFreePlay = true;
+        currentQuestIndex = Mathf.Max(MaxQuestCount + 1, currentQuestIndex);
         ApplyEndlessQuestDefinition(true);
         NotifyChanged();
         return true;
@@ -240,7 +241,7 @@ public class CampaignProgressSystem : MonoBehaviour
         gameMode = GameProgressMode.Endless;
         isCampaignCompleted = false;
         hasFailedCurrentQuest = false;
-        currentQuestIndex = 1;
+        currentQuestIndex = Mathf.Max(MaxQuestCount + 1, currentQuestIndex + 1);
         daysElapsedInCurrentQuest = 0;
         questDebtPaidAmount = 0;
         endlessDeliveriesWithoutSpecialRequest = 0;
