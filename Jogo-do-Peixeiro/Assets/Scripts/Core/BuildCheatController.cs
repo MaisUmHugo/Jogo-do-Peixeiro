@@ -16,6 +16,10 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private bool _resetCampaignStateOnSaveReset = true;
     [SerializeField, Min(1f)] private float _moneyCheatAmount = 1000f;
 
+    [Header("Inventory Cheats")]
+    [SerializeField, Min(1)] private int _allFishCheatLimit = 10;
+    [SerializeField, Min(1)] private int _baitCheatQuantity = 10;
+
     [Header("Keyboard Bindings")]
     [SerializeField] private string _cycleFishingAreaKeyboardBinding = "<Keyboard>/f1";
     [SerializeField] private string _advanceDayKeyboardBinding = "<Keyboard>/f2";
@@ -35,16 +39,14 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private string _addSpecialDeliveryFishKeyboardBinding = "<Keyboard>/f2";
     [SerializeField] private string _teleportToBoatKeyboardBinding = "<Keyboard>/f3";
     [SerializeField] private string _teleportToDockKeyboardBinding = "<Keyboard>/f4";
-    [SerializeField] private string _spawnFishPullVfxKeyboardBinding = "<Keyboard>/f5";
+    [SerializeField] private string _addAllFishKeyboardBinding = "<Keyboard>/f5";
     [SerializeField] private string _teleportToArrivalPointKeyboardBinding = "<Keyboard>/f6";
     [SerializeField] private string _resetTutorialSlidesKeyboardBinding = "<Keyboard>/f7";
+    [SerializeField] private string _addAllBaitsKeyboardBinding = "<Keyboard>/f8";
 
     [Header("Teleport")]
     [SerializeField, Min(0f)] private float _teleportHeightOffset = 0.05f;
     [SerializeField] private string _debugArrivalPointId;
-
-    [Header("VFX Debug")]
-    [SerializeField, Min(0f)] private float _fishPullVfxSpawnDistance = 5f;
 
     [Header("Gamepad Bindings")]
     [SerializeField] private string _cycleFishingAreaGamepadBinding = "<Gamepad>/dpad/up";
@@ -73,9 +75,10 @@ public class BuildCheatController : MonoBehaviour
     private InputAction _addSpecialDeliveryFishAction;
     private InputAction _teleportToBoatAction;
     private InputAction _teleportToDockAction;
-    private InputAction _spawnFishPullVfxAction;
+    private InputAction _addAllFishAction;
     private InputAction _teleportToArrivalPointAction;
     private InputAction _resetTutorialSlidesAction;
+    private InputAction _addAllBaitsAction;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
@@ -203,9 +206,9 @@ public class BuildCheatController : MonoBehaviour
             _teleportToDockKeyboardBinding,
             null);
 
-        _spawnFishPullVfxAction = CreateButtonAction(
-            "Cheat Spawn Fish Pull VFX",
-            _spawnFishPullVfxKeyboardBinding,
+        _addAllFishAction = CreateButtonAction(
+            "Cheat Add All Fish",
+            _addAllFishKeyboardBinding,
             null);
 
         _teleportToArrivalPointAction = CreateButtonAction(
@@ -216,6 +219,11 @@ public class BuildCheatController : MonoBehaviour
         _resetTutorialSlidesAction = CreateButtonAction(
             "Cheat Reset Tutorial Slides",
             _resetTutorialSlidesKeyboardBinding,
+            null);
+
+        _addAllBaitsAction = CreateButtonAction(
+            "Cheat Add All Baits",
+            _addAllBaitsKeyboardBinding,
             null);
     }
 
@@ -285,14 +293,17 @@ public class BuildCheatController : MonoBehaviour
         if (_teleportToDockAction != null)
             _teleportToDockAction.performed += HandleTeleportToDock;
 
-        if (_spawnFishPullVfxAction != null)
-            _spawnFishPullVfxAction.performed += HandleSpawnFishPullVfx;
+        if (_addAllFishAction != null)
+            _addAllFishAction.performed += HandleAddAllFish;
 
         if (_teleportToArrivalPointAction != null)
             _teleportToArrivalPointAction.performed += HandleTeleportToArrivalPoint;
 
         if (_resetTutorialSlidesAction != null)
             _resetTutorialSlidesAction.performed += HandleResetTutorialSlides;
+
+        if (_addAllBaitsAction != null)
+            _addAllBaitsAction.performed += HandleAddAllBaits;
     }
 
     private void UnregisterActionCallbacks()
@@ -345,14 +356,17 @@ public class BuildCheatController : MonoBehaviour
         if (_teleportToDockAction != null)
             _teleportToDockAction.performed -= HandleTeleportToDock;
 
-        if (_spawnFishPullVfxAction != null)
-            _spawnFishPullVfxAction.performed -= HandleSpawnFishPullVfx;
+        if (_addAllFishAction != null)
+            _addAllFishAction.performed -= HandleAddAllFish;
 
         if (_teleportToArrivalPointAction != null)
             _teleportToArrivalPointAction.performed -= HandleTeleportToArrivalPoint;
 
         if (_resetTutorialSlidesAction != null)
             _resetTutorialSlidesAction.performed -= HandleResetTutorialSlides;
+
+        if (_addAllBaitsAction != null)
+            _addAllBaitsAction.performed -= HandleAddAllBaits;
     }
 
     private void EnableActions()
@@ -373,9 +387,10 @@ public class BuildCheatController : MonoBehaviour
         _addSpecialDeliveryFishAction?.Enable();
         _teleportToBoatAction?.Enable();
         _teleportToDockAction?.Enable();
-        _spawnFishPullVfxAction?.Enable();
+        _addAllFishAction?.Enable();
         _teleportToArrivalPointAction?.Enable();
         _resetTutorialSlidesAction?.Enable();
+        _addAllBaitsAction?.Enable();
     }
 
     private void DisposeActions()
@@ -396,9 +411,10 @@ public class BuildCheatController : MonoBehaviour
         DisposeAction(ref _addSpecialDeliveryFishAction);
         DisposeAction(ref _teleportToBoatAction);
         DisposeAction(ref _teleportToDockAction);
-        DisposeAction(ref _spawnFishPullVfxAction);
+        DisposeAction(ref _addAllFishAction);
         DisposeAction(ref _teleportToArrivalPointAction);
         DisposeAction(ref _resetTutorialSlidesAction);
+        DisposeAction(ref _addAllBaitsAction);
     }
 
     private void DisposeAction(ref InputAction _inputAction)
@@ -491,9 +507,9 @@ public class BuildCheatController : MonoBehaviour
         TryRunShiftCheat(TeleportToDockCheat);
     }
 
-    private void HandleSpawnFishPullVfx(InputAction.CallbackContext _context)
+    private void HandleAddAllFish(InputAction.CallbackContext _context)
     {
-        TryRunShiftCheat(SpawnFishPullVfxCheat);
+        TryRunShiftCheat(AddAllFishToInventory);
     }
 
     private void HandleTeleportToArrivalPoint(InputAction.CallbackContext _context)
@@ -504,6 +520,11 @@ public class BuildCheatController : MonoBehaviour
     private void HandleResetTutorialSlides(InputAction.CallbackContext _context)
     {
         TryRunShiftCheat(ResetTutorialSlidesCheat);
+    }
+
+    private void HandleAddAllBaits(InputAction.CallbackContext _context)
+    {
+        TryRunShiftCheat(AddAllBaitsToInventory);
     }
 
     private void TryRunCheat(System.Action _cheatAction, bool _allowInMainMenu = false)
@@ -720,70 +741,139 @@ public class BuildCheatController : MonoBehaviour
         ShowCheatFeedback($"Cheat: nao foi possivel tocar a cutscene/dialogo {_label}.");
     }
 
-    private void SpawnFishPullVfxCheat()
+    private void AddAllFishToInventory()
     {
-        FishingRod fishingRod = FindFirstObjectByType<FishingRod>(FindObjectsInactive.Include);
+        ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>(FindObjectsInactive.Include);
 
-        if (fishingRod == null)
+        if (shipInventory == null)
         {
-            ShowCheatFeedback("Cheat: FishingRod não encontrado.");
+            ShowCheatFeedback("Cheat: ShipInventory nao encontrado.");
             return;
         }
 
-        if (!TryGetFishPullVfxSpawnPose(out Vector3 spawnPosition, out Vector3 spawnDirection))
+        FishScriptableObject[] fishTypes = FindCheatFishTypes();
+
+        if (fishTypes == null || fishTypes.Length == 0)
         {
-            ShowCheatFeedback("Cheat: sem referência para posicionar o Fish Pull VFX.");
+            ShowCheatFeedback("Cheat: nenhum peixe encontrado para adicionar.");
             return;
         }
 
-        if (!fishingRod.DebugSpawnFishPullVFXAtWater(spawnPosition, spawnDirection))
+        List<FishData> fishList = new List<FishData>(shipInventory.OwnedFish);
+        int maxFish = Mathf.Min(Mathf.Max(1, _allFishCheatLimit), fishTypes.Length);
+        int addedCount = 0;
+
+        for (int i = 0; i < maxFish; i++)
         {
-            ShowCheatFeedback("Cheat: Fish Pull VFX não configurado no FishingRod.");
+            FishScriptableObject fishType = fishTypes[i];
+
+            if (fishType == null || ContainsFishType(fishList, fishType))
+                continue;
+
+            fishList.Add(new FishData(fishType));
+            FishCaptureHistory.RegisterCatch(fishType);
+            addedCount++;
+        }
+
+        if (addedCount <= 0)
+        {
+            ShowCheatFeedback($"Cheat: inventario ja possui os {maxFish} peixes do teste.");
             return;
         }
 
-        ShowCheatFeedback("Cheat: Fish Pull VFX spawnado na água.");
+        shipInventory.ReplaceFish(fishList);
+        SaveGameIfPossible();
+        ShowCheatFeedback($"Cheat: +{addedCount} peixes diferentes no inventario.");
     }
 
-    private bool TryGetFishPullVfxSpawnPose(out Vector3 _position, out Vector3 _direction)
+    private void AddAllBaitsToInventory()
     {
-        _position = Vector3.zero;
-        _direction = Vector3.forward;
+        BaitInventory baitInventory = BaitInventory.GetOrCreate();
 
-        Transform reference = GetFishPullVfxReference();
+        if (baitInventory == null)
+        {
+            ShowCheatFeedback("Cheat: BaitInventory nao encontrado.");
+            return;
+        }
 
-        if (reference == null)
+        BaitData[] baits = BaitCatalog.GetDefaultBaits();
+
+        if (baits == null || baits.Length == 0)
+        {
+            ShowCheatFeedback("Cheat: nenhuma isca encontrada para adicionar.");
+            return;
+        }
+
+        int quantity = Mathf.Max(1, _baitCheatQuantity);
+        int addedTypes = 0;
+
+        for (int i = 0; i < baits.Length; i++)
+        {
+            BaitData bait = baits[i];
+
+            if (bait == null)
+                continue;
+
+            baitInventory.AddBait(bait, quantity);
+            addedTypes++;
+        }
+
+        SaveGameIfPossible();
+        ShowCheatFeedback($"Cheat: +{quantity} de cada isca ({addedTypes} tipos).");
+    }
+
+    private FishScriptableObject[] FindCheatFishTypes()
+    {
+        List<FishScriptableObject> foundFish = new List<FishScriptableObject>();
+
+        FishingAreaDefinition[] fishingAreas = Resources.FindObjectsOfTypeAll<FishingAreaDefinition>();
+
+        for (int i = 0; i < fishingAreas.Length; i++)
+            AddFishFromArea(fishingAreas[i], foundFish);
+
+        FishScriptableObject[] loadedFish = Resources.FindObjectsOfTypeAll<FishScriptableObject>();
+
+        for (int i = 0; i < loadedFish.Length; i++)
+            AddUniqueFish(loadedFish[i], foundFish);
+
+        foundFish.Sort(CompareFishByName);
+        return foundFish.ToArray();
+    }
+
+    private void AddFishFromArea(FishingAreaDefinition _area, List<FishScriptableObject> _foundFish)
+    {
+        if (_area == null || _area.AvailableFish == null)
+            return;
+
+        for (int i = 0; i < _area.AvailableFish.Length; i++)
+            AddUniqueFish(_area.AvailableFish[i], _foundFish);
+    }
+
+    private void AddUniqueFish(FishScriptableObject _fish, List<FishScriptableObject> _foundFish)
+    {
+        if (_fish != null && _foundFish != null && !_foundFish.Contains(_fish))
+            _foundFish.Add(_fish);
+    }
+
+    private bool ContainsFishType(List<FishData> _fishList, FishScriptableObject _fishType)
+    {
+        if (_fishList == null || _fishType == null)
             return false;
 
-        _direction = reference.forward;
-        _direction.y = 0f;
+        for (int i = 0; i < _fishList.Count; i++)
+        {
+            FishData fish = _fishList[i];
 
-        if (_direction.sqrMagnitude <= 0.0001f)
-            _direction = Vector3.forward;
+            if (fish != null && fish.typeOfFish == _fishType)
+                return true;
+        }
 
-        _direction.Normalize();
-        _position = reference.position + _direction * _fishPullVfxSpawnDistance;
-
-        if (WaveManager.instance != null)
-            _position.y = WaveManager.instance.GetWaveHeight(_position.x, _position.z);
-
-        return true;
+        return false;
     }
 
-    private Transform GetFishPullVfxReference()
+    private int CompareFishByName(FishScriptableObject _left, FishScriptableObject _right)
     {
-        BoatController boatController = FindFirstObjectByType<BoatController>(FindObjectsInactive.Include);
-
-        if (boatController != null && boatController.IsPlayerOnBoat())
-            return boatController.transform;
-
-        PlayerMove playerMove = FindFirstObjectByType<PlayerMove>(FindObjectsInactive.Include);
-
-        if (playerMove != null)
-            return playerMove.transform;
-
-        Camera mainCamera = Camera.main;
-        return mainCamera != null ? mainCamera.transform : null;
+        return string.Compare(GetFishDisplayName(_left), GetFishDisplayName(_right), System.StringComparison.OrdinalIgnoreCase);
     }
 
     private void CompleteCampaign()
