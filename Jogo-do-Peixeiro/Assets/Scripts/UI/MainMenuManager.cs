@@ -137,7 +137,10 @@ public class MainMenuManager : MonoBehaviour
 
     private void Update()
     {
-        UpdateMenuSelectionSfx();
+        if (ShouldUseGlobalMenuSfx())
+            UnbindMenuButtonSfx();
+        else
+            UpdateMenuSelectionSfx();
 
         if (modeSelectPanel == null || !modeSelectPanel.activeInHierarchy)
             return;
@@ -803,7 +806,7 @@ public class MainMenuManager : MonoBehaviour
 
     private void BindMenuButtonSfx()
     {
-        if (areMenuSfxButtonsBound || !autoBindButtonSubmitSfx)
+        if (areMenuSfxButtonsBound || !autoBindButtonSubmitSfx || ShouldUseGlobalMenuSfx())
             return;
 
         menuSfxButtons = GetComponentsInChildren<Button>(true);
@@ -841,7 +844,10 @@ public class MainMenuManager : MonoBehaviour
 
     private void UpdateMenuSelectionSfx()
     {
-        if (!playSelectionChangedSfx || selectionChangedSfx == null || EventSystem.current == null)
+        if (ShouldUseGlobalMenuSfx() ||
+            !playSelectionChangedSfx ||
+            selectionChangedSfx == null ||
+            EventSystem.current == null)
             return;
 
         GameObject selected = EventSystem.current.currentSelectedGameObject;
@@ -897,6 +903,11 @@ public class MainMenuManager : MonoBehaviour
             return;
 
         AudioManager.Instance.PlaySfx(clip, volume);
+    }
+
+    private bool ShouldUseGlobalMenuSfx()
+    {
+        return AudioManager.Instance != null && AudioManager.Instance.IsGlobalUIButtonFeedbackEnabled;
     }
 
     private void ShowMenu()
