@@ -57,6 +57,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     [Header("Cutscene Timeline")]
     [SerializeField] private CampaignCutsceneController cutsceneController;
+    [SerializeField] private CampaignTutorialDialogFlow tutorialDialogFlow;
     [SerializeField] private bool playOpeningTimelineBeforeIntroSlides = true;
     [SerializeField] private PlayableDirector openingCutsceneDirector;
     [SerializeField] private bool playMoneyLenderTimelineBeforeDockOwner = true;
@@ -135,8 +136,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     private bool hasShownDockShopSlides;
     private bool hasShownDebtPaymentSlides;
     private bool shouldShowDebtPaymentSlidesOnDockOwnerClose;
+    private bool shouldShowFirstDockOwnerSlidesOnClose;
     private bool hasPlayedMoneyLenderIntroCutscene;
     private bool hasPlayedBoatBeforeIntroEdgeDialog;
+    private bool hasCompletedOpeningIntroFlow;
     private Coroutine tutorialTimelineRoutine;
     private Coroutine pendingOpeningHudHideRoutine;
 
@@ -192,13 +195,37 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (cutsceneController == null)
             cutsceneController = FindFirstObjectByType<CampaignCutsceneController>(FindObjectsInactive.Include);
 
+        ResolveTutorialDialogFlow();
+
         if (hideObjectiveOnAwake && !runTutorial)
             SetObjectiveVisible(false);
 
         if (clearMarkersOnAwake)
             ClearMarkers();
 
+        SetObjectiveVisible(false);
         HideNonTutorialHudsForOpeningTutorial();
+    }
+
+    private void ResolveTutorialDialogFlow()
+    {
+        if (tutorialDialogFlow == null)
+            tutorialDialogFlow = GetComponent<CampaignTutorialDialogFlow>();
+
+        if (tutorialDialogFlow == null)
+            tutorialDialogFlow = gameObject.AddComponent<CampaignTutorialDialogFlow>();
+
+        tutorialDialogFlow.Configure(
+            cutsceneController,
+            playOpeningTimelineBeforeIntroSlides,
+            openingCutsceneDirector,
+            playMoneyLenderTimelineBeforeDockOwner,
+            moneyLenderIntroCutsceneDirector,
+            playRoteiroDialogsWhenTimelineMissing,
+            roteiroDialogLibrary,
+            fadeBeforeOpeningDialogFallback,
+            openingDialogFallbackFadeInDuration,
+            openingDialogFallbackFadeInDelay);
     }
 
     private void OnEnable()
@@ -214,6 +241,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         ForcedSleepController.FishLostDuringForcedSleep += HandleForcedSleepFishLoss;
         FishMarket.OnAnySaleCompleted += HandleFishMarketSaleCompleted;
         DockOwnerUI.AnyClosed += HandleDockOwnerClosed;
+        TutorialEvents.DockOwnerMarketOpened += HandleDockOwnerMarketOpened;
         TrySubscribeCampaignProgress();
 
         if (dayCycle != null)
@@ -251,6 +279,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         ForcedSleepController.FishLostDuringForcedSleep -= HandleForcedSleepFishLoss;
         FishMarket.OnAnySaleCompleted -= HandleFishMarketSaleCompleted;
         DockOwnerUI.AnyClosed -= HandleDockOwnerClosed;
+        TutorialEvents.DockOwnerMarketOpened -= HandleDockOwnerMarketOpened;
         UnsubscribeCampaignProgress();
 
         if (dayCycle != null)
@@ -274,6 +303,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             PrepareOpeningTutorialRequest();
             SetStep(TutorialStep.GoToMoneyLenderCabin);
+            SetObjectiveVisible(false);
             HideNonTutorialHudsForOpeningTutorial();
             PlayOpeningCutsceneOrRun(() => ShowIntroSlides(CompleteOpeningTutorialIntroFlow));
             return;
@@ -319,6 +349,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         IsTutorialFailed = false;
         isFinishingDelivery = false;
         isShowingEndPanel = false;
+        shouldShowFirstDockOwnerSlidesOnClose = false;
+        shouldShowDebtPaymentSlidesOnDockOwnerClose = false;
         currentStep = TutorialStep.Finished;
 
         if (pendingOutcomeRoutine != null)
@@ -344,6 +376,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         IsTutorialFailed = false;
         isFinishingDelivery = false;
         isShowingEndPanel = false;
+        shouldShowFirstDockOwnerSlidesOnClose = false;
+        shouldShowDebtPaymentSlidesOnDockOwnerClose = false;
 
         if (pendingOutcomeRoutine != null)
         {
@@ -563,35 +597,18 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (currentStep == TutorialStep.TalkToDockOwner)
         {
-            ShowWarning("Fale com o Dono do Porto antes de procurar o cobrador.");
             UpdateObjectiveText();
-            return true;
+            return false;
         }
 
         if (!hasSoldFishToDockOwner)
         {
-            if (HasEnoughFishValueForQuestGoal())
-            {
-                AdvanceToDockOwnerMarket("Venda os peixes no mercado do Dono do Porto antes de pagar o cobrador.");
-            }
-            else
-            {
-                ShowWarning("Pesque peixes suficientes para vender e pagar a meta da dívida.");
-            }
-
             UpdateObjectiveText();
-            return true;
+            return false;
         }
 
         SetStep(TutorialStep.PayDebt);
-        OpenTutorialPaymentUI(_moneyLender, _paymentUI, _moneyLenderUI);
-
-        if (_paymentUI != null)
-            _paymentUI.ShowStatusMessage("Objetivo avançou: pague a meta da dívida.");
-        else
-            ShowWarning("Objetivo avançou: pague a meta da dívida no cobrador.");
-
-        return true;
+        return false;
     }
 
     private bool ShouldBlockBoatEntry()
@@ -604,8 +621,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (!ShouldUseBoatBeforeIntroEdgeDialog())
             return false;
 
+        ResolveTutorialDialogFlow();
         hasPlayedBoatBeforeIntroEdgeDialog = true;
-        PlayRoteiroDialogAsset(GetRoteiroDialogLibrary()?.EdgeBarcoAntesIntro, _continueBoatEntry);
+
+        if (tutorialDialogFlow == null || !tutorialDialogFlow.PlayBoatBeforeIntroEdgeDialog(_continueBoatEntry))
+            _continueBoatEntry?.Invoke();
+
         return true;
     }
 
@@ -614,7 +635,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         return IsTutorialRunning &&
                IsCampaignEconomyFlowActive() &&
                currentStep == TutorialStep.GoToMoneyLenderCabin &&
-               !hasPlayedMoneyLenderIntroCutscene;
+               !HasCompletedMoneyLenderIntroFlow();
     }
 
     private bool ShouldUseBoatBeforeIntroEdgeDialog()
@@ -622,8 +643,20 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         return IsTutorialRunning &&
                IsCampaignEconomyFlowActive() &&
                currentStep == TutorialStep.GoToMoneyLenderCabin &&
-               !hasPlayedMoneyLenderIntroCutscene &&
-               !hasPlayedBoatBeforeIntroEdgeDialog;
+               !HasCompletedMoneyLenderIntroFlow() &&
+               !HasPlayedBoatBeforeIntroEdgeDialog();
+    }
+
+    private bool HasCompletedMoneyLenderIntroFlow()
+    {
+        return hasPlayedMoneyLenderIntroCutscene ||
+               (tutorialDialogFlow != null && tutorialDialogFlow.HasPlayedMoneyLenderIntro);
+    }
+
+    private bool HasPlayedBoatBeforeIntroEdgeDialog()
+    {
+        return hasPlayedBoatBeforeIntroEdgeDialog ||
+               (tutorialDialogFlow != null && tutorialDialogFlow.HasPlayedBoatBeforeIntroEdgeDialog);
     }
 
     private void HandleBoatEntryBlocked()
@@ -761,8 +794,36 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         UpdateObjectiveText();
     }
 
+    private void HandleDockOwnerMarketOpened()
+    {
+        if (!IsTutorialRunning ||
+            !hasAcceptedRequest ||
+            !IsCampaignEconomyFlowActive() ||
+            currentStep != TutorialStep.TalkToDockOwner)
+        {
+            return;
+        }
+
+        shouldShowFirstDockOwnerSlidesOnClose = true;
+        SetStep(TutorialStep.GoToBoat);
+    }
+
     private void HandleDockOwnerClosed(DockOwnerUI _dockOwnerUI)
     {
+        if (shouldShowFirstDockOwnerSlidesOnClose)
+        {
+            shouldShowFirstDockOwnerSlidesOnClose = false;
+
+            if (IsTutorialRunning && hasAcceptedRequest)
+            {
+                ShowDockShopSlides(() =>
+                {
+                    ShowQuestReceivedSlides(() => SetStep(TutorialStep.GoToBoat));
+                });
+                return;
+            }
+        }
+
         if (IsTutorialRunning &&
             hasAcceptedRequest &&
             currentStep == TutorialStep.TalkToDockOwner)
@@ -838,42 +899,48 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void PlayMoneyLenderIntroThenDockOwner()
     {
-        if (hasPlayedMoneyLenderIntroCutscene)
+        ResolveTutorialDialogFlow();
+
+        if (tutorialDialogFlow != null && tutorialDialogFlow.IsPlaying)
+            return;
+
+        if (HasCompletedMoneyLenderIntroFlow())
         {
-            ShowNonTutorialHudsAfterMoneyLenderIntro();
-            SetStep(TutorialStep.TalkToDockOwner);
+            CompleteMoneyLenderIntroFlow();
             return;
         }
 
-        hasPlayedMoneyLenderIntroCutscene = true;
+        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayMoneyLenderIntro(CompleteMoneyLenderIntroFlow))
+            return;
 
-        PlayMoneyLenderIntroCutsceneOrRun(() =>
-        {
-            ShowNonTutorialHudsAfterMoneyLenderIntro();
-            ShowDebtPaymentSlides(() => SetStep(TutorialStep.TalkToDockOwner));
-        });
+        CompleteMoneyLenderIntroFlow();
+    }
+
+    private void CompleteMoneyLenderIntroFlow()
+    {
+        hasPlayedMoneyLenderIntroCutscene = true;
+        ShowNonTutorialHudsAfterMoneyLenderIntro();
+        ShowDebtPaymentSlides(() => SetStep(TutorialStep.TalkToDockOwner));
     }
 
     private void PlayOpeningCutsceneOrRun(Action _onFinished)
     {
-        PlayCutsceneControllerOrFallback(
-            _tryPlayControllerCutscene: controller => controller.TryPlayOpeningCutscene(_onFinished),
-            _fallbackDirector: openingCutsceneDirector,
-            _selectFallbackDialogs: _library => new[] { _library.IntroMarinaLoja },
-            _shouldPlayFallback: playOpeningTimelineBeforeIntroSlides,
-            _onFinished: _onFinished,
-            _fadeBeforeDialogFallback: fadeBeforeOpeningDialogFallback);
+        ResolveTutorialDialogFlow();
+
+        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayOpeningIntro(_onFinished))
+            return;
+
+        _onFinished?.Invoke();
     }
 
     private void PlayMoneyLenderIntroCutsceneOrRun(Action _onFinished)
     {
-        PlayCutsceneControllerOrFallback(
-            _tryPlayControllerCutscene: controller => controller.TryPlayMoneyLenderIntroCutscene(_onFinished),
-            _fallbackDirector: moneyLenderIntroCutsceneDirector,
-            _selectFallbackDialogs: _library => new[] { _library.IntroCobradorCabana },
-            _shouldPlayFallback: playMoneyLenderTimelineBeforeDockOwner,
-            _onFinished: _onFinished,
-            _fadeBeforeDialogFallback: false);
+        ResolveTutorialDialogFlow();
+
+        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayMoneyLenderIntro(_onFinished))
+            return;
+
+        _onFinished?.Invoke();
     }
 
     private void PlayCutsceneControllerOrFallback(
@@ -959,6 +1026,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (!IsTutorialRunning)
             return;
 
+        hasCompletedOpeningIntroFlow = true;
         SetStep(TutorialStep.GoToMoneyLenderCabin);
         SetObjectiveVisible(true);
         UpdateMarkers();
@@ -1873,8 +1941,19 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void SetObjectiveVisible(bool _visible)
     {
+        if (_visible && ShouldHideTutorialObjectiveDuringOpeningIntro())
+            _visible = false;
+
         if (tutorialUI != null)
             tutorialUI.SetObjectiveVisible(_visible);
+    }
+
+    private bool ShouldHideTutorialObjectiveDuringOpeningIntro()
+    {
+        return runTutorial &&
+               useCampaignEconomyFlow &&
+               !hasCompletedOpeningIntroFlow &&
+               IsCampaignEconomyTutorialEnabled();
     }
 
     private void HideNonTutorialHudsForOpeningTutorial()
@@ -1921,6 +2000,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         }
 
         SetNonTutorialHudsVisible(false);
+
+        if (!hasCompletedOpeningIntroFlow)
+            SetObjectiveVisible(false);
     }
 
     private void SetNonTutorialHudsVisible(bool _visible)

@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.Rendering;
 using UnityEngine.Serialization;
 
 public enum FishAvailabilityPeriod
@@ -64,6 +65,11 @@ public class FishScriptableObject : ScriptableObject
 
 public static class FishVisualUtility
 {
+    private const string PreviewLightRigName = "FishPreviewLightRig";
+    private const string PreviewKeyLightName = "PreviewKeyLight";
+    private const string PreviewFillLightName = "PreviewFillLight";
+    private const string PreviewTopLightName = "PreviewTopLight";
+
     private static readonly int[] TexturePropertyIds =
     {
         Shader.PropertyToID("_BaseMap"),
@@ -101,6 +107,32 @@ public static class FishVisualUtility
     public static bool HasVisual(FishScriptableObject _fish)
     {
         return _fish != null && (_fish.ModelPrefab != null || _fish.mesh != null);
+    }
+
+    public static void ApplyPreviewLighting(Renderer _renderer)
+    {
+        if (_renderer == null)
+            return;
+
+        ConfigurePreviewRenderer(_renderer);
+
+        FishVisualRuntimeModelHost runtimeHost = _renderer.GetComponent<FishVisualRuntimeModelHost>();
+
+        if (runtimeHost != null)
+            runtimeHost.ConfigurePreviewLighting(_renderer.gameObject.layer);
+
+        EnsurePreviewLightRig(_renderer);
+    }
+
+    public static void ConfigurePreviewRenderer(Renderer _renderer)
+    {
+        if (_renderer == null)
+            return;
+
+        _renderer.shadowCastingMode = ShadowCastingMode.Off;
+        _renderer.receiveShadows = false;
+        _renderer.lightProbeUsage = LightProbeUsage.Off;
+        _renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
     }
 
     public static void ApplyMaterial(FishScriptableObject _fish, Renderer _renderer, bool _useSharedMaterial)
@@ -162,6 +194,64 @@ public static class FishVisualUtility
 
         return runtimeHost;
     }
+
+    private static void EnsurePreviewLightRig(Renderer _renderer)
+    {
+        Transform parent = _renderer.transform.parent != null ? _renderer.transform.parent : _renderer.transform;
+        FishPreviewLightRig lightRig = parent.GetComponentInChildren<FishPreviewLightRig>(true);
+
+        if (lightRig == null)
+        {
+            GameObject lightRigObject = new GameObject(PreviewLightRigName);
+            lightRigObject.transform.SetParent(parent, false);
+            lightRig = lightRigObject.AddComponent<FishPreviewLightRig>();
+        }
+
+        lightRig.Configure(_renderer.gameObject.layer);
+    }
+
+    private static Light EnsurePreviewLight(Transform _parent, string _name, Quaternion _localRotation, float _intensity, Color _color, int _cullingMask)
+    {
+        Transform lightTransform = _parent.Find(_name);
+
+        if (lightTransform == null)
+        {
+            GameObject lightObject = new GameObject(_name);
+            lightObject.transform.SetParent(_parent, false);
+            lightTransform = lightObject.transform;
+        }
+
+        lightTransform.localPosition = Vector3.zero;
+        lightTransform.localRotation = _localRotation;
+        lightTransform.localScale = Vector3.one;
+
+        Light light = lightTransform.GetComponent<Light>();
+
+        if (light == null)
+            light = lightTransform.gameObject.AddComponent<Light>();
+
+        light.type = LightType.Directional;
+        light.intensity = _intensity;
+        light.color = _color;
+        light.shadows = LightShadows.None;
+        light.renderMode = LightRenderMode.ForcePixel;
+        light.cullingMask = _cullingMask;
+        light.enabled = true;
+
+        return light;
+    }
+
+    private class FishPreviewLightRig : MonoBehaviour
+    {
+        public void Configure(int _layer)
+        {
+            int cullingMask = 1 << _layer;
+
+            EnsurePreviewLight(transform, PreviewKeyLightName, Quaternion.Euler(25f, -35f, 0f), 1.35f, Color.white, cullingMask);
+            EnsurePreviewLight(transform, PreviewFillLightName, Quaternion.Euler(0f, 145f, 0f), 0.8f, new Color(0.85f, 0.92f, 1f, 1f), cullingMask);
+            EnsurePreviewLight(transform, PreviewTopLightName, Quaternion.Euler(70f, 20f, 0f), 0.55f, new Color(1f, 0.94f, 0.86f, 1f), cullingMask);
+        }
+    }
 }
 
 public class FishVisualRuntimeModelHost : MonoBehaviour
@@ -192,10 +282,24 @@ public class FishVisualRuntimeModelHost : MonoBehaviour
         runtimeModel.transform.localScale = _fish.modelLocalScale == Vector3.zero
             ? Vector3.one
             : _fish.modelLocalScale;
+        SetLayerRecursively(runtimeModel, gameObject.layer);
         runtimeModel.SetActive(true);
 
         Renderer[] renderers = runtimeModel.GetComponentsInChildren<Renderer>(true);
         FishVisualUtility.ApplyMaterialToRenderers(_fish, renderers, _useSharedMaterial);
+    }
+
+    public void ConfigurePreviewLighting(int _layer)
+    {
+        if (runtimeModel == null)
+            return;
+
+        SetLayerRecursively(runtimeModel, _layer);
+
+        Renderer[] renderers = runtimeModel.GetComponentsInChildren<Renderer>(true);
+
+        foreach (Renderer renderer in renderers)
+            FishVisualUtility.ConfigurePreviewRenderer(renderer);
     }
 
     public void ClearRuntimeModel(bool _restorePlaceholderRenderer)
@@ -250,5 +354,18 @@ public class FishVisualRuntimeModelHost : MonoBehaviour
             DestroyImmediate(runtimeModel);
 
         runtimeModel = null;
+    }
+
+    private static void SetLayerRecursively(GameObject _root, int _layer)
+    {
+        if (_root == null)
+            return;
+
+        _root.layer = _layer;
+
+        Transform rootTransform = _root.transform;
+
+        for (int i = 0; i < rootTransform.childCount; i++)
+            SetLayerRecursively(rootTransform.GetChild(i).gameObject, _layer);
     }
 }

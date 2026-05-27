@@ -14,6 +14,7 @@ public static class TutorialEvents
     public static event Action BoatEntered;
     public static event Action BoatExited;
     public static event Action<FishData, ShipInventory> FishCaught;
+    public static event Action DockOwnerMarketOpened;
 
     public static bool TryHandleMoneyLenderInteraction(MoneyLender _moneyLender)
     {
@@ -104,5 +105,10 @@ public static class TutorialEvents
     public static void NotifyFishCaught(FishData _fishData, ShipInventory _shipInventory)
     {
         FishCaught?.Invoke(_fishData, _shipInventory);
+    }
+
+    public static void NotifyDockOwnerMarketOpened()
+    {
+        DockOwnerMarketOpened?.Invoke();
     }
 }

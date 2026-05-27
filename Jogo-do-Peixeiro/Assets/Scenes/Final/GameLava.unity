@@ -520,6 +520,9 @@ MonoBehaviour:
     de fogo para acessar a lava."
   showHudWarningWhenMissingUpgrade: 1
   confirmMissingFireproofBoatUpgradeEntry: 1
+  missingUpgradeConfirmationPanelRoot: {fileID: 0}
+  missingUpgradeConfirmationPanelPrefab: {fileID: 0}
+  missingUpgradeConfirmationTitle: Barco em risco
   missingUpgradeConfirmationSteps: 5
   missingUpgradeConfirmationMessage: "Se voc\xEA tentar entrar aqui, seu barco vai
     queimar. Tem certeza que quer entrar?\n\xC9 necess\xE1rio upgrade de barco \xE0
@@ -528,6 +531,12 @@ MonoBehaviour:
   missingUpgradeConfirmationYesText: Sim
   missingUpgradeConfirmationNoText: "N\xE3o"
   burnedBoatForcedSleepText: Seu barco queimou
+  missingUpgradeConfirmationTitleTMP: {fileID: 0}
+  missingUpgradeConfirmationMessageTMP: {fileID: 0}
+  missingUpgradeConfirmationYesButtonTMP: {fileID: 0}
+  missingUpgradeConfirmationNoButtonTMP: {fileID: 0}
+  missingUpgradeConfirmationYesButton: {fileID: 0}
+  missingUpgradeConfirmationNoButton: {fileID: 0}
   playerStateRequirement: 2
   requirePlayerOnFoot: 0
   interactionPriority: 10
@@ -931,6 +940,7 @@ MonoBehaviour:
   _playerController: {fileID: 1988757444}
   _playerMove: {fileID: 1988757443}
   _playerInteract: {fileID: 1092610796}
+  _playerAnimationController: {fileID: 0}
   _boatController: {fileID: 24601747}
   _shipInventory: {fileID: 24601746}
   _forcedSleepPoint: {fileID: 1349553005}
@@ -3949,11 +3959,11 @@ PrefabInstance:
       objectReference: {fileID: 574899195}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915913
+      value: -1.8915911
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.393428
+      value: 4.3934274
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.z
@@ -4702,6 +4712,26 @@ PrefabInstance:
     - target: {fileID: 1518356180374917797, guid: 8c881a11c98bfb246a4c8692f1fd2bf1, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x
       value: 90
+      objectReference: {fileID: 0}
+    - target: {fileID: 2973559792549323353, guid: 8c881a11c98bfb246a4c8692f1fd2bf1, type: 3}
+      propertyPath: m_Size.x
+      value: 3.232128
+      objectReference: {fileID: 0}
+    - target: {fileID: 2973559792549323353, guid: 8c881a11c98bfb246a4c8692f1fd2bf1, type: 3}
+      propertyPath: m_Size.y
+      value: 1.6484735
+      objectReference: {fileID: 0}
+    - target: {fileID: 2973559792549323353, guid: 8c881a11c98bfb246a4c8692f1fd2bf1, type: 3}
+      propertyPath: m_Center.x
+      value: -0.19690514
+      objectReference: {fileID: 0}
+    - target: {fileID: 2973559792549323353, guid: 8c881a11c98bfb246a4c8692f1fd2bf1, type: 3}
+      propertyPath: m_Center.y
+      value: 0.13466504
+      objectReference: {fileID: 0}
+    - target: {fileID: 2973559792549323353, guid: 8c881a11c98bfb246a4c8692f1fd2bf1, type: 3}
+      propertyPath: m_Center.z
+      value: -0.000000014954242
       objectReference: {fileID: 0}
     - target: {fileID: 3764236793138448892, guid: 8c881a11c98bfb246a4c8692f1fd2bf1, type: 3}
       propertyPath: m_Name

@@ -58,7 +58,7 @@ Cobrador: É sério? Que pena. Esse foi o custo. Então, ou você paga, ou diz a
 
 Marina: M-mas... eu não tenho como pagar...
 
-Cobrador: Olha, a gente pode fazer um trato. Você vai me pagando em partes e eu não pego a sua loja, mas cada entrega tem prazo de 3 dias. Me ouviu?
+Cobrador: Olha, a gente pode fazer um trato. Você vai me pagando em partes e eu não pego a sua loja, mas eu quero toda a dívida paga em 5 dias. Me ouviu?
 
 Marina: C-claro! Mas eu não sei como eu conseguiria o dinheiro. A venda dos peixes só começa no fim do mês, eu pesco mais agora pra guardar...
 

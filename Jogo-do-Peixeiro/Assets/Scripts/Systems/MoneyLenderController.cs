@@ -2,6 +2,8 @@ using UnityEngine;
 
 public class MoneyLenderController : MonoBehaviour, IInteractable
 {
+    private const string RoteiroDialogLibraryResourcePath = "RoteiroDialogLibrary";
+
     [Header("References")]
     [SerializeField] private MoneyLender moneyLender;
     [SerializeField] private PaymentUI paymentUI;
@@ -12,8 +14,14 @@ public class MoneyLenderController : MonoBehaviour, IInteractable
     [SerializeField] private DialogSequencePlayer dialogPlayer;
     [SerializeField] private DialogSequenceAsset[] preOpenDialogPool;
     [SerializeField] private DialogCameraFocusTarget dialogFocusTarget;
+    [SerializeField] private bool autoLoadRoteiroExtrasWhenMissing = true;
 
     private bool isWaitingDialogToOpenUi;
+
+    private void Awake()
+    {
+        TryAutoConfigureRoteiroExtras();
+    }
 
     public void Interact()
     {
@@ -65,6 +73,8 @@ public class MoneyLenderController : MonoBehaviour, IInteractable
 
     private bool TryPlayPreOpenDialog()
     {
+        TryAutoConfigureRoteiroExtras();
+
         if (!playDialogBeforeOpeningUi)
             return false;
 
@@ -106,5 +116,46 @@ public class MoneyLenderController : MonoBehaviour, IInteractable
             return null;
 
         return availableDialogs[Random.Range(0, availableDialogs.Length)];
+    }
+
+    private void TryAutoConfigureRoteiroExtras()
+    {
+        if (!autoLoadRoteiroExtrasWhenMissing)
+            return;
+
+        if (HasAnyPreOpenDialog())
+        {
+            playDialogBeforeOpeningUi = true;
+            return;
+        }
+
+        RoteiroDialogLibrary library = Resources.Load<RoteiroDialogLibrary>(RoteiroDialogLibraryResourcePath);
+
+        if (library == null || library.CobradorExtras == null || library.CobradorExtras.Length == 0)
+            return;
+
+        preOpenDialogPool = library.CobradorExtras;
+
+        if (dialogPlayer == null)
+            dialogPlayer = DialogSequencePlayer.GetOrCreate();
+
+        if (dialogFocusTarget == null)
+            dialogFocusTarget = GetComponentInChildren<DialogCameraFocusTarget>(true);
+
+        playDialogBeforeOpeningUi = HasAnyPreOpenDialog();
+    }
+
+    private bool HasAnyPreOpenDialog()
+    {
+        if (preOpenDialogPool == null || preOpenDialogPool.Length == 0)
+            return false;
+
+        for (int i = 0; i < preOpenDialogPool.Length; i++)
+        {
+            if (preOpenDialogPool[i] != null && preOpenDialogPool[i].HasLines)
+                return true;
+        }
+
+        return false;
     }
 }

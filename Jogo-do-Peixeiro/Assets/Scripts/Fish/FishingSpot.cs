@@ -290,7 +290,7 @@ public class FishingSpot : MonoBehaviour, IPoolable
 
     private void UpdateBoatEscapeDistance()
     {
-        if (ignoreEscapeForDebug || hasDeactivated || isEscaping)
+        if (ignoreEscapeForDebug || hasDeactivated || isEscaping || ShouldHoldSpotDuringFishing())
             return;
 
         if (boatTransform == null && !TryFindBoatTransform())
@@ -304,11 +304,17 @@ public class FishingSpot : MonoBehaviour, IPoolable
 
     private void EscapeFishIfFishingWouldBeBlocked(float _horizontalDistance)
     {
-        if (ignoreEscapeForDebug || hasDeactivated)
+        if (ignoreEscapeForDebug || hasDeactivated || ShouldHoldSpotDuringFishing())
             return;
 
         if (_horizontalDistance <= GetEffectiveEscapeDistance())
             EscapeFish();
+    }
+
+    private bool ShouldHoldSpotDuringFishing()
+    {
+        return isWaitingFishingResult ||
+               (FishingManager.instance != null && FishingManager.instance.IsFishing);
     }
 
     private float GetEffectiveEscapeDistance()

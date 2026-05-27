@@ -602,6 +602,7 @@ public class FishResultUI : MonoBehaviour
             return;
 
         FishVisualUtility.ApplyModel(currentFishType, mesh, objectRenderer, false);
+        FishVisualUtility.ApplyPreviewLighting(objectRenderer);
         hasFishVisual = FishVisualUtility.HasVisual(currentFishType);
     }
 
@@ -655,6 +656,11 @@ public class FishResultUI : MonoBehaviour
 
         if (InputHandler.instance != null)
         {
+            Vector2 directGamepadRotation = GetDirectGamepadFishRotationDelta(out _isManualRotationInput);
+
+            if (_isManualRotationInput)
+                return directGamepadRotation;
+
             if (InputDeviceDetector.CurrentDeviceType == InputDeviceType.GenericController)
                 return GetControllerFishRotationDelta(InputHandler.instance.lookInput, out _isManualRotationInput);
 
@@ -663,6 +669,17 @@ public class FishResultUI : MonoBehaviour
 
         float autoRotationSpeed = fishRotationSpeed > 0f ? fishRotationSpeed : rotationSpeed;
         return new Vector2(autoRotationSpeed * Time.unscaledDeltaTime, 0f);
+    }
+
+    private Vector2 GetDirectGamepadFishRotationDelta(out bool _isManualRotationInput)
+    {
+        _isManualRotationInput = false;
+
+        if (Gamepad.current == null)
+            return Vector2.zero;
+
+        Vector2 lookInput = Gamepad.current.rightStick.ReadValue();
+        return GetControllerFishRotationDelta(lookInput, out _isManualRotationInput);
     }
 
     private Vector2 GetControllerFishRotationDelta(Vector2 _lookInput, out bool _isManualRotationInput)

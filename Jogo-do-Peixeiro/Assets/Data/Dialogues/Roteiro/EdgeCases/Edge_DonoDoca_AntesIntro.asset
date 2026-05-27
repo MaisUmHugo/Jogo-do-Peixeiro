@@ -34,5 +34,5 @@ MonoBehaviour:
     sentence: "Ah, não. Eu só gosto de observar pessoas."
     cameraFocusTarget: {fileID: 0}
   - speakerName: "Dono do Porto"
-    sentence: "... Ok?"
+    sentence: ".... Ok?"
     cameraFocusTarget: {fileID: 0}

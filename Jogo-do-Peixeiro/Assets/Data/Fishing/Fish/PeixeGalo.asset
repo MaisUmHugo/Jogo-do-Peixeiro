@@ -16,11 +16,11 @@ MonoBehaviour:
   maxWeight: 20
   modelPrefab: {fileID: 2934044989472717363, guid: 3f38e680d58ccf54e867964ba1193940, type: 3}
   modelLocalPosition: {x: 0, y: 0, z: 0}
-  modelLocalEulerAngles: {x: 0, y: 0, z: 25}
-  modelLocalScale: {x: 1, y: 3, z: 3}
+  modelLocalEulerAngles: {x: 0, y: 180, z: 0}
+  modelLocalScale: {x: 3, y: 3, z: 3}
   mesh: {fileID: 0}
-  material: {fileID: -3852407786346179433, guid: 3e089c46424a98148bd09333638cf46d, type: 3}
-  texture: {fileID: 0}
+  material: {fileID: 0}
+  texture: {fileID: 2800000, guid: 011c1a854f129d245a0bd324ad1ac203, type: 3}
   inventoryIcon: {fileID: 0}
   rarity: 2
   basePrice: 24

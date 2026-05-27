@@ -37,6 +37,9 @@ public class CampaignOutcomeController : MonoBehaviour
     [SerializeField, Min(0f)] private float finalDialogFallbackRestFadeOutDuration = 1.5f;
     [SerializeField, Min(0f)] private float finalDialogFallbackRestHoldDuration = 0.5f;
     [SerializeField, Range(0f, 24f)] private float finalDialogFallbackMorningHour = 6f;
+    [SerializeField] private bool movePlayerToMoneyLenderForFinalDialogFallback = true;
+    [SerializeField] private Transform finalDialogFallbackMorningPoint;
+    [SerializeField, Min(0f)] private float finalDialogFallbackMoneyLenderDistance = 2.25f;
     [SerializeField] private bool showFinalFadeScreenWhenUsingDialogFallback = true;
     [SerializeField] private string fallbackFinalText = "FIM?";
     [SerializeField] private string fallbackEndlessUnlockedText = "Modo sem fim foi liberado!";
@@ -335,11 +338,19 @@ public class CampaignOutcomeController : MonoBehaviour
         if (finalDialogFallbackRestHoldDuration > 0f)
             yield return new WaitForSecondsRealtime(finalDialogFallbackRestHoldDuration);
 
-        ApplyFinalFallbackMorningWithoutDeadlinePenalty();
+        PrepareFinalFallbackMorningWithoutDeadlinePenalty();
 
         yield return SceneTransitionFadeController.FadeInAndWait(finalDialogFallbackFadeInDuration, 0f);
+        SnapGameplayCameraToPlayer();
         pendingCampaignCompletionRoutine = null;
         PlayDialogOrFinish(_player, _dialog, _onFinished);
+    }
+
+    private void PrepareFinalFallbackMorningWithoutDeadlinePenalty()
+    {
+        ApplyFinalFallbackMorningWithoutDeadlinePenalty();
+        MovePlayerToFinalFallbackMorningPoint();
+        SnapGameplayCameraToPlayer();
     }
 
     private void ApplyFinalFallbackMorningWithoutDeadlinePenalty()
@@ -353,6 +364,149 @@ public class CampaignOutcomeController : MonoBehaviour
         int nextElapsedDay = Mathf.Max(1, dayCycle.ElapsedDays + 1);
         float normalizedMorning = Mathf.Repeat(finalDialogFallbackMorningHour, 24f) / 24f;
         dayCycle.SetCycleState(nextCurrentDay, nextElapsedDay, normalizedMorning);
+    }
+
+    private void MovePlayerToFinalFallbackMorningPoint()
+    {
+        if (!movePlayerToMoneyLenderForFinalDialogFallback)
+            return;
+
+        Transform playerTransform = ResolvePlayerTransform();
+
+        if (playerTransform == null)
+            return;
+
+        if (!TryResolveFinalFallbackMorningPose(playerTransform.rotation, out Vector3 position, out Quaternion rotation))
+            return;
+
+        CharacterController characterController = playerTransform.GetComponent<CharacterController>();
+        bool restoreCharacterController = characterController != null && characterController.enabled;
+
+        if (restoreCharacterController)
+            characterController.enabled = false;
+
+        playerTransform.SetPositionAndRotation(position, rotation);
+
+        if (restoreCharacterController)
+            characterController.enabled = true;
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
+    }
+
+    private bool TryResolveFinalFallbackMorningPose(
+        Quaternion _fallbackRotation,
+        out Vector3 _position,
+        out Quaternion _rotation)
+    {
+        _position = default;
+        _rotation = _fallbackRotation;
+
+        if (finalDialogFallbackMorningPoint != null)
+        {
+            _position = finalDialogFallbackMorningPoint.position;
+            _rotation = finalDialogFallbackMorningPoint.rotation;
+            return true;
+        }
+
+        MoneyLenderController moneyLenderController = FindFirstObjectByType<MoneyLenderController>(FindObjectsInactive.Include);
+
+        if (moneyLenderController != null)
+            return TryResolveMoneyLenderPose(moneyLenderController.transform, moneyLenderController, _fallbackRotation, out _position, out _rotation);
+
+        MoneyLender moneyLender = FindFirstObjectByType<MoneyLender>(FindObjectsInactive.Include);
+
+        if (moneyLender == null)
+            return false;
+
+        _position = GetPositionInFrontOf(moneyLender.transform);
+        _rotation = GetFacingRotation(_fallbackRotation, _position, moneyLender.transform);
+        return true;
+    }
+
+    private bool TryResolveMoneyLenderPose(
+        Transform _moneyLenderTransform,
+        MoneyLenderController _moneyLenderController,
+        Quaternion _fallbackRotation,
+        out Vector3 _position,
+        out Quaternion _rotation)
+    {
+        _position = default;
+        _rotation = _fallbackRotation;
+
+        if (_moneyLenderTransform == null)
+            return false;
+
+        InteractablePromptPoint promptPoint = _moneyLenderController.GetComponent<InteractablePromptPoint>();
+
+        if (promptPoint == null)
+            promptPoint = _moneyLenderController.GetComponentInChildren<InteractablePromptPoint>(true);
+
+        if (promptPoint != null)
+        {
+            foreach (Transform point in promptPoint.GetPromptPoints())
+            {
+                if (point == null)
+                    continue;
+
+                _position = point.position;
+                _rotation = GetFacingRotation(point.rotation, _position, _moneyLenderTransform);
+                return true;
+            }
+        }
+
+        _position = GetPositionInFrontOf(_moneyLenderTransform);
+        _rotation = GetFacingRotation(_fallbackRotation, _position, _moneyLenderTransform);
+        return true;
+    }
+
+    private Vector3 GetPositionInFrontOf(Transform _target)
+    {
+        if (_target == null)
+            return Vector3.zero;
+
+        Vector3 forward = _target.forward;
+
+        if (forward.sqrMagnitude <= 0.0001f)
+            forward = Vector3.forward;
+
+        return _target.position + forward.normalized * finalDialogFallbackMoneyLenderDistance;
+    }
+
+    private static Quaternion GetFacingRotation(Quaternion _fallbackRotation, Vector3 _position, Transform _lookTarget)
+    {
+        if (_lookTarget == null)
+            return _fallbackRotation;
+
+        Vector3 direction = _lookTarget.position - _position;
+        direction.y = 0f;
+
+        if (direction.sqrMagnitude <= 0.0001f)
+            return _fallbackRotation;
+
+        return Quaternion.LookRotation(direction.normalized, Vector3.up);
+    }
+
+    private static Transform ResolvePlayerTransform()
+    {
+        PlayerController playerController = FindFirstObjectByType<PlayerController>(FindObjectsInactive.Include);
+
+        if (playerController != null)
+            return playerController.transform;
+
+        PlayerMove playerMove = FindFirstObjectByType<PlayerMove>(FindObjectsInactive.Include);
+
+        if (playerMove != null)
+            return playerMove.transform;
+
+        CharacterController characterController = FindFirstObjectByType<CharacterController>(FindObjectsInactive.Include);
+        return characterController != null ? characterController.transform : null;
+    }
+
+    private static void SnapGameplayCameraToPlayer()
+    {
+        if (PlayerCamera.Instance != null)
+            PlayerCamera.Instance.SnapToGameplayTarget();
     }
 
     private static void PlayDialogOrFinish(DialogSequencePlayer _player, DialogSequenceAsset _dialog, Action _onFinished)

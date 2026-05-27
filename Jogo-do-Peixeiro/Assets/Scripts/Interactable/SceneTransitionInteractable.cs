@@ -37,12 +37,23 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     [Header("Missing Upgrade Confirmation")]
     [SerializeField] private bool confirmMissingFireproofBoatUpgradeEntry = true;
+    [SerializeField] private GameObject missingUpgradeConfirmationPanelRoot;
+    [SerializeField] private GameObject missingUpgradeConfirmationPanelPrefab;
+    [SerializeField] private string missingUpgradeConfirmationTitle = "Barco em risco";
     [SerializeField, Min(1)] private int missingUpgradeConfirmationSteps = 5;
     [SerializeField, TextArea] private string missingUpgradeConfirmationMessage = "Se você tentar entrar aqui, seu barco vai queimar. Tem certeza que quer entrar?\nÉ necessário upgrade de barco à prova de fogo.";
     [SerializeField, TextArea] private string missingUpgradeRepeatConfirmationMessage = "Tem certeza mesmo? Seu barco vai queimar.";
     [SerializeField] private string missingUpgradeConfirmationYesText = "Sim";
     [SerializeField] private string missingUpgradeConfirmationNoText = "Não";
     [SerializeField] private string burnedBoatForcedSleepText = "Seu barco queimou";
+
+    [Header("Missing Upgrade Confirmation Direct Refs")]
+    [SerializeField] private TMP_Text missingUpgradeConfirmationTitleTMP;
+    [SerializeField] private TMP_Text missingUpgradeConfirmationMessageTMP;
+    [SerializeField] private TMP_Text missingUpgradeConfirmationYesButtonTMP;
+    [SerializeField] private TMP_Text missingUpgradeConfirmationNoButtonTMP;
+    [SerializeField] private Button missingUpgradeConfirmationYesButton;
+    [SerializeField] private Button missingUpgradeConfirmationNoButton;
 
     [Header("Interaction")]
     [SerializeField] private PlayerStateRequirement playerStateRequirement = PlayerStateRequirement.OnBoat;
@@ -53,7 +64,9 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
     private bool isShowingMissingUpgradeConfirmation;
     private int missingUpgradeConfirmationCount;
     private GameObject missingUpgradeConfirmationRoot;
+    private TMP_Text missingUpgradeConfirmationTitleText;
     private TMP_Text missingUpgradeConfirmationBodyText;
+    private bool missingUpgradeConfirmationUsesScenePanel;
     private GameManager.GameState missingUpgradePreviousState;
     private bool hasMissingUpgradePreviousState;
 
@@ -182,12 +195,44 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         LockGameplayForMissingUpgradeConfirmation();
 
         missingUpgradeConfirmationRoot = CreateMissingUpgradeConfirmationPanel();
-        UpdateMissingUpgradeConfirmationMessage();
+        UpdateMissingUpgradeConfirmationTitle();
+        UpdateMissingUpgradeConfirmationMessageSimple();
 
         AudioManager.Instance?.RefreshUIButtonAudioFeedback();
     }
 
     private GameObject CreateMissingUpgradeConfirmationPanel()
+    {
+        if (missingUpgradeConfirmationPanelRoot != null)
+        {
+            missingUpgradeConfirmationPanelRoot.SetActive(true);
+            missingUpgradeConfirmationUsesScenePanel = true;
+
+            if (ConfigureCustomMissingUpgradeConfirmationPanel(missingUpgradeConfirmationPanelRoot))
+                return missingUpgradeConfirmationPanelRoot;
+
+            missingUpgradeConfirmationPanelRoot.SetActive(false);
+            missingUpgradeConfirmationUsesScenePanel = false;
+            missingUpgradeConfirmationTitleText = null;
+            missingUpgradeConfirmationBodyText = null;
+        }
+
+        if (missingUpgradeConfirmationPanelPrefab != null)
+        {
+            GameObject customRoot = Instantiate(missingUpgradeConfirmationPanelPrefab);
+
+            if (ConfigureCustomMissingUpgradeConfirmationPanel(customRoot))
+                return customRoot;
+
+            Destroy(customRoot);
+            missingUpgradeConfirmationTitleText = null;
+            missingUpgradeConfirmationBodyText = null;
+        }
+
+        return CreateDefaultMissingUpgradeConfirmationPanel();
+    }
+
+    private GameObject CreateDefaultMissingUpgradeConfirmationPanel()
     {
         GameObject root = new GameObject(
             "MissingFireproofUpgradeConfirmation",
@@ -233,8 +278,8 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         Image panelImage = panelObject.GetComponent<Image>();
         panelImage.color = new Color(0.06f, 0.07f, 0.08f, 0.97f);
 
-        TMP_Text titleText = CreateText(panelTransform, "Title", "Barco em risco", 54f, FontStyles.Bold);
-        RectTransform titleTransform = titleText.rectTransform;
+        missingUpgradeConfirmationTitleText = CreateText(panelTransform, "Title", string.Empty, 54f, FontStyles.Bold);
+        RectTransform titleTransform = missingUpgradeConfirmationTitleText.rectTransform;
         titleTransform.anchorMin = new Vector2(0.08f, 0.68f);
         titleTransform.anchorMax = new Vector2(0.92f, 0.9f);
         titleTransform.offsetMin = Vector2.zero;
@@ -263,6 +308,181 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
         UISelectionHelper.Select(noButton, root);
         return root;
+    }
+
+    private bool ConfigureCustomMissingUpgradeConfirmationPanel(GameObject _root)
+    {
+        if (_root == null)
+            return false;
+
+        Canvas canvas = _root.GetComponentInChildren<Canvas>(true);
+
+        if (canvas != null)
+        {
+            canvas.overrideSorting = true;
+            canvas.sortingOrder = short.MaxValue - 10;
+        }
+
+        missingUpgradeConfirmationTitleText = ResolveTextReference(
+            missingUpgradeConfirmationTitleTMP,
+            _root.transform,
+            "Title",
+            "TitleText",
+            "Titulo",
+            "TituloText",
+            "Header",
+            "HeaderText");
+
+        missingUpgradeConfirmationBodyText = ResolveTextReference(
+            missingUpgradeConfirmationMessageTMP,
+            _root.transform,
+            "Message",
+            "MessageText",
+            "Mensagem",
+            "MensagemText",
+            "Body",
+            "BodyText");
+
+        TMP_Text noButtonText = ResolveTextReference(
+            missingUpgradeConfirmationNoButtonTMP,
+            _root.transform,
+            "NoButtonText",
+            "NaoButtonText",
+            "CancelButtonText",
+            "CancelarButtonText",
+            "NoLabel",
+            "NaoLabel",
+            "CancelLabel",
+            "CancelarLabel");
+
+        TMP_Text yesButtonText = ResolveTextReference(
+            missingUpgradeConfirmationYesButtonTMP,
+            _root.transform,
+            "YesButtonText",
+            "SimButtonText",
+            "ConfirmButtonText",
+            "ConfirmarButtonText",
+            "YesLabel",
+            "SimLabel",
+            "ConfirmLabel",
+            "ConfirmarLabel");
+
+        Button noButton = ResolveButtonReference(
+            missingUpgradeConfirmationNoButton,
+            noButtonText,
+            _root.transform,
+            "NoButton",
+            "NaoButton",
+            "CancelButton",
+            "CancelarButton");
+
+        Button yesButton = ResolveButtonReference(
+            missingUpgradeConfirmationYesButton,
+            yesButtonText,
+            _root.transform,
+            "YesButton",
+            "SimButton",
+            "ConfirmButton",
+            "ConfirmarButton");
+
+        if (missingUpgradeConfirmationBodyText == null || noButton == null || yesButton == null)
+            return false;
+
+        ConfigureButton(noButton, GetNoButtonText(), OnMissingUpgradeConfirmNo, noButtonText);
+        ConfigureButton(yesButton, GetYesButtonText(), OnMissingUpgradeConfirmYes, yesButtonText);
+        UISelectionHelper.Select(noButton, _root);
+        return true;
+    }
+
+    private void ConfigureButton(
+        Button _button,
+        string _label,
+        UnityEngine.Events.UnityAction _onClick,
+        TMP_Text _labelTextOverride = null)
+    {
+        if (_button == null)
+            return;
+
+        _button.onClick.RemoveListener(OnMissingUpgradeConfirmNo);
+        _button.onClick.RemoveListener(OnMissingUpgradeConfirmYes);
+        _button.onClick.AddListener(_onClick);
+
+        TMP_Text labelText = _labelTextOverride != null
+            ? _labelTextOverride
+            : _button.GetComponentInChildren<TMP_Text>(true);
+
+        if (labelText != null)
+            labelText.text = _label;
+    }
+
+    private TMP_Text ResolveTextReference(TMP_Text _directReference, Transform _root, params string[] _fallbackNames)
+    {
+        if (IsComponentUnderRoot(_directReference, _root))
+            return _directReference;
+
+        return FindChildComponentByName<TMP_Text>(_root, _fallbackNames);
+    }
+
+    private Button ResolveButtonReference(
+        Button _directReference,
+        TMP_Text _labelText,
+        Transform _root,
+        params string[] _fallbackNames)
+    {
+        if (IsComponentUnderRoot(_directReference, _root))
+            return _directReference;
+
+        if (IsComponentUnderRoot(_labelText, _root))
+        {
+            Button parentButton = _labelText.GetComponentInParent<Button>(true);
+
+            if (IsComponentUnderRoot(parentButton, _root))
+                return parentButton;
+        }
+
+        return FindChildComponentByName<Button>(_root, _fallbackNames);
+    }
+
+    private bool IsComponentUnderRoot(Component _component, Transform _root)
+    {
+        if (_component == null || _root == null)
+            return false;
+
+        Transform current = _component.transform;
+
+        while (current != null)
+        {
+            if (current == _root)
+                return true;
+
+            current = current.parent;
+        }
+
+        return false;
+    }
+
+    private T FindChildComponentByName<T>(Transform _root, params string[] _names) where T : Component
+    {
+        if (_root == null || _names == null || _names.Length == 0)
+            return null;
+
+        T[] components = _root.GetComponentsInChildren<T>(true);
+
+        for (int i = 0; i < components.Length; i++)
+        {
+            T component = components[i];
+
+            if (component == null)
+                continue;
+
+            for (int j = 0; j < _names.Length; j++)
+            {
+                if (string.Equals(component.gameObject.name, _names[j], System.StringComparison.OrdinalIgnoreCase))
+                    return component;
+            }
+        }
+
+        return null;
     }
 
     private TMP_Text CreateText(Transform _parent, string _name, string _text, float _fontSize, FontStyles _fontStyle)
@@ -305,18 +525,10 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     private void OnMissingUpgradeConfirmYes()
     {
-        missingUpgradeConfirmationCount++;
-
-        if (missingUpgradeConfirmationCount >= Mathf.Max(1, missingUpgradeConfirmationSteps))
-        {
-            bool hadStoredState = hasMissingUpgradePreviousState;
-            GameManager.GameState storedState = missingUpgradePreviousState;
-            CloseMissingUpgradeConfirmation(false);
-            TriggerMissingUpgradeBurnReset(hadStoredState, storedState);
-            return;
-        }
-
-        UpdateMissingUpgradeConfirmationMessage();
+        bool hadStoredState = hasMissingUpgradePreviousState;
+        GameManager.GameState storedState = missingUpgradePreviousState;
+        CloseMissingUpgradeConfirmation(false);
+        TriggerMissingUpgradeBurnReset(hadStoredState, storedState);
     }
 
     private void OnMissingUpgradeConfirmNo()
@@ -341,10 +553,33 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         missingUpgradeConfirmationBodyText.text = $"{message}\n\nConfirmação {currentStep}/{maxSteps}";
     }
 
+    private void UpdateMissingUpgradeConfirmationMessageSimple()
+    {
+        if (missingUpgradeConfirmationBodyText == null)
+            return;
+
+        string message = string.IsNullOrWhiteSpace(missingUpgradeConfirmationMessage)
+            ? "Se voce tentar entrar aqui, seu barco vai queimar. Tem certeza que quer entrar?"
+            : missingUpgradeConfirmationMessage;
+
+        missingUpgradeConfirmationBodyText.text = message;
+    }
+
+    private void UpdateMissingUpgradeConfirmationTitle()
+    {
+        if (missingUpgradeConfirmationTitleText == null)
+            return;
+
+        missingUpgradeConfirmationTitleText.text = string.IsNullOrWhiteSpace(missingUpgradeConfirmationTitle)
+            ? "Barco em risco"
+            : missingUpgradeConfirmationTitle;
+    }
+
     private void CloseMissingUpgradeConfirmation(bool _restoreGameplayState)
     {
         missingUpgradeConfirmationCount = 0;
         isShowingMissingUpgradeConfirmation = false;
+        missingUpgradeConfirmationTitleText = null;
         missingUpgradeConfirmationBodyText = null;
 
         if (missingUpgradeConfirmationRoot != null)

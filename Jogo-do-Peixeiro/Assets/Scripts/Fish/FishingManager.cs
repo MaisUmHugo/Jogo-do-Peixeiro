@@ -68,6 +68,7 @@ public class FishingManager : MonoBehaviour
     private int _objectiveFishMissStreak;
     private HiddenPanelState[] _hiddenPanelStates;
     private bool _waitForCatchResultClose;
+    private bool _isWaitingForHookReturn;
 
     private struct HiddenPanelState
     {
@@ -103,6 +104,7 @@ public class FishingManager : MonoBehaviour
 
     private void OnDisable()
     {
+        _isWaitingForHookReturn = false;
         UnsubscribeCatchResultPanel();
         RestoreConfiguredPanelsAfterFishing();
     }
@@ -765,14 +767,23 @@ public class FishingManager : MonoBehaviour
         if (_fishSkillCheck != null)
             _fishSkillCheck.StopSkillCheck();
 
-        if (GameManager.instance != null)
-            GameManager.instance.SetState(_waitForCatchResultClose ? GameManager.GameState.InUI : GameManager.GameState.OnBoat);
+        _isWaitingForHookReturn = _fishingRod != null && _fishingRod.IsHookActive;
 
-        if (!_waitForCatchResultClose)
-            RestoreConfiguredPanelsAfterFishing();
+        if (GameManager.instance != null)
+        {
+            GameManager.GameState nextState = _waitForCatchResultClose
+                ? GameManager.GameState.InUI
+                : _isWaitingForHookReturn
+                    ? GameManager.GameState.Fishing
+                    : GameManager.GameState.OnBoat;
+
+            GameManager.instance.SetState(nextState);
+        }
 
         if (_fishingRod != null)
-            _fishingRod.ReturnHookAfterFishing();
+            _fishingRod.ReturnHookAfterFishing(HandleHookReturnedAfterFishing);
+
+        TryFinalizeFishingReturnState();
 
         FishingEnded?.Invoke(_success, hadFishBitten);
         ClearFishingData();
@@ -811,13 +822,7 @@ public class FishingManager : MonoBehaviour
         _waitForCatchResultClose = false;
         UnsubscribeCatchResultPanel();
 
-        if (GameManager.instance != null &&
-            GameManager.instance.currentState == GameManager.GameState.InUI)
-        {
-            GameManager.instance.SetState(GameManager.GameState.OnBoat);
-        }
-
-        RestoreConfiguredPanelsAfterFishing();
+        TryFinalizeFishingReturnState();
     }
 
     private void UnsubscribeCatchResultPanel()
@@ -835,8 +840,48 @@ public class FishingManager : MonoBehaviour
         _activeBait = null;
     }
 
+    private void HandleHookReturnedAfterFishing()
+    {
+        _isWaitingForHookReturn = false;
+        TryFinalizeFishingReturnState();
+    }
+
+    private void TryFinalizeFishingReturnState()
+    {
+        if (_waitForCatchResultClose)
+            return;
+
+        if (_isWaitingForHookReturn)
+        {
+            if (GameManager.instance != null &&
+                GameManager.instance.currentState != GameManager.GameState.Paused)
+            {
+                GameManager.instance.SetState(GameManager.GameState.Fishing);
+            }
+
+            return;
+        }
+
+        if (GameManager.instance != null &&
+            (GameManager.instance.currentState == GameManager.GameState.Fishing ||
+             GameManager.instance.currentState == GameManager.GameState.InUI))
+        {
+            GameManager.instance.SetState(GameManager.GameState.OnBoat);
+        }
+
+        RestoreConfiguredPanelsAfterFishing();
+    }
+
     private void ReturnToBoatState()
     {
+        if (_fishingRod != null && _fishingRod.IsHookActive)
+        {
+            if (GameManager.instance != null)
+                GameManager.instance.SetState(GameManager.GameState.Fishing);
+
+            return;
+        }
+
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnBoat);
     }

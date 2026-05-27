@@ -36,6 +36,7 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private float spotFallbackWaterProbeHeight = 8f;
     [SerializeField] private float spotFallbackWaterProbeDistance = 24f;
     [SerializeField] private float noSpotWaitBeforeReturn = 1.2f;
+    [SerializeField, Min(0.1f)] private float maxHookReturnDuration = 3f;
 
     [Header("Splash VFX")]
     [SerializeField] private VisualEffect splashVFXPrefab;
@@ -57,6 +58,9 @@ public class FishingRod : MonoBehaviour
     [SerializeField] private Vector3 fishPullVFXOffset = new Vector3(0f, 0.08f, 0f);
     [Tooltip("Offset vertical extra aplicado somente em área profunda/dark water. Use valor negativo para baixar o FishVFX.")]
     [SerializeField] private float deepFishPullVFXWaterYOffset = -0.25f;
+    [SerializeField] private bool overrideFishPullVFXSorting = true;
+    [SerializeField] private string fishPullVFXSortingLayerName = "Default";
+    [SerializeField] private int fishPullVFXSortingOrder = 80;
 
     [Header("Lava Fish Movement Visual")]
     [Tooltip("Prefab usado no Fish Pull quando o FishingSpot atual estiver na area de lava. Se vazio, usa o Fish Pull VFX normal.")]
@@ -100,6 +104,10 @@ public class FishingRod : MonoBehaviour
     private Vector3 currentPlayerFacingTargetPoint;
     private PlayerAnimationController playerAnimationController;
     private bool hasPlayerFacingTarget;
+    private bool restoreBoatStateWhenHookReturns = true;
+    private System.Action pendingHookReturned;
+
+    public bool IsHookActive => hookTraveling || hookReturning || hookWaitingInWater || currentHook != null;
 
     #endregion
 
@@ -112,6 +120,7 @@ public class FishingRod : MonoBehaviour
         spotFallbackWaterProbeHeight = Mathf.Max(0f, spotFallbackWaterProbeHeight);
         spotFallbackWaterProbeDistance = Mathf.Max(0.1f, spotFallbackWaterProbeDistance);
         noSpotWaitBeforeReturn = Mathf.Max(0f, noSpotWaitBeforeReturn);
+        maxHookReturnDuration = Mathf.Max(0.1f, maxHookReturnDuration);
         splashLifetime = Mathf.Max(0f, splashLifetime);
         splashIntensity = Mathf.Max(0f, splashIntensity);
         fishMovementRadius = Mathf.Max(0f, fishMovementRadius);
@@ -235,6 +244,22 @@ public class FishingRod : MonoBehaviour
 
     public void ReturnHookAfterFishing()
     {
+        ReturnHookAfterFishing(null);
+    }
+
+    public void ReturnHookAfterFishing(System.Action _onReturned)
+    {
+        if (_onReturned != null)
+            pendingHookReturned += _onReturned;
+
+        restoreBoatStateWhenHookReturns = false;
+
+        if (!IsHookActive)
+        {
+            CompleteHookReturn();
+            return;
+        }
+
         if (!hookWaitingInWater || hookReturning)
             return;
 
@@ -359,11 +384,15 @@ public class FishingRod : MonoBehaviour
             return;
 
         if (FishingManager.instance != null && FishingManager.instance.IsFishing)
+        {
             FishingManager.instance.CancelFishing();
+            return;
+        }
 
         if (hookRoutine != null)
             StopCoroutine(hookRoutine);
 
+        restoreBoatStateWhenHookReturns = true;
         hookRoutine = StartCoroutine(ReturnHook());
     }
 
@@ -372,15 +401,21 @@ public class FishingRod : MonoBehaviour
         hookReturning = true;
         hookWaitingInWater = false;
 
-        if (currentHook == null)
+        if (currentHook == null || rodTip == null)
         {
             DestroyCurrentSplash();
             ResetHookState();
             UpdateRodVisualVisibility();
+            CompleteHookReturn();
             yield break;
         }
 
-        while (Vector3.Distance(currentHook.position, rodTip.position) > 0.05f)
+        float elapsed = 0f;
+
+        while (currentHook != null &&
+               rodTip != null &&
+               Vector3.Distance(currentHook.position, rodTip.position) > 0.05f &&
+               elapsed < maxHookReturnDuration)
         {
             currentHook.position = Vector3.MoveTowards(
                 currentHook.position,
@@ -388,20 +423,38 @@ public class FishingRod : MonoBehaviour
                 hookSpeed * 1.5f * Time.deltaTime
             );
 
+            elapsed += Time.deltaTime;
             yield return null;
         }
 
-        Destroy(currentHook.gameObject);
-        currentHook = null;
+        if (currentHook != null)
+        {
+            Destroy(currentHook.gameObject);
+            currentHook = null;
+        }
 
         DestroyCurrentSplash();
-        lineRenderer.enabled = false;
+
+        if (lineRenderer != null)
+            lineRenderer.enabled = false;
 
         ResetHookState();
         UpdateRodVisualVisibility();
+        CompleteHookReturn();
+    }
 
-        if (GameManager.instance != null)
+    private void CompleteHookReturn()
+    {
+        bool shouldRestoreBoatState = restoreBoatStateWhenHookReturns;
+        System.Action hookReturned = pendingHookReturned;
+
+        restoreBoatStateWhenHookReturns = true;
+        pendingHookReturned = null;
+
+        if (shouldRestoreBoatState && GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnBoat);
+
+        hookReturned?.Invoke();
     }
 
     private void ResetHookState()
@@ -700,11 +753,13 @@ public class FishingRod : MonoBehaviour
             fishPullVFXPoolSize,
             fishPullVFXLifetime,
             true,
-            out _
+            out GameObject rootObject
         );
 
         if (instance == null)
             return;
+
+        ApplyFishPullVFXSorting(instance, rootObject);
 
         if (instance.HasVector3("Direction"))
             instance.SetVector3("Direction", flatDirection.normalized);
@@ -745,6 +800,8 @@ public class FishingRod : MonoBehaviour
                 false,
                 out currentFishPullVFXRoot
             );
+
+            ApplyFishPullVFXSorting(currentFishPullVFXInstance, currentFishPullVFXRoot);
         }
 
         if (currentFishPullVFXInstance == null)
@@ -775,6 +832,34 @@ public class FishingRod : MonoBehaviour
         currentFishPullVFXInstance = null;
         currentFishPullVFXRoot = null;
         currentFishPullDirection = Vector3.forward;
+    }
+
+    private void ApplyFishPullVFXSorting(VisualEffect _instance, GameObject _rootObject)
+    {
+        if (!overrideFishPullVFXSorting)
+            return;
+
+        int sortingLayerId = SortingLayer.NameToID(fishPullVFXSortingLayerName);
+
+        GameObject rootObject = _rootObject != null
+            ? _rootObject
+            : _instance != null
+                ? _instance.gameObject
+                : null;
+
+        if (rootObject == null)
+            return;
+
+        Renderer[] renderers = rootObject.GetComponentsInChildren<Renderer>(true);
+
+        for (int i = 0; i < renderers.Length; i++)
+        {
+            if (renderers[i] == null)
+                continue;
+
+            renderers[i].sortingLayerID = sortingLayerId;
+            renderers[i].sortingOrder = fishPullVFXSortingOrder;
+        }
     }
 
     private Vector3 GetFishPullVFXPosition()

@@ -14,6 +14,7 @@ public class ForcedSleepController : MonoBehaviour
     [SerializeField] private PlayerController _playerController;
     [SerializeField] private PlayerMove _playerMove;
     [SerializeField] private PlayerInteract _playerInteract;
+    [SerializeField] private PlayerAnimationController _playerAnimationController;
     [SerializeField] private BoatController _boatController;
     [SerializeField] private ShipInventory _shipInventory;
 
@@ -174,6 +175,9 @@ public class ForcedSleepController : MonoBehaviour
         SetFadeTextVisible(false);
 
         SetGameState(GameManager.GameState.OnFoot);
+        SetCharacterControllerEnabled(true);
+        SetPlayerControllerEnabled(true);
+        ResetInput();
         _isRunning = false;
     }
 
@@ -207,6 +211,7 @@ public class ForcedSleepController : MonoBehaviour
         SetPlayerControllerEnabled(false);
         SetCharacterControllerEnabled(false);
         ResetPlayerMotion();
+        ResetPlayerAnimationState();
 
         yield return new WaitForFixedUpdate();
 
@@ -220,8 +225,9 @@ public class ForcedSleepController : MonoBehaviour
         }
 
         ResetPlayerMotion();
+        ResetPlayerAnimationState();
+        SetGameState(GameManager.GameState.OnFoot);
         SetCharacterControllerEnabled(true);
-        SetPlayerControllerEnabled(true);
         ResetInput();
         Physics.SyncTransforms();
         RegisterCurrentPositionAsSafeRespawn();
@@ -233,7 +239,8 @@ public class ForcedSleepController : MonoBehaviour
         yield return FadeTo(0f, _fadeOutDuration);
         SetFadeTextVisible(false);
 
-        SetGameState(GameManager.GameState.OnFoot);
+        SetPlayerControllerEnabled(true);
+        ResetInput();
         _isRunning = false;
         FlushPendingFishLossNotification();
         _pendingForcedSleepTextOverride = null;
@@ -326,6 +333,9 @@ public class ForcedSleepController : MonoBehaviour
 
     private void ApplyForcedSleepFishLoss(bool _wasPlayerOnBoat)
     {
+        if (!_wasPlayerOnBoat)
+            return;
+
         if (!_loseFishOnForcedSleep || _shipInventory == null)
             return;
 
@@ -425,6 +435,7 @@ public class ForcedSleepController : MonoBehaviour
             _playerMove = null;
             _characterController = null;
             _playerInteract = null;
+            _playerAnimationController = null;
         }
 
         if (_playerRoot == null)
@@ -457,6 +468,9 @@ public class ForcedSleepController : MonoBehaviour
 
         if (_playerInteract == null)
             _playerInteract = _playerRoot.GetComponentInChildren<PlayerInteract>(true);
+
+        if (_playerAnimationController == null)
+            _playerAnimationController = _playerRoot.GetComponentInChildren<PlayerAnimationController>(true);
     }
 
     private void ClosePanels()
@@ -496,6 +510,19 @@ public class ForcedSleepController : MonoBehaviour
             body.angularVelocity = Vector3.zero;
             body.Sleep();
         }
+    }
+
+    private void ResetPlayerAnimationState()
+    {
+        if (_playerAnimationController == null && _playerRoot != null)
+            _playerAnimationController = _playerRoot.GetComponentInChildren<PlayerAnimationController>(true);
+
+        if (_playerAnimationController == null)
+            return;
+
+        _playerAnimationController.ResetFishingAnimationState();
+        _playerAnimationController.ResetFishingVisualOffset();
+        _playerAnimationController.ResetBoatVisualOffset();
     }
 
     private void SetPlayerControllerEnabled(bool _enabled)

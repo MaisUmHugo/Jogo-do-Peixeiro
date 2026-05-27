@@ -497,6 +497,7 @@ public class FishPreviewPanelUI : MonoBehaviour
             return;
 
         FishVisualUtility.ApplyModel(currentFishType, meshFilter, fishRenderer, true);
+        FishVisualUtility.ApplyPreviewLighting(fishRenderer);
     }
 
     private void ApplyTexts()
@@ -561,10 +562,32 @@ public class FishPreviewPanelUI : MonoBehaviour
 
     private Vector2 GetFishRotationDelta()
     {
+        Vector2 directGamepadRotation = GetDirectGamepadFishRotationDelta(out bool hasDirectGamepadInput);
+
+        if (hasDirectGamepadInput)
+            return directGamepadRotation;
+
         if (InputHandler.instance != null && InputDeviceDetector.CurrentDeviceType == InputDeviceType.GenericController)
             return GetControllerFishRotationDelta(InputHandler.instance.lookInput);
 
         return GetMouseFishRotationDelta();
+    }
+
+    private Vector2 GetDirectGamepadFishRotationDelta(out bool _hasInput)
+    {
+        _hasInput = false;
+
+        if (Gamepad.current == null)
+            return Vector2.zero;
+
+        Vector2 lookInput = Gamepad.current.rightStick.ReadValue();
+        float deadZoneSqr = fishControllerRotationDeadZone * fishControllerRotationDeadZone;
+
+        if (lookInput.sqrMagnitude <= deadZoneSqr)
+            return Vector2.zero;
+
+        _hasInput = true;
+        return lookInput * fishInputRotationSpeed * Time.unscaledDeltaTime;
     }
 
     private Vector2 GetControllerFishRotationDelta(Vector2 _lookInput)

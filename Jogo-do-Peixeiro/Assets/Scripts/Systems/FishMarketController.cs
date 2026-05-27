@@ -27,9 +27,13 @@ public class FishMarketController : MonoBehaviour, IInteractable
     [SerializeField] private DialogCameraFocusTarget dialogFocusTarget;
     [SerializeField] private bool autoLoadRoteiroDialogWhenMissing = true;
     [SerializeField] private bool useVolcanoDialogInLavaScene = true;
+    [SerializeField, Min(0f)] private float dialogCompletionWatchdogDelay = 0.25f;
 
     private bool hasPlayedFirstDialog;
     private bool isWaitingDialogToOpenUi;
+    private bool pendingMarkFirstDialogAsPlayed;
+    private bool pendingOpenMarketAfterDialog;
+    private float dialogWaitStartedAt;
     private const string RoteiroDialogLibraryResourcePath = "RoteiroDialogLibrary";
 
     public string PromptText => promptText;
@@ -44,6 +48,11 @@ public class FishMarketController : MonoBehaviour, IInteractable
             dockOwnerUI = FindFirstObjectByType<DockOwnerUI>(FindObjectsInactive.Include);
 
         TryAutoConfigureRoteiroDialog();
+    }
+
+    private void Update()
+    {
+        RunDialogCompletionWatchdog();
     }
 
     public bool CanInteract()
@@ -96,6 +105,8 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
     private void OpenMarket()
     {
+        TutorialEvents.NotifyDockOwnerMarketOpened();
+
         if (dockOwnerUI != null)
         {
             dockOwnerUI.Open(fishMarket);
@@ -142,18 +153,49 @@ public class FishMarketController : MonoBehaviour, IInteractable
             return false;
 
         isWaitingDialogToOpenUi = true;
+        pendingMarkFirstDialogAsPlayed = shouldMarkFirstDialogAsPlayed;
+        pendingOpenMarketAfterDialog = shouldOpenMarketAfterDialog;
+        dialogWaitStartedAt = Time.unscaledTime;
+
         dialogPlayer.Play(dialog, dialogFocusTarget, () =>
         {
-            if (shouldMarkFirstDialogAsPlayed)
-                hasPlayedFirstDialog = true;
-
-            isWaitingDialogToOpenUi = false;
-
-            if (shouldOpenMarketAfterDialog)
-                OpenMarket();
+            FinishPendingPreOpenDialog();
         });
 
         return true;
+    }
+
+    private void RunDialogCompletionWatchdog()
+    {
+        if (!isWaitingDialogToOpenUi)
+            return;
+
+        if (Time.unscaledTime - dialogWaitStartedAt < dialogCompletionWatchdogDelay)
+            return;
+
+        if (dialogPlayer != null && dialogPlayer.IsPlaying)
+            return;
+
+        FinishPendingPreOpenDialog();
+    }
+
+    private void FinishPendingPreOpenDialog()
+    {
+        if (!isWaitingDialogToOpenUi)
+            return;
+
+        bool shouldMarkFirstDialogAsPlayed = pendingMarkFirstDialogAsPlayed;
+        bool shouldOpenMarketAfterDialog = pendingOpenMarketAfterDialog;
+
+        isWaitingDialogToOpenUi = false;
+        pendingMarkFirstDialogAsPlayed = false;
+        pendingOpenMarketAfterDialog = false;
+
+        if (shouldMarkFirstDialogAsPlayed)
+            hasPlayedFirstDialog = true;
+
+        if (shouldOpenMarketAfterDialog)
+            OpenMarket();
     }
 
     private void TryAutoConfigureRoteiroDialog()
@@ -197,7 +239,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
         if (ShouldUseEarlyDockOwnerEdgeDialog())
         {
-            _shouldOpenMarketAfterDialog = false;
+            _shouldOpenMarketAfterDialog = true;
             return GetEarlyDockOwnerEdgeDialog();
         }
 
