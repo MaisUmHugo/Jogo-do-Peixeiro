@@ -305,7 +305,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             SetStep(TutorialStep.GoToMoneyLenderCabin);
             SetObjectiveVisible(false);
             HideNonTutorialHudsForOpeningTutorial();
-            PlayOpeningCutsceneOrRun(() => ShowIntroSlides(CompleteOpeningTutorialIntroFlow));
+            PlayOpeningCutsceneOrRun(HandleOpeningIntroFinished);
             return;
         }
 
@@ -931,6 +931,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
 
         _onFinished?.Invoke();
+    }
+
+    private void HandleOpeningIntroFinished()
+    {
+        CompleteOpeningTutorialIntroFlow();
+        ShowIntroSlides();
     }
 
     private void PlayMoneyLenderIntroCutsceneOrRun(Action _onFinished)
