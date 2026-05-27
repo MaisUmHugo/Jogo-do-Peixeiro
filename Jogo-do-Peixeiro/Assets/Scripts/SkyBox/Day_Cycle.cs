@@ -323,15 +323,17 @@ public class DayCycle : MonoBehaviour
     {
         if (sun == null) return;
 
-        float sunAngle = currentTime * 360f - 90f;
+        float sunAngle = currentTime * 360f - 180f;
 
-        sun.transform.rotation = Quaternion.Euler(sunAngle, 170f, 0);
-        sun.intensity = Mathf.Max(0.2f, sunIntensity.Evaluate(currentTime));
+        sun.transform.rotation = Quaternion.Euler(sunAngle, 170f, 0f);
+
+        float sunValue = Mathf.Clamp01(sunIntensity.Evaluate(currentTime));
+        sun.intensity = sunValue;
 
         if (moon != null)
         {
-            moon.transform.rotation = Quaternion.Euler(sunAngle + 180f, 170f, 0);
-            moon.intensity = Mathf.Clamp01(1f - sun.intensity) * 0.3f;
+            moon.transform.rotation = Quaternion.Euler(sunAngle + 180f, 170f, 0f);
+            moon.intensity = (1f - sunValue) * 0.5f;
         }
     }
 
