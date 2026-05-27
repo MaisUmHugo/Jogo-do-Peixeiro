@@ -469,6 +469,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     public void GoToMainMenu()
     {
         Time.timeScale = 1f;
+        GameSaveManager.SaveCurrentGame();
+        GameSaveManager.ClearLoadRequest();
         SceneManager.LoadScene(mainMenuSceneName);
     }
 

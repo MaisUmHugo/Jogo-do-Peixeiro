@@ -331,6 +331,8 @@ public class PauseManager : MonoBehaviour
                 UIModalManager.PopModal(ref pauseModalToken);
 
             Time.timeScale = 1f;
+            GameSaveManager.SaveCurrentGame();
+            GameSaveManager.ClearLoadRequest();
             SceneManager.LoadScene("Main Menu");
         });
     }

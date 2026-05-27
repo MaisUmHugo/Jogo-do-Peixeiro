@@ -202,6 +202,8 @@ public class GameOutcomePanelUI : MonoBehaviour
     {
         CloseImmediate();
         Time.timeScale = 1f;
+        GameSaveManager.SaveCurrentGame();
+        GameSaveManager.ClearLoadRequest();
         SceneManager.LoadScene(mainMenuSceneName);
     }
 
