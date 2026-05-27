@@ -37,6 +37,7 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private string _teleportToDockKeyboardBinding = "<Keyboard>/f4";
     [SerializeField] private string _spawnFishPullVfxKeyboardBinding = "<Keyboard>/f5";
     [SerializeField] private string _teleportToArrivalPointKeyboardBinding = "<Keyboard>/f6";
+    [SerializeField] private string _resetTutorialSlidesKeyboardBinding = "<Keyboard>/f7";
 
     [Header("Teleport")]
     [SerializeField, Min(0f)] private float _teleportHeightOffset = 0.05f;
@@ -74,6 +75,7 @@ public class BuildCheatController : MonoBehaviour
     private InputAction _teleportToDockAction;
     private InputAction _spawnFishPullVfxAction;
     private InputAction _teleportToArrivalPointAction;
+    private InputAction _resetTutorialSlidesAction;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
@@ -210,6 +212,11 @@ public class BuildCheatController : MonoBehaviour
             "Cheat Teleport To Arrival Point",
             _teleportToArrivalPointKeyboardBinding,
             null);
+
+        _resetTutorialSlidesAction = CreateButtonAction(
+            "Cheat Reset Tutorial Slides",
+            _resetTutorialSlidesKeyboardBinding,
+            null);
     }
 
     private InputAction CreateButtonAction(string _actionName, string _keyboardBinding, string _gamepadBinding)
@@ -283,6 +290,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_teleportToArrivalPointAction != null)
             _teleportToArrivalPointAction.performed += HandleTeleportToArrivalPoint;
+
+        if (_resetTutorialSlidesAction != null)
+            _resetTutorialSlidesAction.performed += HandleResetTutorialSlides;
     }
 
     private void UnregisterActionCallbacks()
@@ -340,6 +350,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_teleportToArrivalPointAction != null)
             _teleportToArrivalPointAction.performed -= HandleTeleportToArrivalPoint;
+
+        if (_resetTutorialSlidesAction != null)
+            _resetTutorialSlidesAction.performed -= HandleResetTutorialSlides;
     }
 
     private void EnableActions()
@@ -362,6 +375,7 @@ public class BuildCheatController : MonoBehaviour
         _teleportToDockAction?.Enable();
         _spawnFishPullVfxAction?.Enable();
         _teleportToArrivalPointAction?.Enable();
+        _resetTutorialSlidesAction?.Enable();
     }
 
     private void DisposeActions()
@@ -384,6 +398,7 @@ public class BuildCheatController : MonoBehaviour
         DisposeAction(ref _teleportToDockAction);
         DisposeAction(ref _spawnFishPullVfxAction);
         DisposeAction(ref _teleportToArrivalPointAction);
+        DisposeAction(ref _resetTutorialSlidesAction);
     }
 
     private void DisposeAction(ref InputAction _inputAction)
@@ -484,6 +499,11 @@ public class BuildCheatController : MonoBehaviour
     private void HandleTeleportToArrivalPoint(InputAction.CallbackContext _context)
     {
         TryRunShiftCheat(TeleportToArrivalPointCheat);
+    }
+
+    private void HandleResetTutorialSlides(InputAction.CallbackContext _context)
+    {
+        TryRunShiftCheat(ResetTutorialSlidesCheat);
     }
 
     private void TryRunCheat(System.Action _cheatAction, bool _allowInMainMenu = false)
@@ -637,10 +657,25 @@ public class BuildCheatController : MonoBehaviour
 
     private void PlayFinalCutsceneCheat()
     {
+        CampaignOutcomeController outcomeController = FindFirstObjectByType<CampaignOutcomeController>(
+            FindObjectsInactive.Include);
+
+        if (outcomeController != null && outcomeController.DebugPlayCampaignCompletionFlow(false))
+        {
+            ShowCheatFeedback("Cheat: final da campanha com transicao iniciado.");
+            return;
+        }
+
         PlayCutsceneCheat(
             _controller => _controller.ForcePlayFinalCutscene(),
             _library => new[] { _library.FimCampanhaLoja, _library.FimCampanhaAirFishers },
             "final");
+    }
+
+    private void ResetTutorialSlidesCheat()
+    {
+        CampaignQuestGuidanceController.ClearTutorialSlidesCompletedFlag();
+        ShowCheatFeedback("Cheat: slides do tutorial liberados novamente.");
     }
 
     private void PlayCutsceneCheat(
