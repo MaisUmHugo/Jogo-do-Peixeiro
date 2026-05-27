@@ -8815,10 +8815,10 @@ MonoBehaviour:
   gameSceneName: GameLake
   menuMusic: {fileID: 8300000, guid: 4953822d968c3dc4a8ec5395adcfcedc, type: 3}
   playMenuMusicOnStart: 1
-  buttonSubmitSfx: {fileID: 0}
-  selectionChangedSfx: {fileID: 0}
+  buttonSubmitSfx: {fileID: 8300000, guid: 3fc0965d2f212bc4f811fd9c8bc1ce85, type: 3}
+  selectionChangedSfx: {fileID: 8300000, guid: 06cf6f8f75be5a54b83706ee77e8088d, type: 3}
   buttonSubmitSfxVolume: 1
-  selectionChangedSfxVolume: 0.65
+  selectionChangedSfxVolume: 1
   autoBindButtonSubmitSfx: 1
   playSelectionChangedSfx: 1
   menuPanel: {fileID: 693702192}
@@ -8834,6 +8834,7 @@ MonoBehaviour:
   modeSelectDescriptionText: {fileID: 1630468462}
   endlessLockedText: {fileID: 2028694700}
   endlessLockedMessage: Complete a campanha para liberar o modo sem fim.
+  endlessUnlockedMessage: Modo sem fim liberado!
   modeSelectWarningDuration: 1.8
   modeSelectButtonShakeDuration: 0.2
   modeSelectButtonShakeStrength: 8
@@ -10081,6 +10082,9 @@ MonoBehaviour:
   _completeTaskKeyboardBinding: <Keyboard>/f3
   _resetSaveKeyboardBinding: <Keyboard>/f4
   _addMoneyKeyboardBinding: <Keyboard>/f5
+  _playOpeningCutsceneKeyboardBinding: <Keyboard>/f6
+  _playMoneyLenderCutsceneKeyboardBinding: <Keyboard>/f7
+  _playFinalCutsceneKeyboardBinding: <Keyboard>/f8
   _completeCampaignKeyboardBinding: <Keyboard>/f9
   _forceEndlessSpecialDeliveryKeyboardBinding: <Keyboard>/f10
   _unlockEndlessModeKeyboardBinding: <Keyboard>/f11

@@ -84,7 +84,9 @@ public class GameManager : MonoBehaviour
 
     public bool IsGameplayBlocked()
     {
-        return currentState == GameState.InUI || currentState == GameState.Paused;
+        return currentState == GameState.InUI ||
+               currentState == GameState.Paused ||
+               SceneTransitionFadeController.IsGameplayBlocking;
     }
 
     private void OnEnable()

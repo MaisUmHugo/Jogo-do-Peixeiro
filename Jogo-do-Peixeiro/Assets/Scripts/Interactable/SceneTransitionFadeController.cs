@@ -16,6 +16,8 @@ public class SceneTransitionFadeController : MonoBehaviour
     private float requestedFadeInDuration = 0.55f;
     private float requestedFadeInDelay = 0.15f;
 
+    public static bool IsGameplayBlocking { get; private set; }
+
     public static IEnumerator FadeOut(float _duration)
     {
         SceneTransitionFadeController controller = GetOrCreate();
@@ -97,6 +99,7 @@ public class SceneTransitionFadeController : MonoBehaviour
     private void OnDisable()
     {
         SceneManager.sceneLoaded -= HandleSceneLoaded;
+        SetGameplayBlocking(false);
     }
 
     private void HandleSceneLoaded(Scene _scene, LoadSceneMode _mode)
@@ -211,8 +214,10 @@ public class SceneTransitionFadeController : MonoBehaviour
         EnsureOverlay();
 
         float alpha = Mathf.Clamp01(_alpha);
+        bool shouldBlock = alpha > 0.01f;
         canvasGroup.alpha = alpha;
-        SetRaycastBlocking(alpha > 0.01f);
+        SetRaycastBlocking(shouldBlock);
+        SetGameplayBlocking(shouldBlock);
     }
 
     private void SetRaycastBlocking(bool _blocking)
@@ -222,5 +227,14 @@ public class SceneTransitionFadeController : MonoBehaviour
 
         canvasGroup.blocksRaycasts = _blocking;
         canvasGroup.interactable = _blocking;
+    }
+
+    private static void SetGameplayBlocking(bool _blocking)
+    {
+        if (IsGameplayBlocking == _blocking)
+            return;
+
+        IsGameplayBlocking = _blocking;
+        InputHandler.instance?.ResetGameplayInput();
     }
 }

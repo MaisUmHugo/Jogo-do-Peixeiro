@@ -822,6 +822,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: BarcoComMotor
       objectReference: {fileID: 0}
+    - target: {fileID: 2258002106375864549, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
+      propertyPath: boatWaterLoopSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: 2e6fe07c29e155f45becd096c4c767f8, type: 3}
     - target: {fileID: 7098386901417622287, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.92
@@ -2771,6 +2775,7 @@ MonoBehaviour:
   _teleportToDockKeyboardBinding: <Keyboard>/f4
   _spawnFishPullVfxKeyboardBinding: <Keyboard>/f5
   _teleportToArrivalPointKeyboardBinding: <Keyboard>/f6
+  _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: 
   _fishPullVfxSpawnDistance: 5
@@ -3844,6 +3849,18 @@ PrefabInstance:
       value: 0.016621148
       objectReference: {fileID: 0}
     - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: castSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: 4c5fc70406e0ef640a0be7b4d4024b41, type: 3}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: splashSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: 3447d5661fd2a7446a0c69116c47b01d, type: 3}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: fishPullSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: 4be7ca9ca79609c41906565de23dc307, type: 3}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: shipInventory
       value: 
       objectReference: {fileID: 24601746}
@@ -3851,6 +3868,14 @@ PrefabInstance:
       propertyPath: fishDirectionPull
       value: 
       objectReference: {fileID: 1611839940}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: lavaFishPullVFXOffset.y
+      value: -2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: lavaFishPullVFXWaterYOffset
+      value: -1
+      objectReference: {fileID: 0}
     - target: {fileID: 5390182603683277004, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
       value: 12.361495
@@ -3895,6 +3920,10 @@ PrefabInstance:
       propertyPath: _fishDirectionPull
       value: 
       objectReference: {fileID: 1611839940}
+    - target: {fileID: 7380781670803190230, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: footstepSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: 2d7c1da7c2ed2b4408761da42ea09893, type: 3}
     - target: {fileID: 7380781670803190230, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: cameraTransform
       value: 
