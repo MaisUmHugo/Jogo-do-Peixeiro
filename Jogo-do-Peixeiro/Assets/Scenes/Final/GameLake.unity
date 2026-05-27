@@ -675,6 +675,15 @@ MonoBehaviour:
   missingFireproofBoatUpgradeWarning: "Voc\xEA precisa do upgrade Barco \xE0 prova
     de fogo para acessar a lava."
   showHudWarningWhenMissingUpgrade: 1
+  confirmMissingFireproofBoatUpgradeEntry: 1
+  missingUpgradeConfirmationSteps: 5
+  missingUpgradeConfirmationMessage: "Se voc\xEA tentar entrar aqui, seu barco vai
+    queimar. Tem certeza que quer entrar?\n\xC9 necess\xE1rio upgrade de barco \xE0
+    prova de fogo."
+  missingUpgradeRepeatConfirmationMessage: Tem certeza mesmo? Seu barco vai queimar.
+  missingUpgradeConfirmationYesText: Sim
+  missingUpgradeConfirmationNoText: "N\xE3o"
+  burnedBoatForcedSleepText: Seu barco queimou
   playerStateRequirement: 2
   requirePlayerOnFoot: 0
   interactionPriority: 10
@@ -2134,18 +2143,25 @@ MonoBehaviour:
   playFinalCutsceneOnCampaignCompletion: 1
   playFinalDialogFallbackWhenCutsceneMissing: 1
   roteiroDialogLibrary: {fileID: 11400000, guid: 33cb2e6f6c9c42fa9c66cb1d96824288, type: 2}
-  loadMainMenuAfterFinalDialogFallback: 1
+  continueEndlessInCurrentSceneAfterFinalDialogFallback: 1
+  deleteCampaignSaveAfterEndlessTransition: 1
+  loadMainMenuAfterFinalDialogFallback: 0
   mainMenuSceneName: Main Menu
   fallbackMainMenuFadeDuration: 1
   fadeBeforeFinalDialogFallback: 1
   finalDialogFallbackFadeInDuration: 3
   finalDialogFallbackFadeInDelay: 1.5
+  finalDialogFallbackRestFadeOutDuration: 1.5
+  finalDialogFallbackRestHoldDuration: 0.5
+  finalDialogFallbackMorningHour: 6
   showFinalFadeScreenWhenUsingDialogFallback: 1
   fallbackFinalText: FIM?
   fallbackEndlessUnlockedText: Modo sem fim foi liberado!
+  fallbackEndingFont: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   fallbackFinalFadeInDuration: 5
   fallbackFinalHoldDuration: 5
   fallbackEndlessNoticeHoldDuration: 5
+  fallbackFinalFadeOutDuration: 1.5
   pauseOnCampaignCompletion: 1
   saveGameOnCampaignCompletion: 1
   campaignCompletionTitle: "CAMPANHA CONCLU\xCDDA"
@@ -3191,6 +3207,8 @@ MonoBehaviour:
   _requireModifier: 1
   _resetCampaignStateOnSaveReset: 1
   _moneyCheatAmount: 1000
+  _allFishCheatLimit: 10
+  _baitCheatQuantity: 10
   _cycleFishingAreaKeyboardBinding: <Keyboard>/f1
   _advanceDayKeyboardBinding: <Keyboard>/f2
   _completeTaskKeyboardBinding: <Keyboard>/f3
@@ -3207,12 +3225,12 @@ MonoBehaviour:
   _addSpecialDeliveryFishKeyboardBinding: <Keyboard>/f2
   _teleportToBoatKeyboardBinding: <Keyboard>/f3
   _teleportToDockKeyboardBinding: <Keyboard>/f4
-  _spawnFishPullVfxKeyboardBinding: <Keyboard>/f5
+  _addAllFishKeyboardBinding: <Keyboard>/f5
   _teleportToArrivalPointKeyboardBinding: <Keyboard>/f6
   _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
+  _addAllBaitsKeyboardBinding: <Keyboard>/f8
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: LakeCaveReturn
-  _fishPullVfxSpawnDistance: 5
   _cycleFishingAreaGamepadBinding: <Gamepad>/dpad/up
   _advanceDayGamepadBinding: <Gamepad>/dpad/right
   _completeTaskGamepadBinding: <Gamepad>/dpad/down
@@ -6181,11 +6199,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915923
+      value: -1.8915921
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.393428
+      value: 4.3934274
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

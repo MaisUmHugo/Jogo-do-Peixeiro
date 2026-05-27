@@ -17,9 +17,9 @@ MonoBehaviour:
   modelPrefab: {fileID: 3086888870473773488, guid: 7bb6a74134613d94ab6f0c1dea9f1671, type: 3}
   modelLocalPosition: {x: 0, y: 0, z: 0}
   modelLocalEulerAngles: {x: 0, y: 0, z: 0}
-  modelLocalScale: {x: 1, y: 1, z: 1}
+  modelLocalScale: {x: 1, y: 5, z: 5}
   mesh: {fileID: 0}
-  material: {fileID: 2100000, guid: 10f6a40284c691f43806202604c1fb61, type: 2}
+  material: {fileID: 2100000, guid: e31c896eef4503c418f1b89087e41140, type: 2}
   texture: {fileID: 0}
   inventoryIcon: {fileID: 0}
   rarity: 4
