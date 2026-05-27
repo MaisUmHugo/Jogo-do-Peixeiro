@@ -102,6 +102,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private DialogSequenceData completedDialog;
 
     [Header("Objective Markers")]
+    [SerializeField] private bool hideObjectiveOnAwake = true;
+    [SerializeField] private bool clearMarkersOnAwake = true;
     [SerializeField] private GameObject moneyLenderCabinMarker;
     [SerializeField] private GameObject dockMarker;
     [SerializeField] private GameObject dockOwnerMarker;
@@ -148,6 +150,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     public bool IsTutorialRunning => runTutorial && !IsTutorialFinished && !IsTutorialFailed;
     public bool IsHandlingPayment => IsTutorialRunning && handleMoneyLenderDuringTutorial && hasAcceptedRequest;
 
+    public static void ClearTutorialSlidesCompletedFlag()
+    {
+        PlayerPrefs.DeleteKey(TutorialSlidesCompletedKey);
+        PlayerPrefs.Save();
+    }
+
     #endregion
 
     #region Unity Lifecycle
@@ -176,6 +184,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (cutsceneController == null)
             cutsceneController = FindFirstObjectByType<CampaignCutsceneController>(FindObjectsInactive.Include);
+
+        if (hideObjectiveOnAwake)
+            SetObjectiveVisible(false);
+
+        if (clearMarkersOnAwake)
+            ClearMarkers();
     }
 
     private void OnEnable()
@@ -298,6 +312,35 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         ClearMarkers();
         SetObjectiveVisible(false);
+    }
+
+    public bool DebugRestoreTutorialGuidance()
+    {
+        if (!isActiveAndEnabled)
+            return false;
+
+        runTutorial = true;
+        IsTutorialFinished = false;
+        IsTutorialFailed = false;
+        isFinishingDelivery = false;
+        isShowingEndPanel = false;
+
+        if (pendingOutcomeRoutine != null)
+        {
+            StopCoroutine(pendingOutcomeRoutine);
+            pendingOutcomeRoutine = null;
+        }
+
+        if (generalOutcomePanel != null && generalOutcomePanel.IsShowing)
+            generalOutcomePanel.Close();
+
+        TrySubscribeCampaignProgress();
+
+        if (IsCampaignEconomyTutorialEnabled())
+            PrepareOpeningTutorialRequest();
+
+        SetStep(TutorialStep.GoToMoneyLenderCabin);
+        return true;
     }
 
     public void NotifyReachedMoneyLenderCabin()

@@ -3851,6 +3851,14 @@ PrefabInstance:
       propertyPath: fishDirectionPull
       value: 
       objectReference: {fileID: 1611839940}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: lavaFishPullVFXOffset.y
+      value: -2
+      objectReference: {fileID: 0}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: lavaFishPullVFXWaterYOffset
+      value: -1
+      objectReference: {fileID: 0}
     - target: {fileID: 5390182603683277004, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
       value: 12.361495
@@ -3901,11 +3909,11 @@ PrefabInstance:
       objectReference: {fileID: 574899195}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915913
+      value: -1.8915911
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.393428
+      value: 4.3934274
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.z

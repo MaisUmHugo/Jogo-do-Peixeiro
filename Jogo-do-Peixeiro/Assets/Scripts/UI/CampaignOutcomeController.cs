@@ -159,6 +159,35 @@ public class CampaignOutcomeController : MonoBehaviour
         pendingCampaignCompletionRoutine = StartCoroutine(ResolveCampaignCompletionRoutine(saveGameOnCampaignCompletion));
     }
 
+    public bool DebugPlayCampaignCompletionFlow(bool _saveGame = false)
+    {
+        if (!isActiveAndEnabled)
+            return false;
+
+        ResolveReferences();
+
+        if (pendingCampaignCompletionRoutine != null)
+        {
+            StopCoroutine(pendingCampaignCompletionRoutine);
+            pendingCampaignCompletionRoutine = null;
+        }
+
+        if (campaignProgress == null)
+            campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (debtSystem == null)
+            debtSystem = DebtSystem.GetOrCreate();
+
+        if (campaignProgress != null && debtSystem != null && campaignProgress.CampaignCompletionDebtAmount > 0)
+            debtSystem.SetDebt(campaignProgress.CampaignCompletionDebtAmount);
+
+        hasShownCampaignCompletion = false;
+        hasStartedCampaignCompletionCutscene = false;
+        isResolvingCampaignCompletion = true;
+        pendingCampaignCompletionRoutine = StartCoroutine(ResolveCampaignCompletionRoutine(_saveGame));
+        return true;
+    }
+
     private IEnumerator ResolveCampaignCompletionRoutine(bool _saveGame)
     {
         yield return null;

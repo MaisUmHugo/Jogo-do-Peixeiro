@@ -58,36 +58,44 @@ public class InputHandler : MonoBehaviour
 
     private void Update()
     {
-        moveInput = GetProcessedMoveInput(inputActions.Player.Move.ReadValue<Vector2>());
-        lookInput = inputActions.Player.Look.ReadValue<Vector2>();
+        bool fadeBlocking = SceneTransitionFadeController.IsGameplayBlocking;
+        bool gameplayInputBlocked = GameManager.instance != null && GameManager.instance.IsGameplayBlocked();
 
-        zoomInput = inputActions.Player.Zoom.ReadValue<float>();
+        moveInput = gameplayInputBlocked
+            ? Vector2.zero
+            : GetProcessedMoveInput(inputActions.Player.Move.ReadValue<Vector2>());
+        lookInput = gameplayInputBlocked
+            ? Vector2.zero
+            : inputActions.Player.Look.ReadValue<Vector2>();
+        zoomInput = gameplayInputBlocked
+            ? 0f
+            : inputActions.Player.Zoom.ReadValue<float>();
 
-        if (inputActions.Player.Interact.WasPressedThisFrame())
+        if (!fadeBlocking && inputActions.Player.Interact.WasPressedThisFrame())
         {
             onInteractPressed?.Invoke();
         }
 
-        if (inputActions.Player.SkillCheck.WasPressedThisFrame())
+        if (!fadeBlocking && inputActions.Player.SkillCheck.WasPressedThisFrame())
         {
             onSkillCheckPressed?.Invoke();
         }
 
-        if (inputActions.Player.Pause.WasPressedThisFrame())
+        if (!fadeBlocking && inputActions.Player.Pause.WasPressedThisFrame())
         {
             DispatchPausePressed();
         }
-        else if (inputActions.UI.Cancel.WasPressedThisFrame() && CanCancelOpenUi())
+        else if (!fadeBlocking && inputActions.UI.Cancel.WasPressedThisFrame() && CanCancelOpenUi())
         {
             DispatchPausePressed();
         }
 
-        if (inputActions.Player.Inventory.WasPressedThisFrame())
+        if (!fadeBlocking && inputActions.Player.Inventory.WasPressedThisFrame())
         {
             onInventoryPressed?.Invoke();
         }
 
-        if (inputActions.Player.AnyButton.WasPressedThisFrame())
+        if (!fadeBlocking && inputActions.Player.AnyButton.WasPressedThisFrame())
         {
            onAnyButtonPressed?.Invoke();
         }
