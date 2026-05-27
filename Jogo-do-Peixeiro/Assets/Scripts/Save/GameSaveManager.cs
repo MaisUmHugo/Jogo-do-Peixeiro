@@ -57,6 +57,28 @@ public class GameSaveManager : MonoBehaviour
         PlayerPrefs.Save();
     }
 
+    public static void SaveCurrentGame()
+    {
+        GetOrCreate()?.SaveGame();
+    }
+
+    public static void SaveCurrentGameAndRequestLoadOnNextScene()
+    {
+        GameSaveManager saveManager = GetOrCreate();
+        GameProgressMode mode = saveManager != null
+            ? saveManager.GetCurrentModeForSave()
+            : ResolveCurrentModeForLoadRequest();
+
+        saveManager?.SaveGame();
+        RequestLoadOnNextScene(mode);
+    }
+
+    private static GameProgressMode ResolveCurrentModeForLoadRequest()
+    {
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.Instance;
+        return campaignProgress != null ? campaignProgress.GameMode : GameProgressMode.Campaign;
+    }
+
     private void Awake()
     {
         if (Instance != null && Instance != this)

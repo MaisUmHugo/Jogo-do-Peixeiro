@@ -6,6 +6,8 @@ public class SpinFan : MonoBehaviour
 
     [SerializeField] private Angle rotationAxis = Angle.Z;
     public float rotationSpeed = 720f;
+    [SerializeField] private bool useLocalAxis = true;
+    [SerializeField] private bool invertRotation;
 
     [Header("Boat Speed")]
     [SerializeField] private bool scaleWithBoatSpeed = true;
@@ -34,7 +36,9 @@ public class SpinFan : MonoBehaviour
         if (Mathf.Abs(currentRotationSpeed) <= 0.01f)
             return;
 
-        transform.RotateAround(transform.position, GetRotationAxis(rotationAxis), currentRotationSpeed * Time.deltaTime);
+        float signedRotationSpeed = invertRotation ? -currentRotationSpeed : currentRotationSpeed;
+        Space rotationSpace = useLocalAxis ? Space.Self : Space.World;
+        transform.Rotate(GetRotationAxis(rotationAxis), signedRotationSpeed * Time.deltaTime, rotationSpace);
     }
 
     private float GetTargetRotationSpeed()

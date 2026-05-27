@@ -78,7 +78,7 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
     private void LoadTargetScene(bool _requestFadeInOnNextScene)
     {
         if (saveBeforeTransition)
-            GameSaveManager.GetOrCreate()?.SaveGame();
+            GameSaveManager.SaveCurrentGameAndRequestLoadOnNextScene();
 
         if (_requestFadeInOnNextScene)
             SceneTransitionFadeController.RequestFadeInOnNextScene(nextSceneFadeInDuration, nextSceneFadeInDelay);

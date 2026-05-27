@@ -91,3 +91,5 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   rotationAxis: 2
   rotationSpeed: 6000
+  useLocalAxis: 1
+  invertRotation: 1

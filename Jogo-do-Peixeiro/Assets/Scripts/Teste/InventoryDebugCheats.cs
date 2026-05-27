@@ -17,6 +17,7 @@ public class InventoryDebugCheats : MonoBehaviour
     [SerializeField, Min(1)] private int randomFishAmount = 1;
     [SerializeField] private bool ignoreShipCapacity = true;
     [SerializeField] private bool autoFindFishAssetsInEditor = true;
+    [SerializeField] private bool autoFindFishAssetsAtRuntime = true;
 
     [Header("Baits")]
     [SerializeField] private BaitData[] baitPool;
@@ -26,9 +27,9 @@ public class InventoryDebugCheats : MonoBehaviour
     [Header("Keyboard Shortcuts")]
     [SerializeField] private bool enableKeyboardShortcuts = true;
     [SerializeField] private bool requireShiftModifier = true;
-    [SerializeField] private Key addRandomFishKey = Key.F6;
-    [SerializeField] private Key addRandomFishBatchKey = Key.F7;
-    [SerializeField] private Key addBaitsKey = Key.F8;
+    [SerializeField] private Key addRandomFishKey = Key.F8;
+    [SerializeField] private Key addRandomFishBatchKey = Key.F9;
+    [SerializeField] private Key addBaitsKey = Key.F10;
 
     private void Awake()
     {
@@ -79,7 +80,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (shipInventory == null)
         {
-            Debug.LogWarning("[InventoryDebugCheats] ShipInventory nao encontrado.", this);
+            ShowFeedback("[InventoryDebugCheats] ShipInventory nao encontrado.", true);
             return;
         }
 
@@ -87,7 +88,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (fishTypes == null || fishTypes.Length == 0)
         {
-            Debug.LogWarning("[InventoryDebugCheats] Nenhum peixe configurado para debug.", this);
+            ShowFeedback("[InventoryDebugCheats] Nenhum peixe configurado para debug.", true);
             return;
         }
 
@@ -109,7 +110,7 @@ public class InventoryDebugCheats : MonoBehaviour
             }
         }
 
-        Debug.Log($"[InventoryDebugCheats] Adicionou {addedCount} {GetFishCountLabel(addedCount)} diferentes ao inventario.", this);
+        ShowFeedback($"[InventoryDebugCheats] Adicionou {addedCount} {GetFishCountLabel(addedCount)} diferentes ao inventario.");
     }
 
     [ContextMenu("Cheats/Add Test Baits")]
@@ -119,7 +120,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (baitInventory == null)
         {
-            Debug.LogWarning("[InventoryDebugCheats] BaitInventory não encontrado.", this);
+            ShowFeedback("[InventoryDebugCheats] BaitInventory nao encontrado.", true);
             return;
         }
 
@@ -127,7 +128,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (baits == null || baits.Length == 0)
         {
-            Debug.LogWarning("[InventoryDebugCheats] Nenhuma isca configurada para debug.", this);
+            ShowFeedback("[InventoryDebugCheats] Nenhuma isca configurada para debug.", true);
             return;
         }
 
@@ -142,7 +143,7 @@ public class InventoryDebugCheats : MonoBehaviour
             addedTypes++;
         }
 
-        Debug.Log($"[InventoryDebugCheats] Adicionou {baitQuantityToAdd} unidade(s) de {addedTypes} tipo(s) de isca.", this);
+        ShowFeedback($"[InventoryDebugCheats] Adicionou {baitQuantityToAdd} unidade(s) de {addedTypes} tipo(s) de isca.");
     }
 
     private void AddRandomFishInternal(int _amount)
@@ -151,7 +152,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (shipInventory == null)
         {
-            Debug.LogWarning("[InventoryDebugCheats] ShipInventory não encontrado.", this);
+            ShowFeedback("[InventoryDebugCheats] ShipInventory nao encontrado.", true);
             return;
         }
 
@@ -159,7 +160,7 @@ public class InventoryDebugCheats : MonoBehaviour
 
         if (fishTypes == null || fishTypes.Length == 0)
         {
-            Debug.LogWarning("[InventoryDebugCheats] Nenhum peixe configurado para debug.", this);
+            ShowFeedback("[InventoryDebugCheats] Nenhum peixe configurado para debug.", true);
             return;
         }
 
@@ -179,7 +180,7 @@ public class InventoryDebugCheats : MonoBehaviour
                 addedCount++;
         }
 
-        Debug.Log($"[InventoryDebugCheats] Adicionou {addedCount} {GetFishCountLabel(addedCount)} {GetRandomLabel(addedCount)} ao inventário.", this);
+        ShowFeedback($"[InventoryDebugCheats] Adicionou {addedCount} {GetFishCountLabel(addedCount)} {GetRandomLabel(addedCount)} ao inventario.");
     }
 
     private bool AddFishToInventory(FishData _fish)
@@ -241,6 +242,14 @@ public class InventoryDebugCheats : MonoBehaviour
                 return fishPool;
         }
 #endif
+
+        if (autoFindFishAssetsAtRuntime)
+        {
+            fishPool = FindFishAssetsAtRuntime();
+
+            if (HasAnyFish(fishPool))
+                return fishPool;
+        }
 
         return fishPool;
     }
@@ -306,14 +315,21 @@ public class InventoryDebugCheats : MonoBehaviour
 
     private void EnsureValidShortcutKeys()
     {
+        if (addRandomFishKey == Key.F6 && addRandomFishBatchKey == Key.F7 && addBaitsKey == Key.F8)
+        {
+            addRandomFishKey = Key.F8;
+            addRandomFishBatchKey = Key.F9;
+            addBaitsKey = Key.F10;
+        }
+
         if (!IsValidKey(addRandomFishKey))
-            addRandomFishKey = Key.F6;
+            addRandomFishKey = Key.F8;
 
         if (!IsValidKey(addRandomFishBatchKey))
-            addRandomFishBatchKey = Key.F7;
+            addRandomFishBatchKey = Key.F9;
 
         if (!IsValidKey(addBaitsKey))
-            addBaitsKey = Key.F8;
+            addBaitsKey = Key.F10;
     }
 
     private bool IsValidKey(Key _key)
@@ -329,6 +345,57 @@ public class InventoryDebugCheats : MonoBehaviour
     private static string GetRandomLabel(int _count)
     {
         return _count == 1 ? "aleatório" : "aleatórios";
+    }
+
+    private FishScriptableObject[] FindFishAssetsAtRuntime()
+    {
+        List<FishScriptableObject> foundFish = new List<FishScriptableObject>();
+
+        FishingAreaDefinition[] fishingAreas = Resources.FindObjectsOfTypeAll<FishingAreaDefinition>();
+
+        for (int i = 0; i < fishingAreas.Length; i++)
+            AddFishFromArea(fishingAreas[i], foundFish);
+
+        FishScriptableObject[] loadedFish = Resources.FindObjectsOfTypeAll<FishScriptableObject>();
+
+        for (int i = 0; i < loadedFish.Length; i++)
+            AddUniqueFish(loadedFish[i], foundFish);
+
+        foundFish.Sort(CompareFishByName);
+        return foundFish.ToArray();
+    }
+
+    private void AddFishFromArea(FishingAreaDefinition _area, List<FishScriptableObject> _foundFish)
+    {
+        if (_area == null || _area.AvailableFish == null)
+            return;
+
+        for (int i = 0; i < _area.AvailableFish.Length; i++)
+            AddUniqueFish(_area.AvailableFish[i], _foundFish);
+    }
+
+    private void AddUniqueFish(FishScriptableObject _fish, List<FishScriptableObject> _foundFish)
+    {
+        if (_fish != null && _foundFish != null && !_foundFish.Contains(_fish))
+            _foundFish.Add(_fish);
+    }
+
+    private static int CompareFishByName(FishScriptableObject _left, FishScriptableObject _right)
+    {
+        string leftName = _left != null ? _left.name : string.Empty;
+        string rightName = _right != null ? _right.name : string.Empty;
+        return string.Compare(leftName, rightName, System.StringComparison.OrdinalIgnoreCase);
+    }
+
+    private void ShowFeedback(string _message, bool _warning = false)
+    {
+        if (_warning)
+            Debug.LogWarning(_message, this);
+        else
+            Debug.Log(_message, this);
+
+        if (HUDWarningUI.Instance != null)
+            HUDWarningUI.Instance.ShowWarning(_message);
     }
 
 #if UNITY_EDITOR
