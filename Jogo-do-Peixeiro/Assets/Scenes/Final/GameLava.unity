@@ -702,6 +702,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: DonoDaDoca
       objectReference: {fileID: 0}
+    - target: {fileID: 5455624946204822512, guid: bab530ba85115b34c8f54158fa631f62, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 9032520524515138466, guid: bab530ba85115b34c8f54158fa631f62, type: 3}
       propertyPath: shipInventory
       value: 
@@ -1224,6 +1228,9 @@ PrefabInstance:
     - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 381ad84338478114ba5dfd240760db7c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 179626128}
+    - targetCorrespondingSourceObject: {fileID: -8679921383154817045, guid: 381ad84338478114ba5dfd240760db7c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 739629109}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 381ad84338478114ba5dfd240760db7c, type: 3}
       insertIndex: -1
@@ -1318,6 +1325,11 @@ MonoBehaviour:
   playIntroOnStart: 0
   playIntroPartTwoAfterPartOne: 1
   introStartDelay: 0.25
+--- !u!4 &739629109 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+  m_PrefabInstance: {fileID: 2123912944}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1 &782367975 stripped
 GameObject:
   m_CorrespondingSourceObject: {fileID: 5360499975301473567, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
@@ -4471,6 +4483,75 @@ MonoBehaviour:
   m_LightCookieSize: {x: 1, y: 1}
   m_LightCookieOffset: {x: 0, y: 0}
   m_SoftShadowQuality: 0
+--- !u!1001 &2123912944
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 1449746368}
+    m_Modifications:
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalScale.x
+      value: 1.1428571
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalScale.y
+      value: 1.142857
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalScale.z
+      value: 1.1428573
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -0.38282123
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 1.817142
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: -8.151428
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: -0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: -0.7071068
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: -90
+      objectReference: {fileID: 0}
+    - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 5192373996508032522, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
+      propertyPath: m_Name
+      value: DonoDaDocaNovo
+      objectReference: {fileID: 0}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
 --- !u!114 &2139609159 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 90839349148998702, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}

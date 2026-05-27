@@ -17,12 +17,67 @@ ModelImporter:
     removeConstantScaleCurves: 0
     motionNodeName: 
     animationImportErrors: 
-    animationImportWarnings: 
+    animationImportWarnings: "\nClip 'Armature|Barco' has import animation warnings
+      that might lower retargeting quality:\nNote: Activate translation DOF on avatar
+      to improve retargeting quality.\n\t'RightUpperLeg.R' is inbetween humanoid
+      transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|Idle' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|Idle.001' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'LowerChest'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|Idle2.5' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|Pesca' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|Pulo' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'Origin'
+      has scale animation that will be discarded.\n\t'RightUpperLeg.R' is inbetween
+      humanoid transforms and has rotation animation that will be discarded.\n\t'RightUpperLeg.R'
+      has scale animation that will be discarded.\n\t'RightLowerLeg.R' has scale
+      animation that will be discarded.\n\t'LeftUpperLeg.L' is inbetween humanoid
+      transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      has scale animation that will be discarded.\n\t'LeftLowerLeg.L' has scale animation
+      that will be discarded.\n\t'RightUpperArm.R' has scale animation that will
+      be discarded.\n\t'RightLowerArm.R' has scale animation that will be discarded.\n\t'LeftUpperArm.L'
+      has scale animation that will be discarded.\n\t'LeftLowerArm.L' has scale animation
+      that will be discarded.\n\t'LeftHand.L' has scale animation that will be discarded.\n\nClip
+      'Armature|PuxandoVaraBaixo' has import animation warnings that might lower
+      retargeting quality:\nNote: Activate translation DOF on avatar to improve retargeting
+      quality.\n\t'RightUpperLeg.R' is inbetween humanoid transforms and has rotation
+      animation that will be discarded.\n\t'LeftUpperLeg.L' is inbetween humanoid
+      transforms and has rotation animation that will be discarded.\n\nClip 'Armature|PuxandoVaraCima'
+      has import animation warnings that might lower retargeting quality:\nNote:
+      Activate translation DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|PuxandoVaraLado' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|SegurandoVara' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\nClip
+      'Armature|Walking' has import animation warnings that might lower retargeting
+      quality:\nNote: Activate translation DOF on avatar to improve retargeting quality.\n\t'LowerChest'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'RightUpperLeg.R'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n\t'LeftUpperLeg.L'
+      is inbetween humanoid transforms and has rotation animation that will be discarded.\n"
     animationRetargetingWarnings: 
     animationDoRetargetingWarnings: 0
     importAnimatedCustomProperties: 0
     importConstraints: 0
-    animationCompression: 1
+    animationCompression: 3
     animationRotationError: 0.5
     animationPositionError: 0.5
     animationScaleError: 0.5
@@ -88,16 +143,16 @@ ModelImporter:
     armStretch: 0.05
     legStretch: 0.05
     feetSpacing: 0
-    globalScale: 0.01
+    globalScale: 1
     rootMotionBoneName: 
     hasTranslationDoF: 0
-    hasExtraRoot: 0
+    hasExtraRoot: 1
     skeletonHasParents: 1
   lastHumanDescriptionAvatarSource: {instanceID: 0}
   autoGenerateAvatarMappingIfUnspecified: 1
-  animationType: 2
+  animationType: 3
   humanoidOversampling: 1
-  avatarSetup: 0
+  avatarSetup: 1
   addHumanoidExtraRootOnlyWhenUsingAvatar: 1
   importBlendShapeDeformPercent: 1
   remapMaterialsIfMaterialImportModeIsNone: 0
