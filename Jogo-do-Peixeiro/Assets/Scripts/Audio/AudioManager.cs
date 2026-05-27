@@ -209,7 +209,10 @@ public class AudioManager : MonoBehaviour
 
     public void ApplySfxOutput(AudioSource audioSource)
     {
-        if (audioSource == null || _sfxSource == null || audioSource.outputAudioMixerGroup != null)
+        if (audioSource == null || _sfxSource == null)
+            return;
+
+        if (audioSource.outputAudioMixerGroup == _sfxSource.outputAudioMixerGroup)
             return;
 
         audioSource.outputAudioMixerGroup = _sfxSource.outputAudioMixerGroup;

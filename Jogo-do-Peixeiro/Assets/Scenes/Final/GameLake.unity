@@ -676,7 +676,7 @@ MonoBehaviour:
     de fogo para acessar a lava."
   showHudWarningWhenMissingUpgrade: 1
   confirmMissingFireproofBoatUpgradeEntry: 1
-  missingUpgradeConfirmationPanelRoot: {fileID: 3377707739786855878}
+  missingUpgradeConfirmationPanelRoot: {fileID: 3377707739786855877}
   missingUpgradeConfirmationPanelPrefab: {fileID: 3377707739786855877}
   missingUpgradeConfirmationTitle: Barco em risco
   missingUpgradeConfirmationSteps: 5
@@ -3303,6 +3303,7 @@ MonoBehaviour:
   _teleportToArrivalPointKeyboardBinding: <Keyboard>/f6
   _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
   _addAllBaitsKeyboardBinding: <Keyboard>/f8
+  _unlockFireproofBoatUpgradeKeyboardBinding: <Keyboard>/f9
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: LakeCaveReturn
   _cycleFishingAreaGamepadBinding: <Gamepad>/dpad/up
@@ -4579,6 +4580,8 @@ MonoBehaviour:
   _blockedSpawnProbeDepth: 4
   _blockSpawnNearReference: 1
   _blockedReferenceSpawnRadius: 8
+  _blockedBoatSpawnRadius: 14
+  _blockSpawnNearBoatControllers: 1
   _blockSpawnNearBoatTag: 1
   _boatTag: Boat
 --- !u!4 &1832344789 stripped
@@ -4740,7 +4743,7 @@ MonoBehaviour:
   sun: {fileID: 1711858605}
   moon: {fileID: 347908997}
   HourText: {fileID: 0}
-  dayDuration: 300
+  dayDuration: 420
   currentTime: 0.25
   Clock: 0
   sunIntensity:
@@ -4833,6 +4836,16 @@ MonoBehaviour:
   bedtimeWarningMessage: "Est\xE1 ficando tarde. Volte para dormir."
   forcedSleepMessage: "Voc\xEA apagou de sono e acordou \xE0s 6 AM."
   forceSleepWhenDayWraps: 1
+  showNightHudWarnings: 1
+  nightWarningHour: 18
+  twoHoursBeforeForcedSleepWarningLeadHours: 2
+  finalHourWarningLeadHours: 1
+  nightWarningMessage: "Est\xE1 anoitecendo. Fique de olho no hor\xE1rio para n\xE3o
+    desmaiar."
+  twoHoursBeforeForcedSleepWarningMessage: "Faltam 2 horas para voc\xEA desmaiar.
+    Volte para a ilha."
+  finalHourPersistentWarningMessage: "\xDAltima hora: volte para a ilha ou voc\xEA
+    vai desmaiar."
 --- !u!4 &1923923834
 Transform:
   m_ObjectHideFlags: 0
@@ -6081,11 +6094,6 @@ GameObject:
   m_CorrespondingSourceObject: {fileID: 763362798741511334, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
   m_PrefabInstance: {fileID: 1183211992}
   m_PrefabAsset: {fileID: 0}
---- !u!1 &3377707739786855878 stripped
-GameObject:
-  m_CorrespondingSourceObject: {fileID: 6929250194547712740, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
-  m_PrefabInstance: {fileID: 1183211992}
-  m_PrefabAsset: {fileID: 0}
 --- !u!114 &3715954964211035057 stripped
 MonoBehaviour:
   m_CorrespondingSourceObject: {fileID: 7380781670803190230, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
@@ -6354,11 +6362,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915923
+      value: -1.8915921
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.393428
+      value: 4.3934274
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

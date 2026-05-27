@@ -247,9 +247,9 @@ public static class FishVisualUtility
         {
             int cullingMask = 1 << _layer;
 
-            EnsurePreviewLight(transform, PreviewKeyLightName, Quaternion.Euler(25f, -35f, 0f), 1.35f, Color.white, cullingMask);
-            EnsurePreviewLight(transform, PreviewFillLightName, Quaternion.Euler(0f, 145f, 0f), 0.8f, new Color(0.85f, 0.92f, 1f, 1f), cullingMask);
-            EnsurePreviewLight(transform, PreviewTopLightName, Quaternion.Euler(70f, 20f, 0f), 0.55f, new Color(1f, 0.94f, 0.86f, 1f), cullingMask);
+            EnsurePreviewLight(transform, PreviewKeyLightName, Quaternion.Euler(25f, -35f, 0f), 1.05f, Color.white, cullingMask);
+            EnsurePreviewLight(transform, PreviewFillLightName, Quaternion.Euler(0f, 145f, 0f), 0.6f, new Color(0.85f, 0.92f, 1f, 1f), cullingMask);
+            EnsurePreviewLight(transform, PreviewTopLightName, Quaternion.Euler(70f, 20f, 0f), 0.38f, new Color(1f, 0.94f, 0.86f, 1f), cullingMask);
         }
     }
 }

@@ -13,7 +13,13 @@ public class Dock : MonoBehaviour, IInteractable
     [SerializeField] private Dock referenceDock;
     [SerializeField] private float dockRange = 6f;
 
+    [Header("First Boat Dialog")]
+    [SerializeField] private bool playFirstBoatDialog = true;
+    [SerializeField] private DialogSequenceAsset firstBoatDialog;
+    [SerializeField] private RoteiroDialogLibrary roteiroDialogLibrary;
+
     private Transform cachedPlayerTransform;
+    private bool hasPlayedFirstBoatDialog;
 
     public Transform BoatParkPoint
     {
@@ -51,13 +57,19 @@ public class Dock : MonoBehaviour, IInteractable
                 return;
 
             if (TutorialEvents.TryHandleBoatEntryRequest(() => boat.EnterBoat()))
+            {
+                hasPlayedFirstBoatDialog = true;
                 return;
+            }
 
             if (TutorialEvents.ShouldBlockBoatEntry())
             {
                 TutorialEvents.NotifyBoatEntryBlocked();
                 return;
             }
+
+            if (TryPlayFirstBoatDialogThenEnter())
+                return;
 
             boat.EnterBoat();
         }
@@ -191,6 +203,31 @@ public class Dock : MonoBehaviour, IInteractable
             if (boatParkPoint != null && exitPoint != null)
                 return;
         }
+    }
+
+    private bool TryPlayFirstBoatDialogThenEnter()
+    {
+        if (!playFirstBoatDialog || hasPlayedFirstBoatDialog)
+            return false;
+
+        DialogSequenceAsset dialog = ResolveFirstBoatDialog();
+
+        if (dialog == null || !dialog.HasLines)
+            return false;
+
+        hasPlayedFirstBoatDialog = true;
+        return RoteiroDialogPlayback.TryPlaySequence(new[] { dialog }, () => boat.EnterBoat());
+    }
+
+    private DialogSequenceAsset ResolveFirstBoatDialog()
+    {
+        if (firstBoatDialog != null)
+            return firstBoatDialog;
+
+        if (roteiroDialogLibrary == null)
+            roteiroDialogLibrary = RoteiroDialogPlayback.LoadLibrary();
+
+        return roteiroDialogLibrary != null ? roteiroDialogLibrary.EdgeBarcoAntesIntro : null;
     }
 
     private Transform FindChildByName(Transform _root, string _primaryName, string _fallbackName)

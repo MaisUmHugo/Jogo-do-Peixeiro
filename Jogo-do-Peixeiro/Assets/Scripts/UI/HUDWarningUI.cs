@@ -36,8 +36,10 @@ public class HUDWarningUI : MonoBehaviour
     private readonly Queue<string> _messageQueue = new();
     private Coroutine _messageRoutine;
     private bool _isShowingMessage;
+    private bool _hasPersistentMessage;
     private string _currentMessage;
     private string _lastQueuedMessage;
+    private string _persistentMessage;
 
     private void Awake()
     {
@@ -93,6 +95,52 @@ public class HUDWarningUI : MonoBehaviour
             _messageRoutine = StartCoroutine(ProcessMessageQueue());
     }
 
+    public void ShowPersistentWarning(string _message)
+    {
+        if (string.IsNullOrWhiteSpace(_message))
+            return;
+
+        EnsureCanShow();
+        AutoAssignReferences();
+
+        if (_messageText == null)
+        {
+            Debug.LogWarning("HUDWarningUI sem TMP_Text configurado.");
+            return;
+        }
+
+        _hasPersistentMessage = true;
+        _persistentMessage = _message;
+        _messageQueue.Clear();
+
+        if (_messageRoutine != null)
+            StopCoroutine(_messageRoutine);
+
+        _messageRoutine = null;
+        _isShowingMessage = false;
+        _lastQueuedMessage = null;
+        ApplyPersistentWarningVisual();
+    }
+
+    public void ClearPersistentWarning(string _message = null)
+    {
+        if (!_hasPersistentMessage)
+            return;
+
+        if (!string.IsNullOrWhiteSpace(_message) && _persistentMessage != _message)
+            return;
+
+        string clearedMessage = _persistentMessage;
+        _hasPersistentMessage = false;
+        _persistentMessage = null;
+
+        if (_currentMessage == clearedMessage)
+            _currentMessage = null;
+
+        if (!_isShowingMessage && _messageQueue.Count == 0)
+            ClearVisual();
+    }
+
     private IEnumerator ProcessMessageQueue()
     {
         _isShowingMessage = true;
@@ -105,10 +153,17 @@ public class HUDWarningUI : MonoBehaviour
             yield return ShowMessageRoutine(message);
         }
 
-        _currentMessage = null;
         _lastQueuedMessage = null;
         _isShowingMessage = false;
         _messageRoutine = null;
+
+        if (_hasPersistentMessage)
+        {
+            ApplyPersistentWarningVisual();
+            yield break;
+        }
+
+        _currentMessage = null;
     }
 
     private IEnumerator ShowMessageRoutine(string _message)
@@ -143,6 +198,8 @@ public class HUDWarningUI : MonoBehaviour
     public void ClearQueue()
     {
         _messageQueue.Clear();
+        _hasPersistentMessage = false;
+        _persistentMessage = null;
 
         if (_messageRoutine != null)
             StopCoroutine(_messageRoutine);
@@ -160,7 +217,9 @@ public class HUDWarningUI : MonoBehaviour
         if (!_ignoreConsecutiveDuplicates)
             return false;
 
-        return _message == _currentMessage || _message == _lastQueuedMessage;
+        return _message == _currentMessage ||
+               _message == _lastQueuedMessage ||
+               (_hasPersistentMessage && _message == _persistentMessage);
     }
 
     private void EnsureCanShow()
@@ -208,6 +267,16 @@ public class HUDWarningUI : MonoBehaviour
         _canvasGroup.alpha = _visible ? 1f : 0f;
         _canvasGroup.interactable = false;
         _canvasGroup.blocksRaycasts = false;
+    }
+
+    private void ApplyPersistentWarningVisual()
+    {
+        if (_messageText == null)
+            return;
+
+        _currentMessage = _persistentMessage;
+        _messageText.text = _persistentMessage;
+        SetCanvasVisible(true);
     }
 
     private float GetVisibleDuration(string _message)

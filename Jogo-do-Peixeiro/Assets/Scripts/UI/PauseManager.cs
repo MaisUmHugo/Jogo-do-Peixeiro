@@ -26,6 +26,9 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private Selectable confirmFirstSelected;
     [SerializeField] private Selectable controlsFirstSelected;
 
+    [Header("Input")]
+    [SerializeField, Min(0f)] private float postResumeFishingInputSuppressTime = 0.15f;
+
     // guarda ação que será executada após confirmação 
     private Action confirmAction;
 
@@ -34,6 +37,10 @@ public class PauseManager : MonoBehaviour
     private HiddenPanelState[] hiddenPanelStates;
     private Selectable pauseLastSelected;
     private int pauseModalToken = UIModalManager.InvalidToken;
+    private float suppressFishingRecallUntilUnscaledTime;
+
+    public static bool ShouldSuppressFishingRecallInput =>
+        Instance != null && Time.unscaledTime <= Instance.suppressFishingRecallUntilUnscaledTime;
 
     private struct HiddenPanelState
     {
@@ -213,8 +220,13 @@ public class PauseManager : MonoBehaviour
         else
             Time.timeScale = 1f;
 
+        bool wasFishingBeforePause = stateBeforePause == GameManager.GameState.Fishing;
+
         // volta para estado anterior (OnFoot, OnBoat, etc)
         GameManager.instance.SetState(stateBeforePause);
+
+        if (wasFishingBeforePause)
+            SuppressFishingRecallInput();
 
         RestoreConfiguredPanelsAfterPause();
 
@@ -227,6 +239,12 @@ public class PauseManager : MonoBehaviour
         ClearPauseSelection();
         pauseLastSelected = null;
         confirmAction = null;
+    }
+
+    private void SuppressFishingRecallInput()
+    {
+        suppressFishingRecallUntilUnscaledTime =
+            Time.unscaledTime + Mathf.Max(0f, postResumeFishingInputSuppressTime);
     }
 
     public void OpenControlsFromPause()

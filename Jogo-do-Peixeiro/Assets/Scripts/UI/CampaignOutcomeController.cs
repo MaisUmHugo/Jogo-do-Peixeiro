@@ -60,6 +60,9 @@ public class CampaignOutcomeController : MonoBehaviour
     private bool isResolvingCampaignCompletion;
     private Coroutine pendingQuestFailureRoutine;
     private Coroutine pendingCampaignCompletionRoutine;
+    private int campaignCompletionModalToken = UIModalManager.InvalidToken;
+    private bool hasCampaignCompletionPreviousState;
+    private GameManager.GameState campaignCompletionPreviousState;
 
     #endregion
 
@@ -96,6 +99,7 @@ public class CampaignOutcomeController : MonoBehaviour
             pendingCampaignCompletionRoutine = null;
         }
 
+        EndCampaignCompletionPresentation();
         Unsubscribe();
     }
 
@@ -166,6 +170,7 @@ public class CampaignOutcomeController : MonoBehaviour
             StopCoroutine(pendingCampaignCompletionRoutine);
 
         isResolvingCampaignCompletion = true;
+        BeginCampaignCompletionPresentation(false);
         pendingCampaignCompletionRoutine = StartCoroutine(ResolveCampaignCompletionRoutine(saveGameOnCampaignCompletion));
     }
 
@@ -194,6 +199,7 @@ public class CampaignOutcomeController : MonoBehaviour
         hasShownCampaignCompletion = false;
         hasStartedCampaignCompletionCutscene = false;
         isResolvingCampaignCompletion = true;
+        BeginCampaignCompletionPresentation(false);
         pendingCampaignCompletionRoutine = StartCoroutine(ResolveCampaignCompletionRoutine(_saveGame));
         return true;
     }
@@ -217,6 +223,7 @@ public class CampaignOutcomeController : MonoBehaviour
         }
 
         isResolvingCampaignCompletion = false;
+        EndCampaignCompletionPresentation();
         TryShowCampaignCompletion(_saveGame);
     }
 
@@ -238,6 +245,7 @@ public class CampaignOutcomeController : MonoBehaviour
         if (!cutsceneController.TryPlayFinalCutscene(onFinished))
             return false;
 
+        BeginCampaignCompletionPresentation(false);
         hasStartedCampaignCompletionCutscene = true;
         hasShownCampaignCompletion = true;
         return true;
@@ -276,6 +284,7 @@ public class CampaignOutcomeController : MonoBehaviour
         if (!started)
             return false;
 
+        BeginCampaignCompletionPresentation(true);
         hasStartedCampaignCompletionCutscene = true;
         hasShownCampaignCompletion = true;
         return true;
@@ -580,6 +589,8 @@ public class CampaignOutcomeController : MonoBehaviour
 
     private void FinishCampaignCompletionDialogFallback(bool _saveGame)
     {
+        EndCampaignCompletionPresentation();
+
         if (campaignProgress == null)
             campaignProgress = CampaignProgressSystem.GetOrCreate();
 
@@ -703,6 +714,41 @@ public class CampaignOutcomeController : MonoBehaviour
 
         string message = campaignCompletionMessage.Replace("{0}", GetCurrentDebtValue().ToString());
         outcomePanel.ShowCompletion(campaignCompletionTitle, message, pauseOnCampaignCompletion);
+    }
+
+    private void BeginCampaignCompletionPresentation(bool _pauseTime)
+    {
+        if (campaignCompletionModalToken == UIModalManager.InvalidToken)
+        {
+            UIModalRequest request = UIModalRequest.Create(
+                this,
+                _pauseTime,
+                true,
+                true,
+                true);
+
+            campaignCompletionModalToken = UIModalManager.PushModal(request);
+        }
+
+        if (GameManager.instance == null || hasCampaignCompletionPreviousState)
+            return;
+
+        campaignCompletionPreviousState = GameManager.instance.currentState;
+        hasCampaignCompletionPreviousState = true;
+        GameManager.instance.SetState(GameManager.GameState.InUI);
+        InputHandler.instance?.ResetGameplayInput();
+    }
+
+    private void EndCampaignCompletionPresentation()
+    {
+        if (campaignCompletionModalToken != UIModalManager.InvalidToken)
+            UIModalManager.PopModal(ref campaignCompletionModalToken);
+
+        if (GameManager.instance != null && hasCampaignCompletionPreviousState)
+            GameManager.instance.SetState(campaignCompletionPreviousState);
+
+        hasCampaignCompletionPreviousState = false;
+        campaignCompletionPreviousState = default;
     }
 
     #endregion

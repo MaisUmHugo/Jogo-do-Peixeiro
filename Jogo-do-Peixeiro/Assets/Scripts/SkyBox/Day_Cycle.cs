@@ -58,7 +58,20 @@ public class DayCycle : MonoBehaviour
     [SerializeField] private string forcedSleepMessage = "Você apagou de sono e acordou às 6 AM.";
     [SerializeField] private bool forceSleepWhenDayWraps = true;
 
+    [Header("Night HUD Warnings")]
+    [SerializeField] private bool showNightHudWarnings = true;
+    [SerializeField, Range(0f, 24f)] private float nightWarningHour = 18f;
+    [SerializeField, Min(0f)] private float twoHoursBeforeForcedSleepWarningLeadHours = 2f;
+    [SerializeField, Min(0f)] private float finalHourWarningLeadHours = 1f;
+    [SerializeField] private string nightWarningMessage = "Está anoitecendo. Fique de olho no horário para não desmaiar.";
+    [SerializeField] private string twoHoursBeforeForcedSleepWarningMessage = "Faltam 2 horas para você desmaiar. Volte para a ilha.";
+    [SerializeField] private string finalHourPersistentWarningMessage = "Última hora: volte para a ilha ou você vai desmaiar.";
+
     private bool hasShownBedtimeWarning;
+    private bool hasShownNightWarning;
+    private bool hasShownTwoHourWarning;
+    private bool hasShownFinalHourWarning;
+    private bool isFinalHourPersistentWarningActive;
     private bool hasForcedSleepThisNight;
     private bool hasAdvancedDaySinceLastWake;
     private bool isForcedSleepPending;
@@ -116,6 +129,7 @@ public class DayCycle : MonoBehaviour
         if (!startedForcedSleepOnWrap)
             UpdateSleepDeadline(previousTime, currentTime, wrappedDay);
 
+        UpdateFinalHourWarningClearState();
         UpdateSun();
         UpdateSkybox();
         UpdateTime();
@@ -417,6 +431,8 @@ public class DayCycle : MonoBehaviour
         if (!forceSleepAfterDeadline)
             return;
 
+        UpdateNightHudWarnings(_previousTime, _currentTime, _wrappedDay);
+
         if (!hasShownBedtimeWarning && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, bedtimeWarningHour))
         {
             hasShownBedtimeWarning = true;
@@ -427,6 +443,102 @@ public class DayCycle : MonoBehaviour
 
         if (!hasForcedSleepThisNight && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, forcedSleepHour))
             ForceSleep();
+    }
+
+    private void UpdateNightHudWarnings(float _previousTime, float _currentTime, bool _wrappedDay)
+    {
+        if (!showNightHudWarnings)
+            return;
+
+        if (!hasShownNightWarning && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, nightWarningHour))
+        {
+            hasShownNightWarning = true;
+            HUDWarningUI.Instance?.ShowWarning(nightWarningMessage);
+        }
+
+        float twoHourWarningHour = GetHourBeforeForcedSleep(twoHoursBeforeForcedSleepWarningLeadHours);
+
+        if (!hasShownTwoHourWarning && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, twoHourWarningHour))
+        {
+            hasShownTwoHourWarning = true;
+            HUDWarningUI.Instance?.ShowWarning(twoHoursBeforeForcedSleepWarningMessage);
+        }
+
+        float finalHourWarningHour = GetHourBeforeForcedSleep(finalHourWarningLeadHours);
+
+        if (!hasShownFinalHourWarning && HasCrossedHour(_previousTime, _currentTime, _wrappedDay, finalHourWarningHour))
+        {
+            hasShownFinalHourWarning = true;
+            ShowFinalHourWarning();
+        }
+    }
+
+    private float GetHourBeforeForcedSleep(float _leadHours)
+    {
+        return Mathf.Repeat(forcedSleepHour - Mathf.Max(0f, _leadHours), 24f);
+    }
+
+    private void ShowFinalHourWarning()
+    {
+        if (HUDWarningUI.Instance == null)
+            return;
+
+        if (IsPlayerSafeFromFinalHourWarning())
+        {
+            HUDWarningUI.Instance.ShowWarning(finalHourPersistentWarningMessage);
+            return;
+        }
+
+        HUDWarningUI.Instance.ShowPersistentWarning(finalHourPersistentWarningMessage);
+        isFinalHourPersistentWarningActive = true;
+    }
+
+    private void UpdateFinalHourWarningClearState()
+    {
+        if (!hasShownFinalHourWarning || HUDWarningUI.Instance == null)
+            return;
+
+        if (IsPlayerSafeFromFinalHourWarning())
+        {
+            ClearFinalHourPersistentWarning();
+            return;
+        }
+
+        if (!isFinalHourPersistentWarningActive && IsCurrentTimeInFinalHourWindow())
+        {
+            HUDWarningUI.Instance.ShowPersistentWarning(finalHourPersistentWarningMessage);
+            isFinalHourPersistentWarningActive = true;
+        }
+    }
+
+    private bool IsPlayerSafeFromFinalHourWarning()
+    {
+        return GameManager.instance != null &&
+               GameManager.instance.currentState == GameManager.GameState.OnFoot;
+    }
+
+    private bool IsCurrentTimeInFinalHourWindow()
+    {
+        if (finalHourWarningLeadHours <= 0f)
+            return false;
+
+        float currentHour = Mathf.Repeat(currentTime * 24f, 24f);
+        float startHour = GetHourBeforeForcedSleep(finalHourWarningLeadHours);
+        float endHour = Mathf.Repeat(forcedSleepHour, 24f);
+
+        if (Mathf.Approximately(startHour, endHour))
+            return false;
+
+        if (startHour < endHour)
+            return currentHour >= startHour && currentHour < endHour;
+
+        return currentHour >= startHour || currentHour < endHour;
+    }
+
+    private void ClearFinalHourPersistentWarning()
+    {
+        HUDWarningUI.Instance?.ClearPersistentWarning(finalHourPersistentWarningMessage);
+        isFinalHourPersistentWarningActive = false;
     }
 
     private bool ShouldForceSleepOnDayWrap()
@@ -494,7 +606,12 @@ public class DayCycle : MonoBehaviour
     private void ResetSleepDeadlineState()
     {
         hasShownBedtimeWarning = false;
+        hasShownNightWarning = false;
+        hasShownTwoHourWarning = false;
+        hasShownFinalHourWarning = false;
+        isFinalHourPersistentWarningActive = false;
         hasForcedSleepThisNight = false;
         hasAdvancedDaySinceLastWake = false;
+        ClearFinalHourPersistentWarning();
     }
 }

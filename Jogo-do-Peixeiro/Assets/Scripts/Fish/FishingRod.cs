@@ -309,6 +309,9 @@ public class FishingRod : MonoBehaviour
         if (!useInteractToRecallHook)
             return;
 
+        if (PauseManager.ShouldSuppressFishingRecallInput)
+            return;
+
         if (!hookWaitingInWater)
             return;
 
@@ -521,6 +524,9 @@ public class FishingRod : MonoBehaviour
 
     private bool ShouldBlockHookRecall()
     {
+        if (PauseManager.ShouldSuppressFishingRecallInput)
+            return true;
+
         if (IsGameplayInputBlockedByUI())
             return true;
 

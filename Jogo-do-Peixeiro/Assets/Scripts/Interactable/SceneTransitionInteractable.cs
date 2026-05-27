@@ -176,13 +176,25 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     private void HandleMissingUpgradeAttempt()
     {
-        if (!confirmMissingFireproofBoatUpgradeEntry)
+        if (!ShouldShowMissingUpgradeConfirmation())
         {
             ShowMissingUpgradeWarning();
             return;
         }
 
         ShowMissingUpgradeConfirmation();
+    }
+
+    private bool ShouldShowMissingUpgradeConfirmation()
+    {
+        return confirmMissingFireproofBoatUpgradeEntry || IsFireproofLavaGate();
+    }
+
+    private bool IsFireproofLavaGate()
+    {
+        return requireFireproofBoatUpgrade &&
+               !string.IsNullOrWhiteSpace(targetSceneName) &&
+               targetSceneName.IndexOf("Lava", System.StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private void ShowMissingUpgradeConfirmation()
@@ -584,9 +596,15 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
         if (missingUpgradeConfirmationRoot != null)
         {
-            Destroy(missingUpgradeConfirmationRoot);
+            if (missingUpgradeConfirmationUsesScenePanel)
+                missingUpgradeConfirmationRoot.SetActive(false);
+            else
+                Destroy(missingUpgradeConfirmationRoot);
+
             missingUpgradeConfirmationRoot = null;
         }
+
+        missingUpgradeConfirmationUsesScenePanel = false;
 
         if (_restoreGameplayState)
             RestoreGameplayAfterMissingUpgradeConfirmation();

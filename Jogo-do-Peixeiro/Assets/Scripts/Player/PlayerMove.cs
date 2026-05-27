@@ -190,6 +190,7 @@ public class PlayerMove : MonoBehaviour
         if (footstepSfx == null || footstepAudioSource == null)
             return;
 
+        AudioManager.Instance?.ApplySfxOutput(footstepAudioSource);
         footstepAudioSource.transform.position = _position;
         footstepAudioSource.pitch = Random.Range(footstepPitchMin, footstepPitchMax);
         footstepAudioSource.PlayOneShot(footstepSfx, footstepSfxVolume);
@@ -224,6 +225,7 @@ public class PlayerMove : MonoBehaviour
         footstepAudioSource.playOnAwake = false;
         footstepAudioSource.loop = false;
         footstepAudioSource.spatialBlend = footstepSpatialBlend;
+        AudioManager.Instance?.ApplySfxOutput(footstepAudioSource);
     }
 
     private void PrepareStepVFXPool()

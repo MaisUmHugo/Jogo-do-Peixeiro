@@ -1718,7 +1718,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (remainingPayment <= 0)
             return true;
 
-        return GetCurrentPlayerMoney() + GetCurrentFishInventoryValue() >= remainingPayment;
+        return GetCurrentAvailableQuestPaymentValue() >= remainingPayment;
+    }
+
+    private int GetCurrentAvailableQuestPaymentValue()
+    {
+        return GetCurrentPlayerMoney() + GetCurrentFishInventoryValue();
     }
 
     private string GetRequestedFishName()
@@ -1734,7 +1739,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void UpdateCampaignEconomyObjectiveText()
     {
-        int fishValue = GetCurrentFishInventoryValue();
+        int availablePaymentValue = GetCurrentAvailableQuestPaymentValue();
         int remainingDebtPayment = GetQuestDebtPaymentRemaining();
         int debtTarget = campaignProgress != null ? campaignProgress.QuestDebtPaymentTarget : remainingDebtPayment;
         int paidAmount = campaignProgress != null ? campaignProgress.QuestDebtPaidAmount : 0;
@@ -1756,7 +1761,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
             case TutorialStep.GoToFishingSpot:
             case TutorialStep.CatchRequiredFish:
-                tutorialUI.SetObjectiveText($"Pesque até juntar o valor suficiente. Valor dos peixes atuais: R$ {fishValue}/{remainingDebtPayment}. Meta: R$ {paidAmount}/{debtTarget}.");
+                tutorialUI.SetObjectiveText($"Pesque até juntar o valor suficiente. Valor disponível: R$ {availablePaymentValue}/{remainingDebtPayment}. Meta: R$ {paidAmount}/{debtTarget}.");
                 break;
 
             case TutorialStep.ReturnToDock:
@@ -1787,7 +1792,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (tutorialUI == null)
             return;
 
-        if (currentStep == TutorialStep.Finished)
+        if (IsTutorialFinished || !runTutorial || currentStep == TutorialStep.Finished)
         {
             tutorialUI.ClearObjectiveText();
             SetObjectiveVisible(false);
@@ -1947,6 +1952,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void SetObjectiveVisible(bool _visible)
     {
+        if (_visible && IsTutorialFinished)
+            _visible = false;
+
         if (_visible && ShouldHideTutorialObjectiveDuringOpeningIntro())
             _visible = false;
 

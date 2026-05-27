@@ -43,6 +43,7 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private string _teleportToArrivalPointKeyboardBinding = "<Keyboard>/f6";
     [SerializeField] private string _resetTutorialSlidesKeyboardBinding = "<Keyboard>/f7";
     [SerializeField] private string _addAllBaitsKeyboardBinding = "<Keyboard>/f8";
+    [SerializeField] private string _unlockFireproofBoatUpgradeKeyboardBinding = "<Keyboard>/f9";
 
     [Header("Teleport")]
     [SerializeField, Min(0f)] private float _teleportHeightOffset = 0.05f;
@@ -79,6 +80,7 @@ public class BuildCheatController : MonoBehaviour
     private InputAction _teleportToArrivalPointAction;
     private InputAction _resetTutorialSlidesAction;
     private InputAction _addAllBaitsAction;
+    private InputAction _unlockFireproofBoatUpgradeAction;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
@@ -225,6 +227,11 @@ public class BuildCheatController : MonoBehaviour
             "Cheat Add All Baits",
             _addAllBaitsKeyboardBinding,
             null);
+
+        _unlockFireproofBoatUpgradeAction = CreateButtonAction(
+            "Cheat Unlock Fireproof Boat Upgrade",
+            _unlockFireproofBoatUpgradeKeyboardBinding,
+            null);
     }
 
     private InputAction CreateButtonAction(string _actionName, string _keyboardBinding, string _gamepadBinding)
@@ -304,6 +311,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_addAllBaitsAction != null)
             _addAllBaitsAction.performed += HandleAddAllBaits;
+
+        if (_unlockFireproofBoatUpgradeAction != null)
+            _unlockFireproofBoatUpgradeAction.performed += HandleUnlockFireproofBoatUpgrade;
     }
 
     private void UnregisterActionCallbacks()
@@ -367,6 +377,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_addAllBaitsAction != null)
             _addAllBaitsAction.performed -= HandleAddAllBaits;
+
+        if (_unlockFireproofBoatUpgradeAction != null)
+            _unlockFireproofBoatUpgradeAction.performed -= HandleUnlockFireproofBoatUpgrade;
     }
 
     private void EnableActions()
@@ -391,6 +404,7 @@ public class BuildCheatController : MonoBehaviour
         _teleportToArrivalPointAction?.Enable();
         _resetTutorialSlidesAction?.Enable();
         _addAllBaitsAction?.Enable();
+        _unlockFireproofBoatUpgradeAction?.Enable();
     }
 
     private void DisposeActions()
@@ -415,6 +429,7 @@ public class BuildCheatController : MonoBehaviour
         DisposeAction(ref _teleportToArrivalPointAction);
         DisposeAction(ref _resetTutorialSlidesAction);
         DisposeAction(ref _addAllBaitsAction);
+        DisposeAction(ref _unlockFireproofBoatUpgradeAction);
     }
 
     private void DisposeAction(ref InputAction _inputAction)
@@ -525,6 +540,11 @@ public class BuildCheatController : MonoBehaviour
     private void HandleAddAllBaits(InputAction.CallbackContext _context)
     {
         TryRunShiftCheat(AddAllBaitsToInventory);
+    }
+
+    private void HandleUnlockFireproofBoatUpgrade(InputAction.CallbackContext _context)
+    {
+        TryRunShiftCheat(UnlockFireproofBoatUpgrade);
     }
 
     private void TryRunCheat(System.Action _cheatAction, bool _allowInMainMenu = false)
@@ -820,6 +840,32 @@ public class BuildCheatController : MonoBehaviour
 
         SaveGameIfPossible();
         ShowCheatFeedback($"Cheat: +{quantity} de cada isca ({addedTypes} tipos).");
+    }
+
+    private void UnlockFireproofBoatUpgrade()
+    {
+        DockUpgradeSystem dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>(FindObjectsInactive.Include);
+
+        if (dockUpgradeSystem == null)
+        {
+            ShowCheatFeedback("Cheat: sistema de upgrades não encontrado.");
+            return;
+        }
+
+        if (dockUpgradeSystem.HasFireproofBoatUpgrade)
+        {
+            ShowCheatFeedback("Cheat: upgrade de lava já estava liberado.");
+            return;
+        }
+
+        dockUpgradeSystem.SetUpgradeState(
+            dockUpgradeSystem.CapacityLevel,
+            dockUpgradeSystem.BoatSpeedLevel,
+            dockUpgradeSystem.RodLevel,
+            true);
+
+        SaveGameIfPossible();
+        ShowCheatFeedback("Cheat: upgrade de lava do barco liberado.");
     }
 
     private FishScriptableObject[] FindCheatFishTypes()

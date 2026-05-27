@@ -128,6 +128,8 @@ public class FishingSpotSpawner : MonoBehaviour
     [SerializeField, Min(0f)] private float _blockedSpawnProbeDepth = 4f;
     [SerializeField] private bool _blockSpawnNearReference = true;
     [SerializeField, Min(0f)] private float _blockedReferenceSpawnRadius = 8f;
+    [SerializeField, Min(0f)] private float _blockedBoatSpawnRadius = 14f;
+    [SerializeField] private bool _blockSpawnNearBoatControllers = true;
     [SerializeField] private bool _blockSpawnNearBoatTag = true;
     [SerializeField] private string _boatTag = "Boat";
 
@@ -164,6 +166,7 @@ public class FishingSpotSpawner : MonoBehaviour
         _blockedSpawnProbeHeight = Mathf.Max(0f, _blockedSpawnProbeHeight);
         _blockedSpawnProbeDepth = Mathf.Max(0f, _blockedSpawnProbeDepth);
         _blockedReferenceSpawnRadius = Mathf.Max(0f, _blockedReferenceSpawnRadius);
+        _blockedBoatSpawnRadius = Mathf.Max(0f, _blockedBoatSpawnRadius);
         _fishingSpotPoolSize = Mathf.Max(1, _fishingSpotPoolSize);
     }
 
@@ -593,6 +596,9 @@ public class FishingSpotSpawner : MonoBehaviour
             if (spot.FishingArea == _targetArea)
                 continue;
 
+            if (spot.IsLockedByFishing)
+                continue;
+
             _activeSpots.RemoveAt(i);
             ReleaseSpotWithoutRespawn(spot);
         }
@@ -658,6 +664,12 @@ public class FishingSpotSpawner : MonoBehaviour
     private IEnumerator ExpireUnfishedSpotAfterLifetime(FishingSpot _spot, int _spawnVersion)
     {
         yield return new WaitForSeconds(_spotLifetime);
+
+        if (_spot == null)
+            yield break;
+
+        while (_spot != null && _spot.IsLockedByFishing)
+            yield return null;
 
         if (_spot == null)
             yield break;
@@ -797,12 +809,23 @@ public class FishingSpotSpawner : MonoBehaviour
 
     private bool IsSpawnNearBlockedReference(Vector3 _waterPosition)
     {
-        if (!_blockSpawnNearReference || _blockedReferenceSpawnRadius <= 0f)
+        float referenceRadius = Mathf.Max(0f, _blockedReferenceSpawnRadius);
+        float boatRadius = Mathf.Max(referenceRadius, _blockedBoatSpawnRadius);
+        bool canCheckReference = _blockSpawnNearReference && referenceRadius > 0f;
+        bool canCheckBoats =
+            boatRadius > 0f &&
+            (_blockSpawnNearBoatControllers ||
+             (_blockSpawnNearBoatTag && !string.IsNullOrWhiteSpace(_boatTag)));
+
+        if (!canCheckReference && !canCheckBoats)
             return false;
 
         Transform reference = GetSpawnReference();
 
-        if (reference != null && IsWithinHorizontalDistance(_waterPosition, reference.position, _blockedReferenceSpawnRadius))
+        if (canCheckReference && reference != null && IsWithinHorizontalDistance(_waterPosition, reference.position, referenceRadius))
+            return true;
+
+        if (_blockSpawnNearBoatControllers && IsSpawnNearAnyBoatController(_waterPosition, boatRadius))
             return true;
 
         if (!_blockSpawnNearBoatTag || string.IsNullOrWhiteSpace(_boatTag))
@@ -814,13 +837,58 @@ public class FishingSpotSpawner : MonoBehaviour
 
             for (int i = 0; i < boats.Length; i++)
             {
-                if (boats[i] != null && IsWithinHorizontalDistance(_waterPosition, boats[i].transform.position, _blockedReferenceSpawnRadius))
+                if (boats[i] != null && IsPositionNearBoat(_waterPosition, boats[i].transform, boatRadius))
                     return true;
             }
         }
         catch (UnityException)
         {
             return false;
+        }
+
+        return false;
+    }
+
+    private bool IsSpawnNearAnyBoatController(Vector3 _waterPosition, float _distance)
+    {
+        BoatController[] boats = FindObjectsByType<BoatController>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < boats.Length; i++)
+        {
+            if (boats[i] != null && IsPositionNearBoat(_waterPosition, boats[i].transform, _distance))
+                return true;
+        }
+
+        return false;
+    }
+
+    private bool IsPositionNearBoat(Vector3 _waterPosition, Transform _boatTransform, float _distance)
+    {
+        if (_boatTransform == null)
+            return false;
+
+        if (IsWithinHorizontalDistance(_waterPosition, _boatTransform.position, _distance))
+            return true;
+
+        Collider[] boatColliders = _boatTransform.GetComponentsInChildren<Collider>(true);
+
+        for (int i = 0; i < boatColliders.Length; i++)
+        {
+            Collider boatCollider = boatColliders[i];
+
+            if (boatCollider == null ||
+                !boatCollider.enabled ||
+                !boatCollider.gameObject.activeInHierarchy)
+            {
+                continue;
+            }
+
+            Vector3 closestPoint = boatCollider.ClosestPoint(_waterPosition);
+
+            if (IsWithinHorizontalDistance(_waterPosition, closestPoint, _distance))
+                return true;
         }
 
         return false;

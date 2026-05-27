@@ -59,6 +59,7 @@ public class FishingSpot : MonoBehaviour, IPoolable
     private Coroutine escapeFadeRoutine;
 
     public FishingAreaDefinition FishingArea => fishingArea;
+    public bool IsLockedByFishing => ShouldHoldSpotDuringFishing();
 
     private void Awake()
     {
