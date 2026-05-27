@@ -58,6 +58,18 @@ public class SceneTransitionArrivalPoint : MonoBehaviour
         if (boat != null)
         {
             boat.PlaceForSceneTransition(resolvedBoatPoint, playerArrivalPoint, putPlayerOnBoat);
+
+            Vector3 euler = boat.transform.rotation.eulerAngles;
+            boat.transform.rotation = Quaternion.Euler(0f, euler.y, euler.z);
+
+            Rigidbody rb = boat.GetComponent<Rigidbody>();
+
+            if (rb != null)
+            {
+                rb.rotation = boat.transform.rotation;
+                rb.angularVelocity = Vector3.zero;
+            }
+
             RefreshPlayerInteractables();
             return true;
         }
