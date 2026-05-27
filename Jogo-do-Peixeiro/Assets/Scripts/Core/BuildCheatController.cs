@@ -675,6 +675,16 @@ public class BuildCheatController : MonoBehaviour
     private void ResetTutorialSlidesCheat()
     {
         CampaignQuestGuidanceController.ClearTutorialSlidesCompletedFlag();
+
+        CampaignQuestGuidanceController guidanceController =
+            FindFirstObjectByType<CampaignQuestGuidanceController>(FindObjectsInactive.Include);
+
+        if (guidanceController != null && guidanceController.DebugRestoreTutorialGuidance())
+        {
+            ShowCheatFeedback("Cheat: tutorial visual reativado.");
+            return;
+        }
+
         ShowCheatFeedback("Cheat: slides do tutorial liberados novamente.");
     }
 
