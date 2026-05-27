@@ -50,6 +50,9 @@ public class Dock : MonoBehaviour, IInteractable
             if (!IsPlayerInDockRange())
                 return;
 
+            if (TutorialEvents.TryHandleBoatEntryRequest(() => boat.EnterBoat()))
+                return;
+
             if (TutorialEvents.ShouldBlockBoatEntry())
             {
                 TutorialEvents.NotifyBoatEntryBlocked();

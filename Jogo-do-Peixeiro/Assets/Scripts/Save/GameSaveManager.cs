@@ -238,6 +238,11 @@ public class GameSaveManager : MonoBehaviour
 
     public void DeleteSave(GameProgressMode mode)
     {
+        DeleteSave(mode, true);
+    }
+
+    public void DeleteSave(GameProgressMode mode, bool resetTrackedPlayTime)
+    {
         bool deletedAny = DeleteSaveFile(GetSavePath(mode));
 
         if (mode == GameProgressMode.Campaign)
@@ -245,7 +250,9 @@ public class GameSaveManager : MonoBehaviour
 
         if (deletedAny)
         {
-            ResetTrackedPlayTime();
+            if (resetTrackedPlayTime)
+                ResetTrackedPlayTime();
+
             Debug.Log($"Save removido: {mode}");
         }
     }

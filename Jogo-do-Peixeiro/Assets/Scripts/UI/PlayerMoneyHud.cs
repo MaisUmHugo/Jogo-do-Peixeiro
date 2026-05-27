@@ -5,6 +5,7 @@ using UnityEngine.UI;
 public class PlayerMoneyHud : MonoBehaviour
 {
     [SerializeField] private TMP_Text moneyText;
+    [SerializeField] private Image moneyIcon;
     [SerializeField] private TMP_Text debtText;
     [SerializeField] private TMP_Text campaignText;
     [SerializeField] private TMP_Text campaignQuestText;
@@ -36,6 +37,7 @@ public class PlayerMoneyHud : MonoBehaviour
     private bool isDayCycleSubscribed;
     private bool isShipInventorySubscribed;
     private bool hasLoggedMissingCampaignHud;
+    private bool isHudSuppressed;
     private ShipInventory shipInventory;
 
     private void OnEnable()
@@ -79,10 +81,21 @@ public class PlayerMoneyHud : MonoBehaviour
 
     private void RefreshHudText()
     {
+        if (isHudSuppressed)
+        {
+            SetHudContentVisible(false);
+            return;
+        }
+
         string moneyLine = $"R$: {currentMoney:0}";
         string debtLine = GetDebtLine();
 
         bool showTotalDebt = showTotalDebtInHud && !IsEndlessMode();
+
+        if (moneyText != null)
+            moneyText.gameObject.SetActive(true);
+
+        SetMoneyIconVisible(true);
 
         if (debtText != null)
             debtText.gameObject.SetActive(showTotalDebt);
@@ -112,6 +125,33 @@ public class PlayerMoneyHud : MonoBehaviour
         SetCampaignText(campaignGoalText, GetCampaignGoalLine());
         SetCampaignDebtIconVisible(ShouldShowQuestDebtIcon());
         ApplyHudTextColors();
+    }
+
+    public void SetHudSuppressed(bool _suppressed)
+    {
+        if (isHudSuppressed == _suppressed)
+            return;
+
+        isHudSuppressed = _suppressed;
+        RefreshHudText();
+    }
+
+    private void SetHudContentVisible(bool _visible)
+    {
+        SetTextVisible(moneyText, _visible);
+        SetMoneyIconVisible(_visible);
+        SetTextVisible(debtText, _visible);
+        SetTextVisible(campaignText, _visible);
+        SetTextVisible(campaignQuestText, _visible);
+        SetTextVisible(campaignDeadlineText, _visible);
+        SetTextVisible(campaignGoalText, _visible);
+        SetCampaignDebtIconVisible(_visible && ShouldShowQuestDebtIcon());
+    }
+
+    private static void SetTextVisible(TMP_Text _text, bool _visible)
+    {
+        if (_text != null)
+            _text.gameObject.SetActive(_visible);
     }
 
     private string GetDebtLine()
@@ -192,6 +232,14 @@ public class PlayerMoneyHud : MonoBehaviour
 
         if (campaignDebtIcon == null)
             campaignDebtIcon = FindImageByName(searchRoot, "QuestDebtIcon", "DebtIcon", "ObjectiveDebtIcon", "MetaIcon");
+
+        if (moneyIcon == null)
+        {
+            moneyIcon = FindImageByName(transform, "MoneyIcon", "CoinIcon", "PlayerMoneyIcon");
+
+            if (moneyIcon == null)
+                moneyIcon = FindImageByName(searchRoot, "MoneyIcon", "CoinIcon", "PlayerMoneyIcon");
+        }
     }
 
     private TMP_Text FindTextByName(Transform _root, params string[] _names)
@@ -540,6 +588,12 @@ public class PlayerMoneyHud : MonoBehaviour
     {
         if (campaignDebtIcon != null)
             campaignDebtIcon.gameObject.SetActive(_visible);
+    }
+
+    private void SetMoneyIconVisible(bool _visible)
+    {
+        if (moneyIcon != null)
+            moneyIcon.gameObject.SetActive(_visible);
     }
 
     private string GetInventoryWeightLine()

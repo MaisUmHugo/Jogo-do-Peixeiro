@@ -53,6 +53,8 @@ public class ForcedSleepController : MonoBehaviour
     private float _pendingLostFishWeight;
     private bool _pendingFishLossWasOnBoat;
     private bool _hasShownForcedSleepExplanation;
+    private string _pendingForcedSleepTextOverride;
+    private bool _advanceDayWhenNoForcedSleepPending;
 
     public bool IsRunning => _isRunning;
 
@@ -97,6 +99,9 @@ public class ForcedSleepController : MonoBehaviour
         if (_isRunning)
             return;
 
+        _pendingForcedSleepTextOverride = null;
+        _advanceDayWhenNoForcedSleepPending = false;
+
         if (ShouldShowForcedSleepExplanation())
         {
             _hasShownForcedSleepExplanation = true;
@@ -106,6 +111,26 @@ public class ForcedSleepController : MonoBehaviour
         }
 
         BeginForcedSleepRoutine();
+    }
+
+    public bool StartCustomForcedSleep(string _message, bool _advanceDayIfNeeded = true, bool _showExplanation = false)
+    {
+        if (_isRunning)
+            return false;
+
+        _pendingForcedSleepTextOverride = string.IsNullOrWhiteSpace(_message) ? null : _message;
+        _advanceDayWhenNoForcedSleepPending = _advanceDayIfNeeded;
+
+        if (_showExplanation && ShouldShowForcedSleepExplanation())
+        {
+            _hasShownForcedSleepExplanation = true;
+            SetGameState(GameManager.GameState.InUI);
+            _forcedSleepExplanationPanelSequence.Show(BeginForcedSleepRoutine);
+            return true;
+        }
+
+        BeginForcedSleepRoutine();
+        return true;
     }
 
     private void BeginForcedSleepRoutine()
@@ -161,7 +186,7 @@ public class ForcedSleepController : MonoBehaviour
         SetGameState(GameManager.GameState.InUI);
         ClosePanels();
         ResetInput();
-        PrepareFadeText(_forcedSleepText);
+        PrepareFadeText(GetForcedSleepText());
         yield return FadeTo(1f, _fadeInDuration);
         CompleteDayCycleSleep();
 
@@ -211,12 +236,20 @@ public class ForcedSleepController : MonoBehaviour
         SetGameState(GameManager.GameState.OnFoot);
         _isRunning = false;
         FlushPendingFishLossNotification();
+        _pendingForcedSleepTextOverride = null;
+        _advanceDayWhenNoForcedSleepPending = false;
     }
 
     private void CompleteDayCycleSleep()
     {
-        if (_dayCycle != null)
-            _dayCycle.CompleteForcedSleepWakeUp();
+        if (_dayCycle == null)
+            return;
+
+        int previousElapsedDays = _dayCycle.ElapsedDays;
+        _dayCycle.CompleteForcedSleepWakeUp();
+
+        if (_advanceDayWhenNoForcedSleepPending && _dayCycle.ElapsedDays == previousElapsedDays)
+            _dayCycle.NextDay();
     }
 
     private void TeleportPlayer()
@@ -490,6 +523,13 @@ public class ForcedSleepController : MonoBehaviour
             _fadeText.text = _text;
             SetFadeTextVisible(true);
         }
+    }
+
+    private string GetForcedSleepText()
+    {
+        return string.IsNullOrWhiteSpace(_pendingForcedSleepTextOverride)
+            ? _forcedSleepText
+            : _pendingForcedSleepTextOverride;
     }
 
     private IEnumerator FadeTo(float _targetAlpha, float _duration)

@@ -26,6 +26,7 @@ public class ShipInventoryHud : MonoBehaviour
     private bool isShipInventorySubscribed;
     private bool hasLoggedMissingUi;
     private bool hasLoggedMissingInventory;
+    private bool isHudSuppressed;
 
     private void OnEnable()
     {
@@ -180,6 +181,12 @@ public class ShipInventoryHud : MonoBehaviour
 
     private void RefreshInventoryHud()
     {
+        if (isHudSuppressed)
+        {
+            SetInventoryHudActive(false);
+            return;
+        }
+
         if (!showInventoryHud)
         {
             SetInventoryHudActive(false);
@@ -229,6 +236,15 @@ public class ShipInventoryHud : MonoBehaviour
 
         if (inventoryHudRoot == null && inventoryCapacityFill != null)
             inventoryCapacityFill.gameObject.SetActive(_active);
+    }
+
+    public void SetHudSuppressed(bool _suppressed)
+    {
+        if (isHudSuppressed == _suppressed)
+            return;
+
+        isHudSuppressed = _suppressed;
+        RefreshInventoryHud();
     }
 
     private void ConfigureInventoryFill(Image _fillImage)

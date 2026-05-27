@@ -125,7 +125,9 @@ public class FishMarketController : MonoBehaviour, IInteractable
         if (!playDialogBeforeOpeningUi)
             return false;
 
-        DialogSequenceAsset dialog = GetDialogToPlay();
+        DialogSequenceAsset dialog = GetDialogToPlay(
+            out bool shouldMarkFirstDialogAsPlayed,
+            out bool shouldOpenMarketAfterDialog);
 
         if (dialog == null)
             return false;
@@ -142,9 +144,13 @@ public class FishMarketController : MonoBehaviour, IInteractable
         isWaitingDialogToOpenUi = true;
         dialogPlayer.Play(dialog, dialogFocusTarget, () =>
         {
-            hasPlayedFirstDialog = true;
+            if (shouldMarkFirstDialogAsPlayed)
+                hasPlayedFirstDialog = true;
+
             isWaitingDialogToOpenUi = false;
-            OpenMarket();
+
+            if (shouldOpenMarketAfterDialog)
+                OpenMarket();
         });
 
         return true;
@@ -184,10 +190,22 @@ public class FishMarketController : MonoBehaviour, IInteractable
         playDialogBeforeOpeningUi = true;
     }
 
-    private DialogSequenceAsset GetDialogToPlay()
+    private DialogSequenceAsset GetDialogToPlay(out bool _shouldMarkFirstDialogAsPlayed, out bool _shouldOpenMarketAfterDialog)
     {
+        _shouldMarkFirstDialogAsPlayed = false;
+        _shouldOpenMarketAfterDialog = true;
+
+        if (ShouldUseEarlyDockOwnerEdgeDialog())
+        {
+            _shouldOpenMarketAfterDialog = false;
+            return GetEarlyDockOwnerEdgeDialog();
+        }
+
         if (!hasPlayedFirstDialog && firstInteractionDialog != null && firstInteractionDialog.HasLines)
+        {
+            _shouldMarkFirstDialogAsPlayed = true;
             return firstInteractionDialog;
+        }
 
         if (repeatDialogPool == null || repeatDialogPool.Length == 0)
             return null;
@@ -201,6 +219,21 @@ public class FishMarketController : MonoBehaviour, IInteractable
             return null;
 
         return availableDialogs[Random.Range(0, availableDialogs.Length)];
+    }
+
+    private bool ShouldUseEarlyDockOwnerEdgeDialog()
+    {
+        CampaignQuestGuidanceController guidanceController = CampaignQuestGuidanceController.instance;
+
+        return guidanceController != null &&
+               guidanceController.isActiveAndEnabled &&
+               guidanceController.ShouldUseDockOwnerBeforeIntroEdgeDialog();
+    }
+
+    private DialogSequenceAsset GetEarlyDockOwnerEdgeDialog()
+    {
+        RoteiroDialogLibrary library = Resources.Load<RoteiroDialogLibrary>(RoteiroDialogLibraryResourcePath);
+        return library != null ? library.EdgeDonoDocaAntesIntro : null;
     }
 
     private bool HasAnyConfiguredDialog()

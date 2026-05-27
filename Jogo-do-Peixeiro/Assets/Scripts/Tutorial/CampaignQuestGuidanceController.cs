@@ -34,7 +34,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     [Header("Runtime")]
     [SerializeField] private bool runTutorial = true;
-    [SerializeField] private bool blockBoatUntilMoneyLender = true;
+    [SerializeField] private bool blockBoatUntilMoneyLender;
     [SerializeField] private bool handleMoneyLenderDuringTutorial = true;
     [SerializeField] private bool failWhenDeadlineEnds = true;
     [SerializeField] private bool useCampaignEconomyFlow = true;
@@ -43,6 +43,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private bool skipBasicPanelSequenceForNow = true;
 
     [Header("Tutorial Slides")]
+    [Tooltip("Liga/desliga os painéis de slide do tutorial nesta cena.")]
     [SerializeField] private bool showTutorialSlidePanels = true;
     [SerializeField] private TutorialPanelSequence introPanelSequence;
     [SerializeField] private TutorialPanelSequence questReceivedPanelSequence;
@@ -51,6 +52,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private TutorialPanelSequence dockShopPanelSequence;
     [SerializeField] private TutorialPanelSequence debtPaymentPanelSequence;
     [SerializeField] private bool showEachTutorialSlidePanelOnce = true;
+    [Tooltip("Quando ligado, os slides não aparecem de novo depois que o tutorial foi concluído uma vez. Use Shift+F7 na build para limpar esse flag.")]
     [SerializeField] private bool skipTutorialSlidePanelsAfterFirstCompletion = true;
 
     [Header("Cutscene Timeline")]
@@ -66,6 +68,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     [SerializeField] private bool fadeBeforeOpeningDialogFallback = true;
     [SerializeField, Min(0f)] private float openingDialogFallbackFadeInDuration = 3f;
     [SerializeField, Min(0f)] private float openingDialogFallbackFadeInDelay = 1.5f;
+
+    [Header("Opening HUD")]
+    [SerializeField] private bool hideNonTutorialHudsUntilMoneyLenderIntro = true;
 
     [Header("Mission")]
     [SerializeField] private FishingAreaDefinition tutorialFishingArea;
@@ -131,7 +136,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     private bool hasShownDebtPaymentSlides;
     private bool shouldShowDebtPaymentSlidesOnDockOwnerClose;
     private bool hasPlayedMoneyLenderIntroCutscene;
+    private bool hasPlayedBoatBeforeIntroEdgeDialog;
     private Coroutine tutorialTimelineRoutine;
+    private Coroutine pendingOpeningHudHideRoutine;
 
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
@@ -185,17 +192,20 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (cutsceneController == null)
             cutsceneController = FindFirstObjectByType<CampaignCutsceneController>(FindObjectsInactive.Include);
 
-        if (hideObjectiveOnAwake)
+        if (hideObjectiveOnAwake && !runTutorial)
             SetObjectiveVisible(false);
 
         if (clearMarkersOnAwake)
             ClearMarkers();
+
+        HideNonTutorialHudsForOpeningTutorial();
     }
 
     private void OnEnable()
     {
         TutorialEvents.MoneyLenderInteractionRequested += HandleMoneyLenderInteraction;
         TutorialEvents.BoatEntryBlockRequested += ShouldBlockBoatEntry;
+        TutorialEvents.BoatEntryRequested += HandleBoatEntryRequested;
         TutorialEvents.BoatEntryBlocked += HandleBoatEntryBlocked;
         TutorialEvents.BoatEntered += NotifyEnteredBoat;
         TutorialEvents.BoatExited += NotifyExitedBoat;
@@ -224,8 +234,15 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             tutorialTimelineRoutine = null;
         }
 
+        if (pendingOpeningHudHideRoutine != null)
+        {
+            StopCoroutine(pendingOpeningHudHideRoutine);
+            pendingOpeningHudHideRoutine = null;
+        }
+
         TutorialEvents.MoneyLenderInteractionRequested -= HandleMoneyLenderInteraction;
         TutorialEvents.BoatEntryBlockRequested -= ShouldBlockBoatEntry;
+        TutorialEvents.BoatEntryRequested -= HandleBoatEntryRequested;
         TutorialEvents.BoatEntryBlocked -= HandleBoatEntryBlocked;
         TutorialEvents.BoatEntered -= NotifyEnteredBoat;
         TutorialEvents.BoatExited -= NotifyExitedBoat;
@@ -249,17 +266,20 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             ClearMarkers();
             SetObjectiveVisible(false);
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
             return;
         }
 
         if (IsCampaignEconomyFlowActive())
         {
             PrepareOpeningTutorialRequest();
-            SetObjectiveVisible(false);
-            PlayOpeningCutsceneOrRun(() => ShowIntroSlides(() => SetStep(TutorialStep.GoToMoneyLenderCabin)));
+            SetStep(TutorialStep.GoToMoneyLenderCabin);
+            HideNonTutorialHudsForOpeningTutorial();
+            PlayOpeningCutsceneOrRun(() => ShowIntroSlides(CompleteOpeningTutorialIntroFlow));
             return;
         }
 
+        ShowNonTutorialHudsAfterMoneyLenderIntro();
         SetObjectiveVisible(true);
         SetStep(TutorialStep.GoToMoneyLenderCabin);
         ShowIntroSlides();
@@ -339,6 +359,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (IsCampaignEconomyTutorialEnabled())
             PrepareOpeningTutorialRequest();
 
+        HideNonTutorialHudsForOpeningTutorial();
         SetStep(TutorialStep.GoToMoneyLenderCabin);
         return true;
     }
@@ -575,13 +596,34 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private bool ShouldBlockBoatEntry()
     {
-        if (!IsTutorialRunning || !blockBoatUntilMoneyLender)
+        return false;
+    }
+
+    private bool HandleBoatEntryRequested(Action _continueBoatEntry)
+    {
+        if (!ShouldUseBoatBeforeIntroEdgeDialog())
             return false;
 
-        return !hasAcceptedRequest ||
-               currentStep == TutorialStep.GoToMoneyLenderCabin ||
-               currentStep == TutorialStep.TalkToDockOwner ||
-               (ShouldUseBasicPanelSequence() && currentStep == TutorialStep.ReadBasicPanels);
+        hasPlayedBoatBeforeIntroEdgeDialog = true;
+        PlayRoteiroDialogAsset(GetRoteiroDialogLibrary()?.EdgeBarcoAntesIntro, _continueBoatEntry);
+        return true;
+    }
+
+    public bool ShouldUseDockOwnerBeforeIntroEdgeDialog()
+    {
+        return IsTutorialRunning &&
+               IsCampaignEconomyFlowActive() &&
+               currentStep == TutorialStep.GoToMoneyLenderCabin &&
+               !hasPlayedMoneyLenderIntroCutscene;
+    }
+
+    private bool ShouldUseBoatBeforeIntroEdgeDialog()
+    {
+        return IsTutorialRunning &&
+               IsCampaignEconomyFlowActive() &&
+               currentStep == TutorialStep.GoToMoneyLenderCabin &&
+               !hasPlayedMoneyLenderIntroCutscene &&
+               !hasPlayedBoatBeforeIntroEdgeDialog;
     }
 
     private void HandleBoatEntryBlocked()
@@ -798,15 +840,16 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         if (hasPlayedMoneyLenderIntroCutscene)
         {
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
             SetStep(TutorialStep.TalkToDockOwner);
             return;
         }
 
         hasPlayedMoneyLenderIntroCutscene = true;
-        SetObjectiveVisible(false);
 
         PlayMoneyLenderIntroCutsceneOrRun(() =>
         {
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
             ShowDebtPaymentSlides(() => SetStep(TutorialStep.TalkToDockOwner));
         });
     }
@@ -894,15 +937,56 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         Func<RoteiroDialogLibrary, DialogSequenceAsset[]> _selectFallbackDialogs,
         Action _onFinished)
     {
+        GameManager.GameState? previousState = LockGameplayForDialogFade();
         SceneTransitionFadeController.SetBlackImmediate();
+        SnapGameplayCameraToPlayer();
+        yield return null;
+        SnapGameplayCameraToPlayer();
+
         yield return SceneTransitionFadeController.FadeInAndWait(
             openingDialogFallbackFadeInDuration,
             openingDialogFallbackFadeInDelay);
 
         tutorialTimelineRoutine = null;
+        RestoreGameplayAfterDialogFade(previousState);
 
         if (!RoteiroDialogPlayback.TryPlayFromLibrary(roteiroDialogLibrary, _selectFallbackDialogs, _onFinished))
             _onFinished?.Invoke();
+    }
+
+    private void CompleteOpeningTutorialIntroFlow()
+    {
+        if (!IsTutorialRunning)
+            return;
+
+        SetStep(TutorialStep.GoToMoneyLenderCabin);
+        SetObjectiveVisible(true);
+        UpdateMarkers();
+    }
+
+    private static GameManager.GameState? LockGameplayForDialogFade()
+    {
+        if (GameManager.instance == null)
+            return null;
+
+        GameManager.GameState previousState = GameManager.instance.currentState;
+        GameManager.instance.SetState(GameManager.GameState.InUI);
+        return previousState;
+    }
+
+    private static void RestoreGameplayAfterDialogFade(GameManager.GameState? _previousState)
+    {
+        if (!_previousState.HasValue || GameManager.instance == null)
+            return;
+
+        if (GameManager.instance.currentState == GameManager.GameState.InUI)
+            GameManager.instance.SetState(_previousState.Value);
+    }
+
+    private static void SnapGameplayCameraToPlayer()
+    {
+        if (PlayerCamera.Instance != null)
+            PlayerCamera.Instance.SnapToGameplayTarget();
     }
 
     private CampaignCutsceneController GetCutsceneController()
@@ -1433,6 +1517,33 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         textCanvaManager.InitializeDialog(GetFormattedDialog(_dialogData), _onFinished, _cameraFocusTarget);
     }
 
+    private void PlayRoteiroDialogAsset(DialogSequenceAsset _dialog, Action _onFinished = null)
+    {
+        if (_dialog == null || !_dialog.HasLines)
+        {
+            _onFinished?.Invoke();
+            return;
+        }
+
+        DialogSequencePlayer player = DialogSequencePlayer.GetOrCreate();
+
+        if (player == null)
+        {
+            _onFinished?.Invoke();
+            return;
+        }
+
+        player.Play(_dialog, null, _onFinished);
+    }
+
+    private RoteiroDialogLibrary GetRoteiroDialogLibrary()
+    {
+        if (roteiroDialogLibrary == null)
+            roteiroDialogLibrary = RoteiroDialogPlayback.LoadLibrary();
+
+        return roteiroDialogLibrary;
+    }
+
     private DialogCameraFocusTarget GetDialogFocusTarget(MoneyLender _moneyLender)
     {
         if (_moneyLender == null)
@@ -1764,6 +1875,77 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         if (tutorialUI != null)
             tutorialUI.SetObjectiveVisible(_visible);
+    }
+
+    private void HideNonTutorialHudsForOpeningTutorial()
+    {
+        if (!hideNonTutorialHudsUntilMoneyLenderIntro ||
+            !runTutorial ||
+            !useCampaignEconomyFlow ||
+            hasPlayedMoneyLenderIntroCutscene)
+        {
+            return;
+        }
+
+        SetNonTutorialHudsVisible(false);
+
+        if (isActiveAndEnabled && pendingOpeningHudHideRoutine == null)
+            pendingOpeningHudHideRoutine = StartCoroutine(HideNonTutorialHudsAfterStartupFrame());
+    }
+
+    private void ShowNonTutorialHudsAfterMoneyLenderIntro()
+    {
+        if (!hideNonTutorialHudsUntilMoneyLenderIntro)
+            return;
+
+        if (pendingOpeningHudHideRoutine != null)
+        {
+            StopCoroutine(pendingOpeningHudHideRoutine);
+            pendingOpeningHudHideRoutine = null;
+        }
+
+        SetNonTutorialHudsVisible(true);
+    }
+
+    private IEnumerator HideNonTutorialHudsAfterStartupFrame()
+    {
+        yield return null;
+        pendingOpeningHudHideRoutine = null;
+
+        if (!hideNonTutorialHudsUntilMoneyLenderIntro ||
+            !runTutorial ||
+            !useCampaignEconomyFlow ||
+            hasPlayedMoneyLenderIntroCutscene)
+        {
+            yield break;
+        }
+
+        SetNonTutorialHudsVisible(false);
+    }
+
+    private void SetNonTutorialHudsVisible(bool _visible)
+    {
+        if (dayCycle == null)
+            dayCycle = FindFirstObjectByType<DayCycle>(FindObjectsInactive.Include);
+
+        if (dayCycle != null)
+            dayCycle.SetDayCycleHudVisible(_visible);
+
+        PlayerMoneyHud[] moneyHuds = FindObjectsByType<PlayerMoneyHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < moneyHuds.Length; i++)
+        {
+            if (moneyHuds[i] != null)
+                moneyHuds[i].SetHudSuppressed(!_visible);
+        }
+
+        ShipInventoryHud[] inventoryHuds = FindObjectsByType<ShipInventoryHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < inventoryHuds.Length; i++)
+        {
+            if (inventoryHuds[i] != null)
+                inventoryHuds[i].SetHudSuppressed(!_visible);
+        }
     }
 
     private bool IsCampaignEconomyFlowActive()

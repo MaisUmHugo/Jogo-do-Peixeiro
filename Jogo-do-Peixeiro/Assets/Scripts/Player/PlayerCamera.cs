@@ -272,6 +272,22 @@ public class PlayerCamera : MonoBehaviour
         UpdateCinemachineBrain();
     }
 
+    public void SnapToGameplayTarget()
+    {
+        EnsureCinemachineSetup();
+
+        if (target == null)
+            return;
+
+        Quaternion rotation = Quaternion.Euler(pitch, yaw, 0f);
+        Vector3 targetPosition = target.position + Vector3.up * height;
+        Vector3 cameraPosition = targetPosition + rotation * new Vector3(0f, 0f, -distance);
+        Quaternion cameraRotation = GetLookRotation(targetPosition - cameraPosition, rotation);
+
+        SetCameraPose(cameraPosition, cameraRotation);
+        UpdateCinemachineBrain();
+    }
+
     private Vector2 GetProcessedLookInput(Vector2 _lookInput, out bool _isControllerInput)
     {
         _isControllerInput = InputDeviceDetector.CurrentDeviceType == InputDeviceType.GenericController;

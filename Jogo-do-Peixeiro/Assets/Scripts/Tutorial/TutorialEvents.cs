@@ -4,9 +4,11 @@ public static class TutorialEvents
 {
     public delegate bool MoneyLenderInteractionHandler(MoneyLender _moneyLender, PaymentUI _paymentUI, MoneyLenderUI _moneyLenderUI);
     public delegate bool FishingBiteTutorialHandler(Action _continueFishing);
+    public delegate bool BoatEntryRequestHandler(Action _continueBoatEntry);
 
     public static event MoneyLenderInteractionHandler MoneyLenderInteractionRequested;
     public static event FishingBiteTutorialHandler FishingBiteTutorialRequested;
+    public static event BoatEntryRequestHandler BoatEntryRequested;
     public static event Func<bool> BoatEntryBlockRequested;
     public static event Action BoatEntryBlocked;
     public static event Action BoatEntered;
@@ -50,6 +52,20 @@ public static class TutorialEvents
         foreach (FishingBiteTutorialHandler handler in FishingBiteTutorialRequested.GetInvocationList())
         {
             if (handler != null && handler.Invoke(_continueFishing))
+                return true;
+        }
+
+        return false;
+    }
+
+    public static bool TryHandleBoatEntryRequest(Action _continueBoatEntry)
+    {
+        if (BoatEntryRequested == null)
+            return false;
+
+        foreach (BoatEntryRequestHandler handler in BoatEntryRequested.GetInvocationList())
+        {
+            if (handler != null && handler.Invoke(_continueBoatEntry))
                 return true;
         }
 

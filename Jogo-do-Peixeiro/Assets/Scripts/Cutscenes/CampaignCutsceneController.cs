@@ -327,12 +327,18 @@ public class CampaignCutsceneController : MonoBehaviour
 
     private IEnumerator PlayDialogFallbackWithFadeRoutine(DialogSequenceAsset[] _dialogs, Action _onFinished)
     {
+        GameManager.GameState? previousState = LockGameplayForDialogFade();
         SceneTransitionFadeController.SetBlackImmediate();
+        SnapGameplayCameraToPlayer();
+        yield return null;
+        SnapGameplayCameraToPlayer();
+
         yield return SceneTransitionFadeController.FadeInAndWait(
             dialogFallbackFadeInDuration,
             dialogFallbackFadeInDelay);
 
         activeTimelineRoutine = null;
+        RestoreGameplayAfterDialogFade(previousState);
 
         if (!RoteiroDialogPlayback.TryPlaySequence(_dialogs, () =>
         {
@@ -343,6 +349,31 @@ public class CampaignCutsceneController : MonoBehaviour
             IsPlaying = false;
             _onFinished?.Invoke();
         }
+    }
+
+    private static GameManager.GameState? LockGameplayForDialogFade()
+    {
+        if (GameManager.instance == null)
+            return null;
+
+        GameManager.GameState previousState = GameManager.instance.currentState;
+        GameManager.instance.SetState(GameManager.GameState.InUI);
+        return previousState;
+    }
+
+    private static void RestoreGameplayAfterDialogFade(GameManager.GameState? _previousState)
+    {
+        if (!_previousState.HasValue || GameManager.instance == null)
+            return;
+
+        if (GameManager.instance.currentState == GameManager.GameState.InUI)
+            GameManager.instance.SetState(_previousState.Value);
+    }
+
+    private static void SnapGameplayCameraToPlayer()
+    {
+        if (PlayerCamera.Instance != null)
+            PlayerCamera.Instance.SnapToGameplayTarget();
     }
 
     private static bool HasDialogFallback(DialogSequenceAsset[] _dialogs)

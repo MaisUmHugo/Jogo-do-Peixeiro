@@ -26,18 +26,25 @@ public class CampaignOutcomeController : MonoBehaviour
     [SerializeField] private bool playFinalCutsceneOnCampaignCompletion = true;
     [SerializeField] private bool playFinalDialogFallbackWhenCutsceneMissing = true;
     [SerializeField] private RoteiroDialogLibrary roteiroDialogLibrary;
+    [SerializeField] private bool continueEndlessInCurrentSceneAfterFinalDialogFallback = true;
+    [SerializeField] private bool deleteCampaignSaveAfterEndlessTransition = true;
     [SerializeField] private bool loadMainMenuAfterFinalDialogFallback = true;
     [SerializeField] private string mainMenuSceneName = "Main Menu";
     [SerializeField, Min(0f)] private float fallbackMainMenuFadeDuration = 1f;
     [SerializeField] private bool fadeBeforeFinalDialogFallback = true;
     [SerializeField, Min(0f)] private float finalDialogFallbackFadeInDuration = 3f;
     [SerializeField, Min(0f)] private float finalDialogFallbackFadeInDelay = 1.5f;
+    [SerializeField, Min(0f)] private float finalDialogFallbackRestFadeOutDuration = 1.5f;
+    [SerializeField, Min(0f)] private float finalDialogFallbackRestHoldDuration = 0.5f;
+    [SerializeField, Range(0f, 24f)] private float finalDialogFallbackMorningHour = 6f;
     [SerializeField] private bool showFinalFadeScreenWhenUsingDialogFallback = true;
     [SerializeField] private string fallbackFinalText = "FIM?";
     [SerializeField] private string fallbackEndlessUnlockedText = "Modo sem fim foi liberado!";
+    [SerializeField] private TMP_FontAsset fallbackEndingFont;
     [SerializeField, Min(0f)] private float fallbackFinalFadeInDuration = 1.5f;
     [SerializeField, Min(0f)] private float fallbackFinalHoldDuration = 1.2f;
     [SerializeField, Min(0f)] private float fallbackEndlessNoticeHoldDuration = 1.6f;
+    [SerializeField, Min(0f)] private float fallbackFinalFadeOutDuration = 1.5f;
     [SerializeField] private bool pauseOnCampaignCompletion = true;
     [SerializeField] private bool saveGameOnCampaignCompletion = true;
     [SerializeField] private string campaignCompletionTitle = "Dívida quitada";
@@ -220,9 +227,10 @@ public class CampaignOutcomeController : MonoBehaviour
         if (cutsceneController == null)
             return false;
 
-        Action onFinished = cutsceneController.HasFinalCutsceneTimeline
-            ? null
-            : () => CompleteCampaignCompletionDialogFallback(_saveGame);
+        if (!cutsceneController.HasFinalCutsceneTimeline)
+            return false;
+
+        Action onFinished = () => FinishCampaignCompletionDialogFallback(_saveGame);
 
         if (!cutsceneController.TryPlayFinalCutscene(onFinished))
             return false;
@@ -242,11 +250,9 @@ public class CampaignOutcomeController : MonoBehaviour
         if (roteiroDialogLibrary == null)
             return false;
 
-        DialogSequenceAsset[] dialogs = new[]
-        {
-            roteiroDialogLibrary.FimCampanhaLoja,
-            roteiroDialogLibrary.FimCampanhaAirFishers
-        };
+        DialogSequenceAsset storeDialog = roteiroDialogLibrary.FimCampanhaLoja;
+        DialogSequenceAsset airFishersDialog = roteiroDialogLibrary.FimCampanhaAirFishers;
+        DialogSequenceAsset[] dialogs = new[] { storeDialog, airFishersDialog };
 
         if (!HasAnyDialogFallback(dialogs))
             return false;
@@ -256,12 +262,12 @@ public class CampaignOutcomeController : MonoBehaviour
 
         if (fadeBeforeFinalDialogFallback && isActiveAndEnabled)
         {
-            pendingCampaignCompletionRoutine = StartCoroutine(PlayCampaignCompletionDialogFallbackWithFadeRoutine(dialogs, onFinished));
+            pendingCampaignCompletionRoutine = StartCoroutine(PlayCampaignCompletionDialogFallbackWithFadeRoutine(storeDialog, airFishersDialog, onFinished));
             started = true;
         }
         else
         {
-            started = RoteiroDialogPlayback.TryPlaySequence(dialogs, onFinished);
+            started = TryPlayCampaignCompletionDialogFallbackSequence(storeDialog, airFishersDialog, onFinished);
         }
 
         if (!started)
@@ -272,7 +278,10 @@ public class CampaignOutcomeController : MonoBehaviour
         return true;
     }
 
-    private IEnumerator PlayCampaignCompletionDialogFallbackWithFadeRoutine(DialogSequenceAsset[] _dialogs, Action _onFinished)
+    private IEnumerator PlayCampaignCompletionDialogFallbackWithFadeRoutine(
+        DialogSequenceAsset _storeDialog,
+        DialogSequenceAsset _airFishersDialog,
+        Action _onFinished)
     {
         SceneTransitionFadeController.SetBlackImmediate();
         yield return SceneTransitionFadeController.FadeInAndWait(
@@ -281,8 +290,80 @@ public class CampaignOutcomeController : MonoBehaviour
 
         pendingCampaignCompletionRoutine = null;
 
-        if (!RoteiroDialogPlayback.TryPlaySequence(_dialogs, _onFinished))
+        if (!TryPlayCampaignCompletionDialogFallbackSequence(_storeDialog, _airFishersDialog, _onFinished))
             _onFinished?.Invoke();
+    }
+
+    private bool TryPlayCampaignCompletionDialogFallbackSequence(
+        DialogSequenceAsset _storeDialog,
+        DialogSequenceAsset _airFishersDialog,
+        Action _onFinished)
+    {
+        DialogSequencePlayer player = DialogSequencePlayer.GetOrCreate();
+
+        if (player == null)
+            return false;
+
+        if (_storeDialog != null && _storeDialog.HasLines)
+        {
+            player.Play(_storeDialog, null, () =>
+            {
+                if (_airFishersDialog != null && _airFishersDialog.HasLines && isActiveAndEnabled)
+                {
+                    pendingCampaignCompletionRoutine = StartCoroutine(
+                        PlayFinalRestTransitionThenDialogRoutine(player, _airFishersDialog, _onFinished));
+                    return;
+                }
+
+                PlayDialogOrFinish(player, _airFishersDialog, _onFinished);
+            });
+
+            return true;
+        }
+
+        PlayDialogOrFinish(player, _airFishersDialog, _onFinished);
+        return _airFishersDialog != null && _airFishersDialog.HasLines;
+    }
+
+    private IEnumerator PlayFinalRestTransitionThenDialogRoutine(
+        DialogSequencePlayer _player,
+        DialogSequenceAsset _dialog,
+        Action _onFinished)
+    {
+        yield return SceneTransitionFadeController.FadeOut(finalDialogFallbackRestFadeOutDuration);
+
+        if (finalDialogFallbackRestHoldDuration > 0f)
+            yield return new WaitForSecondsRealtime(finalDialogFallbackRestHoldDuration);
+
+        ApplyFinalFallbackMorningWithoutDeadlinePenalty();
+
+        yield return SceneTransitionFadeController.FadeInAndWait(finalDialogFallbackFadeInDuration, 0f);
+        pendingCampaignCompletionRoutine = null;
+        PlayDialogOrFinish(_player, _dialog, _onFinished);
+    }
+
+    private void ApplyFinalFallbackMorningWithoutDeadlinePenalty()
+    {
+        DayCycle dayCycle = FindFirstObjectByType<DayCycle>(FindObjectsInactive.Include);
+
+        if (dayCycle == null)
+            return;
+
+        int nextCurrentDay = Mathf.Max(1, dayCycle.CurrentDay + 1);
+        int nextElapsedDay = Mathf.Max(1, dayCycle.ElapsedDays + 1);
+        float normalizedMorning = Mathf.Repeat(finalDialogFallbackMorningHour, 24f) / 24f;
+        dayCycle.SetCycleState(nextCurrentDay, nextElapsedDay, normalizedMorning);
+    }
+
+    private static void PlayDialogOrFinish(DialogSequencePlayer _player, DialogSequenceAsset _dialog, Action _onFinished)
+    {
+        if (_player != null && _dialog != null && _dialog.HasLines)
+        {
+            _player.Play(_dialog, null, _onFinished);
+            return;
+        }
+
+        _onFinished?.Invoke();
     }
 
     private static bool HasAnyDialogFallback(DialogSequenceAsset[] _dialogs)
@@ -335,6 +416,9 @@ public class CampaignOutcomeController : MonoBehaviour
                 yield return new WaitForSecondsRealtime(fallbackEndlessNoticeHoldDuration);
         }
 
+        if (continueEndlessInCurrentSceneAfterFinalDialogFallback && fallbackFinalFadeOutDuration > 0f)
+            yield return FadeCanvasGroup(canvasGroup, 1f, 0f, fallbackFinalFadeOutDuration);
+
         Destroy(overlay);
         pendingCampaignCompletionRoutine = null;
         FinishCampaignCompletionDialogFallback(_saveGame);
@@ -348,8 +432,21 @@ public class CampaignOutcomeController : MonoBehaviour
         if (campaignProgress != null)
             campaignProgress.StartUnlockedEndlessMode();
 
+        GameSaveManager saveManager = GameSaveManager.GetOrCreate();
+
         if (_saveGame)
-            GameSaveManager.GetOrCreate().SaveGame();
+            saveManager.SaveGame();
+
+        if (deleteCampaignSaveAfterEndlessTransition)
+            saveManager.DeleteSave(GameProgressMode.Campaign, false);
+
+        if (continueEndlessInCurrentSceneAfterFinalDialogFallback)
+        {
+            if (!string.IsNullOrWhiteSpace(fallbackEndlessUnlockedText))
+                HUDWarningUI.Instance?.ShowWarning(fallbackEndlessUnlockedText);
+
+            return;
+        }
 
         MainMenuManager.QueueEndlessUnlockedNotice();
 
@@ -400,6 +497,9 @@ public class CampaignOutcomeController : MonoBehaviour
         textTransform.sizeDelta = new Vector2(1200f, 240f);
 
         _messageText = textObject.GetComponent<TMP_Text>();
+        if (fallbackEndingFont != null)
+            _messageText.font = fallbackEndingFont;
+
         _messageText.alignment = TextAlignmentOptions.Center;
         _messageText.color = Color.white;
         _messageText.fontSize = 72f;
