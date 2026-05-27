@@ -2827,6 +2827,10 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 574899196}
     - target: {fileID: 7956392271980015991, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: sellSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: a29d705c3b12a8c42ab5a13445f45ca6, type: 3}
+    - target: {fileID: 7956392271980015991, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: baitShop
       value: 
       objectReference: {fileID: 762983093}
@@ -2834,6 +2838,10 @@ PrefabInstance:
       propertyPath: fishMarket
       value: 
       objectReference: {fileID: 762983091}
+    - target: {fileID: 7956392271980015991, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: purchaseSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: a29d705c3b12a8c42ab5a13445f45ca6, type: 3}
     - target: {fileID: 7956392271980015991, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: shipInventory
       value: 
@@ -2851,9 +2859,17 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 1857173168}
     - target: {fileID: 8442280960873744528, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: doorOpenSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: 444dcb950f8c1e7479a1bdb25bf21ebe, type: 3}
+    - target: {fileID: 8442280960873744528, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: moneyLender
       value: 
       objectReference: {fileID: 1030765024}
+    - target: {fileID: 8442280960873744528, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: doorCloseSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: 151b37418cad9304c8fec043de2e5e50, type: 3}
     - target: {fileID: 8442280960873744528, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: shipInventory
       value: 
@@ -2870,6 +2886,10 @@ PrefabInstance:
       propertyPath: tutorialController
       value: 
       objectReference: {fileID: 1927435706}
+    - target: {fileID: 8442280960873744528, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: specialDeliveryOpenSfx
+      value: 
+      objectReference: {fileID: 8300000, guid: b87a1340096631c429d006d78febbc08, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6362,11 +6382,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915921
+      value: -1.8915923
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.3934274
+      value: 4.393428
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

@@ -1506,6 +1506,9 @@ MonoBehaviour:
   finalDialogFallbackRestFadeOutDuration: 1.5
   finalDialogFallbackRestHoldDuration: 0.5
   finalDialogFallbackMorningHour: 6
+  movePlayerToMoneyLenderForFinalDialogFallback: 1
+  finalDialogFallbackMorningPoint: {fileID: 0}
+  finalDialogFallbackMoneyLenderDistance: 2.25
   showFinalFadeScreenWhenUsingDialogFallback: 1
   fallbackFinalText: FIM?
   fallbackEndlessUnlockedText: Modo sem fim foi liberado!
@@ -2806,6 +2809,7 @@ MonoBehaviour:
   _teleportToArrivalPointKeyboardBinding: <Keyboard>/f6
   _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
   _addAllBaitsKeyboardBinding: <Keyboard>/f8
+  _unlockFireproofBoatUpgradeKeyboardBinding: <Keyboard>/f9
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: 
   _cycleFishingAreaGamepadBinding: <Gamepad>/dpad/up
@@ -3467,6 +3471,8 @@ MonoBehaviour:
   _blockedSpawnProbeDepth: 4
   _blockSpawnNearReference: 1
   _blockedReferenceSpawnRadius: 8
+  _blockedBoatSpawnRadius: 14
+  _blockSpawnNearBoatControllers: 1
   _blockSpawnNearBoatTag: 1
   _boatTag: Boat
 --- !u!1 &1811256969 stripped
@@ -3733,7 +3739,7 @@ MonoBehaviour:
   sun: {fileID: 1711858605}
   moon: {fileID: 0}
   HourText: {fileID: 0}
-  dayDuration: 300
+  dayDuration: 420
   currentTime: 0.25
   Clock: 0
   sunIntensity:
@@ -3826,6 +3832,16 @@ MonoBehaviour:
   bedtimeWarningMessage: "Est\xE1 ficando tarde. Volte para dormir."
   forcedSleepMessage: "Voc\xEA apagou de sono e acordou \xE0s 6 AM."
   forceSleepWhenDayWraps: 1
+  showNightHudWarnings: 1
+  nightWarningHour: 18
+  twoHoursBeforeForcedSleepWarningLeadHours: 2
+  finalHourWarningLeadHours: 1
+  nightWarningMessage: "Est\xE1 anoitecendo. Fique de olho no hor\xE1rio para n\xE3o
+    desmaiar."
+  twoHoursBeforeForcedSleepWarningMessage: "Faltam 2 horas para voc\xEA desmaiar.
+    Volte para a ilha."
+  finalHourPersistentWarningMessage: "\xDAltima hora: volte para a ilha ou voc\xEA
+    vai desmaiar."
 --- !u!4 &1923923834
 Transform:
   m_ObjectHideFlags: 0
@@ -3959,11 +3975,11 @@ PrefabInstance:
       objectReference: {fileID: 574899195}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915911
+      value: -1.8915913
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.3934274
+      value: 4.393428
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.z
