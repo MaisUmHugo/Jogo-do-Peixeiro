@@ -49,6 +49,16 @@ MonoBehaviour:
   _mainMixer: {fileID: 24100000, guid: c4d6a68f77872e842b94e68eeac3d355, type: 2}
   _bgmSource: {fileID: 7859007890233077271}
   _sfxSource: {fileID: 5346361178517725334}
+  _autoAttachUIButtonSfx: 1
+  _uiButtonHoverSfx: {fileID: 8300000, guid: 06cf6f8f75be5a54b83706ee77e8088d, type: 3}
+  _uiButtonSelectionSfx: {fileID: 8300000, guid: 06cf6f8f75be5a54b83706ee77e8088d, type: 3}
+  _uiButtonClickSfx: {fileID: 8300000, guid: 3fc0965d2f212bc4f811fd9c8bc1ce85, type: 3}
+  _uiButtonHoverVolume: 1
+  _uiButtonSelectionVolume: 1
+  _uiButtonClickVolume: 1
+  _uiButtonScanInterval: 0.25
+  _uiButtonPostSceneScanDuration: 2
+  _uiDuplicateSuppressTime: 0.06
 --- !u!1 &7113060694095269369
 GameObject:
   m_ObjectHideFlags: 0
