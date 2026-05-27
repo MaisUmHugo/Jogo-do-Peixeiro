@@ -23,7 +23,7 @@ RenderSettings:
   m_AmbientSkyColor: {r: 0.212, g: 0.227, b: 0.259, a: 1}
   m_AmbientEquatorColor: {r: 0.114, g: 0.125, b: 0.133, a: 1}
   m_AmbientGroundColor: {r: 0.047, g: 0.043, b: 0.035, a: 1}
-  m_AmbientIntensity: 1
+  m_AmbientIntensity: 0.1
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0.42, g: 0.478, b: 0.627, a: 1}
   m_SkyboxMaterial: {fileID: 2100000, guid: 0e42108a34dc21347867fec79317b225, type: 2}
@@ -33,7 +33,7 @@ RenderSettings:
   m_HaloTexture: {fileID: 0}
   m_SpotCookie: {fileID: 10001, guid: 0000000000000000e000000000000000, type: 0}
   m_DefaultReflectionMode: 0
-  m_DefaultReflectionResolution: 128
+  m_DefaultReflectionResolution: 256
   m_ReflectionBounces: 1
   m_ReflectionIntensity: 1
   m_CustomReflection: {fileID: 0}
@@ -93,8 +93,8 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 20201, guid: 0000000000000000f000000000000000, type: 0}
-  m_LightingSettings: {fileID: 0}
+  m_LightingDataAsset: {fileID: 112000000, guid: 00211aff9327f884f9239b36d6c4eedd, type: 2}
+  m_LightingSettings: {fileID: 4890085278179872738, guid: 928a852dac844d34bb1991a6b9014234, type: 2}
 --- !u!196 &4
 NavMeshSettings:
   serializedVersion: 2
@@ -519,6 +519,15 @@ MonoBehaviour:
   missingFireproofBoatUpgradeWarning: "Voc\xEA precisa do upgrade Barco \xE0 prova
     de fogo para acessar a lava."
   showHudWarningWhenMissingUpgrade: 1
+  confirmMissingFireproofBoatUpgradeEntry: 1
+  missingUpgradeConfirmationSteps: 5
+  missingUpgradeConfirmationMessage: "Se voc\xEA tentar entrar aqui, seu barco vai
+    queimar. Tem certeza que quer entrar?\n\xC9 necess\xE1rio upgrade de barco \xE0
+    prova de fogo."
+  missingUpgradeRepeatConfirmationMessage: Tem certeza mesmo? Seu barco vai queimar.
+  missingUpgradeConfirmationYesText: Sim
+  missingUpgradeConfirmationNoText: "N\xE3o"
+  burnedBoatForcedSleepText: Seu barco queimou
   playerStateRequirement: 2
   requirePlayerOnFoot: 0
   interactionPriority: 10
@@ -1476,18 +1485,25 @@ MonoBehaviour:
   playFinalCutsceneOnCampaignCompletion: 0
   playFinalDialogFallbackWhenCutsceneMissing: 1
   roteiroDialogLibrary: {fileID: 0}
+  continueEndlessInCurrentSceneAfterFinalDialogFallback: 1
+  deleteCampaignSaveAfterEndlessTransition: 1
   loadMainMenuAfterFinalDialogFallback: 1
   mainMenuSceneName: Main Menu
   fallbackMainMenuFadeDuration: 1
   fadeBeforeFinalDialogFallback: 1
   finalDialogFallbackFadeInDuration: 3
   finalDialogFallbackFadeInDelay: 1.5
+  finalDialogFallbackRestFadeOutDuration: 1.5
+  finalDialogFallbackRestHoldDuration: 0.5
+  finalDialogFallbackMorningHour: 6
   showFinalFadeScreenWhenUsingDialogFallback: 1
   fallbackFinalText: FIM?
   fallbackEndlessUnlockedText: Modo sem fim foi liberado!
+  fallbackEndingFont: {fileID: 0}
   fallbackFinalFadeInDuration: 1.5
   fallbackFinalHoldDuration: 1.2
   fallbackEndlessNoticeHoldDuration: 1.6
+  fallbackFinalFadeOutDuration: 1.5
   pauseOnCampaignCompletion: 1
   saveGameOnCampaignCompletion: 1
   campaignCompletionTitle: "D\xEDvida quitada"
@@ -2733,14 +2749,15 @@ MonoBehaviour:
   randomFishAmount: 5
   ignoreShipCapacity: 1
   autoFindFishAssetsInEditor: 1
+  autoFindFishAssetsAtRuntime: 1
   baitPool: []
   baitQuantityToAdd: 5
   useDefaultBaitsWhenEmpty: 1
   enableKeyboardShortcuts: 1
   requireShiftModifier: 1
-  addRandomFishKey: 99
-  addRandomFishBatchKey: 100
-  addBaitsKey: 101
+  addRandomFishKey: 101
+  addRandomFishBatchKey: 102
+  addBaitsKey: 103
 --- !u!114 &1351974022
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -2757,6 +2774,8 @@ MonoBehaviour:
   _requireModifier: 1
   _resetCampaignStateOnSaveReset: 1
   _moneyCheatAmount: 1000
+  _allFishCheatLimit: 10
+  _baitCheatQuantity: 10
   _cycleFishingAreaKeyboardBinding: <Keyboard>/f1
   _advanceDayKeyboardBinding: <Keyboard>/f2
   _completeTaskKeyboardBinding: <Keyboard>/f3
@@ -2773,12 +2792,12 @@ MonoBehaviour:
   _addSpecialDeliveryFishKeyboardBinding: <Keyboard>/f2
   _teleportToBoatKeyboardBinding: <Keyboard>/f3
   _teleportToDockKeyboardBinding: <Keyboard>/f4
-  _spawnFishPullVfxKeyboardBinding: <Keyboard>/f5
+  _addAllFishKeyboardBinding: <Keyboard>/f5
   _teleportToArrivalPointKeyboardBinding: <Keyboard>/f6
   _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
+  _addAllBaitsKeyboardBinding: <Keyboard>/f8
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: 
-  _fishPullVfxSpawnDistance: 5
   _cycleFishingAreaGamepadBinding: <Gamepad>/dpad/up
   _advanceDayGamepadBinding: <Gamepad>/dpad/right
   _completeTaskGamepadBinding: <Gamepad>/dpad/down
