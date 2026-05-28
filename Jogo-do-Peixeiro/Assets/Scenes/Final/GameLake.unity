@@ -6476,6 +6476,7 @@ GameObject:
   - component: {fileID: 4952668788258158598}
   - component: {fileID: 8292448048081385379}
   - component: {fileID: 6120469793202324329}
+  - component: {fileID: 8292448048081385380}
   m_Layer: 0
   m_Name: Loja Barqueiro 1
   m_TagString: Untagged
@@ -6596,9 +6597,9 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 8a79ab290b30a894da0771d954853199, type: 2}
-  - {fileID: 2100000, guid: 8a79ab290b30a894da0771d954853199, type: 2}
-  - {fileID: 2100000, guid: 8a79ab290b30a894da0771d954853199, type: 2}
+  - {fileID: 2100000, guid: 260e100d35e8e9a4cac70d0ccf94263c, type: 2}
+  - {fileID: 2100000, guid: 260e100d35e8e9a4cac70d0ccf94263c, type: 2}
+  - {fileID: 2100000, guid: 260e100d35e8e9a4cac70d0ccf94263c, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -6946,6 +6947,28 @@ MeshFilter:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5760309159979049660}
   m_Mesh: {fileID: -427487464808681106, guid: e85dfa76a6b60b442b49f48d510e3e7c, type: 3}
+--- !u!64 &8292448048081385380
+MeshCollider:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 5760309159979049660}
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_IsTrigger: 0
+  m_ProvidesContacts: 0
+  m_Enabled: 1
+  serializedVersion: 5
+  m_Convex: 0
+  m_CookingOptions: 30
+  m_Mesh: {fileID: -427487464808681106, guid: e85dfa76a6b60b442b49f48d510e3e7c, type: 3}
 --- !u!143 &8390563054490607306 stripped
 CharacterController:
   m_CorrespondingSourceObject: {fileID: 1889827456371779615, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
@@ -7013,11 +7036,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -0.0004
+      value: -0.0012
       objectReference: {fileID: 0}
     - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 0.0048
+      value: 0.013
       objectReference: {fileID: 0}
     - target: {fileID: 1500180474883961248, guid: b2db7b04e1c0d5547824848866e61a6c, type: 3}
       propertyPath: m_LocalPosition.z
