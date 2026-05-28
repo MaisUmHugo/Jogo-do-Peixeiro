@@ -573,7 +573,7 @@ MonoBehaviour:
   maxStepRate: 2.25
   footstepSfx: {fileID: 8300000, guid: 2d7c1da7c2ed2b4408761da42ea09893, type: 3}
   footstepAudioSource: {fileID: 2111873361561348479}
-  footstepSfxVolume: 1
+  footstepSfxVolume: 1.1
   footstepPitchMin: 0.9
   footstepPitchMax: 1.1
   footstepSpatialBlend: 1
@@ -2496,9 +2496,9 @@ MonoBehaviour:
   castSfx: {fileID: 8300000, guid: 4c5fc70406e0ef640a0be7b4d4024b41, type: 3}
   splashSfx: {fileID: 8300000, guid: 3447d5661fd2a7446a0c69116c47b01d, type: 3}
   fishPullSfx: {fileID: 8300000, guid: 4be7ca9ca79609c41906565de23dc307, type: 3}
-  castSfxVolume: 1
-  splashSfxVolume: 1
-  fishPullSfxVolume: 1
+  castSfxVolume: 1.5
+  splashSfxVolume: 1.5
+  fishPullSfxVolume: 1.5
 --- !u!1773428102 &3586663934067477762
 ParentConstraint:
   m_ObjectHideFlags: 0

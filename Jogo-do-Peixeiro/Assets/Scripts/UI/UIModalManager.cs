@@ -212,6 +212,26 @@ public class UIModalManager : MonoBehaviour
         }
     }
 
+    public static void ForceRestoreHudAndClearModalState()
+    {
+        RestoreHudRoots();
+        RestoreDayCycleHud();
+
+        modalEntries.Clear();
+        pauseTimeCount = 0;
+        hideHudCount = 0;
+        blockPauseCount = 0;
+
+        while (cameraLockCount > 0)
+        {
+            PlayerCamera.PopCameraLock();
+            cameraLockCount--;
+        }
+
+        Time.timeScale = 1f;
+        MarkBackHandledThisFrame();
+    }
+
     private static void PushTimePause()
     {
         if (pauseTimeCount == 0)

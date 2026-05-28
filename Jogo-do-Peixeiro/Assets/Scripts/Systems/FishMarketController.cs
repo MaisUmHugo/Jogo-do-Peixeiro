@@ -17,7 +17,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
     [Header("Áudio")]
     [SerializeField, InspectorName("Direct Sell SFX")] private AudioClip directSellSfx;
-    [SerializeField, Range(0f, 1f), InspectorName("Direct Sell SFX Volume")] private float directSellSfxVolume = 1f;
+    [SerializeField, Range(0f, 2f), InspectorName("Direct Sell SFX Volume")] private float directSellSfxVolume = 1.5f;
 
     [Header("Optional Dialog")]
     [SerializeField] private bool playDialogBeforeOpeningUi;

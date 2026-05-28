@@ -17,8 +17,8 @@ public class BoatMotor : MonoBehaviour
     [Header("Áudio")]
     [SerializeField, InspectorName("Boat Water Loop SFX")] private AudioClip boatWaterLoopSfx;
     [SerializeField] private AudioSource boatWaterAudioSource;
-    [SerializeField, Range(0f, 1f), InspectorName("Boat Water Min SFX Volume")] private float boatWaterMinVolume = 0.15f;
-    [SerializeField, Range(0f, 1f), InspectorName("Boat Water Max SFX Volume")] private float boatWaterMaxVolume = 0.65f;
+    [SerializeField, Range(0f, 2f), InspectorName("Boat Water Min SFX Volume")] private float boatWaterMinVolume = 1.5f;
+    [SerializeField, Range(0f, 2f), InspectorName("Boat Water Max SFX Volume")] private float boatWaterMaxVolume = 1.5f;
     [SerializeField] private float boatWaterMinPitch = 0.9f;
     [SerializeField] private float boatWaterMaxPitch = 1.12f;
     [SerializeField] private float boatWaterSpeedForMaxVolume = 8f;

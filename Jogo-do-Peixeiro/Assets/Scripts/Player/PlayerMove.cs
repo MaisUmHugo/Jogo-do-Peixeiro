@@ -36,7 +36,7 @@ public class PlayerMove : MonoBehaviour
     [SerializeField, Range(0.1f, 4f)] private float maxStepRate = 2.25f;
     [SerializeField, InspectorName("Footstep SFX")] private AudioClip footstepSfx;
     [SerializeField] private AudioSource footstepAudioSource;
-    [SerializeField, Range(0f, 1f), InspectorName("Footstep SFX Volume")] private float footstepSfxVolume = 0.7f;
+    [SerializeField, Range(0f, 1.5f), InspectorName("Footstep SFX Volume")] private float footstepSfxVolume = 0.7f;
     [SerializeField] private float footstepPitchMin = 0.9f;
     [SerializeField] private float footstepPitchMax = 1.1f;
     [SerializeField, Range(0f, 1f)] private float footstepSpatialBlend = 1f;

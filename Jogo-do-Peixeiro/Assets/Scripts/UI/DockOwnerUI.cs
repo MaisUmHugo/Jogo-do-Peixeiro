@@ -12,6 +12,8 @@ public class DockOwnerUI : MonoBehaviour
 
     public static event Action<DockOwnerUI> AnyClosed;
 
+    private const float TabSwitchSelectionSfxSuppressDuration = 0.12f;
+
     private enum DockOwnerTab
     {
         Sell,
@@ -67,8 +69,8 @@ public class DockOwnerUI : MonoBehaviour
     [Header("Áudio")]
     [SerializeField, InspectorName("Sell SFX")] private AudioClip sellSfx;
     [SerializeField, InspectorName("Purchase SFX")] private AudioClip purchaseSfx;
-    [SerializeField, Range(0f, 1f), InspectorName("Sell SFX Volume")] private float sellSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f), InspectorName("Purchase SFX Volume")] private float purchaseSfxVolume = 1f;
+    [SerializeField, Range(0f, 2f), InspectorName("Sell SFX Volume")] private float sellSfxVolume = 1.5f;
+    [SerializeField, Range(0f, 2f), InspectorName("Purchase SFX Volume")] private float purchaseSfxVolume = 1.5f;
 
     [Header("Common")]
     [SerializeField] private TMP_Text statusText;
@@ -175,16 +177,19 @@ public class DockOwnerUI : MonoBehaviour
 
     public void OnClickSellTab()
     {
+        PlayTabSwitchSfx(sellTabButton);
         SetTab(DockOwnerTab.Sell);
     }
 
     public void OnClickUpgradesTab()
     {
+        PlayTabSwitchSfx(upgradesTabButton);
         SetTab(DockOwnerTab.Upgrades);
     }
 
     public void OnClickBaitsTab()
     {
+        PlayTabSwitchSfx(baitsTabButton);
         SetTab(DockOwnerTab.Baits);
     }
 
@@ -1613,6 +1618,19 @@ public class DockOwnerUI : MonoBehaviour
     private void PlayPurchaseSfx()
     {
         PlayUiSfx(purchaseSfx, purchaseSfxVolume);
+    }
+
+    private void PlayTabSwitchSfx(Button _tabButton)
+    {
+        AudioManager audioManager = AudioManager.Instance;
+
+        if (audioManager == null)
+            return;
+
+        audioManager.SuppressUIButtonSelectionFeedbackFor(TabSwitchSelectionSfxSuppressDuration);
+
+        if (_tabButton != null)
+            audioManager.PlayUIButtonClick(_tabButton.gameObject);
     }
 
     private void PlayUiSfx(AudioClip _clip, float _volume)

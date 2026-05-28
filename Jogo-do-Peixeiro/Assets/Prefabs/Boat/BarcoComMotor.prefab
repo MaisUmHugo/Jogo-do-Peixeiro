@@ -266,8 +266,8 @@ MonoBehaviour:
   neutralInputThreshold: 0.15
   boatWaterLoopSfx: {fileID: 0}
   boatWaterAudioSource: {fileID: 0}
-  boatWaterMinVolume: 0.15
-  boatWaterMaxVolume: 0.65
+  boatWaterMinVolume: 1.5
+  boatWaterMaxVolume: 1.5
   boatWaterMinPitch: 0.9
   boatWaterMaxPitch: 1.12
   boatWaterSpeedForMaxVolume: 8

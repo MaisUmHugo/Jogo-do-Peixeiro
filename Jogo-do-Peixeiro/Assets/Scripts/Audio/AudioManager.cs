@@ -47,6 +47,7 @@ public class AudioManager : MonoBehaviour
     private GameObject _lastUIButtonFeedbackObject;
     private UIButtonFeedbackKind _lastUIButtonFeedbackKind;
     private float _lastUIButtonFeedbackTime = -10f;
+    private float _suppressUIButtonSelectionFeedbackUntil = -10f;
 
     public bool IsGlobalUIButtonFeedbackEnabled =>
         _autoAttachUIButtonSfx &&
@@ -180,6 +181,12 @@ public class AudioManager : MonoBehaviour
                 : _uiButtonHoverSfx;
 
         PlayUIButtonFeedback(clip, _uiButtonClickVolume, source, UIButtonFeedbackKind.Click);
+    }
+
+    public void SuppressUIButtonSelectionFeedbackFor(float duration)
+    {
+        float suppressUntil = Time.unscaledTime + Mathf.Max(0f, duration);
+        _suppressUIButtonSelectionFeedbackUntil = Mathf.Max(_suppressUIButtonSelectionFeedbackUntil, suppressUntil);
     }
 
     public void PlaySfxAtPosition(AudioClip clip, Vector3 position, float volume = 1f, float pitchMin = 0.95f, float pitchMax = 1.05f)
@@ -346,6 +353,10 @@ public class AudioManager : MonoBehaviour
             return false;
 
         float now = Time.unscaledTime;
+
+        if (kind == UIButtonFeedbackKind.Selection && now <= _suppressUIButtonSelectionFeedbackUntil)
+            return true;
+
         bool sameSource = _lastUIButtonFeedbackObject == source;
         bool closeToLastFeedback = now - _lastUIButtonFeedbackTime <= _uiDuplicateSuppressTime;
         bool shouldSuppress =

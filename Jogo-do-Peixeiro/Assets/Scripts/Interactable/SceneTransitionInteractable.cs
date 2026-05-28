@@ -201,10 +201,33 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         if (!requireFireproofBoatUpgrade)
             return true;
 
+        if (TryGetSharedFireproofBoatUpgrade(out bool sharedHasFireproofBoatUpgrade) &&
+            sharedHasFireproofBoatUpgrade)
+        {
+            return true;
+        }
+
         if (dockUpgradeSystem == null)
             dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>(FindObjectsInactive.Include);
 
         return dockUpgradeSystem != null && dockUpgradeSystem.HasFireproofBoatUpgrade;
+    }
+
+    private static bool TryGetSharedFireproofBoatUpgrade(out bool _hasFireproofBoatUpgrade)
+    {
+        _hasFireproofBoatUpgrade = false;
+
+        if (!DockUpgradeSystem.TryGetSharedUpgradeState(
+                out _,
+                out _,
+                out _,
+                out bool sharedHasFireproofBoatUpgrade))
+        {
+            return false;
+        }
+
+        _hasFireproofBoatUpgrade = sharedHasFireproofBoatUpgrade;
+        return true;
     }
 
     private void HandleMissingUpgradeAttempt()

@@ -81,9 +81,9 @@ public class FishingRod : MonoBehaviour
     [SerializeField, InspectorName("Cast SFX")] private AudioClip castSfx;
     [SerializeField, InspectorName("Splash SFX")] private AudioClip splashSfx;
     [SerializeField, InspectorName("Fish Pull SFX")] private AudioClip fishPullSfx;
-    [SerializeField, Range(0f, 1f), InspectorName("Cast SFX Volume")] private float castSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f), InspectorName("Splash SFX Volume")] private float splashSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f), InspectorName("Fish Pull SFX Volume")] private float fishPullSfxVolume = 0.65f;
+    [SerializeField, Range(0f, 2f), InspectorName("Cast SFX Volume")] private float castSfxVolume = 1.5f;
+    [SerializeField, Range(0f, 2f), InspectorName("Splash SFX Volume")] private float splashSfxVolume = 1.5f;
+    [SerializeField, Range(0f, 2f), InspectorName("Fish Pull SFX Volume")] private float fishPullSfxVolume = 1.5f;
 
     private bool hookTraveling;
     private bool hookReturning;

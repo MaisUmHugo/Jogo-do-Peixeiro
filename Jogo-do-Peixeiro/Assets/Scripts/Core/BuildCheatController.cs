@@ -44,6 +44,7 @@ public class BuildCheatController : MonoBehaviour
     [SerializeField] private string _resetTutorialSlidesKeyboardBinding = "<Keyboard>/f7";
     [SerializeField] private string _addAllBaitsKeyboardBinding = "<Keyboard>/f8";
     [SerializeField] private string _unlockFireproofBoatUpgradeKeyboardBinding = "<Keyboard>/f9";
+    [SerializeField] private string _resetHudKeyboardBinding = "<Keyboard>/f10";
 
     [Header("Teleport")]
     [SerializeField, Min(0f)] private float _teleportHeightOffset = 0.05f;
@@ -81,6 +82,7 @@ public class BuildCheatController : MonoBehaviour
     private InputAction _resetTutorialSlidesAction;
     private InputAction _addAllBaitsAction;
     private InputAction _unlockFireproofBoatUpgradeAction;
+    private InputAction _resetHudAction;
 
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     private static void EnsureInstance()
@@ -232,6 +234,11 @@ public class BuildCheatController : MonoBehaviour
             "Cheat Unlock Fireproof Boat Upgrade",
             _unlockFireproofBoatUpgradeKeyboardBinding,
             null);
+
+        _resetHudAction = CreateButtonAction(
+            "Cheat Reset HUD",
+            _resetHudKeyboardBinding,
+            null);
     }
 
     private InputAction CreateButtonAction(string _actionName, string _keyboardBinding, string _gamepadBinding)
@@ -314,6 +321,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_unlockFireproofBoatUpgradeAction != null)
             _unlockFireproofBoatUpgradeAction.performed += HandleUnlockFireproofBoatUpgrade;
+
+        if (_resetHudAction != null)
+            _resetHudAction.performed += HandleResetHud;
     }
 
     private void UnregisterActionCallbacks()
@@ -380,6 +390,9 @@ public class BuildCheatController : MonoBehaviour
 
         if (_unlockFireproofBoatUpgradeAction != null)
             _unlockFireproofBoatUpgradeAction.performed -= HandleUnlockFireproofBoatUpgrade;
+
+        if (_resetHudAction != null)
+            _resetHudAction.performed -= HandleResetHud;
     }
 
     private void EnableActions()
@@ -405,6 +418,7 @@ public class BuildCheatController : MonoBehaviour
         _resetTutorialSlidesAction?.Enable();
         _addAllBaitsAction?.Enable();
         _unlockFireproofBoatUpgradeAction?.Enable();
+        _resetHudAction?.Enable();
     }
 
     private void DisposeActions()
@@ -430,6 +444,7 @@ public class BuildCheatController : MonoBehaviour
         DisposeAction(ref _resetTutorialSlidesAction);
         DisposeAction(ref _addAllBaitsAction);
         DisposeAction(ref _unlockFireproofBoatUpgradeAction);
+        DisposeAction(ref _resetHudAction);
     }
 
     private void DisposeAction(ref InputAction _inputAction)
@@ -545,6 +560,11 @@ public class BuildCheatController : MonoBehaviour
     private void HandleUnlockFireproofBoatUpgrade(InputAction.CallbackContext _context)
     {
         TryRunShiftCheat(UnlockFireproofBoatUpgrade);
+    }
+
+    private void HandleResetHud(InputAction.CallbackContext _context)
+    {
+        TryRunShiftCheat(ResetHudCheat);
     }
 
     private void TryRunCheat(System.Action _cheatAction, bool _allowInMainMenu = false)
@@ -866,6 +886,90 @@ public class BuildCheatController : MonoBehaviour
 
         SaveGameIfPossible();
         ShowCheatFeedback("Cheat: upgrade de lava do barco liberado.");
+    }
+
+    private void ResetHudCheat()
+    {
+        UIModalManager.ForceRestoreHudAndClearModalState();
+        RestoreKnownHudComponents();
+        InputHandler.instance?.ResetGameplayInput();
+        ShowCheatFeedback("Cheat: HUD restaurada.");
+    }
+
+    private void RestoreKnownHudComponents()
+    {
+        DayCycle[] dayCycles = FindObjectsByType<DayCycle>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < dayCycles.Length; i++)
+        {
+            DayCycle dayCycle = dayCycles[i];
+
+            if (dayCycle == null)
+                continue;
+
+            ActivateObjectAndParents(dayCycle);
+            dayCycle.SetDayCycleHudVisible(true);
+        }
+
+        PlayerMoneyHud[] moneyHuds = FindObjectsByType<PlayerMoneyHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < moneyHuds.Length; i++)
+        {
+            PlayerMoneyHud hud = moneyHuds[i];
+
+            if (hud == null)
+                continue;
+
+            ActivateObjectAndParents(hud);
+            hud.SetHudSuppressed(false);
+        }
+
+        ShipInventoryHud[] inventoryHuds = FindObjectsByType<ShipInventoryHud>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < inventoryHuds.Length; i++)
+        {
+            ShipInventoryHud hud = inventoryHuds[i];
+
+            if (hud == null)
+                continue;
+
+            ActivateObjectAndParents(hud);
+            hud.SetHudSuppressed(false);
+        }
+
+        HUDWarningUI warningUI = HUDWarningUI.Instance;
+
+        if (warningUI != null)
+        {
+            ActivateObjectAndParents(warningUI);
+            warningUI.ClearQueue();
+        }
+
+        HUDFishInfoUI fishInfoUI = HUDFishInfoUI.Instance;
+
+        if (fishInfoUI != null)
+            ActivateObjectAndParents(fishInfoUI);
+    }
+
+    private void ActivateObjectAndParents(Component _component)
+    {
+        if (_component == null)
+            return;
+
+        List<GameObject> hierarchy = new List<GameObject>();
+        Transform current = _component.transform;
+
+        while (current != null)
+        {
+            hierarchy.Add(current.gameObject);
+            current = current.parent;
+        }
+
+        for (int i = hierarchy.Count - 1; i >= 0; i--)
+        {
+            if (hierarchy[i] != null && !hierarchy[i].activeSelf)
+                hierarchy[i].SetActive(true);
+        }
     }
 
     private FishScriptableObject[] FindCheatFishTypes()

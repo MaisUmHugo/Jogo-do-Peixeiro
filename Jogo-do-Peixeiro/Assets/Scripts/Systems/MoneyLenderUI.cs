@@ -19,8 +19,8 @@ public class MoneyLenderUI : MonoBehaviour
     [SerializeField, InspectorName("Door Open SFX")] private AudioClip doorOpenSfx;
     [SerializeField, InspectorName("Door Close SFX")] private AudioClip doorCloseSfx;
     [SerializeField, InspectorName("Special Delivery SFX")] private AudioClip specialDeliveryOpenSfx;
-    [SerializeField, Range(0f, 1f), InspectorName("Door Open SFX Volume")] private float doorOpenSfxVolume = 1f;
-    [SerializeField, Range(0f, 1f), InspectorName("Door Close SFX Volume")] private float doorCloseSfxVolume = 1f;
+    [SerializeField, Range(0f, 2f), InspectorName("Door Open SFX Volume")] private float doorOpenSfxVolume = 1.5f;
+    [SerializeField, Range(0f, 2f), InspectorName("Door Close SFX Volume")] private float doorCloseSfxVolume = 1.5f;
     [SerializeField, Range(0f, 1f), InspectorName("Special Delivery SFX Volume")] private float specialDeliveryOpenSfxVolume = 1f;
 
     private MoneyLender currentMoneyLender;

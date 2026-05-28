@@ -1346,7 +1346,7 @@ MonoBehaviour:
   interactionRange: 4
   requireOnFootState: 1
   directSellSfx: {fileID: 0}
-  directSellSfxVolume: 1
+  directSellSfxVolume: 1.5
   playDialogBeforeOpeningUi: 0
   dialogPlayer: {fileID: 0}
   firstInteractionDialog: {fileID: 0}

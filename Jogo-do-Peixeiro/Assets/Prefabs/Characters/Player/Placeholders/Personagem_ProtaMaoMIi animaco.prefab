@@ -344,9 +344,9 @@ MonoBehaviour:
   castSfx: {fileID: 0}
   splashSfx: {fileID: 0}
   fishPullSfx: {fileID: 0}
-  castSfxVolume: 1
-  splashSfxVolume: 1
-  fishPullSfxVolume: 0.65
+  castSfxVolume: 1.5
+  splashSfxVolume: 1.5
+  fishPullSfxVolume: 1.5
   arcPoints: 25
   useFishingSpotFallbackHit: 1
   spotFallbackWaterProbeHeight: 8

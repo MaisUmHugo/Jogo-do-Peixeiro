@@ -1521,8 +1521,8 @@ MonoBehaviour:
   doorOpenSfx: {fileID: 8300000, guid: ab9f4be9cb899b240be54ec20b60f2b0, type: 3}
   doorCloseSfx: {fileID: 8300000, guid: ab9f4be9cb899b240be54ec20b60f2b0, type: 3}
   specialDeliveryOpenSfx: {fileID: 0}
-  doorOpenSfxVolume: 0.5
-  doorCloseSfxVolume: 0.5
+  doorOpenSfxVolume: 1.5
+  doorCloseSfxVolume: 1.5
   specialDeliveryOpenSfxVolume: 1
 --- !u!114 &4714000619509254473
 MonoBehaviour:
@@ -1650,8 +1650,8 @@ MonoBehaviour:
   purchaseConfirmUI: {fileID: 8722032967482495538}
   sellSfx: {fileID: 0}
   purchaseSfx: {fileID: 0}
-  sellSfxVolume: 1
-  purchaseSfxVolume: 1
+  sellSfxVolume: 1.5
+  purchaseSfxVolume: 1.5
   statusText: {fileID: 3845347714374178582}
   statusMessageDuration: 1.15
   statusMessageRise: 22

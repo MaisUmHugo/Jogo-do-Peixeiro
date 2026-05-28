@@ -426,9 +426,9 @@ MonoBehaviour:
   castSfx: {fileID: 8300000, guid: ea172530ddd85df48968ec9aa5d8f474, type: 3}
   splashSfx: {fileID: 8300000, guid: f656bf1ae368d074a91b41c88b2af95a, type: 3}
   fishPullSfx: {fileID: 0}
-  castSfxVolume: 1
-  splashSfxVolume: 1
-  fishPullSfxVolume: 0.65
+  castSfxVolume: 1.5
+  splashSfxVolume: 1.5
+  fishPullSfxVolume: 1.5
 --- !u!1773428102 &6750214285391317983
 ParentConstraint:
   m_ObjectHideFlags: 0
@@ -762,7 +762,7 @@ MonoBehaviour:
   maxStepVFXInstances: 10
   footstepSfx: {fileID: 0}
   footstepAudioSource: {fileID: 0}
-  footstepSfxVolume: 0.7
+  footstepSfxVolume: 0.8
   footstepPitchMin: 0.9
   footstepPitchMax: 1.1
   footstepSpatialBlend: 1

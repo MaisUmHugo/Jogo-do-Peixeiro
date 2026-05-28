@@ -126,8 +126,8 @@ MonoBehaviour:
   useTutorialPaymentWhenAvailable: 1
   doorOpenSfx: {fileID: 0}
   doorCloseSfx: {fileID: 0}
-  doorOpenSfxVolume: 1
-  doorCloseSfxVolume: 1
+  doorOpenSfxVolume: 1.5
+  doorCloseSfxVolume: 1.5
 --- !u!1001 &4809599060302208002
 PrefabInstance:
   m_ObjectHideFlags: 0

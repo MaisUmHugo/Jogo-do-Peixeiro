@@ -5714,8 +5714,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0.5, y: 0.5}
   m_AnchorMax: {x: 0.5, y: 0.5}
-  m_AnchoredPosition: {x: 0, y: -50}
-  m_SizeDelta: {x: 450, y: 150}
+  m_AnchoredPosition: {x: 10, y: -50}
+  m_SizeDelta: {x: 555.148, y: 150}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &673890938
 MonoBehaviour:
@@ -5737,7 +5737,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_text: "L\xEDder do Projeto Programador Artista 2D\n Revisor"
+  m_text: "Gerenciador do Projeto\nProgramador \n Revisor"
   m_isRightToLeft: 0
   m_fontAsset: {fileID: 11400000, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
   m_sharedMaterial: {fileID: -9207232553228660691, guid: 64e3a8591ab1d2d4686eb91fd21f5ad6, type: 2}
@@ -11512,6 +11512,7 @@ MonoBehaviour:
   _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
   _addAllBaitsKeyboardBinding: <Keyboard>/f8
   _unlockFireproofBoatUpgradeKeyboardBinding: <Keyboard>/f9
+  _resetHudKeyboardBinding: <Keyboard>/f10
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: 
   _cycleFishingAreaGamepadBinding: <Gamepad>/dpad/up
@@ -16835,8 +16836,8 @@ MonoBehaviour:
   neutralInputThreshold: 0.15
   boatWaterLoopSfx: {fileID: 0}
   boatWaterAudioSource: {fileID: 0}
-  boatWaterMinVolume: 0.15
-  boatWaterMaxVolume: 0.65
+  boatWaterMinVolume: 1.5
+  boatWaterMaxVolume: 1.5
   boatWaterMinPitch: 0.9
   boatWaterMaxPitch: 1.12
   boatWaterSpeedForMaxVolume: 8
