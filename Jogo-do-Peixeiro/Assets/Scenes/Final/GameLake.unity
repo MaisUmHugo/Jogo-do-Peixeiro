@@ -2299,7 +2299,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &1071572261
 Transform:
@@ -2549,6 +2549,7 @@ Transform:
   - {fileID: 967273095}
   - {fileID: 1486443040}
   - {fileID: 1094313051}
+  - {fileID: 7323928490580696286}
   m_Father: {fileID: 0}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &1183211992
@@ -5624,7 +5625,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &1020786015788413718
 Transform:
@@ -5966,7 +5967,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &2122658943567083475 stripped
 Transform:
@@ -5990,7 +5991,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &2383086148729492163
 Transform:
@@ -6079,7 +6080,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!33 &2961705333102012420
 MeshFilter:
@@ -6228,7 +6229,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!4 &4702453442653342578 stripped
 Transform:
@@ -6780,7 +6781,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 7991640305061103204}
   serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
@@ -6792,7 +6793,7 @@ Transform:
   - {fileID: 268614768000890541}
   - {fileID: 1020786015788413718}
   - {fileID: 3868976538295530321}
-  m_Father: {fileID: 0}
+  m_Father: {fileID: 1118946912}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &7594825445662302193
 GameObject:
@@ -6810,7 +6811,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!1 &7742409422974738078
 GameObject:
@@ -6829,7 +6830,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!114 &7837886290316158964 stripped
 MonoBehaviour:
@@ -6918,6 +6919,14 @@ PrefabInstance:
       propertyPath: cameraTransform
       value: 
       objectReference: {fileID: 574899195}
+    - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: -1.8915923
+      objectReference: {fileID: 0}
+    - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 4.393428
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -6937,7 +6946,7 @@ GameObject:
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
+  m_StaticEditorFlags: 2147483647
   m_IsActive: 1
 --- !u!33 &8292448048081385379
 MeshFilter:
@@ -7166,4 +7175,3 @@ SceneRoots:
   - {fileID: 32865166}
   - {fileID: 1662059380}
   - {fileID: 2083491569}
-  - {fileID: 7323928490580696286}
