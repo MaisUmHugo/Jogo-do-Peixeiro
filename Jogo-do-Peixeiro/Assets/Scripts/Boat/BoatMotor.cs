@@ -22,6 +22,10 @@ public class BoatMotor : MonoBehaviour
     [SerializeField] private float boatWaterMinPitch = 0.9f;
     [SerializeField] private float boatWaterMaxPitch = 1.12f;
     [SerializeField] private float boatWaterSpeedForMaxVolume = 8f;
+    [SerializeField, Min(0f)] private float boatWaterStartSpeedThreshold = 0.35f;
+    [SerializeField, Min(0f)] private float boatWaterStopSpeedThreshold = 0.12f;
+    [SerializeField, Min(0f)] private float boatWaterStartInputThreshold = 0.12f;
+    [SerializeField, Min(0f)] private float boatWaterStopInputThreshold = 0.04f;
     [SerializeField, Range(0f, 1f)] private float boatWaterSpatialBlend = 1f;
 
     private Rigidbody rb;
@@ -34,12 +38,18 @@ public class BoatMotor : MonoBehaviour
     private float baseEngineForce;
     private float baseMaxSpeed;
     private bool hasCapturedBaseSpeedValues;
+    private bool isBoatWaterSfxActive;
 
     void Awake()
     {
         rb = GetComponent<Rigidbody>();
         CaptureBaseSpeedValues();
         SetupBoatWaterAudioSource();
+    }
+
+    private void OnDisable()
+    {
+        StopBoatWaterSfx();
     }
 
     public void SetSpeedUpgradeMultiplier(float _multiplier)
@@ -70,9 +80,12 @@ public class BoatMotor : MonoBehaviour
 
     void Update()
     {
-        UpdateBoatWaterSfx();
-
-        if (GameManager.instance == null || InputHandler.instance == null) return;
+        if (GameManager.instance == null || InputHandler.instance == null)
+        {
+            input = Vector2.zero;
+            StopBoatWaterSfx();
+            return;
+        }
 
         // Só recebe input quando estiver navegando (OnBoat)
         // Se estiver pescando (Fishing), o input é zerado
@@ -96,6 +109,8 @@ public class BoatMotor : MonoBehaviour
         {
             input = Vector2.zero;
         }
+
+        UpdateBoatWaterSfx();
     }
 
     void FixedUpdate()
@@ -235,12 +250,7 @@ public class BoatMotor : MonoBehaviour
 
         AudioManager.Instance?.ApplySfxOutput(boatWaterAudioSource);
 
-        bool shouldPlay =
-            GameManager.instance != null &&
-            (GameManager.instance.currentState == GameManager.GameState.OnBoat ||
-             GameManager.instance.currentState == GameManager.GameState.Fishing);
-
-        if (!shouldPlay)
+        if (!ShouldPlayBoatWaterSfx())
         {
             StopBoatWaterSfx();
             return;
@@ -255,15 +265,40 @@ public class BoatMotor : MonoBehaviour
         boatWaterAudioSource.volume = Mathf.Lerp(boatWaterMinVolume, boatWaterMaxVolume, speedPercent);
         boatWaterAudioSource.pitch = Mathf.Lerp(boatWaterMinPitch, boatWaterMaxPitch, speedPercent);
         boatWaterAudioSource.spatialBlend = boatWaterSpatialBlend;
+        isBoatWaterSfxActive = true;
 
         if (!boatWaterAudioSource.isPlaying)
             boatWaterAudioSource.Play();
+    }
+
+    private bool ShouldPlayBoatWaterSfx()
+    {
+        if (GameManager.instance == null ||
+            GameManager.instance.currentState != GameManager.GameState.OnBoat ||
+            ShouldAnchorBoat())
+        {
+            return false;
+        }
+
+        float speed = rb != null ? rb.linearVelocity.magnitude : 0f;
+        float inputMagnitude = input.magnitude;
+
+        if (isBoatWaterSfxActive)
+        {
+            return speed > boatWaterStopSpeedThreshold ||
+                   inputMagnitude > boatWaterStopInputThreshold;
+        }
+
+        return speed > boatWaterStartSpeedThreshold ||
+               inputMagnitude > boatWaterStartInputThreshold;
     }
 
     private void StopBoatWaterSfx()
     {
         if (boatWaterAudioSource != null && boatWaterAudioSource.isPlaying)
             boatWaterAudioSource.Stop();
+
+        isBoatWaterSfxActive = false;
     }
 
     private void AnchorBoat()

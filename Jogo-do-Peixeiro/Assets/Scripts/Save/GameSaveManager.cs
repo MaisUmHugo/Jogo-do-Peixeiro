@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using UnityEngine;
@@ -17,6 +18,7 @@ public class GameSaveManager : MonoBehaviour
     private const string LoadSaveModeOnNextSceneKey = "LoadSaveModeOnNextScene";
     private float loadedPlayTimeSeconds;
     private float sessionStartRealtime;
+    private Coroutine pendingUpgradeReapplyRoutine;
 
     public string SavePath => GetSavePath(GetCurrentModeForSave());
     public bool HasSave => HasSaveForMode(GameProgressMode.Campaign) || HasSaveForMode(GameProgressMode.Endless);
@@ -315,15 +317,8 @@ public class GameSaveManager : MonoBehaviour
         if (moneyLender != null)
             moneyLender.SetPaymentCycle(_data.moneyLenderTimesPaid, _data.moneyLenderDebtPaymentPaidAmount);
 
-        if (_data.upgrades != null)
-        {
-            DockUpgradeSystem.SetSharedUpgradeState(
-                _data.upgrades.capacityLevel,
-                _data.upgrades.boatSpeedLevel,
-                _data.upgrades.rodLevel,
-                _data.upgrades.hasFireproofBoatUpgrade
-            );
-        }
+        DockUpgradeSaveData upgradeData = _data.upgrades ?? new DockUpgradeSaveData();
+        ApplyUpgradeSaveData(upgradeData);
 
         if (dayCycle != null && _data.dayCycle != null)
             dayCycle.SetCycleState(
@@ -345,6 +340,57 @@ public class GameSaveManager : MonoBehaviour
 
         loadedPlayTimeSeconds = Mathf.Max(0f, _data.playTimeSeconds);
         ResetSessionTimer();
+        ScheduleUpgradeReapply(upgradeData);
+    }
+
+    private void ApplyUpgradeSaveData(DockUpgradeSaveData _upgrades)
+    {
+        DockUpgradeSaveData upgrades = _upgrades ?? new DockUpgradeSaveData();
+
+        DockUpgradeSystem.SetSharedUpgradeState(
+            upgrades.capacityLevel,
+            upgrades.boatSpeedLevel,
+            upgrades.rodLevel,
+            upgrades.hasFireproofBoatUpgrade
+        );
+    }
+
+    private void ScheduleUpgradeReapply(DockUpgradeSaveData _upgrades)
+    {
+        if (!isActiveAndEnabled)
+            return;
+
+        if (pendingUpgradeReapplyRoutine != null)
+            StopCoroutine(pendingUpgradeReapplyRoutine);
+
+        pendingUpgradeReapplyRoutine = StartCoroutine(ReapplyUpgradeSaveDataRoutine(CloneUpgradeSaveData(_upgrades)));
+    }
+
+    private IEnumerator ReapplyUpgradeSaveDataRoutine(DockUpgradeSaveData _upgrades)
+    {
+        yield return null;
+        ApplyUpgradeSaveData(_upgrades);
+
+        yield return null;
+        ApplyUpgradeSaveData(_upgrades);
+
+        yield return new WaitForSecondsRealtime(0.2f);
+        ApplyUpgradeSaveData(_upgrades);
+
+        pendingUpgradeReapplyRoutine = null;
+    }
+
+    private DockUpgradeSaveData CloneUpgradeSaveData(DockUpgradeSaveData _upgrades)
+    {
+        DockUpgradeSaveData upgrades = _upgrades ?? new DockUpgradeSaveData();
+
+        return new DockUpgradeSaveData
+        {
+            capacityLevel = upgrades.capacityLevel,
+            boatSpeedLevel = upgrades.boatSpeedLevel,
+            rodLevel = upgrades.rodLevel,
+            hasFireproofBoatUpgrade = upgrades.hasFireproofBoatUpgrade
+        };
     }
 
     private float GetCurrentPlayTimeSeconds()
