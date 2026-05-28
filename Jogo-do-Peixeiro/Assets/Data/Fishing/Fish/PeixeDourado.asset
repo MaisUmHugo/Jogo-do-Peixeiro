@@ -21,7 +21,7 @@ MonoBehaviour:
   mesh: {fileID: 0}
   material: {fileID: 0}
   texture: {fileID: 2800000, guid: 86ffc188a277da5419c0820de2df2314, type: 3}
-  inventoryIcon: {fileID: 0}
+  inventoryIcon: {fileID: 21300000, guid: 9ea945ae46643a44895c7cacf035182c, type: 3}
   rarity: 4
   basePrice: 12
   spawnWeight: 0.05
