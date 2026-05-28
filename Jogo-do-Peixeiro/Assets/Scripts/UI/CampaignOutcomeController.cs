@@ -3,11 +3,43 @@ using System.Collections;
 using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.Serialization;
 using UnityEngine.UI;
 
 public class CampaignOutcomeController : MonoBehaviour
 {
     #region Fields
+
+    private const float GroundSnapRayStartHeight = 2f;
+    private const float GroundSnapRayDistance = 8f;
+    private const float GroundSnapExtraSkin = 0.02f;
+
+    private enum FinalDialogFallbackPreviewPose
+    {
+        CameraOnly,
+        StoreDialog,
+        MorningDialog,
+        EndlessStart
+    }
+
+    private enum FinalDialogFallbackPreviewPhase
+    {
+        None,
+        StoreDialog,
+        MorningDialog,
+        EndlessStart
+    }
+
+    [Serializable]
+    private class FinalDialogCameraPoseSettings
+    {
+        public bool useDefaultFinalDialogCamera = false;
+        public bool snapCameraForDialog = true;
+        public bool useSpecificDialogCameraAngle = false;
+        public Vector2 dialogCameraYawPitch = new Vector2(0f, 18f);
+        public float dialogCameraBehindPlayerYawOffset = 0f;
+        [Min(0f)] public float dialogCameraDistance = 0f;
+    }
 
     [Header("References")]
     [SerializeField] private CampaignProgressSystem campaignProgress;
@@ -36,10 +68,31 @@ public class CampaignOutcomeController : MonoBehaviour
     [SerializeField, Min(0f)] private float finalDialogFallbackFadeInDelay = 1.5f;
     [SerializeField, Min(0f)] private float finalDialogFallbackRestFadeOutDuration = 1.5f;
     [SerializeField, Min(0f)] private float finalDialogFallbackRestHoldDuration = 0.5f;
+    [SerializeField, Range(0, 5)] private int finalDialogFallbackPoseSettleFrames = 1;
     [SerializeField, Range(0f, 24f)] private float finalDialogFallbackMorningHour = 6f;
     [SerializeField] private bool movePlayerToMoneyLenderForFinalDialogFallback = true;
+    [SerializeField] private Transform finalDialogFallbackStorePoint;
     [SerializeField] private Transform finalDialogFallbackMorningPoint;
+    [SerializeField] private bool movePlayerToEndlessStartPointAfterFinalDialog = true;
+    [SerializeField, FormerlySerializedAs("finalDialogFallbackMoneyLenderPoint")] private Transform finalDialogFallbackEndlessStartPoint;
+    [SerializeField] private bool moveMoneyLenderToFinalDialogActorPoint;
+    [SerializeField] private Transform finalDialogFallbackMoneyLenderActorPoint;
     [SerializeField, Min(0f)] private float finalDialogFallbackMoneyLenderDistance = 2.25f;
+
+    [Header("Final Dialog Camera")]
+    [SerializeField] private bool snapCameraForFinalDialogFallback = true;
+    [SerializeField] private bool useSpecificFinalDialogFallbackCameraAngle;
+    [SerializeField] private Vector2 finalDialogFallbackCameraYawPitch = new Vector2(0f, 18f);
+    [SerializeField] private float finalDialogFallbackCameraBehindPlayerYawOffset;
+    [SerializeField, Min(0f)] private float finalDialogFallbackCameraDistance;
+    [SerializeField] private FinalDialogCameraPoseSettings finalDialogFallbackStoreCameraPose = new FinalDialogCameraPoseSettings();
+    [SerializeField] private FinalDialogCameraPoseSettings finalDialogFallbackMorningCameraPose = new FinalDialogCameraPoseSettings();
+    [SerializeField] private FinalDialogCameraPoseSettings finalDialogFallbackEndlessStartCameraPose = new FinalDialogCameraPoseSettings();
+
+    [Header("Final Dialog Play Mode Tuning")]
+    [SerializeField] private bool previewFinalDialogFallbackInUpdate;
+    [SerializeField] private FinalDialogFallbackPreviewPose previewFinalDialogFallbackPose = FinalDialogFallbackPreviewPose.MorningDialog;
+
     [SerializeField] private bool showFinalFadeScreenWhenUsingDialogFallback = true;
     [SerializeField] private string fallbackFinalText = "FIM?";
     [SerializeField] private string fallbackEndlessUnlockedText = "Modo sem fim foi liberado!";
@@ -63,6 +116,9 @@ public class CampaignOutcomeController : MonoBehaviour
     private int campaignCompletionModalToken = UIModalManager.InvalidToken;
     private bool hasCampaignCompletionPreviousState;
     private GameManager.GameState campaignCompletionPreviousState;
+    private FinalDialogFallbackPreviewPhase activeFinalDialogFallbackPreviewPhase = FinalDialogFallbackPreviewPhase.None;
+    private bool hasPlayerAfkIdleLock;
+    private bool hasInteractionLock;
 
     #endregion
 
@@ -85,6 +141,12 @@ public class CampaignOutcomeController : MonoBehaviour
         TryShowCurrentOutcome(false);
     }
 
+    private void Update()
+    {
+        UpdateActiveFinalDialogFallbackCameraPose();
+        UpdateFinalDialogFallbackPlayModePreview();
+    }
+
     private void OnDisable()
     {
         if (pendingQuestFailureRoutine != null)
@@ -100,6 +162,7 @@ public class CampaignOutcomeController : MonoBehaviour
         }
 
         EndCampaignCompletionPresentation();
+        ClearFinalDialogFallbackPlayModePreview();
         Unsubscribe();
     }
 
@@ -169,8 +232,8 @@ public class CampaignOutcomeController : MonoBehaviour
         if (pendingCampaignCompletionRoutine != null)
             StopCoroutine(pendingCampaignCompletionRoutine);
 
+        CampaignQuestGuidanceController.instance?.HideTutorialGuidanceForCampaignFinal();
         isResolvingCampaignCompletion = true;
-        BeginCampaignCompletionPresentation(false);
         pendingCampaignCompletionRoutine = StartCoroutine(ResolveCampaignCompletionRoutine(saveGameOnCampaignCompletion));
     }
 
@@ -198,8 +261,8 @@ public class CampaignOutcomeController : MonoBehaviour
 
         hasShownCampaignCompletion = false;
         hasStartedCampaignCompletionCutscene = false;
+        CampaignQuestGuidanceController.instance?.HideTutorialGuidanceForCampaignFinal();
         isResolvingCampaignCompletion = true;
-        BeginCampaignCompletionPresentation(false);
         pendingCampaignCompletionRoutine = StartCoroutine(ResolveCampaignCompletionRoutine(_saveGame));
         return true;
     }
@@ -284,7 +347,7 @@ public class CampaignOutcomeController : MonoBehaviour
         if (!started)
             return false;
 
-        BeginCampaignCompletionPresentation(true);
+        BeginCampaignCompletionPresentation(false);
         hasStartedCampaignCompletionCutscene = true;
         hasShownCampaignCompletion = true;
         return true;
@@ -296,6 +359,8 @@ public class CampaignOutcomeController : MonoBehaviour
         Action _onFinished)
     {
         SceneTransitionFadeController.SetBlackImmediate();
+        yield return PrepareFinalFallbackStoreDialogPoseRoutine();
+
         yield return SceneTransitionFadeController.FadeInAndWait(
             finalDialogFallbackFadeInDuration,
             finalDialogFallbackFadeInDelay);
@@ -318,8 +383,12 @@ public class CampaignOutcomeController : MonoBehaviour
 
         if (_storeDialog != null && _storeDialog.HasLines)
         {
+            SetFinalDialogFallbackPreviewPhase(FinalDialogFallbackPreviewPhase.StoreDialog);
+            PrepareFinalFallbackStoreDialogPose();
             player.Play(_storeDialog, null, () =>
             {
+                StopFinalDialogFallbackPlayModePreview(FinalDialogFallbackPreviewPhase.StoreDialog);
+
                 if (_airFishersDialog != null && _airFishersDialog.HasLines && isActiveAndEnabled)
                 {
                     pendingCampaignCompletionRoutine = StartCoroutine(
@@ -333,6 +402,8 @@ public class CampaignOutcomeController : MonoBehaviour
             return true;
         }
 
+        SetFinalDialogFallbackPreviewPhase(FinalDialogFallbackPreviewPhase.MorningDialog);
+        PrepareFinalFallbackMorningWithoutDeadlinePenalty();
         PlayDialogOrFinish(player, _airFishersDialog, _onFinished);
         return _airFishersDialog != null && _airFishersDialog.HasLines;
     }
@@ -347,10 +418,10 @@ public class CampaignOutcomeController : MonoBehaviour
         if (finalDialogFallbackRestHoldDuration > 0f)
             yield return new WaitForSecondsRealtime(finalDialogFallbackRestHoldDuration);
 
-        PrepareFinalFallbackMorningWithoutDeadlinePenalty();
+        yield return PrepareFinalFallbackMorningWithoutDeadlinePenaltyRoutine();
+        SetFinalDialogFallbackPreviewPhase(FinalDialogFallbackPreviewPhase.MorningDialog);
 
         yield return SceneTransitionFadeController.FadeInAndWait(finalDialogFallbackFadeInDuration, 0f);
-        SnapGameplayCameraToPlayer();
         pendingCampaignCompletionRoutine = null;
         PlayDialogOrFinish(_player, _dialog, _onFinished);
     }
@@ -358,8 +429,136 @@ public class CampaignOutcomeController : MonoBehaviour
     private void PrepareFinalFallbackMorningWithoutDeadlinePenalty()
     {
         ApplyFinalFallbackMorningWithoutDeadlinePenalty();
+        MoveMoneyLenderToFinalFallbackPoint();
         MovePlayerToFinalFallbackMorningPoint();
-        SnapGameplayCameraToPlayer();
+        SnapCameraForFinalFallbackDialog(finalDialogFallbackMorningCameraPose);
+    }
+
+    private void PrepareFinalFallbackStoreDialogPose()
+    {
+        MovePlayerToFinalFallbackStorePoint();
+        SnapCameraForFinalFallbackDialog(finalDialogFallbackStoreCameraPose);
+    }
+
+    private IEnumerator PrepareFinalFallbackStoreDialogPoseRoutine()
+    {
+        PrepareFinalFallbackStoreDialogPose();
+        yield return WaitForFinalFallbackPoseToSettle();
+        PrepareFinalFallbackStoreDialogPose();
+        yield return WaitForFinalFallbackPoseToSettle();
+    }
+
+    private IEnumerator PrepareFinalFallbackMorningWithoutDeadlinePenaltyRoutine()
+    {
+        PrepareFinalFallbackMorningWithoutDeadlinePenalty();
+        yield return WaitForFinalFallbackPoseToSettle();
+        PrepareFinalFallbackMorningWithoutDeadlinePenalty();
+        yield return WaitForFinalFallbackPoseToSettle();
+    }
+
+    private IEnumerator WaitForFinalFallbackPoseToSettle()
+    {
+        Physics.SyncTransforms();
+        InputHandler.instance?.ResetGameplayInput();
+
+        int frameCount = Mathf.Max(0, finalDialogFallbackPoseSettleFrames);
+
+        for (int i = 0; i < frameCount; i++)
+            yield return null;
+
+        Physics.SyncTransforms();
+    }
+
+    private void UpdateFinalDialogFallbackPlayModePreview()
+    {
+        if (!previewFinalDialogFallbackInUpdate || !Application.isPlaying || !Application.isEditor)
+            return;
+
+        if (!PreviewPoseTargetsFinalPhase(previewFinalDialogFallbackPose, activeFinalDialogFallbackPreviewPhase))
+            return;
+
+        switch (previewFinalDialogFallbackPose)
+        {
+            case FinalDialogFallbackPreviewPose.StoreDialog:
+                PrepareFinalFallbackStoreDialogPose();
+                break;
+
+            case FinalDialogFallbackPreviewPose.MorningDialog:
+                PrepareFinalFallbackMorningWithoutDeadlinePenalty();
+                break;
+
+            case FinalDialogFallbackPreviewPose.EndlessStart:
+                MovePlayerToFinalFallbackEndlessStartPoint();
+                SnapCameraForFinalFallbackDialog(finalDialogFallbackEndlessStartCameraPose);
+                break;
+
+            default:
+                SnapCameraForFinalFallbackDialog(GetCameraPoseSettingsForPhase(activeFinalDialogFallbackPreviewPhase));
+                break;
+        }
+    }
+
+    private void UpdateActiveFinalDialogFallbackCameraPose()
+    {
+        if (!Application.isPlaying)
+            return;
+
+        if (activeFinalDialogFallbackPreviewPhase == FinalDialogFallbackPreviewPhase.None)
+            return;
+
+        if (activeFinalDialogFallbackPreviewPhase == FinalDialogFallbackPreviewPhase.EndlessStart)
+            return;
+
+        SnapCameraForFinalFallbackDialog(GetCameraPoseSettingsForPhase(activeFinalDialogFallbackPreviewPhase));
+    }
+
+    private static bool PreviewPoseTargetsFinalPhase(FinalDialogFallbackPreviewPose _pose, FinalDialogFallbackPreviewPhase _phase)
+    {
+        if (_phase == FinalDialogFallbackPreviewPhase.None)
+            return false;
+
+        switch (_pose)
+        {
+            case FinalDialogFallbackPreviewPose.CameraOnly:
+                return true;
+
+            case FinalDialogFallbackPreviewPose.StoreDialog:
+                return _phase == FinalDialogFallbackPreviewPhase.StoreDialog;
+
+            case FinalDialogFallbackPreviewPose.MorningDialog:
+                return _phase == FinalDialogFallbackPreviewPhase.MorningDialog;
+
+            case FinalDialogFallbackPreviewPose.EndlessStart:
+                return _phase == FinalDialogFallbackPreviewPhase.EndlessStart;
+
+            default:
+                return false;
+        }
+    }
+
+    private void SetFinalDialogFallbackPreviewPhase(FinalDialogFallbackPreviewPhase _phase)
+    {
+        activeFinalDialogFallbackPreviewPhase = _phase;
+    }
+
+    private void StopFinalDialogFallbackPlayModePreview(FinalDialogFallbackPreviewPhase _phase)
+    {
+        if (previewFinalDialogFallbackInUpdate && Application.isPlaying && Application.isEditor &&
+            PreviewPoseTargetsFinalPhase(previewFinalDialogFallbackPose, _phase))
+        {
+            previewFinalDialogFallbackInUpdate = false;
+        }
+
+        if (activeFinalDialogFallbackPreviewPhase == _phase)
+            activeFinalDialogFallbackPreviewPhase = FinalDialogFallbackPreviewPhase.None;
+    }
+
+    private void ClearFinalDialogFallbackPlayModePreview()
+    {
+        activeFinalDialogFallbackPreviewPhase = FinalDialogFallbackPreviewPhase.None;
+
+        if (previewFinalDialogFallbackInUpdate && Application.isPlaying && Application.isEditor)
+            previewFinalDialogFallbackInUpdate = false;
     }
 
     private void ApplyFinalFallbackMorningWithoutDeadlinePenalty()
@@ -388,19 +587,69 @@ public class CampaignOutcomeController : MonoBehaviour
         if (!TryResolveFinalFallbackMorningPose(playerTransform.rotation, out Vector3 position, out Quaternion rotation))
             return;
 
-        CharacterController characterController = playerTransform.GetComponent<CharacterController>();
-        bool restoreCharacterController = characterController != null && characterController.enabled;
-
-        if (restoreCharacterController)
-            characterController.enabled = false;
-
-        playerTransform.SetPositionAndRotation(position, rotation);
-
-        if (restoreCharacterController)
-            characterController.enabled = true;
+        PlaceTransform(playerTransform, position, rotation, true);
 
         if (GameManager.instance != null)
             GameManager.instance.SetState(GameManager.GameState.OnFoot);
+    }
+
+    private void MovePlayerToFinalFallbackStorePoint()
+    {
+        if (finalDialogFallbackStorePoint == null)
+            return;
+
+        Transform playerTransform = ResolvePlayerTransform();
+
+        if (playerTransform == null)
+            return;
+
+        PlaceTransform(
+            playerTransform,
+            finalDialogFallbackStorePoint.position,
+            finalDialogFallbackStorePoint.rotation,
+            true);
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
+    }
+
+    private void MoveMoneyLenderToFinalFallbackPoint()
+    {
+        if (!moveMoneyLenderToFinalDialogActorPoint || finalDialogFallbackMoneyLenderActorPoint == null)
+            return;
+
+        Transform moneyLenderTransform = ResolveMoneyLenderTransform();
+
+        if (moneyLenderTransform == null)
+            return;
+
+        PlaceTransform(
+            moneyLenderTransform,
+            finalDialogFallbackMoneyLenderActorPoint.position,
+            finalDialogFallbackMoneyLenderActorPoint.rotation,
+            true);
+    }
+
+    private void MovePlayerToFinalFallbackEndlessStartPoint()
+    {
+        if (!movePlayerToEndlessStartPointAfterFinalDialog || finalDialogFallbackEndlessStartPoint == null)
+            return;
+
+        Transform playerTransform = ResolvePlayerTransform();
+
+        if (playerTransform == null)
+            return;
+
+        PlaceTransform(
+            playerTransform,
+            finalDialogFallbackEndlessStartPoint.position,
+            finalDialogFallbackEndlessStartPoint.rotation,
+            true);
+
+        if (GameManager.instance != null)
+            GameManager.instance.SetState(GameManager.GameState.OnFoot);
+
+        SnapGameplayCameraForFinalFallbackDialog(finalDialogFallbackEndlessStartCameraPose);
     }
 
     private bool TryResolveFinalFallbackMorningPose(
@@ -512,10 +761,160 @@ public class CampaignOutcomeController : MonoBehaviour
         return characterController != null ? characterController.transform : null;
     }
 
+    private static Transform ResolveMoneyLenderTransform()
+    {
+        MoneyLenderController moneyLenderController = FindFirstObjectByType<MoneyLenderController>(FindObjectsInactive.Include);
+
+        if (moneyLenderController != null)
+            return moneyLenderController.transform;
+
+        MoneyLender moneyLender = FindFirstObjectByType<MoneyLender>(FindObjectsInactive.Include);
+        return moneyLender != null ? moneyLender.transform : null;
+    }
+
+    private static void PlaceTransform(Transform _transform, Vector3 _position, Quaternion _rotation, bool _handleCharacterController)
+    {
+        if (_transform == null)
+            return;
+
+        CharacterController characterController = _handleCharacterController
+            ? _transform.GetComponent<CharacterController>()
+            : null;
+        bool restoreCharacterController = characterController != null && characterController.enabled;
+
+        if (restoreCharacterController)
+            characterController.enabled = false;
+
+        Vector3 resolvedPosition = ResolveStableGroundedPosition(_position, characterController);
+        _transform.SetPositionAndRotation(resolvedPosition, _rotation);
+
+        if (restoreCharacterController)
+        {
+            characterController.enabled = true;
+            characterController.Move(Vector3.down * 0.03f);
+        }
+
+        Physics.SyncTransforms();
+        _transform.GetComponent<PlayerMove>()?.ResetMovementState();
+        InputHandler.instance?.ResetGameplayInput();
+    }
+
+    private static Vector3 ResolveStableGroundedPosition(Vector3 _position, CharacterController _characterController)
+    {
+        Vector3 origin = _position + Vector3.up * GroundSnapRayStartHeight;
+
+        if (!Physics.Raycast(
+                origin,
+                Vector3.down,
+                out RaycastHit hit,
+                GroundSnapRayStartHeight + GroundSnapRayDistance,
+                Physics.DefaultRaycastLayers,
+                QueryTriggerInteraction.Ignore))
+        {
+            return _position;
+        }
+
+        float yOffset = 0f;
+
+        if (_characterController != null)
+            yOffset = (_characterController.height * 0.5f) - _characterController.center.y + _characterController.skinWidth + GroundSnapExtraSkin;
+
+        return new Vector3(_position.x, hit.point.y + yOffset, _position.z);
+    }
+
+    private FinalDialogCameraPoseSettings GetCameraPoseSettingsForPhase(FinalDialogFallbackPreviewPhase _phase)
+    {
+        switch (_phase)
+        {
+            case FinalDialogFallbackPreviewPhase.StoreDialog:
+                return finalDialogFallbackStoreCameraPose;
+
+            case FinalDialogFallbackPreviewPhase.MorningDialog:
+                return finalDialogFallbackMorningCameraPose;
+
+            case FinalDialogFallbackPreviewPhase.EndlessStart:
+                return finalDialogFallbackEndlessStartCameraPose;
+
+            default:
+                return null;
+        }
+    }
+
+    private void SnapCameraForFinalFallbackDialog(FinalDialogCameraPoseSettings _poseSettings)
+    {
+        if (!TryResolveFinalCameraPose(_poseSettings, out float targetYaw, out float targetPitch, out float cameraDistance))
+            return;
+
+        if (PlayerCamera.Instance.TryShowFinalDialogCameraPose(targetYaw, targetPitch, cameraDistance))
+            return;
+
+        PlayerCamera.Instance.SnapToGameplayTarget(targetYaw, targetPitch, cameraDistance);
+    }
+
+    private void SnapGameplayCameraForFinalFallbackDialog(FinalDialogCameraPoseSettings _poseSettings)
+    {
+        if (!TryResolveFinalCameraPose(_poseSettings, out float targetYaw, out float targetPitch, out float cameraDistance))
+            return;
+
+        PlayerCamera.Instance.EndFinalDialogCameraPose(false);
+        PlayerCamera.Instance.SnapToGameplayTarget(targetYaw, targetPitch, cameraDistance);
+    }
+
+    private bool TryResolveFinalCameraPose(
+        FinalDialogCameraPoseSettings _poseSettings,
+        out float _targetYaw,
+        out float _targetPitch,
+        out float _cameraDistance)
+    {
+        _targetYaw = 0f;
+        _targetPitch = 0f;
+        _cameraDistance = 0f;
+
+        if (!snapCameraForFinalDialogFallback || PlayerCamera.Instance == null)
+            return false;
+
+        bool useDefaultCameraPose = _poseSettings == null || _poseSettings.useDefaultFinalDialogCamera;
+        bool shouldSnap = useDefaultCameraPose || _poseSettings.snapCameraForDialog;
+
+        if (!shouldSnap)
+            return false;
+
+        Transform playerTransform = ResolvePlayerTransform();
+        bool useSpecificAngle = useDefaultCameraPose
+            ? useSpecificFinalDialogFallbackCameraAngle
+            : _poseSettings.useSpecificDialogCameraAngle;
+        Vector2 yawPitch = useDefaultCameraPose
+            ? finalDialogFallbackCameraYawPitch
+            : _poseSettings.dialogCameraYawPitch;
+        float yawOffset = useDefaultCameraPose
+            ? finalDialogFallbackCameraBehindPlayerYawOffset
+            : _poseSettings.dialogCameraBehindPlayerYawOffset;
+        _cameraDistance = useDefaultCameraPose
+            ? finalDialogFallbackCameraDistance
+            : _poseSettings.dialogCameraDistance;
+        _targetYaw = yawPitch.x;
+        _targetPitch = yawPitch.y;
+
+        if (!useSpecificAngle && playerTransform != null)
+            _targetYaw = playerTransform.eulerAngles.y + yawOffset;
+
+        return true;
+    }
+
     private static void SnapGameplayCameraToPlayer()
     {
         if (PlayerCamera.Instance != null)
+        {
+            PlayerCamera.Instance.EndScriptedDialogCameraPose(false);
+            PlayerCamera.Instance.EndFinalDialogCameraPose(false);
             PlayerCamera.Instance.SnapToGameplayTarget();
+        }
+    }
+
+    private static void EndFinalDialogCameraPose(bool _snapGameplayCamera)
+    {
+        if (PlayerCamera.Instance != null)
+            PlayerCamera.Instance.EndFinalDialogCameraPose(_snapGameplayCamera);
     }
 
     private static void PlayDialogOrFinish(DialogSequencePlayer _player, DialogSequenceAsset _dialog, Action _onFinished)
@@ -545,6 +944,9 @@ public class CampaignOutcomeController : MonoBehaviour
 
     private void CompleteCampaignCompletionDialogFallback(bool _saveGame)
     {
+        StopFinalDialogFallbackPlayModePreview(FinalDialogFallbackPreviewPhase.MorningDialog);
+        EndFinalDialogCameraPose(false);
+
         if (showFinalFadeScreenWhenUsingDialogFallback && isActiveAndEnabled)
         {
             pendingCampaignCompletionRoutine = StartCoroutine(CompleteCampaignCompletionDialogFallbackRoutine(_saveGame));
@@ -579,9 +981,16 @@ public class CampaignOutcomeController : MonoBehaviour
                 yield return new WaitForSecondsRealtime(fallbackEndlessNoticeHoldDuration);
         }
 
+        SetFinalDialogFallbackPreviewPhase(FinalDialogFallbackPreviewPhase.EndlessStart);
+        MovePlayerToFinalFallbackEndlessStartPoint();
+        yield return WaitForFinalFallbackPoseToSettle();
+        MovePlayerToFinalFallbackEndlessStartPoint();
+        yield return WaitForFinalFallbackPoseToSettle();
+
         if (continueEndlessInCurrentSceneAfterFinalDialogFallback && fallbackFinalFadeOutDuration > 0f)
             yield return FadeCanvasGroup(canvasGroup, 1f, 0f, fallbackFinalFadeOutDuration);
 
+        StopFinalDialogFallbackPlayModePreview(FinalDialogFallbackPreviewPhase.EndlessStart);
         Destroy(overlay);
         pendingCampaignCompletionRoutine = null;
         FinishCampaignCompletionDialogFallback(_saveGame);
@@ -589,10 +998,16 @@ public class CampaignOutcomeController : MonoBehaviour
 
     private void FinishCampaignCompletionDialogFallback(bool _saveGame)
     {
+        MovePlayerToFinalFallbackEndlessStartPoint();
+        ClearFinalDialogFallbackPlayModePreview();
+        EndFinalDialogCameraPose(true);
         EndCampaignCompletionPresentation();
 
         if (campaignProgress == null)
             campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (!_saveGame)
+            return;
 
         if (campaignProgress != null)
             campaignProgress.StartUnlockedEndlessMode();
@@ -718,6 +1133,10 @@ public class CampaignOutcomeController : MonoBehaviour
 
     private void BeginCampaignCompletionPresentation(bool _pauseTime)
     {
+        CampaignQuestGuidanceController.instance?.HideTutorialGuidanceForCampaignFinal();
+        PushPlayerAfkIdleLock();
+        PushInteractionLock();
+
         if (campaignCompletionModalToken == UIModalManager.InvalidToken)
         {
             UIModalRequest request = UIModalRequest.Create(
@@ -749,6 +1168,44 @@ public class CampaignOutcomeController : MonoBehaviour
 
         hasCampaignCompletionPreviousState = false;
         campaignCompletionPreviousState = default;
+        PopPlayerAfkIdleLock();
+        PopInteractionLock();
+    }
+
+    private void PushPlayerAfkIdleLock()
+    {
+        if (hasPlayerAfkIdleLock)
+            return;
+
+        PlayerAnimationController.PushAfkIdleLock();
+        hasPlayerAfkIdleLock = true;
+    }
+
+    private void PopPlayerAfkIdleLock()
+    {
+        if (!hasPlayerAfkIdleLock)
+            return;
+
+        PlayerAnimationController.PopAfkIdleLock();
+        hasPlayerAfkIdleLock = false;
+    }
+
+    private void PushInteractionLock()
+    {
+        if (hasInteractionLock)
+            return;
+
+        PlayerInteract.PushInteractionLock();
+        hasInteractionLock = true;
+    }
+
+    private void PopInteractionLock()
+    {
+        if (!hasInteractionLock)
+            return;
+
+        PlayerInteract.PopInteractionLock();
+        hasInteractionLock = false;
     }
 
     #endregion

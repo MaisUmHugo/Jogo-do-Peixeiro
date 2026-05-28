@@ -26,7 +26,7 @@ MonoBehaviour:
   basePrice: 24
   spawnWeight: 4
   canBeRequestedByMoneyLender: 1
-  availabilityPeriod: 3
+  availabilityPeriod: 1
   fishName: Peixe-galo
   description: "O canto deste peixe \xE9 descrito como uma serenata linda. Uma pena
     que som n\xE3o viaja bem pela \xE1gua."

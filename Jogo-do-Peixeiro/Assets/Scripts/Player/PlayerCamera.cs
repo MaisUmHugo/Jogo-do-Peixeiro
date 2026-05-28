@@ -43,6 +43,25 @@ public class PlayerCamera : MonoBehaviour
     [SerializeField] private string gameplayVirtualCameraName = "CM Gameplay Camera";
     [SerializeField] private int gameplayCameraPriority = 10;
     [SerializeField] private bool syncLensFromMainCamera = true;
+    [SerializeField] private bool cutBlendWhenSwitchingDialogCameras = true;
+
+    [Header("Scripted Dialog Camera")]
+    [SerializeField] private bool useFreeCameraForScriptedDialogs = true;
+    [SerializeField] private CinemachineCamera scriptedDialogVirtualCamera;
+    [SerializeField] private bool autoCreateScriptedDialogVirtualCamera = true;
+    [SerializeField] private string scriptedDialogVirtualCameraName = "CM Scripted Dialog Camera";
+    [SerializeField] private int scriptedDialogCameraPriority = 40;
+    [SerializeField] private int inactiveScriptedDialogCameraPriority = -10;
+    [SerializeField, Min(0.01f)] private float defaultScriptedDialogCameraDistance = 6f;
+
+    [Header("Final Dialog Camera")]
+    [SerializeField] private bool useFreeCameraForFinalDialog = true;
+    [SerializeField] private CinemachineCamera finalDialogVirtualCamera;
+    [SerializeField] private bool autoCreateFinalDialogVirtualCamera = true;
+    [SerializeField] private string finalDialogVirtualCameraName = "CM Final Dialog Camera";
+    [SerializeField] private int finalDialogCameraPriority = 45;
+    [SerializeField] private int inactiveFinalDialogCameraPriority = -15;
+    [SerializeField, Min(0.01f)] private float defaultFinalDialogCameraDistance = 6f;
 
     private float yaw;
     private float pitch;
@@ -55,6 +74,8 @@ public class PlayerCamera : MonoBehaviour
     private CinemachineBrain.UpdateMethods storedBrainUpdateMethod;
     private CinemachineBrain.BrainUpdateMethods storedBrainBlendUpdateMethod;
     private bool hasStoredGameplayCameraState;
+    private bool hasDefaultGameplayDistance;
+    private float defaultGameplayDistance;
     private float storedYaw;
     private float storedPitch;
     private float storedDistance;
@@ -64,6 +85,22 @@ public class PlayerCamera : MonoBehaviour
     private LensSettings storedGameplayCameraLens;
     private bool hasDefaultGameplayCameraLens;
     private bool hasStoredGameplayCameraLens;
+    private bool isScriptedDialogCameraMode;
+    private bool hasStoredScriptedDialogCameraState;
+    private bool storedScriptedDialogCameraEnabled;
+    private int storedScriptedDialogCameraPriority;
+    private bool hasActiveScriptedDialogCameraPose;
+    private float activeScriptedDialogYaw;
+    private float activeScriptedDialogPitch;
+    private float activeScriptedDialogDistance;
+    private bool isFinalDialogCameraMode;
+    private bool hasStoredFinalDialogCameraState;
+    private bool storedFinalDialogCameraEnabled;
+    private int storedFinalDialogCameraPriority;
+    private bool hasActiveFinalDialogCameraPose;
+    private float activeFinalDialogYaw;
+    private float activeFinalDialogPitch;
+    private float activeFinalDialogDistance;
 
     public static bool IsCameraLocked => cameraLockCount > 0;
 
@@ -82,6 +119,7 @@ public class PlayerCamera : MonoBehaviour
     private void Start()
     {
         Instance = this;
+        CacheDefaultGameplayDistance();
         EnsureCinemachineSetup();
         SyncAnglesFromTransform();
 
@@ -91,6 +129,7 @@ public class PlayerCamera : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        CacheDefaultGameplayDistance();
     }
 
     private void OnEnable()
@@ -106,6 +145,8 @@ public class PlayerCamera : MonoBehaviour
         if (Instance == this)
             Instance = null;
 
+        EndFinalDialogCameraPose(false);
+        EndScriptedDialogCameraPose(false);
         EndCutsceneCameraMode();
 
         TextCanvaManager.DialogStarted -= EnterDialogFocus;
@@ -126,6 +167,20 @@ public class PlayerCamera : MonoBehaviour
 
         if (isCutsceneCameraMode)
             return;
+
+        if (isFinalDialogCameraMode)
+        {
+            UpdateFinalDialogCameraPose();
+            UpdateCinemachineBrain();
+            return;
+        }
+
+        if (isScriptedDialogCameraMode)
+        {
+            UpdateScriptedDialogCameraPose();
+            UpdateCinemachineBrain();
+            return;
+        }
 
         if (isDialogFocusActive)
         {
@@ -211,6 +266,8 @@ public class PlayerCamera : MonoBehaviour
     public void BeginCutsceneCameraMode()
     {
         EnsureCinemachineSetup();
+        EndFinalDialogCameraPose(false);
+        EndScriptedDialogCameraPose(false);
 
         if (isCutsceneCameraMode)
             return;
@@ -253,6 +310,8 @@ public class PlayerCamera : MonoBehaviour
     public void RestoreGameplayCameraAfterCutscene()
     {
         EnsureCinemachineSetup();
+        EndFinalDialogCameraPose(false);
+        EndScriptedDialogCameraPose(false);
 
         if (isCutsceneCameraMode)
         {
@@ -272,6 +331,33 @@ public class PlayerCamera : MonoBehaviour
         UpdateCinemachineBrain();
     }
 
+    public void RestoreDefaultGameplayCameraInstant()
+    {
+        RestoreDefaultGameplayCameraInstant(yaw, pitch);
+    }
+
+    public void RestoreDefaultGameplayCameraInstant(float _yaw, float _pitch)
+    {
+        EnsureCinemachineSetup();
+        EndFinalDialogCameraPose(false);
+        EndScriptedDialogCameraPose(false);
+
+        if (isCutsceneCameraMode)
+            EndCutsceneCameraMode();
+
+        RestoreGameplayCameraLens();
+
+        if (gameplayVirtualCamera != null)
+        {
+            gameplayVirtualCamera.enabled = true;
+            gameplayVirtualCamera.Priority = gameplayCameraPriority;
+            UpdateGameplayVirtualCameraTargets();
+        }
+
+        SnapToGameplayTarget(_yaw, _pitch, GetDefaultGameplayDistance());
+        UpdateCinemachineBrainAfterDialogCameraSwitch();
+    }
+
     public void SnapToGameplayTarget()
     {
         EnsureCinemachineSetup();
@@ -286,6 +372,135 @@ public class PlayerCamera : MonoBehaviour
 
         SetCameraPose(cameraPosition, cameraRotation);
         UpdateCinemachineBrain();
+    }
+
+    public void SnapToGameplayTarget(float _yaw, float _pitch, float _distance)
+    {
+        yaw = _yaw;
+        pitch = Mathf.Clamp(_pitch, minPitch, maxPitch);
+
+        if (_distance > 0f)
+            distance = Mathf.Clamp(_distance, minDistance, maxDistance);
+
+        SnapToGameplayTarget();
+    }
+
+    public bool TryShowScriptedDialogCameraPose(float _yaw, float _pitch, float _distance)
+    {
+        if (!useCinemachine || !useFreeCameraForScriptedDialogs)
+            return false;
+
+        EndFinalDialogCameraPose(false);
+        EnsureCinemachineSetup();
+        EnsureScriptedDialogVirtualCamera();
+
+        if (scriptedDialogVirtualCamera == null || target == null)
+            return false;
+
+        activeScriptedDialogYaw = _yaw;
+        activeScriptedDialogPitch = _pitch;
+        activeScriptedDialogDistance = _distance;
+        hasActiveScriptedDialogCameraPose = true;
+
+        BeginScriptedDialogCameraPose();
+        UpdateScriptedDialogCameraPose();
+        UpdateCinemachineBrainAfterDialogCameraSwitch();
+        return true;
+    }
+
+    public void EndScriptedDialogCameraPose(bool _snapGameplayCamera = true)
+    {
+        if (!isScriptedDialogCameraMode)
+            return;
+
+        isScriptedDialogCameraMode = false;
+
+        if (scriptedDialogVirtualCamera != null)
+        {
+            if (hasStoredScriptedDialogCameraState)
+            {
+                scriptedDialogVirtualCamera.enabled = storedScriptedDialogCameraEnabled;
+                scriptedDialogVirtualCamera.Priority = storedScriptedDialogCameraPriority;
+            }
+            else
+            {
+                scriptedDialogVirtualCamera.Priority = inactiveScriptedDialogCameraPriority;
+                scriptedDialogVirtualCamera.enabled = false;
+            }
+        }
+
+        hasStoredScriptedDialogCameraState = false;
+        hasActiveScriptedDialogCameraPose = false;
+
+        if (gameplayVirtualCamera != null)
+        {
+            gameplayVirtualCamera.enabled = true;
+            gameplayVirtualCamera.Priority = gameplayCameraPriority;
+        }
+
+        if (_snapGameplayCamera)
+            SnapToGameplayTarget();
+        else
+            UpdateCinemachineBrain();
+    }
+
+    public bool TryShowFinalDialogCameraPose(float _yaw, float _pitch, float _distance)
+    {
+        if (!useCinemachine || !useFreeCameraForFinalDialog)
+            return false;
+
+        EndScriptedDialogCameraPose(false);
+        EnsureCinemachineSetup();
+        EnsureFinalDialogVirtualCamera();
+
+        if (finalDialogVirtualCamera == null || target == null)
+            return false;
+
+        activeFinalDialogYaw = _yaw;
+        activeFinalDialogPitch = _pitch;
+        activeFinalDialogDistance = _distance;
+        hasActiveFinalDialogCameraPose = true;
+
+        BeginFinalDialogCameraPose();
+        UpdateFinalDialogCameraPose();
+        UpdateCinemachineBrainAfterDialogCameraSwitch();
+        return true;
+    }
+
+    public void EndFinalDialogCameraPose(bool _snapGameplayCamera = true)
+    {
+        if (!isFinalDialogCameraMode)
+            return;
+
+        isFinalDialogCameraMode = false;
+
+        if (finalDialogVirtualCamera != null)
+        {
+            if (hasStoredFinalDialogCameraState)
+            {
+                finalDialogVirtualCamera.enabled = storedFinalDialogCameraEnabled;
+                finalDialogVirtualCamera.Priority = storedFinalDialogCameraPriority;
+            }
+            else
+            {
+                finalDialogVirtualCamera.Priority = inactiveFinalDialogCameraPriority;
+                finalDialogVirtualCamera.enabled = false;
+            }
+        }
+
+        hasStoredFinalDialogCameraState = false;
+        hasActiveFinalDialogCameraPose = false;
+
+        if (gameplayVirtualCamera != null)
+        {
+            gameplayVirtualCamera.enabled = true;
+            gameplayVirtualCamera.Priority = gameplayCameraPriority;
+        }
+
+        if (_snapGameplayCamera)
+            SnapToGameplayTarget();
+        else
+            UpdateCinemachineBrain();
     }
 
     private Vector2 GetProcessedLookInput(Vector2 _lookInput, out bool _isControllerInput)
@@ -431,6 +646,23 @@ public class PlayerCamera : MonoBehaviour
         hasStoredGameplayCameraState = true;
     }
 
+    private void CacheDefaultGameplayDistance()
+    {
+        if (hasDefaultGameplayDistance)
+            return;
+
+        defaultGameplayDistance = Mathf.Clamp(distance, minDistance, maxDistance);
+        hasDefaultGameplayDistance = true;
+    }
+
+    private float GetDefaultGameplayDistance()
+    {
+        if (!hasDefaultGameplayDistance)
+            CacheDefaultGameplayDistance();
+
+        return Mathf.Clamp(defaultGameplayDistance, minDistance, maxDistance);
+    }
+
     private void RestoreGameplayCameraState()
     {
         if (!hasStoredGameplayCameraState)
@@ -554,6 +786,226 @@ public class PlayerCamera : MonoBehaviour
         return null;
     }
 
+    private void BeginScriptedDialogCameraPose()
+    {
+        EndFinalDialogCameraPose(false);
+
+        if (isScriptedDialogCameraMode)
+            return;
+
+        isScriptedDialogCameraMode = true;
+
+        if (scriptedDialogVirtualCamera != null && !hasStoredScriptedDialogCameraState)
+        {
+            storedScriptedDialogCameraEnabled = scriptedDialogVirtualCamera.enabled;
+            storedScriptedDialogCameraPriority = scriptedDialogVirtualCamera.Priority;
+            hasStoredScriptedDialogCameraState = true;
+        }
+
+        if (gameplayVirtualCamera != null)
+        {
+            gameplayVirtualCamera.enabled = true;
+            gameplayVirtualCamera.Priority = gameplayCameraPriority;
+        }
+
+        if (scriptedDialogVirtualCamera != null)
+        {
+            scriptedDialogVirtualCamera.enabled = true;
+            scriptedDialogVirtualCamera.Priority = Mathf.Max(scriptedDialogCameraPriority, gameplayCameraPriority + 1);
+        }
+    }
+
+    private void ApplyScriptedDialogCameraPose(float _yaw, float _pitch, float _distance)
+    {
+        float resolvedDistance = _distance > 0f ? _distance : defaultScriptedDialogCameraDistance;
+        Vector3 targetPosition = target.position + Vector3.up * height;
+        Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        Vector3 cameraPosition = targetPosition + rotation * new Vector3(0f, 0f, -resolvedDistance);
+        Quaternion cameraRotation = GetLookRotation(targetPosition - cameraPosition, rotation);
+
+        scriptedDialogVirtualCamera.transform.SetPositionAndRotation(cameraPosition, cameraRotation);
+        scriptedDialogVirtualCamera.ForceCameraPosition(cameraPosition, cameraRotation);
+    }
+
+    private void UpdateScriptedDialogCameraPose()
+    {
+        if (!hasActiveScriptedDialogCameraPose || scriptedDialogVirtualCamera == null || target == null)
+            return;
+
+        ApplyScriptedDialogCameraPose(
+            activeScriptedDialogYaw,
+            activeScriptedDialogPitch,
+            activeScriptedDialogDistance);
+    }
+
+    private void BeginFinalDialogCameraPose()
+    {
+        EndScriptedDialogCameraPose(false);
+
+        if (isFinalDialogCameraMode)
+            return;
+
+        isFinalDialogCameraMode = true;
+
+        if (finalDialogVirtualCamera != null && !hasStoredFinalDialogCameraState)
+        {
+            storedFinalDialogCameraEnabled = finalDialogVirtualCamera.enabled;
+            storedFinalDialogCameraPriority = finalDialogVirtualCamera.Priority;
+            hasStoredFinalDialogCameraState = true;
+        }
+
+        if (gameplayVirtualCamera != null)
+        {
+            gameplayVirtualCamera.enabled = true;
+            gameplayVirtualCamera.Priority = gameplayCameraPriority;
+        }
+
+        if (finalDialogVirtualCamera != null)
+        {
+            finalDialogVirtualCamera.enabled = true;
+            finalDialogVirtualCamera.Priority = Mathf.Max(finalDialogCameraPriority, gameplayCameraPriority + 1);
+        }
+    }
+
+    private void ApplyFinalDialogCameraPose(float _yaw, float _pitch, float _distance)
+    {
+        float resolvedDistance = _distance > 0f ? _distance : defaultFinalDialogCameraDistance;
+        Vector3 targetPosition = target.position + Vector3.up * height;
+        Quaternion rotation = Quaternion.Euler(_pitch, _yaw, 0f);
+        Vector3 cameraPosition = targetPosition + rotation * new Vector3(0f, 0f, -resolvedDistance);
+        Quaternion cameraRotation = GetLookRotation(targetPosition - cameraPosition, rotation);
+
+        finalDialogVirtualCamera.transform.SetPositionAndRotation(cameraPosition, cameraRotation);
+        finalDialogVirtualCamera.ForceCameraPosition(cameraPosition, cameraRotation);
+    }
+
+    private void UpdateFinalDialogCameraPose()
+    {
+        if (!hasActiveFinalDialogCameraPose || finalDialogVirtualCamera == null || target == null)
+            return;
+
+        ApplyFinalDialogCameraPose(
+            activeFinalDialogYaw,
+            activeFinalDialogPitch,
+            activeFinalDialogDistance);
+    }
+
+    private void EnsureScriptedDialogVirtualCamera()
+    {
+        if (!useCinemachine || !useFreeCameraForScriptedDialogs)
+            return;
+
+        if (scriptedDialogVirtualCamera == null && autoCreateScriptedDialogVirtualCamera)
+            scriptedDialogVirtualCamera = FindScriptedDialogVirtualCamera();
+
+        if (scriptedDialogVirtualCamera == null && autoCreateScriptedDialogVirtualCamera)
+            scriptedDialogVirtualCamera = CreateScriptedDialogVirtualCamera();
+
+        if (scriptedDialogVirtualCamera == null)
+            return;
+
+        CameraTarget cameraTarget = scriptedDialogVirtualCamera.Target;
+        cameraTarget.TrackingTarget = null;
+        cameraTarget.LookAtTarget = null;
+        cameraTarget.CustomLookAtTarget = false;
+        scriptedDialogVirtualCamera.Target = cameraTarget;
+
+        if (!isScriptedDialogCameraMode && scriptedDialogVirtualCamera.Priority > inactiveScriptedDialogCameraPriority)
+            scriptedDialogVirtualCamera.Priority = inactiveScriptedDialogCameraPriority;
+    }
+
+    private void EnsureFinalDialogVirtualCamera()
+    {
+        if (!useCinemachine || !useFreeCameraForFinalDialog)
+            return;
+
+        if (finalDialogVirtualCamera == null && autoCreateFinalDialogVirtualCamera)
+            finalDialogVirtualCamera = FindFinalDialogVirtualCamera();
+
+        if (finalDialogVirtualCamera == null && autoCreateFinalDialogVirtualCamera)
+            finalDialogVirtualCamera = CreateFinalDialogVirtualCamera();
+
+        if (finalDialogVirtualCamera == null)
+            return;
+
+        CameraTarget cameraTarget = finalDialogVirtualCamera.Target;
+        cameraTarget.TrackingTarget = null;
+        cameraTarget.LookAtTarget = null;
+        cameraTarget.CustomLookAtTarget = false;
+        finalDialogVirtualCamera.Target = cameraTarget;
+
+        if (!isFinalDialogCameraMode && finalDialogVirtualCamera.Priority > inactiveFinalDialogCameraPriority)
+            finalDialogVirtualCamera.Priority = inactiveFinalDialogCameraPriority;
+    }
+
+    private CinemachineCamera FindScriptedDialogVirtualCamera()
+    {
+        CinemachineCamera[] cameras = FindObjectsByType<CinemachineCamera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            if (cameras[i] != null && cameras[i].name == scriptedDialogVirtualCameraName)
+                return cameras[i];
+        }
+
+        return null;
+    }
+
+    private CinemachineCamera FindFinalDialogVirtualCamera()
+    {
+        CinemachineCamera[] cameras = FindObjectsByType<CinemachineCamera>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < cameras.Length; i++)
+        {
+            if (cameras[i] != null && cameras[i].name == finalDialogVirtualCameraName)
+                return cameras[i];
+        }
+
+        return null;
+    }
+
+    private CinemachineCamera CreateScriptedDialogVirtualCamera()
+    {
+        GameObject virtualCameraObject = new GameObject(string.IsNullOrWhiteSpace(scriptedDialogVirtualCameraName)
+            ? "CM Scripted Dialog Camera"
+            : scriptedDialogVirtualCameraName);
+
+        Transform virtualCameraTransform = virtualCameraObject.transform;
+        virtualCameraTransform.SetParent(transform.parent, true);
+        virtualCameraTransform.SetPositionAndRotation(transform.position, transform.rotation);
+
+        CinemachineCamera virtualCamera = virtualCameraObject.AddComponent<CinemachineCamera>();
+        virtualCamera.Priority = inactiveScriptedDialogCameraPriority;
+        virtualCamera.enabled = false;
+
+        if (sourceCamera != null)
+            virtualCamera.Lens = LensSettings.FromCamera(sourceCamera);
+
+        virtualCamera.ForceCameraPosition(virtualCameraTransform.position, virtualCameraTransform.rotation);
+        return virtualCamera;
+    }
+
+    private CinemachineCamera CreateFinalDialogVirtualCamera()
+    {
+        GameObject virtualCameraObject = new GameObject(string.IsNullOrWhiteSpace(finalDialogVirtualCameraName)
+            ? "CM Final Dialog Camera"
+            : finalDialogVirtualCameraName);
+
+        Transform virtualCameraTransform = virtualCameraObject.transform;
+        virtualCameraTransform.SetParent(transform.parent, true);
+        virtualCameraTransform.SetPositionAndRotation(transform.position, transform.rotation);
+
+        CinemachineCamera virtualCamera = virtualCameraObject.AddComponent<CinemachineCamera>();
+        virtualCamera.Priority = inactiveFinalDialogCameraPriority;
+        virtualCamera.enabled = false;
+
+        if (sourceCamera != null)
+            virtualCamera.Lens = LensSettings.FromCamera(sourceCamera);
+
+        virtualCamera.ForceCameraPosition(virtualCameraTransform.position, virtualCameraTransform.rotation);
+        return virtualCamera;
+    }
+
     private CinemachineCamera CreateGameplayVirtualCamera()
     {
         GameObject virtualCameraObject = new GameObject(string.IsNullOrWhiteSpace(gameplayVirtualCameraName)
@@ -594,5 +1046,20 @@ public class PlayerCamera : MonoBehaviour
 
         if (cinemachineBrain.UpdateMethod == CinemachineBrain.UpdateMethods.ManualUpdate)
             cinemachineBrain.ManualUpdate();
+    }
+
+    private void UpdateCinemachineBrainAfterDialogCameraSwitch()
+    {
+        if (!cutBlendWhenSwitchingDialogCameras || cinemachineBrain == null)
+        {
+            UpdateCinemachineBrain();
+            return;
+        }
+
+        CinemachineBlendDefinition previousDefaultBlend = cinemachineBrain.DefaultBlend;
+        cinemachineBrain.DefaultBlend = new CinemachineBlendDefinition(CinemachineBlendDefinition.Styles.Cut, 0f);
+        cinemachineBrain.ActiveBlend = null;
+        UpdateCinemachineBrain();
+        cinemachineBrain.DefaultBlend = previousDefaultBlend;
     }
 }

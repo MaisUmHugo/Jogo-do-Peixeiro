@@ -20,6 +20,9 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
     [SerializeField] private string sceneUnavailableWarning = "A cena da lava ainda não está pronta.";
     [SerializeField] private bool showHudWarningWhenSceneUnavailable = true;
 
+    [Header("Campaign Transition Safety")]
+    [SerializeField] private bool skipTutorialQuestWhenReturningFromLavaToLake = true;
+
     [Header("Arrival")]
     [SerializeField] private string targetArrivalPointId;
 
@@ -112,6 +115,8 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     private void LoadTargetScene(bool _requestFadeInOnNextScene)
     {
+        PrepareCampaignStateForTransition();
+
         if (saveBeforeTransition)
             GameSaveManager.SaveCurrentGameAndRequestLoadOnNextScene();
 
@@ -120,6 +125,32 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
         SceneTransitionRequest.RequestArrival(targetArrivalPointId);
         SceneManager.LoadScene(targetSceneName);
+    }
+
+    private void PrepareCampaignStateForTransition()
+    {
+        if (!skipTutorialQuestWhenReturningFromLavaToLake || !IsReturningFromLavaToLake())
+            return;
+
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.Instance;
+
+        if (campaignProgress != null && campaignProgress.SkipCurrentTutorialQuest())
+            Debug.Log("[SceneTransitionInteractable] Tutorial pulado ao voltar da lava para o lago.");
+    }
+
+    private bool IsReturningFromLavaToLake()
+    {
+        string currentSceneName = SceneManager.GetActiveScene().name;
+
+        return ContainsIgnoreCase(currentSceneName, "Lava") &&
+               ContainsIgnoreCase(targetSceneName, "Lake");
+    }
+
+    private static bool ContainsIgnoreCase(string _value, string _search)
+    {
+        return !string.IsNullOrWhiteSpace(_value) &&
+               !string.IsNullOrWhiteSpace(_search) &&
+               _value.IndexOf(_search, System.StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     public int GetInteractionPriority()
@@ -537,6 +568,16 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     private void OnMissingUpgradeConfirmYes()
     {
+        missingUpgradeConfirmationCount++;
+        int maxSteps = Mathf.Max(1, missingUpgradeConfirmationSteps);
+
+        if (missingUpgradeConfirmationCount < maxSteps)
+        {
+            UpdateMissingUpgradeConfirmationMessageSimple();
+            AudioManager.Instance?.RefreshUIButtonAudioFeedback();
+            return;
+        }
+
         bool hadStoredState = hasMissingUpgradePreviousState;
         GameManager.GameState storedState = missingUpgradePreviousState;
         CloseMissingUpgradeConfirmation(false);
@@ -570,9 +611,12 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         if (missingUpgradeConfirmationBodyText == null)
             return;
 
-        string message = string.IsNullOrWhiteSpace(missingUpgradeConfirmationMessage)
-            ? "Se voce tentar entrar aqui, seu barco vai queimar. Tem certeza que quer entrar?"
-            : missingUpgradeConfirmationMessage;
+        string configuredMessage = missingUpgradeConfirmationCount <= 0
+            ? missingUpgradeConfirmationMessage
+            : missingUpgradeRepeatConfirmationMessage;
+        string message = string.IsNullOrWhiteSpace(configuredMessage)
+            ? "Tem certeza mesmo? Seu barco vai queimar."
+            : configuredMessage;
 
         missingUpgradeConfirmationBodyText.text = message;
     }

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 public enum DockUpgradePurchaseResult
@@ -20,6 +21,13 @@ public enum DockUpgradeType
 
 public class DockUpgradeSystem : MonoBehaviour
 {
+    private static readonly List<DockUpgradeSystem> instances = new List<DockUpgradeSystem>();
+    private static bool hasSharedUpgradeState;
+    private static int sharedCapacityLevel;
+    private static int sharedBoatSpeedLevel;
+    private static int sharedRodLevel;
+    private static bool sharedHasFireproofBoatUpgrade;
+
     [Header("References")]
     [SerializeField] private ShipInventory shipInventory;
     [SerializeField] private PlayerMoneyManager playerMoneyManager;
@@ -142,7 +150,19 @@ public class DockUpgradeSystem : MonoBehaviour
     private void Awake()
     {
         ResolveReferences();
+        RegisterInstance();
+
+        if (hasSharedUpgradeState)
+            ApplySharedUpgradeState(false);
+        else
+            StoreSharedUpgradeState(capacityLevel, boatSpeedLevel, rodLevel, hasFireproofBoatUpgrade);
+
         ApplyUpgrades();
+    }
+
+    private void OnDestroy()
+    {
+        instances.Remove(this);
     }
 
     private void OnValidate()
@@ -169,7 +189,7 @@ public class DockUpgradeSystem : MonoBehaviour
 
         capacityLevel++;
         ApplyCapacityUpgrade();
-        OnUpgradesChanged?.Invoke();
+        PublishUpgradeState();
 
         _result = DockUpgradePurchaseResult.Purchased;
         return true;
@@ -184,7 +204,7 @@ public class DockUpgradeSystem : MonoBehaviour
 
         boatSpeedLevel++;
         ApplyBoatSpeedUpgrade();
-        OnUpgradesChanged?.Invoke();
+        PublishUpgradeState();
 
         _result = DockUpgradePurchaseResult.Purchased;
         return true;
@@ -199,7 +219,7 @@ public class DockUpgradeSystem : MonoBehaviour
 
         rodLevel++;
         ApplyRodUpgrade();
-        OnUpgradesChanged?.Invoke();
+        PublishUpgradeState();
 
         _result = DockUpgradePurchaseResult.Purchased;
         return true;
@@ -219,7 +239,7 @@ public class DockUpgradeSystem : MonoBehaviour
             return false;
 
         hasFireproofBoatUpgrade = true;
-        OnUpgradesChanged?.Invoke();
+        PublishUpgradeState();
 
         _result = DockUpgradePurchaseResult.Purchased;
         return true;
@@ -235,6 +255,76 @@ public class DockUpgradeSystem : MonoBehaviour
 
     public void SetUpgradeState(int _capacityLevel, int _boatSpeedLevel, int _rodLevel, bool _hasFireproofBoatUpgrade)
     {
+        SetSharedUpgradeState(_capacityLevel, _boatSpeedLevel, _rodLevel, _hasFireproofBoatUpgrade);
+    }
+
+    public static bool TryGetSharedUpgradeState(
+        out int _capacityLevel,
+        out int _boatSpeedLevel,
+        out int _rodLevel,
+        out bool _hasFireproofBoatUpgrade)
+    {
+        _capacityLevel = sharedCapacityLevel;
+        _boatSpeedLevel = sharedBoatSpeedLevel;
+        _rodLevel = sharedRodLevel;
+        _hasFireproofBoatUpgrade = sharedHasFireproofBoatUpgrade;
+        return hasSharedUpgradeState;
+    }
+
+    public static void SetSharedUpgradeState(int _capacityLevel, int _boatSpeedLevel, int _rodLevel, bool _hasFireproofBoatUpgrade)
+    {
+        StoreSharedUpgradeState(_capacityLevel, _boatSpeedLevel, _rodLevel, _hasFireproofBoatUpgrade);
+        ApplySharedUpgradeStateToAll(true);
+    }
+
+    public static void ResetSharedUpgradeState()
+    {
+        SetSharedUpgradeState(0, 0, 0, false);
+    }
+
+    private static void StoreSharedUpgradeState(int _capacityLevel, int _boatSpeedLevel, int _rodLevel, bool _hasFireproofBoatUpgrade)
+    {
+        hasSharedUpgradeState = true;
+        sharedCapacityLevel = Mathf.Max(0, _capacityLevel);
+        sharedBoatSpeedLevel = Mathf.Max(0, _boatSpeedLevel);
+        sharedRodLevel = Mathf.Max(0, _rodLevel);
+        sharedHasFireproofBoatUpgrade = _hasFireproofBoatUpgrade;
+    }
+
+    private static void ApplySharedUpgradeStateToAll(bool _notify)
+    {
+        DockUpgradeSystem[] snapshot = instances.ToArray();
+
+        for (int i = 0; i < snapshot.Length; i++)
+        {
+            DockUpgradeSystem system = snapshot[i];
+
+            if (system != null)
+                system.ApplySharedUpgradeState(_notify);
+        }
+    }
+
+    private void RegisterInstance()
+    {
+        if (!instances.Contains(this))
+            instances.Add(this);
+    }
+
+    private void PublishUpgradeState()
+    {
+        SetSharedUpgradeState(capacityLevel, boatSpeedLevel, rodLevel, hasFireproofBoatUpgrade);
+    }
+
+    private void ApplySharedUpgradeState(bool _notify)
+    {
+        if (!hasSharedUpgradeState)
+            return;
+
+        SetUpgradeStateLocal(sharedCapacityLevel, sharedBoatSpeedLevel, sharedRodLevel, sharedHasFireproofBoatUpgrade, _notify);
+    }
+
+    private void SetUpgradeStateLocal(int _capacityLevel, int _boatSpeedLevel, int _rodLevel, bool _hasFireproofBoatUpgrade, bool _notify)
+    {
         EnsureCapacityTable();
 
         capacityLevel = Mathf.Clamp(_capacityLevel, 0, MaxCapacityLevel);
@@ -243,7 +333,9 @@ public class DockUpgradeSystem : MonoBehaviour
         hasFireproofBoatUpgrade = _hasFireproofBoatUpgrade;
 
         ApplyUpgrades();
-        OnUpgradesChanged?.Invoke();
+
+        if (_notify)
+            OnUpgradesChanged?.Invoke();
     }
 
     private void ResolveReferences()

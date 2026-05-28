@@ -1020,7 +1020,10 @@ public class DockOwnerUI : MonoBehaviour
         };
 
         if (success)
+        {
             PlayPurchaseSfx();
+            GameSaveManager.SaveCurrentGame();
+        }
 
         SetStatus(success ? GetUpgradeSuccessText(_upgradeType) : GetUpgradePurchaseStatusText(result));
         Refresh();

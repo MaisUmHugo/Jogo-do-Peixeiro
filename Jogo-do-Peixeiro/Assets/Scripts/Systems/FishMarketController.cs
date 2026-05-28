@@ -97,6 +97,12 @@ public class FishMarketController : MonoBehaviour, IInteractable
         if (!CanInteract())
             return;
 
+        if (ShouldUseEarlyDockOwnerEdgeDialog())
+        {
+            TryPlayPreOpenDialog();
+            return;
+        }
+
         if (TryPlayPreOpenDialog())
             return;
 
@@ -239,7 +245,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
         if (ShouldUseEarlyDockOwnerEdgeDialog())
         {
-            _shouldOpenMarketAfterDialog = true;
+            _shouldOpenMarketAfterDialog = false;
             return GetEarlyDockOwnerEdgeDialog();
         }
 

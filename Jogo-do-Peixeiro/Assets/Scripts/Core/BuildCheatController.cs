@@ -1165,6 +1165,7 @@ public class BuildCheatController : MonoBehaviour
         }
 
         saveManager.DeleteSave();
+        DockUpgradeSystem.ResetSharedUpgradeState();
 
         if (_resetCampaignStateOnSaveReset)
             CampaignProgressSystem.GetOrCreate()?.StartNewCampaign();

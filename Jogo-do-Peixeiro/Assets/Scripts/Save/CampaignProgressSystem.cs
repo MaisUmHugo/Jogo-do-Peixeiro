@@ -282,6 +282,23 @@ public class CampaignProgressSystem : MonoBehaviour
         CompleteCurrentQuest(_nextQuestDebtPaymentTarget);
     }
 
+    public bool SkipCurrentTutorialQuest()
+    {
+        if (gameMode != GameProgressMode.Campaign || !IsCurrentQuestTutorial || MaxQuestCount < 2)
+            return false;
+
+        currentQuestIndex = Mathf.Clamp(currentQuestIndex + 1, 2, MaxQuestCount);
+        daysElapsedInCurrentQuest = 0;
+        questDebtPaidAmount = 0;
+        hasFailedCurrentQuest = false;
+        isCampaignCompleted = false;
+        ClearSpecialDeliveryInternal();
+        ApplyCurrentQuestDefinition(true);
+        OnQuestAdvanced?.Invoke();
+        NotifyChanged();
+        return true;
+    }
+
     public void RetryCurrentQuest()
     {
         if (!hasFailedCurrentQuest)

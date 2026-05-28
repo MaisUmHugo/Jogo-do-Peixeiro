@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class PlayerInteract : MonoBehaviour
 {
+    private static int interactionLockCount;
+
     [SerializeField] private InteractionUI interactionUI;
     [SerializeField] private Camera playerCamera;
 
@@ -23,6 +25,22 @@ public class PlayerInteract : MonoBehaviour
     private Transform currentPromptPoint;
 
     private readonly List<MonoBehaviour> interactablesInRange = new List<MonoBehaviour>();
+
+    public static bool IsInteractionLocked => interactionLockCount > 0;
+
+    public static void PushInteractionLock()
+    {
+        interactionLockCount++;
+        HideAllInteractionPrompts();
+    }
+
+    public static void PopInteractionLock()
+    {
+        interactionLockCount = Mathf.Max(0, interactionLockCount - 1);
+
+        if (interactionLockCount > 0)
+            HideAllInteractionPrompts();
+    }
 
     private void Start()
     {
@@ -328,6 +346,9 @@ public class PlayerInteract : MonoBehaviour
 
     private bool IsInteractionBlocked()
     {
+        if (IsInteractionLocked)
+            return true;
+
         if (GameManager.instance == null)
             return true;
 
@@ -361,5 +382,16 @@ public class PlayerInteract : MonoBehaviour
 
         if (interactionUI != null)
             interactionUI.Hide();
+    }
+
+    private static void HideAllInteractionPrompts()
+    {
+        InteractionUI[] prompts = FindObjectsByType<InteractionUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+
+        for (int i = 0; i < prompts.Length; i++)
+        {
+            if (prompts[i] != null)
+                prompts[i].Hide();
+        }
     }
 }

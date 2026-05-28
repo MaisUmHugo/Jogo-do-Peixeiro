@@ -14,14 +14,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   minWeight: 7
   maxWeight: 25
-  modelPrefab: {fileID: 7861744045690595816, guid: 5a316107dd24a6a45b2c9e0e71cc48d1, type: 3}
+  modelPrefab: {fileID: 919132149155446097, guid: 8156d1ab90243d14c8e17c93550d1c3e, type: 3}
   modelLocalPosition: {x: 0, y: 0, z: 0}
-  modelLocalEulerAngles: {x: 0, y: 0, z: 15}
-  modelLocalScale: {x: 1, y: 3, z: 3}
+  modelLocalEulerAngles: {x: 0, y: 180, z: 0}
+  modelLocalScale: {x: 100, y: 85, z: 120}
   mesh: {fileID: 0}
-  material: {fileID: 2100000, guid: f6ccf9dd4f3f0d84caf0a073bf088876, type: 2}
-  texture: {fileID: 0}
-  inventoryIcon: {fileID: 0}
+  material: {fileID: 0}
+  texture: {fileID: 2800000, guid: f78be2c8cba2c284c9a5dda98e4b4ea4, type: 3}
+  inventoryIcon: {fileID: 21300000, guid: c0493279ee3538048b48c200de5bf604, type: 3}
   rarity: 3
   basePrice: 68
   spawnWeight: 3

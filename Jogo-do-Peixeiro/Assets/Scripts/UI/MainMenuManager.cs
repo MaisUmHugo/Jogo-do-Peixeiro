@@ -422,6 +422,7 @@ public class MainMenuManager : MonoBehaviour
         saveManager.DeleteSave(selectedMode);
         saveManager.ResetTrackedPlayTime();
         GameSaveManager.ClearLoadRequest();
+        DockUpgradeSystem.ResetSharedUpgradeState();
 
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
 

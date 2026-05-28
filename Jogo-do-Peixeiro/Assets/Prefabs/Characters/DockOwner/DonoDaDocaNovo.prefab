@@ -978,7 +978,7 @@ Transform:
   serializedVersion: 2
   m_LocalRotation: {x: -0, y: -0.7071068, z: -0.7071068, w: 0}
   m_LocalPosition: {x: 0.01713344, y: -1.1800003, z: -7.9142857}
-  m_LocalScale: {x: 1.1428571, y: 1.142857, z: 1.1428573}
+  m_LocalScale: {x: 0.0039999997, y: 0.0039999997, z: 0.004}
   m_ConstrainProportionsScale: 0
   m_Children:
   - {fileID: 6590953709550406693}
@@ -986,7 +986,7 @@ Transform:
   - {fileID: 243902864403827933}
   - {fileID: 5183201787599336033}
   m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: -90, z: 0}
+  m_LocalEulerAnglesHint: {x: -90, y: -180, z: 0}
 --- !u!95 &2374897914898057592
 Animator:
   serializedVersion: 7

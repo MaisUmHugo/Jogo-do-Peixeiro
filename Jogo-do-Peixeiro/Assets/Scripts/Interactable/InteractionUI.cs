@@ -60,6 +60,12 @@ public class InteractionUI : MonoBehaviour
         if (mainCamera == null)
             mainCamera = Camera.main;
 
+        if (PlayerInteract.IsInteractionLocked)
+        {
+            SetButtonVisible(false);
+            return;
+        }
+
         if (GameManager.instance != null &&
             (GameManager.instance.currentState == GameManager.GameState.Fishing ||
              GameManager.instance.IsGameplayBlocked()))
@@ -94,6 +100,12 @@ public class InteractionUI : MonoBehaviour
 
     public void Show(Transform _target, Transform _playerTransform, Transform _promptPoint = null)
     {
+        if (PlayerInteract.IsInteractionLocked)
+        {
+            Hide();
+            return;
+        }
+
         target = _target;
         playerTransform = _playerTransform;
         promptPoint = _promptPoint;

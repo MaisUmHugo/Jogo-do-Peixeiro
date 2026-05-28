@@ -15,6 +15,7 @@ public class Dock : MonoBehaviour, IInteractable
 
     [Header("First Boat Dialog")]
     [SerializeField] private bool playFirstBoatDialog = true;
+    [SerializeField] private bool disableFirstBoatDialogInLavaScene = true;
     [SerializeField] private DialogSequenceAsset firstBoatDialog;
     [SerializeField] private RoteiroDialogLibrary roteiroDialogLibrary;
 
@@ -210,6 +211,9 @@ public class Dock : MonoBehaviour, IInteractable
         if (!playFirstBoatDialog || hasPlayedFirstBoatDialog)
             return false;
 
+        if (disableFirstBoatDialogInLavaScene && IsInLavaScene())
+            return false;
+
         DialogSequenceAsset dialog = ResolveFirstBoatDialog();
 
         if (dialog == null || !dialog.HasLines)
@@ -217,6 +221,13 @@ public class Dock : MonoBehaviour, IInteractable
 
         hasPlayedFirstBoatDialog = true;
         return RoteiroDialogPlayback.TryPlaySequence(new[] { dialog }, () => boat.EnterBoat());
+    }
+
+    private static bool IsInLavaScene()
+    {
+        string sceneName = UnityEngine.SceneManagement.SceneManager.GetActiveScene().name;
+        return !string.IsNullOrWhiteSpace(sceneName) &&
+               sceneName.IndexOf("Lava", System.StringComparison.OrdinalIgnoreCase) >= 0;
     }
 
     private DialogSequenceAsset ResolveFirstBoatDialog()

@@ -3,6 +3,8 @@ using UnityEngine;
 
 public class PlayerAnimationController : MonoBehaviour
 {
+    private static int afkIdleLockCount;
+
     public enum PullDirection
     {
         None = 0,
@@ -15,13 +17,23 @@ public class PlayerAnimationController : MonoBehaviour
     [Header("References")]
     [SerializeField] private Animator _animator;
     [SerializeField] private FishDirectionPull _fishDirectionPull;
+    [SerializeField] private PlayerMove _playerMove;
     [SerializeField] private bool _autoFindAnimator = true;
     [SerializeField] private bool _autoFindDirectionPull = true;
+    [SerializeField] private bool _autoFindPlayerMove = true;
 
     [Header("Movement")]
     [SerializeField, Min(0f)] private float _moveThreshold = 0.1f;
     [SerializeField, Min(0f)] private float _positionMoveResetThreshold = 0.01f;
     [SerializeField, Min(0f)] private float _moveSpeedDampTime = 0.08f;
+
+    [Header("Movement Playback")]
+    [SerializeField] private bool _scaleAnimatorPlaybackWithMoveSpeed = true;
+    [SerializeField, Min(0.01f)] private float _referenceMoveSpeed = 5f;
+    [SerializeField, Min(0.01f)] private float _walkPlaybackSpeedAtReference = 1f;
+    [SerializeField, Min(0.01f)] private float _minWalkPlaybackSpeed = 0.65f;
+    [SerializeField, Min(0.01f)] private float _maxWalkPlaybackSpeed = 1.8f;
+    [SerializeField, Min(0f)] private float _animatorSpeedReturnRate = 12f;
 
     [Header("Movement Visual Hop")]
     [SerializeField] private bool _enableMovementVisualHop;
@@ -35,6 +47,9 @@ public class PlayerAnimationController : MonoBehaviour
     [SerializeField, Min(0f)] private float _movementHopFirstEndFrame = 20f;
     [SerializeField, Min(0f)] private float _movementHopSecondStartFrame = 23f;
     [SerializeField, Min(0f)] private float _movementHopSecondEndFrame = 35f;
+    [SerializeField] private bool _emitMovementStepPulses = true;
+    [SerializeField, Min(0f)] private float _movementStepFirstFrame = 0f;
+    [SerializeField, Min(0f)] private float _movementStepSecondFrame = 23f;
     [SerializeField, Min(0f)] private float _afkIdleStartHopHeight = 0.04f;
     [SerializeField, Min(0f)] private float _afkIdleStartHopDelay = 0.5f;
     [SerializeField, Min(0.01f)] private float _afkIdleStartHopDuration = 0.28f;
@@ -99,18 +114,46 @@ public class PlayerAnimationController : MonoBehaviour
     private float _currentMovementHopOffset;
     private float _afkIdleStartHopDelayTimer;
     private float _afkIdleStartHopTimer;
+    private float _lastMovementStepFrame;
+    private bool _hasLastMovementStepFrame;
+    private float _defaultAnimatorSpeed = 1f;
+    private bool _hasDefaultAnimatorSpeed;
     private Vector3 _lastPosition;
 
     public Vector2 CurrentMoveInput { get; private set; }
     public float CurrentMoveSpeed { get; private set; }
     public bool IsMoving { get; private set; }
     public PullDirection CurrentPullDirection { get; private set; }
+    public float MovementPlaybackSpeed { get; private set; } = 1f;
+    public int MovementStepPulseId { get; private set; }
+    public bool CanSyncStepFeedbackToMovementHop =>
+        _enableMovementVisualHop &&
+        _emitMovementStepPulses &&
+        _useAnimatorTimeForMovementHop &&
+        _animator != null &&
+        _animator.runtimeAnimatorController != null;
+    public static bool IsAfkIdleLocked => afkIdleLockCount > 0;
+
+    public static void PushAfkIdleLock()
+    {
+        afkIdleLockCount++;
+    }
+
+    public static void PopAfkIdleLock()
+    {
+        afkIdleLockCount = Mathf.Max(0, afkIdleLockCount - 1);
+    }
 
     private void OnValidate()
     {
         _moveThreshold = Mathf.Max(0f, _moveThreshold);
         _positionMoveResetThreshold = Mathf.Max(0f, _positionMoveResetThreshold);
         _moveSpeedDampTime = Mathf.Max(0f, _moveSpeedDampTime);
+        _referenceMoveSpeed = Mathf.Max(0.01f, _referenceMoveSpeed);
+        _walkPlaybackSpeedAtReference = Mathf.Max(0.01f, _walkPlaybackSpeedAtReference);
+        _minWalkPlaybackSpeed = Mathf.Max(0.01f, _minWalkPlaybackSpeed);
+        _maxWalkPlaybackSpeed = Mathf.Max(_minWalkPlaybackSpeed, _maxWalkPlaybackSpeed);
+        _animatorSpeedReturnRate = Mathf.Max(0f, _animatorSpeedReturnRate);
         _afkIdleDelay = Mathf.Max(0f, _afkIdleDelay);
         _fishingOffsetSmoothTime = Mathf.Max(0f, _fishingOffsetSmoothTime);
         _fishingOffsetResetThreshold = Mathf.Max(0f, _fishingOffsetResetThreshold);
@@ -123,6 +166,8 @@ public class PlayerAnimationController : MonoBehaviour
         _movementHopFirstEndFrame = Mathf.Max(0f, _movementHopFirstEndFrame);
         _movementHopSecondStartFrame = Mathf.Max(0f, _movementHopSecondStartFrame);
         _movementHopSecondEndFrame = Mathf.Max(0f, _movementHopSecondEndFrame);
+        _movementStepFirstFrame = Mathf.Max(0f, _movementStepFirstFrame);
+        _movementStepSecondFrame = Mathf.Max(0f, _movementStepSecondFrame);
         _afkIdleStartHopHeight = Mathf.Max(0f, _afkIdleStartHopHeight);
         _afkIdleStartHopDelay = Mathf.Max(0f, _afkIdleStartHopDelay);
         _afkIdleStartHopDuration = Mathf.Max(0.01f, _afkIdleStartHopDuration);
@@ -132,12 +177,19 @@ public class PlayerAnimationController : MonoBehaviour
     {
         ResolveReferences();
         CacheAnimatorParameters();
+        CaptureDefaultAnimatorSpeed();
     }
 
     private void OnEnable()
     {
         ResolveReferences();
         CacheAnimatorParameters();
+        CaptureDefaultAnimatorSpeed();
+    }
+
+    private void OnDisable()
+    {
+        RestoreDefaultAnimatorSpeed(true);
     }
 
     private void Update()
@@ -396,10 +448,14 @@ public class PlayerAnimationController : MonoBehaviour
         {
             AnimatorStateInfo stateInfo = _animator.GetCurrentAnimatorStateInfo(0);
             float frame = Mathf.Repeat(stateInfo.normalizedTime, 1f) * _movementHopLoopFrames;
+            UpdateMovementStepPulse(frame);
             return GetWalkFrameHopOffset(frame);
         }
 
-        _movementHopPhase += Time.deltaTime * _movementHopFrequency * Mathf.Lerp(0.8f, 1.2f, CurrentMoveSpeed);
+        _movementHopPhase += Time.deltaTime *
+                             _movementHopFrequency *
+                             Mathf.Lerp(0.8f, 1.2f, CurrentMoveSpeed) *
+                             Mathf.Max(0.01f, MovementPlaybackSpeed);
         return Mathf.Abs(Mathf.Sin(_movementHopPhase)) * _movementHopHeight * CurrentMoveSpeed;
     }
 
@@ -428,6 +484,52 @@ public class PlayerAnimationController : MonoBehaviour
         return Mathf.Sin(normalized * Mathf.PI) * _movementHopHeight;
     }
 
+    private void UpdateMovementStepPulse(float _frame)
+    {
+        if (!_emitMovementStepPulses || !IsMoving)
+        {
+            ResetMovementStepPulseFrame();
+            return;
+        }
+
+        float loopFrames = Mathf.Max(1f, _movementHopLoopFrames);
+        float currentFrame = Mathf.Repeat(_frame, loopFrames);
+
+        if (!_hasLastMovementStepFrame)
+        {
+            _lastMovementStepFrame = currentFrame;
+            _hasLastMovementStepFrame = true;
+            return;
+        }
+
+        bool crossedFirstStep = DidCrossLoopFrame(_lastMovementStepFrame, currentFrame, _movementStepFirstFrame, loopFrames);
+        bool crossedSecondStep = DidCrossLoopFrame(_lastMovementStepFrame, currentFrame, _movementStepSecondFrame, loopFrames);
+
+        if (crossedFirstStep || crossedSecondStep)
+            MovementStepPulseId++;
+
+        _lastMovementStepFrame = currentFrame;
+    }
+
+    private static bool DidCrossLoopFrame(float _previousFrame, float _currentFrame, float _targetFrame, float _loopFrames)
+    {
+        if (Mathf.Approximately(_previousFrame, _currentFrame))
+            return false;
+
+        float targetFrame = Mathf.Repeat(_targetFrame, _loopFrames);
+
+        if (_previousFrame < _currentFrame)
+            return _previousFrame < targetFrame && targetFrame <= _currentFrame;
+
+        return targetFrame > _previousFrame || targetFrame <= _currentFrame;
+    }
+
+    private void ResetMovementStepPulseFrame()
+    {
+        _hasLastMovementStepFrame = false;
+        _lastMovementStepFrame = 0f;
+    }
+
     private void CaptureMovementHopBase(Transform _hopTarget)
     {
         _movementHopParent = _hopTarget.parent;
@@ -441,6 +543,7 @@ public class PlayerAnimationController : MonoBehaviour
         _movementHopParent = null;
         _movementHopPhase = 0f;
         _currentMovementHopOffset = 0f;
+        ResetMovementStepPulseFrame();
         _afkIdleStartHopDelayTimer = 0f;
         _afkIdleStartHopTimer = 0f;
     }
@@ -589,6 +692,38 @@ public class PlayerAnimationController : MonoBehaviour
 
         if (_fishDirectionPull == null && _autoFindDirectionPull)
             _fishDirectionPull = FindFirstObjectByType<FishDirectionPull>(FindObjectsInactive.Include);
+
+        if (_playerMove == null && _autoFindPlayerMove)
+        {
+            _playerMove = GetComponentInParent<PlayerMove>();
+
+            if (_playerMove == null)
+                _playerMove = FindFirstObjectByType<PlayerMove>(FindObjectsInactive.Include);
+        }
+    }
+
+    private void CaptureDefaultAnimatorSpeed()
+    {
+        if (_animator == null || _hasDefaultAnimatorSpeed)
+            return;
+
+        _defaultAnimatorSpeed = Mathf.Max(0.01f, _animator.speed);
+        _hasDefaultAnimatorSpeed = true;
+        MovementPlaybackSpeed = 1f;
+    }
+
+    private void RestoreDefaultAnimatorSpeed(bool _force)
+    {
+        if (_animator == null)
+            return;
+
+        if (!_hasDefaultAnimatorSpeed)
+            CaptureDefaultAnimatorSpeed();
+
+        if (_force || Mathf.Abs(_animator.speed - _defaultAnimatorSpeed) > 0.001f)
+            _animator.speed = _defaultAnimatorSpeed;
+
+        MovementPlaybackSpeed = 1f;
     }
 
     private void CacheAnimatorParameters()
@@ -632,6 +767,7 @@ public class PlayerAnimationController : MonoBehaviour
         SetBool(_isOnBoatParameter, isOnBoat);
         SetBool(_isFishingParameter, isFishing);
         SetBool(_hasFishBittenParameter, hasFishBitten);
+        UpdateAnimatorPlaybackSpeed(isOnFoot);
     }
 
     private bool IsFishingState(GameManager.GameState _state)
@@ -649,13 +785,56 @@ public class PlayerAnimationController : MonoBehaviour
                _hasBoatOffsetBase;
     }
 
+    private void UpdateAnimatorPlaybackSpeed(bool _isOnFoot)
+    {
+        if (!_scaleAnimatorPlaybackWithMoveSpeed || _animator == null)
+        {
+            RestoreDefaultAnimatorSpeed(false);
+            return;
+        }
+
+        CaptureDefaultAnimatorSpeed();
+
+        float targetSpeed = _defaultAnimatorSpeed;
+
+        if (_isOnFoot && IsMoving)
+            targetSpeed = _defaultAnimatorSpeed * GetWalkPlaybackSpeedMultiplier();
+
+        MovementPlaybackSpeed = _defaultAnimatorSpeed > 0f
+            ? targetSpeed / _defaultAnimatorSpeed
+            : targetSpeed;
+
+        if (_animatorSpeedReturnRate <= 0f || IsMoving)
+        {
+            _animator.speed = targetSpeed;
+            return;
+        }
+
+        float followT = 1f - Mathf.Exp(-_animatorSpeedReturnRate * Time.deltaTime);
+        _animator.speed = Mathf.Lerp(_animator.speed, targetSpeed, followT);
+    }
+
+    private float GetWalkPlaybackSpeedMultiplier()
+    {
+        float playerMoveSpeed = _playerMove != null
+            ? _playerMove.MoveSpeed
+            : _referenceMoveSpeed;
+        float speedMultiplier = playerMoveSpeed / Mathf.Max(0.01f, _referenceMoveSpeed);
+        float playbackSpeed = speedMultiplier * _walkPlaybackSpeedAtReference;
+        return Mathf.Clamp(playbackSpeed, _minWalkPlaybackSpeed, _maxWalkPlaybackSpeed);
+    }
+
     private void UpdateMovementState(bool _isOnFoot)
     {
         CurrentMoveInput = _isOnFoot && InputHandler.instance != null
             ? InputHandler.instance.moveInput
             : Vector2.zero;
 
-        CurrentMoveSpeed = Mathf.Clamp01(CurrentMoveInput.magnitude);
+        float inputMoveAmount = Mathf.Clamp01(CurrentMoveInput.magnitude);
+        float controllerMoveAmount = _isOnFoot && _playerMove != null
+            ? Mathf.Clamp01(_playerMove.CurrentMoveAmount)
+            : 0f;
+        CurrentMoveSpeed = Mathf.Max(inputMoveAmount, controllerMoveAmount);
 
         bool hasMoveInput = _isOnFoot && CurrentMoveSpeed > _moveThreshold;
 
@@ -712,7 +891,7 @@ public class PlayerAnimationController : MonoBehaviour
 
     private void UpdateIdleState(bool _isOnFoot)
     {
-        if (!_isOnFoot || IsMoving)
+        if (IsAfkIdleLocked || !_isOnFoot || IsMoving)
         {
             _idleTimer = 0f;
             _isAfkIdleActive = false;

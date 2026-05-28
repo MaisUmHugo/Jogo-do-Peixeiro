@@ -10,6 +10,8 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float rotationSpeed = 10f;
     [SerializeField] private Transform cameraTransform;
+    [SerializeField] private PlayerAnimationController playerAnimationController;
+    [SerializeField] private bool autoFindPlayerAnimationController = true;
 
     [Header("Gravity")]
     [SerializeField] private float gravity = -20f;
@@ -26,6 +28,12 @@ public class PlayerMove : MonoBehaviour
     [SerializeField] private bool useStepVFXPool = true;
     [SerializeField] private string stepVFXPoolKey = "StepVFX";
     [SerializeField, Min(1)] private int stepVFXPoolSize = 10;
+    [SerializeField] private bool syncStepFeedbackToMovementHop = true;
+    [SerializeField] private bool scaleStepIntervalWithMoveSpeed = true;
+    [SerializeField, Min(0.01f)] private float stepIntervalReferenceMoveSpeed = 5f;
+    [SerializeField, Range(0.1f, 1f)] private float minAnalogStepRate = 0.35f;
+    [SerializeField, Range(0.1f, 3f)] private float minStepRate = 0.45f;
+    [SerializeField, Range(0.1f, 4f)] private float maxStepRate = 2.25f;
     [SerializeField, InspectorName("Footstep SFX")] private AudioClip footstepSfx;
     [SerializeField] private AudioSource footstepAudioSource;
     [SerializeField, Range(0f, 1f), InspectorName("Footstep SFX Volume")] private float footstepSfxVolume = 0.7f;
@@ -38,12 +46,31 @@ public class PlayerMove : MonoBehaviour
     private float verticalVelocity;
     private float stepTimer;
     private Transform PlayerPosition;
+    private int lastConsumedMovementStepPulseId;
 
     private readonly List<GameObject> activeStepVFX = new();
+
+    public float MoveSpeed => moveSpeed;
+    public float CurrentPlanarSpeed { get; private set; }
+    public float CurrentMoveAmount { get; private set; }
+    public Vector3 CurrentMoveDirection { get; private set; }
+
+    private void OnValidate()
+    {
+        moveSpeed = Mathf.Max(0f, moveSpeed);
+        rotationSpeed = Mathf.Max(0f, rotationSpeed);
+        stepInterval = Mathf.Max(0.01f, stepInterval);
+        moveThreshold = Mathf.Max(0f, moveThreshold);
+        stepIntervalReferenceMoveSpeed = Mathf.Max(0.01f, stepIntervalReferenceMoveSpeed);
+        minStepRate = Mathf.Max(0.1f, minStepRate);
+        maxStepRate = Mathf.Max(minStepRate, maxStepRate);
+        minAnalogStepRate = Mathf.Clamp(minAnalogStepRate, 0.1f, 1f);
+    }
 
     private void Awake()
     {
         characterController = GetComponent<CharacterController>();
+        ResolvePlayerAnimationController();
         SetupFootstepAudioSource();
         PrepareStepVFXPool();
     }
@@ -71,6 +98,10 @@ public class PlayerMove : MonoBehaviour
 
         if (moveDirection.magnitude > 1f)
             moveDirection.Normalize();
+
+        CurrentMoveDirection = moveDirection;
+        CurrentMoveAmount = Mathf.Clamp01(moveDirection.magnitude);
+        CurrentPlanarSpeed = CurrentMoveAmount * moveSpeed;
 
         if (characterController.isGrounded)
         {
@@ -105,6 +136,10 @@ public class PlayerMove : MonoBehaviour
     {
         verticalVelocity = 0f;
         stepTimer = 0f;
+        CurrentPlanarSpeed = 0f;
+        CurrentMoveAmount = 0f;
+        CurrentMoveDirection = Vector3.zero;
+        lastConsumedMovementStepPulseId = 0;
 
         if (CanUseCurrentPositionAsSafeRespawn())
             SetSafeRespawnPosition(transform.position);
@@ -134,6 +169,9 @@ public class PlayerMove : MonoBehaviour
         Vector3 spawnPosition = GetStepFeedbackPosition(_moveDirection);
         Quaternion spawnRotation = Quaternion.LookRotation(_moveDirection.normalized, Vector3.up);
 
+        if (TryPlaySyncedStepFeedback(spawnPosition, spawnRotation))
+            return;
+
         stepTimer -= Time.deltaTime;
 
         if (stepTimer > 0f)
@@ -141,7 +179,30 @@ public class PlayerMove : MonoBehaviour
 
         PlayStepFeedback(spawnPosition, spawnRotation);
 
-        stepTimer = stepInterval;
+        stepTimer = GetEffectiveStepInterval(_moveDirection);
+    }
+
+    private bool TryPlaySyncedStepFeedback(Vector3 _position, Quaternion _rotation)
+    {
+        if (!syncStepFeedbackToMovementHop)
+            return false;
+
+        ResolvePlayerAnimationController();
+
+        if (playerAnimationController == null ||
+            !playerAnimationController.CanSyncStepFeedbackToMovementHop)
+        {
+            return false;
+        }
+
+        int pulseId = playerAnimationController.MovementStepPulseId;
+
+        if (pulseId == lastConsumedMovementStepPulseId)
+            return true;
+
+        lastConsumedMovementStepPulseId = pulseId;
+        PlayStepFeedback(_position, _rotation);
+        return true;
     }
 
     private void PlayStepFeedback(Vector3 position, Quaternion rotation)
@@ -239,6 +300,30 @@ public class PlayerMove : MonoBehaviour
             useStepVFXPool,
             true
         );
+    }
+
+    private void ResolvePlayerAnimationController()
+    {
+        if (playerAnimationController != null || !autoFindPlayerAnimationController)
+            return;
+
+        playerAnimationController = GetComponentInChildren<PlayerAnimationController>(true);
+
+        if (playerAnimationController == null)
+            playerAnimationController = GetComponentInParent<PlayerAnimationController>();
+    }
+
+    private float GetEffectiveStepInterval(Vector3 _moveDirection)
+    {
+        if (!scaleStepIntervalWithMoveSpeed)
+            return stepInterval;
+
+        float stepRate = moveSpeed / Mathf.Max(0.01f, stepIntervalReferenceMoveSpeed);
+        float analogRate = Mathf.Lerp(minAnalogStepRate, 1f, Mathf.Clamp01(_moveDirection.magnitude));
+        stepRate *= analogRate;
+        stepRate = Mathf.Clamp(stepRate, minStepRate, maxStepRate);
+
+        return stepInterval / stepRate;
     }
 
     private Vector3 GetStepFeedbackPosition(Vector3 _moveDirection)

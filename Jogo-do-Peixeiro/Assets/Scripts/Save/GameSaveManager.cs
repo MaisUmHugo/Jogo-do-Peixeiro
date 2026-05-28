@@ -270,7 +270,7 @@ public class GameSaveManager : MonoBehaviour
         PlayerMoneyManager moneyManager = FindFirstObjectByType<PlayerMoneyManager>();
         DebtSystem debtSystem = DebtSystem.GetOrCreate();
         MoneyLender moneyLender = FindFirstObjectByType<MoneyLender>();
-        DockUpgradeSystem dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>();
+        DockUpgradeSystem dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>(FindObjectsInactive.Include);
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
@@ -301,7 +301,6 @@ public class GameSaveManager : MonoBehaviour
         PlayerMoneyManager moneyManager = FindFirstObjectByType<PlayerMoneyManager>();
         DebtSystem debtSystem = DebtSystem.GetOrCreate();
         MoneyLender moneyLender = FindFirstObjectByType<MoneyLender>();
-        DockUpgradeSystem dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>();
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
@@ -316,13 +315,15 @@ public class GameSaveManager : MonoBehaviour
         if (moneyLender != null)
             moneyLender.SetPaymentCycle(_data.moneyLenderTimesPaid, _data.moneyLenderDebtPaymentPaidAmount);
 
-        if (dockUpgradeSystem != null && _data.upgrades != null)
-            dockUpgradeSystem.SetUpgradeState(
+        if (_data.upgrades != null)
+        {
+            DockUpgradeSystem.SetSharedUpgradeState(
                 _data.upgrades.capacityLevel,
                 _data.upgrades.boatSpeedLevel,
                 _data.upgrades.rodLevel,
                 _data.upgrades.hasFireproofBoatUpgrade
             );
+        }
 
         if (dayCycle != null && _data.dayCycle != null)
             dayCycle.SetCycleState(
@@ -400,6 +401,21 @@ public class GameSaveManager : MonoBehaviour
 
     private DockUpgradeSaveData CaptureUpgradeData(DockUpgradeSystem _dockUpgradeSystem)
     {
+        if (DockUpgradeSystem.TryGetSharedUpgradeState(
+                out int sharedCapacityLevel,
+                out int sharedBoatSpeedLevel,
+                out int sharedRodLevel,
+                out bool sharedHasFireproofBoatUpgrade))
+        {
+            return new DockUpgradeSaveData
+            {
+                capacityLevel = sharedCapacityLevel,
+                boatSpeedLevel = sharedBoatSpeedLevel,
+                rodLevel = sharedRodLevel,
+                hasFireproofBoatUpgrade = sharedHasFireproofBoatUpgrade
+            };
+        }
+
         if (_dockUpgradeSystem == null)
             return new DockUpgradeSaveData();
 

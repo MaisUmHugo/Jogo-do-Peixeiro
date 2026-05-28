@@ -9,6 +9,8 @@ public class TutorialUI : MonoBehaviour
     [SerializeField] private TMP_Text objectiveTitleText;
     [SerializeField] private DayCycle dayCycle;
     [SerializeField] private bool useDayCycleTextColors = true;
+    [SerializeField] private bool hideObjectiveWhenNoQuestGuidance = true;
+    [SerializeField] private bool clearObjectiveWhenAutoHidden = true;
 
     private bool isDayCycleSubscribed;
 
@@ -17,6 +19,7 @@ public class TutorialUI : MonoBehaviour
         ResolveReferences();
         SubscribeDayCycleVisuals();
         ApplyObjectiveColors();
+        HideObjectiveIfSceneHasNoQuestGuidance();
     }
 
     private void OnDisable()
@@ -59,6 +62,23 @@ public class TutorialUI : MonoBehaviour
 
         if (dayCycle == null)
             dayCycle = FindFirstObjectByType<DayCycle>();
+    }
+
+    private void HideObjectiveIfSceneHasNoQuestGuidance()
+    {
+        if (!hideObjectiveWhenNoQuestGuidance)
+            return;
+
+        CampaignQuestGuidanceController questGuidance =
+            FindFirstObjectByType<CampaignQuestGuidanceController>(FindObjectsInactive.Include);
+
+        if (questGuidance != null)
+            return;
+
+        if (clearObjectiveWhenAutoHidden)
+            ClearObjectiveText();
+
+        SetObjectiveVisible(false);
     }
 
     private void SubscribeDayCycleVisuals()

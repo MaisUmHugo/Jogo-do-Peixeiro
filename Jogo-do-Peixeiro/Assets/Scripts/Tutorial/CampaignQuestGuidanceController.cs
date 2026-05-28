@@ -142,6 +142,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     private bool hasCompletedOpeningIntroFlow;
     private Coroutine tutorialTimelineRoutine;
     private Coroutine pendingOpeningHudHideRoutine;
+    private int specialDialogGuidanceHideDepth;
+    private bool keepTutorialGuidanceHidden;
 
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
@@ -159,6 +161,14 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     public bool IsTutorialEnabled => runTutorial;
     public bool IsTutorialRunning => runTutorial && !IsTutorialFinished && !IsTutorialFailed;
     public bool IsHandlingPayment => IsTutorialRunning && handleMoneyLenderDuringTutorial && hasAcceptedRequest;
+
+    public void HideTutorialGuidanceForCampaignFinal()
+    {
+        keepTutorialGuidanceHidden = true;
+        specialDialogGuidanceHideDepth = 0;
+        SetObjectiveVisible(false);
+        ClearMarkers();
+    }
 
     public static void ClearTutorialSlidesCompletedFlag()
     {
@@ -299,6 +309,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
         }
 
+        if (ShouldDisableTutorialForCurrentCampaignState())
+        {
+            DebugDisableTutorial();
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
+            return;
+        }
+
         if (IsCampaignEconomyFlowActive())
         {
             PrepareOpeningTutorialRequest();
@@ -396,6 +413,19 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         HideNonTutorialHudsForOpeningTutorial();
         SetStep(TutorialStep.GoToMoneyLenderCabin);
         return true;
+    }
+
+    private bool ShouldDisableTutorialForCurrentCampaignState()
+    {
+        if (!useCampaignEconomyFlow)
+            return false;
+
+        if (campaignProgress == null)
+            campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        return campaignProgress != null &&
+               campaignProgress.GameMode == GameProgressMode.Campaign &&
+               !campaignProgress.IsCurrentQuestTutorial;
     }
 
     public void NotifyReachedMoneyLenderCabin()
@@ -624,8 +654,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         ResolveTutorialDialogFlow();
         hasPlayedBoatBeforeIntroEdgeDialog = true;
 
-        if (tutorialDialogFlow == null || !tutorialDialogFlow.PlayBoatBeforeIntroEdgeDialog(_continueBoatEntry))
-            _continueBoatEntry?.Invoke();
+        if (tutorialDialogFlow != null)
+            tutorialDialogFlow.PlayBoatBeforeIntroEdgeDialog(null);
 
         return true;
     }
@@ -642,9 +672,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         return IsTutorialRunning &&
                IsCampaignEconomyFlowActive() &&
-               currentStep == TutorialStep.GoToMoneyLenderCabin &&
-               !HasCompletedMoneyLenderIntroFlow() &&
-               !HasPlayedBoatBeforeIntroEdgeDialog();
+               (currentStep == TutorialStep.GoToMoneyLenderCabin ||
+                currentStep == TutorialStep.TalkToDockOwner);
     }
 
     private bool HasCompletedMoneyLenderIntroFlow()
@@ -910,9 +939,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
         }
 
-        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayMoneyLenderIntro(CompleteMoneyLenderIntroFlow))
+        Action onFinished = WrapSpecialDialogGuidanceCallback(CompleteMoneyLenderIntroFlow, false);
+        BeginSpecialDialogGuidanceHide(false);
+
+        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayMoneyLenderIntro(onFinished))
             return;
 
+        EndSpecialDialogGuidanceHide();
         CompleteMoneyLenderIntroFlow();
     }
 
@@ -927,9 +960,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         ResolveTutorialDialogFlow();
 
-        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayOpeningIntro(_onFinished))
+        Action onFinished = WrapSpecialDialogGuidanceCallback(_onFinished, false);
+        BeginSpecialDialogGuidanceHide(false);
+
+        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayOpeningIntro(onFinished))
             return;
 
+        EndSpecialDialogGuidanceHide();
         _onFinished?.Invoke();
     }
 
@@ -943,9 +980,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         ResolveTutorialDialogFlow();
 
-        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayMoneyLenderIntro(_onFinished))
+        Action onFinished = WrapSpecialDialogGuidanceCallback(_onFinished, false);
+        BeginSpecialDialogGuidanceHide(false);
+
+        if (tutorialDialogFlow != null && tutorialDialogFlow.PlayMoneyLenderIntro(onFinished))
             return;
 
+        EndSpecialDialogGuidanceHide();
         _onFinished?.Invoke();
     }
 
@@ -999,11 +1040,25 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (_fadeBeforeDialogFallback && isActiveAndEnabled)
         {
-            tutorialTimelineRoutine = StartCoroutine(PlayRoteiroDialogFallbackWithFadeRoutine(_selectFallbackDialogs, _onFinished));
+            BeginSpecialDialogGuidanceHide(false);
+            tutorialTimelineRoutine = StartCoroutine(PlayRoteiroDialogFallbackWithFadeRoutine(
+                _selectFallbackDialogs,
+                WrapSpecialDialogGuidanceCallback(_onFinished, false)));
             return true;
         }
 
-        return RoteiroDialogPlayback.TryPlayFromLibrary(roteiroDialogLibrary, _selectFallbackDialogs, _onFinished);
+        BeginSpecialDialogGuidanceHide(false);
+
+        if (RoteiroDialogPlayback.TryPlayFromLibrary(
+                roteiroDialogLibrary,
+                _selectFallbackDialogs,
+                WrapSpecialDialogGuidanceCallback(_onFinished, false)))
+        {
+            return true;
+        }
+
+        EndSpecialDialogGuidanceHide();
+        return false;
     }
 
     private IEnumerator PlayRoteiroDialogFallbackWithFadeRoutine(
@@ -1588,7 +1643,11 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
         }
 
-        textCanvaManager.InitializeDialog(GetFormattedDialog(_dialogData), _onFinished, _cameraFocusTarget);
+        BeginSpecialDialogGuidanceHide(false);
+        textCanvaManager.InitializeDialog(
+            GetFormattedDialog(_dialogData),
+            WrapSpecialDialogGuidanceCallback(_onFinished, false),
+            _cameraFocusTarget);
     }
 
     private void PlayRoteiroDialogAsset(DialogSequenceAsset _dialog, Action _onFinished = null)
@@ -1607,7 +1666,59 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
         }
 
-        player.Play(_dialog, null, _onFinished);
+        BeginSpecialDialogGuidanceHide(false);
+        player.Play(_dialog, null, WrapSpecialDialogGuidanceCallback(_onFinished, false));
+    }
+
+    private void BeginSpecialDialogGuidanceHide(bool _keepHiddenAfterDialog)
+    {
+        if (_keepHiddenAfterDialog)
+            keepTutorialGuidanceHidden = true;
+
+        specialDialogGuidanceHideDepth++;
+        SetObjectiveVisible(false);
+        ClearMarkers();
+    }
+
+    private Action WrapSpecialDialogGuidanceCallback(Action _onFinished, bool _keepHiddenAfterDialog)
+    {
+        return () =>
+        {
+            if (_keepHiddenAfterDialog)
+                keepTutorialGuidanceHidden = true;
+
+            EndSpecialDialogGuidanceHide();
+            _onFinished?.Invoke();
+        };
+    }
+
+    private void EndSpecialDialogGuidanceHide()
+    {
+        if (specialDialogGuidanceHideDepth > 0)
+            specialDialogGuidanceHideDepth--;
+
+        if (ShouldSuppressTutorialGuidanceForSpecialDialog())
+            return;
+
+        RestoreTutorialGuidanceForCurrentStep();
+    }
+
+    private void RestoreTutorialGuidanceForCurrentStep()
+    {
+        if (!IsTutorialRunning)
+        {
+            SetObjectiveVisible(false);
+            ClearMarkers();
+            return;
+        }
+
+        UpdateObjectiveText();
+        UpdateMarkers();
+    }
+
+    private bool ShouldSuppressTutorialGuidanceForSpecialDialog()
+    {
+        return keepTutorialGuidanceHidden || specialDialogGuidanceHideDepth > 0;
     }
 
     private RoteiroDialogLibrary GetRoteiroDialogLibrary()
@@ -1946,12 +2057,18 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void SetMarkerActive(GameObject _marker, bool _active)
     {
+        if (_active && ShouldSuppressTutorialGuidanceForSpecialDialog())
+            _active = false;
+
         if (_marker != null)
             _marker.SetActive(_active);
     }
 
     private void SetObjectiveVisible(bool _visible)
     {
+        if (_visible && ShouldSuppressTutorialGuidanceForSpecialDialog())
+            _visible = false;
+
         if (_visible && IsTutorialFinished)
             _visible = false;
 

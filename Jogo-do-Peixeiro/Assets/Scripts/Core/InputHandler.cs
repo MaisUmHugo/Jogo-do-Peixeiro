@@ -12,6 +12,7 @@ public class InputHandler : MonoBehaviour
     public Vector2 lookInput { get; private set; }
     public float zoomInput { get; private set; }
     public bool WasBackInputStartedOverUi { get; private set; }
+    public bool IsInteractHeld => inputActions != null && inputActions.Player.Interact.IsPressed();
 
     public Action onPausePressed;
     public Action onInteractPressed;
