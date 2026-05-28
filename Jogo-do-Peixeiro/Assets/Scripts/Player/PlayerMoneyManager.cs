@@ -28,7 +28,7 @@ public class PlayerMoneyManager : MonoBehaviour
 
         NotifyMoneyChanged();
 
-        Debug.Log($"gastou {_amount} dinheiros e agora é: {playerMoney}");
+        Debug.Log($"gastou {_amount} moedas e agora é: {playerMoney}");
 
         return true;
     }
@@ -40,7 +40,7 @@ public class PlayerMoneyManager : MonoBehaviour
         playerMoney += _amount;
         NotifyMoneyChanged();
 
-        Debug.Log($"recebeu {_amount} dinheiros e agora é: {playerMoney}");
+        Debug.Log($"recebeu {_amount} moedas e agora é: {playerMoney}");
     }
 
     public void ReciveMoney(float _amount)

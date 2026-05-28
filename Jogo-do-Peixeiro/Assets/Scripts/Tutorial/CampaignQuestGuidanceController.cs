@@ -441,12 +441,11 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         if (currentStep == TutorialStep.GoToBoat)
         {
-            ShowBoatAndFishingSlides(() =>
-            {
-                SetStep(IsCampaignEconomyFlowActive() && HasEnoughFishValueForQuestGoal()
-                    ? TutorialStep.GoToDockOwner
-                    : TutorialStep.GoToFishingSpot);
-            });
+            SetStep(IsCampaignEconomyFlowActive() && HasEnoughFishValueForQuestGoal()
+                ? TutorialStep.GoToDockOwner
+                : TutorialStep.GoToFishingSpot);
+
+            ShowBoatAndFishingSlides();
         }
     }
 
@@ -459,7 +458,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             if (hasSoldFishToDockOwner)
             {
-                SetStep(TutorialStep.TalkToMoneyLender);
+                SetStep(TutorialStep.PayDebt);
                 return;
             }
 
@@ -514,7 +513,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             if (hasSoldFishToDockOwner)
             {
-                SetStep(TutorialStep.TalkToMoneyLender);
+                SetStep(TutorialStep.PayDebt);
                 return;
             }
 
@@ -814,9 +813,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             currentStep == TutorialStep.GoToFishingSpot ||
             currentStep == TutorialStep.CatchRequiredFish)
         {
-            SetStep(TutorialStep.TalkToMoneyLender);
+            SetStep(TutorialStep.PayDebt);
             shouldShowDebtPaymentSlidesOnDockOwnerClose = true;
-            ShowWarning("Peixes vendidos. Volte ao cobrador e pague a dívida.");
+            ShowWarning("Peixes vendidos. Pague a dívida ao cobrador.");
             return;
         }
 

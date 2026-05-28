@@ -47,6 +47,7 @@ public class GameOutcomePanelUI : MonoBehaviour
 
     [Header("Scene")]
     [SerializeField] private string mainMenuSceneName = "Main Menu";
+    [SerializeField] private string retrySceneName = "GameLake";
 
     private int modalToken = UIModalManager.InvalidToken;
     private bool areButtonsBound;
@@ -148,7 +149,18 @@ public class GameOutcomePanelUI : MonoBehaviour
         ResetRunToStart();
         CloseImmediate();
         Time.timeScale = 1f;
-        SceneManager.LoadScene(SceneManager.GetActiveScene().name);
+        SceneManager.LoadScene(GetRetrySceneName());
+    }
+
+    private string GetRetrySceneName()
+    {
+        if (!string.IsNullOrWhiteSpace(retrySceneName) &&
+            Application.CanStreamedLevelBeLoaded(retrySceneName))
+        {
+            return retrySceneName;
+        }
+
+        return SceneManager.GetActiveScene().name;
     }
 
     private void ResetRunToStart()

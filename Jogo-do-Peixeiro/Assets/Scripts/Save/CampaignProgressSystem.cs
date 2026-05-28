@@ -274,6 +274,20 @@ public class CampaignProgressSystem : MonoBehaviour
             NotifyChanged();
     }
 
+    public int AddCurrentQuestDebtPenalty(int _amount)
+    {
+        if (!IsQuestRunning())
+            return 0;
+
+        int amount = Mathf.Max(0, _amount);
+        if (amount <= 0)
+            return 0;
+
+        questDebtPaymentTarget += amount;
+        NotifyChanged();
+        return amount;
+    }
+
     public void AdvanceQuest(int _nextQuestDebtPaymentTarget)
     {
         if (!IsQuestRunning())

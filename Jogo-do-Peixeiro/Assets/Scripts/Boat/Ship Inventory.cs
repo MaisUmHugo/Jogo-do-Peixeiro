@@ -278,7 +278,7 @@ public class ShipInventory : MonoBehaviour
         }
 
         ownedFish.Clear();
-        Debug.Log($"dinheiro a receber: {money}");
+        Debug.Log($"moedas a receber: {money}");
         playerMoneyManager?.ReceiveMoney(money);
     }
 

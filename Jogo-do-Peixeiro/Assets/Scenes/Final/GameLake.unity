@@ -748,6 +748,7 @@ MonoBehaviour:
   missingUpgradeConfirmationYesText: Sim
   missingUpgradeConfirmationNoText: "N\xE3o"
   burnedBoatForcedSleepText: Seu barco queimou
+  burnedBoatDebtPenalty: 100
   missingUpgradeConfirmationTitleTMP: {fileID: 3377707739786855876}
   missingUpgradeConfirmationMessageTMP: {fileID: 3377707739786855875}
   missingUpgradeConfirmationYesButtonTMP: {fileID: 0}
@@ -1198,7 +1199,7 @@ PrefabInstance:
       objectReference: {fileID: 145785905}
     - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: useBasicPanelSequence
-      value: 0
+      value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: moneyLenderCabinMarker
@@ -3047,6 +3048,10 @@ PrefabInstance:
       propertyPath: fishingManager
       value: 
       objectReference: {fileID: 225710404}
+    - target: {fileID: 1203199045973645864, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1613492500807038614, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -3079,13 +3084,25 @@ PrefabInstance:
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
       value: 
       objectReference: {fileID: 1927435706}
+    - target: {fileID: 2554601332605478863, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: m_IsActive
+      value: 1
+      objectReference: {fileID: 0}
     - target: {fileID: 2673805791085669636, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: dayCycle
       value: 
       objectReference: {fileID: 1923923833}
+    - target: {fileID: 3250762319552472960, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 3368903250399045688, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_IsActive
       value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 3591186820934780782, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: m_Color.a
+      value: 0.3019608
       objectReference: {fileID: 0}
     - target: {fileID: 4075240077346285317, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -3295,6 +3312,30 @@ PrefabInstance:
       propertyPath: m_AnchorMax.y
       value: 1
       objectReference: {fileID: 0}
+    - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: _continueButton
+      value: 
+      objectReference: {fileID: 1636590919}
+    - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: _slides.Array.data[0].image
+      value: 
+      objectReference: {fileID: 21300000, guid: fbeb6ef95249ec1488c662dd5d2a4c8e, type: 3}
+    - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: _slides.Array.data[2].image
+      value: 
+      objectReference: {fileID: 21300000, guid: b39b4a33025db9c4d92e82cd4d93b444, type: 3}
+    - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: _slides.Array.data[7].image
+      value: 
+      objectReference: {fileID: 21300000, guid: 51e35f6019a964e46be857712f904abd, type: 3}
+    - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: _slides.Array.data[7].title
+      value: "D\xEDvida"
+      objectReference: {fileID: 0}
+    - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: _slides.Array.data[8].image
+      value: 
+      objectReference: {fileID: 21300000, guid: 590295648ebd5834fb81236d6fc3dcb9, type: 3}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects: []
@@ -4038,6 +4079,17 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 40bbec53cdf5eed4f902dd1c4e7aaa6f, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+--- !u!114 &1636590919 stripped
+MonoBehaviour:
+  m_CorrespondingSourceObject: {fileID: 3247238884515447401, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+  m_PrefabInstance: {fileID: 1183211992}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 4e29b1a8efbd4b44bb3f3716e73f07ff, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
 --- !u!1 &1662059379
@@ -6947,11 +6999,11 @@ PrefabInstance:
       objectReference: {fileID: 3950588725189205458}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915923
+      value: -1.8915921
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.393428
+      value: 4.3934274
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

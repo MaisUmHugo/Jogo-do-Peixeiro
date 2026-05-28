@@ -9630,7 +9630,7 @@ MonoBehaviour:
   rodIndicatorSpeedReductionPerLevel: 0.1
   rodSuccessZoneIncreasePerLevel: 0.15
   hasFireproofBoatUpgrade: 0
-  fireproofBoatUpgradeCost: 1000
+  fireproofBoatUpgradeCost: 800
 --- !u!114 &9004000000000000002
 MonoBehaviour:
   m_ObjectHideFlags: 0

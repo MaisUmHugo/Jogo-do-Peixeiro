@@ -52,7 +52,7 @@ public class DockUpgradeSystem : MonoBehaviour
 
     [Header("Special")]
     [SerializeField] private bool hasFireproofBoatUpgrade;
-    [SerializeField, Min(0)] private int fireproofBoatUpgradeCost = 1000;
+    [SerializeField, Min(0)] private int fireproofBoatUpgradeCost = 800;
 
     public event Action OnUpgradesChanged;
 

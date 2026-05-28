@@ -33,6 +33,10 @@ public class FishingManager : MonoBehaviour
     [SerializeField] private float _rarity2ProgressMultiplier = 0.85f;
     [SerializeField] private float _rarity3ProgressMultiplier = 0.7f;
 
+    [Header("Bite Failsafe")]
+    [SerializeField] private bool _useBiteWatchdog = true;
+    [SerializeField, Min(1f)] private float _maxBiteWaitSeconds = 12f;
+
     [Header("Fish Selection")]
     [SerializeField] private bool _avoidRepeatingSameFish = true;
     [SerializeField, Min(1)] private int _maxSameFishInARow = 2;
@@ -66,6 +70,8 @@ public class FishingManager : MonoBehaviour
     private BaitData _activeBait;
     private int _sameFishBiteStreak;
     private int _objectiveFishMissStreak;
+    private bool _isWaitingForBite;
+    private float _biteWaitStartedAt;
     private HiddenPanelState[] _hiddenPanelStates;
     private bool _waitForCatchResultClose;
     private bool _isWaitingForHookReturn;
@@ -104,6 +110,10 @@ public class FishingManager : MonoBehaviour
 
     private void OnDisable()
     {
+        _isWaitingForBite = false;
+        if (_fishBiteHandler != null)
+            _fishBiteHandler.StopWaiting();
+
         _isWaitingForHookReturn = false;
         UnsubscribeCatchResultPanel();
         RestoreConfiguredPanelsAfterFishing();
@@ -115,6 +125,7 @@ public class FishingManager : MonoBehaviour
         _objectiveFishBaseChance = Mathf.Clamp01(_objectiveFishBaseChance);
         _objectiveFishChanceIncreasePerMiss = Mathf.Clamp01(_objectiveFishChanceIncreasePerMiss);
         _objectiveFishGuaranteedAfterMisses = Mathf.Max(0, _objectiveFishGuaranteedAfterMisses);
+        _maxBiteWaitSeconds = Mathf.Max(1f, _maxBiteWaitSeconds);
     }
 
     private void AutoAssignMissingReferences()
@@ -144,8 +155,14 @@ public class FishingManager : MonoBehaviour
 
     private void Update()
     {
-        if (!IsFishing || !HasFishBitten)
+        if (!IsFishing)
             return;
+
+        if (!HasFishBitten)
+        {
+            UpdateBiteWatchdog();
+            return;
+        }
 
         UpdateFishingProgress();
     }
@@ -304,6 +321,9 @@ public class FishingManager : MonoBehaviour
 
     private void StartBiteWaiting()
     {
+        _isWaitingForBite = true;
+        _biteWaitStartedAt = Time.unscaledTime;
+
         if (_fishBiteHandler != null)
         {
             float delayMultiplier = _activeBait != null ? _activeBait.BiteDelayMultiplier : 1f;
@@ -319,10 +339,29 @@ public class FishingManager : MonoBehaviour
         if (!IsFishing)
             return;
 
+        _isWaitingForBite = false;
+
         if (TutorialEvents.TryHandleFishingBiteTutorial(ContinueAfterBiteTutorial))
             return;
 
         ContinueAfterBiteTutorial();
+    }
+
+    private void UpdateBiteWatchdog()
+    {
+        if (!_useBiteWatchdog || !_isWaitingForBite)
+            return;
+
+        if (GameManager.instance != null && GameManager.instance.currentState != GameManager.GameState.Fishing)
+            return;
+
+        if (Time.unscaledTime - _biteWaitStartedAt < _maxBiteWaitSeconds)
+            return;
+
+        Debug.LogWarning("[FishingManager] Mordida forçada pelo failsafe depois de esperar demais.");
+
+        _fishBiteHandler?.StopWaiting();
+        OnFishBite();
     }
 
     private void ContinueAfterBiteTutorial()
@@ -757,6 +796,7 @@ public class FishingManager : MonoBehaviour
         IsFishing = false;
         HasFishBitten = false;
         ProgressNormalized = 0f;
+        _isWaitingForBite = false;
 
         if (_fishBiteHandler != null)
             _fishBiteHandler.StopWaiting();

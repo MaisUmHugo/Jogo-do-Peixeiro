@@ -49,6 +49,7 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
     [SerializeField] private string missingUpgradeConfirmationYesText = "Sim";
     [SerializeField] private string missingUpgradeConfirmationNoText = "Não";
     [SerializeField] private string burnedBoatForcedSleepText = "Seu barco queimou";
+    [SerializeField, Min(0)] private int burnedBoatDebtPenalty = 100;
 
     [Header("Missing Upgrade Confirmation Direct Refs")]
     [SerializeField] private TMP_Text missingUpgradeConfirmationTitleTMP;
@@ -72,6 +73,7 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
     private bool missingUpgradeConfirmationUsesScenePanel;
     private GameManager.GameState missingUpgradePreviousState;
     private bool hasMissingUpgradePreviousState;
+    private int missingUpgradeConfirmationModalToken = UIModalManager.InvalidToken;
 
     private void OnDisable()
     {
@@ -236,6 +238,7 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         missingUpgradeConfirmationCount = 0;
         isShowingMissingUpgradeConfirmation = true;
         LockGameplayForMissingUpgradeConfirmation();
+        PushMissingUpgradeConfirmationModal();
 
         missingUpgradeConfirmationRoot = CreateMissingUpgradeConfirmationPanel();
         UpdateMissingUpgradeConfirmationTitle();
@@ -633,6 +636,9 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     private void CloseMissingUpgradeConfirmation(bool _restoreGameplayState)
     {
+        UIModalManager.MarkBackHandledThisFrame();
+        UIModalManager.PopModal(ref missingUpgradeConfirmationModalToken);
+
         missingUpgradeConfirmationCount = 0;
         isShowingMissingUpgradeConfirmation = false;
         missingUpgradeConfirmationTitleText = null;
@@ -658,6 +664,8 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     private void TriggerMissingUpgradeBurnReset(bool _hadStoredState, GameManager.GameState _storedState)
     {
+        ApplyBurnedBoatDebtPenalty();
+
         ForcedSleepController forcedSleepController = FindFirstObjectByType<ForcedSleepController>(FindObjectsInactive.Include);
         string message = string.IsNullOrWhiteSpace(burnedBoatForcedSleepText)
             ? "Seu barco queimou"
@@ -671,6 +679,37 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
         ShowMissingUpgradeWarning();
         Debug.LogWarning("[SceneTransitionInteractable] Nao foi possivel iniciar o sono forcado do barco queimado.");
+    }
+
+    private void ApplyBurnedBoatDebtPenalty()
+    {
+        int penalty = Mathf.Max(0, burnedBoatDebtPenalty);
+        if (penalty <= 0)
+            return;
+
+        DebtSystem debtSystem = DebtSystem.GetOrCreate();
+        debtSystem?.IncreaseDebt(penalty);
+
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
+        campaignProgress?.AddCurrentQuestDebtPenalty(penalty);
+
+        HUDWarningUI.Instance?.ShowWarning($"Dívida aumentou em {penalty} moedas pelo aluguel de um barco novo.");
+    }
+
+    private void PushMissingUpgradeConfirmationModal()
+    {
+        if (missingUpgradeConfirmationModalToken != UIModalManager.InvalidToken)
+            return;
+
+        UIModalRequest modalRequest = UIModalRequest.Create(
+            this,
+            false,
+            false,
+            true,
+            true,
+            OnMissingUpgradeConfirmNo);
+
+        missingUpgradeConfirmationModalToken = UIModalManager.PushModal(modalRequest);
     }
 
     private void LockGameplayForMissingUpgradeConfirmation()
