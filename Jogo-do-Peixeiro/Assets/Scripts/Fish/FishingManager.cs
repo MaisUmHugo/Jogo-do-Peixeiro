@@ -397,7 +397,12 @@ public class FishingManager : MonoBehaviour
             if (InputHandler.instance != null)
                 input = InputHandler.instance.moveInput;
 
-            progressDelta += _fishDirectionPull.GetProgressModifier(input, ProgressNormalized);
+            float directionPullModifier = _fishDirectionPull.GetProgressModifier(input, ProgressNormalized);
+
+            if (_fishDirectionPull.ShouldDecayProgressWithoutPull)
+                progressDelta = directionPullModifier;
+            else
+                progressDelta += directionPullModifier;
         }
 
         float nextProgress = ProgressNormalized + (progressDelta * Time.deltaTime);
