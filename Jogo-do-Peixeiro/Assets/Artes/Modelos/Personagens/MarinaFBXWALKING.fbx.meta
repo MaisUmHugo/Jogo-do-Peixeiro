@@ -307,7 +307,7 @@ ModelImporter:
       name: Armature|Walking
       takeName: Armature|Walking
       internalID: -4274770991410265338
-      firstFrame: 1
+      firstFrame: 4
       lastFrame: 40
       wrapMode: 0
       orientationOffsetY: 0
