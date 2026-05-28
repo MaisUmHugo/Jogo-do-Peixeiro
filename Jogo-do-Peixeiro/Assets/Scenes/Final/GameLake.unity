@@ -773,8 +773,8 @@ BoxCollider:
   m_ProvidesContacts: 0
   m_Enabled: 1
   serializedVersion: 3
-  m_Size: {x: 1, y: 1, z: 1}
-  m_Center: {x: 0, y: 0, z: 0}
+  m_Size: {x: 1, y: 0.6549352, z: 1}
+  m_Center: {x: 0, y: -0.17253093, z: -3.9846484e-16}
 --- !u!23 &169309574
 MeshRenderer:
   m_ObjectHideFlags: 0
@@ -7000,11 +7000,11 @@ PrefabInstance:
       objectReference: {fileID: 3950588725189205458}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915923
+      value: -1.8915921
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.393428
+      value: 4.3934274
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
