@@ -4748,7 +4748,7 @@ MonoBehaviour:
   HourText: {fileID: 0}
   moonMaxIntensity: 2
   nightAmbientMultiplier: 1
-  dayDuration: 30
+  dayDuration: 420
   currentTime: 0.25
   Clock: 0
   sunIntensity:
