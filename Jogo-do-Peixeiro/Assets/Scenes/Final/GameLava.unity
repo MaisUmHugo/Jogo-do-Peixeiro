@@ -589,6 +589,7 @@ MonoBehaviour:
   missingUpgradeConfirmationYesText: Sim
   missingUpgradeConfirmationNoText: "N\xE3o"
   burnedBoatForcedSleepText: Seu barco queimou
+  burnedBoatDebtPenalty: 100
   missingUpgradeConfirmationTitleTMP: {fileID: 0}
   missingUpgradeConfirmationMessageTMP: {fileID: 0}
   missingUpgradeConfirmationYesButtonTMP: {fileID: 0}
@@ -3424,7 +3425,7 @@ MonoBehaviour:
   HourText: {fileID: 0}
   moonMaxIntensity: 1.2
   nightAmbientMultiplier: 0.6
-  dayDuration: 420
+  dayDuration: 600
   currentTime: 0.25
   Clock: 0
   sunIntensity:
