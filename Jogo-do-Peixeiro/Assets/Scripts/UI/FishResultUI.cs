@@ -16,6 +16,11 @@ public class FishResultUI : MonoBehaviour
     [SerializeField] private float newFishTintScale = 0.08f;
     [SerializeField, Range(0f, 1f)] private float newFishTintStrength = 0.65f;
     [SerializeField] private TMP_Text resultText;
+    [SerializeField] private TMP_Text descriptionText;
+    [SerializeField] private string emptyDescriptionMessage = "Sem descrição.";
+    [SerializeField] private Vector2 generatedDescriptionOffset = new Vector2(0f, -150f);
+    [SerializeField] private Vector2 generatedDescriptionSize = new Vector2(700f, 260f);
+    [SerializeField] private float generatedDescriptionFontSize = 30f;
 
     [Header("Star Image")]
     [SerializeField] private Transform starImage;
@@ -108,6 +113,9 @@ public class FishResultUI : MonoBehaviour
         newFishTintSpeed = Mathf.Max(0f, newFishTintSpeed);
         newFishTintScale = Mathf.Max(0f, newFishTintScale);
         newFishTintStrength = Mathf.Clamp01(newFishTintStrength);
+        generatedDescriptionFontSize = Mathf.Max(1f, generatedDescriptionFontSize);
+        generatedDescriptionSize.x = Mathf.Max(1f, generatedDescriptionSize.x);
+        generatedDescriptionSize.y = Mathf.Max(1f, generatedDescriptionSize.y);
 
         if (hintMaximumAlpha < hintMinimumAlpha)
             hintMaximumAlpha = hintMinimumAlpha;
@@ -212,6 +220,8 @@ public class FishResultUI : MonoBehaviour
         if (resultText != null)
             resultText.text = $"{_fish.typeOfFish.fishName} - {_fish.weight} kg";
 
+        SetDescriptionText(_fish.typeOfFish);
+
         if (enableSkipCoroutine != null)
             StopCoroutine(enableSkipCoroutine);
 
@@ -232,6 +242,12 @@ public class FishResultUI : MonoBehaviour
     {
         if (resultText == null)
             resultText = FindChildComponentByName<TMP_Text>("ResultText");
+
+        if (descriptionText == null)
+            descriptionText = FindChildComponentByName<TMP_Text>("DescriptionText", "DescricaoText", "FishDescriptionText");
+
+        if (descriptionText == null)
+            CreateDescriptionTextFromResultText();
 
         if (newFishText == null)
         {
@@ -266,21 +282,77 @@ public class FishResultUI : MonoBehaviour
         StoreNewFishTextDefaultState();
     }
 
-    private T FindChildComponentByName<T>(string _childName) where T : Component
+    private T FindChildComponentByName<T>(params string[] _childNames) where T : Component
     {
+        if (_childNames == null || _childNames.Length == 0)
+            return null;
+
         Transform[] children = GetComponentsInChildren<Transform>(true);
 
         for (int i = 0; i < children.Length; i++)
         {
             Transform child = children[i];
 
-            if (child.name != _childName)
-                continue;
+            for (int nameIndex = 0; nameIndex < _childNames.Length; nameIndex++)
+            {
+                string childName = _childNames[nameIndex];
 
-            return child.GetComponent<T>();
+                if (string.IsNullOrWhiteSpace(childName))
+                    continue;
+
+                if (child.name != childName && child.name.Trim() != childName)
+                    continue;
+
+                return child.GetComponent<T>();
+            }
         }
 
         return null;
+    }
+
+    private void CreateDescriptionTextFromResultText()
+    {
+        if (resultText == null || resultText.transform.parent == null)
+            return;
+
+        descriptionText = Instantiate(resultText, resultText.transform.parent);
+        descriptionText.name = "DescriptionText";
+
+        RectTransform resultRect = resultText.rectTransform;
+        RectTransform descriptionRect = descriptionText.rectTransform;
+
+        descriptionRect.SetSiblingIndex(resultRect.GetSiblingIndex() + 1);
+        descriptionRect.anchorMin = resultRect.anchorMin;
+        descriptionRect.anchorMax = resultRect.anchorMax;
+        descriptionRect.pivot = resultRect.pivot;
+        descriptionRect.anchoredPosition = resultRect.anchoredPosition + generatedDescriptionOffset;
+        descriptionRect.sizeDelta = generatedDescriptionSize;
+
+        descriptionText.text = string.Empty;
+        descriptionText.fontSize = generatedDescriptionFontSize;
+        descriptionText.fontSizeMax = generatedDescriptionFontSize;
+        descriptionText.fontSizeMin = Mathf.Min(18f, generatedDescriptionFontSize);
+        descriptionText.enableAutoSizing = true;
+        descriptionText.alignment = TextAlignmentOptions.Top;
+        descriptionText.color = new Color(resultText.color.r, resultText.color.g, resultText.color.b, resultText.color.a * 0.9f);
+        descriptionText.raycastTarget = false;
+        descriptionText.margin = new Vector4(12f, 0f, 12f, 0f);
+    }
+
+    private void SetDescriptionText(FishScriptableObject _fishType)
+    {
+        if (descriptionText == null)
+            return;
+
+        descriptionText.text = GetFishDescription(_fishType);
+    }
+
+    private string GetFishDescription(FishScriptableObject _fishType)
+    {
+        if (_fishType == null || string.IsNullOrWhiteSpace(_fishType.description))
+            return emptyDescriptionMessage;
+
+        return _fishType.description;
     }
 
     private void TrySubscribeInput()

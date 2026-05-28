@@ -31,7 +31,10 @@ public class FishDirectionPull : MonoBehaviour
     [Header("Progress Modifier")]
     [SerializeField] private float _correctPullProgressSpeed = 0.18f;
     [SerializeField] private float _wrongPullProgressPenalty = 0.16f;
-    [SerializeField] private float _noInputProgressPenalty = 0.04f;
+    [SerializeField] private float _noInputProgressPenalty = 0.08f;
+    [SerializeField] private float _rarity1NoInputPenaltyMultiplier = 1f;
+    [SerializeField] private float _rarity2NoInputPenaltyMultiplier = 1.35f;
+    [SerializeField] private float _rarity3NoInputPenaltyMultiplier = 1.8f;
     [FormerlySerializedAs("_minimumCompletionIntensity")]
     [SerializeField, Range(0f, 1f)] private float _minimumPullIntensity = 0.35f;
 
@@ -65,6 +68,7 @@ public class FishDirectionPull : MonoBehaviour
     public Vector2 FishMovementVector => GetDirectionVector(CurrentFishDirection);
     public Vector2 CurrentPullInput { get; private set; }
     public bool ShouldBlockSkillCheck => UseDirectionalPull && IsPullActive && CurrentIntensity > 0f;
+    public bool ShouldDecayProgressWithoutPull => UseDirectionalPull && IsPullActive && !HasPullInput;
 
     private FishForceDirection _currentRequiredDirection;
     private float _directionTimer;
@@ -72,6 +76,7 @@ public class FishDirectionPull : MonoBehaviour
     private float _directionIntervalUpgradeMultiplier = 1f;
     private float _currentPullProgressMultiplier = 1f;
     private float _currentDirectionIntervalMultiplier = 1f;
+    private float _currentNoInputPenaltyMultiplier = 1f;
     private BaitData _currentBait;
     private bool _isPullRunning;
     private float _lastNotifiedTimer = -1f;
@@ -86,6 +91,9 @@ public class FishDirectionPull : MonoBehaviour
         _correctPullProgressSpeed = Mathf.Max(0f, _correctPullProgressSpeed);
         _wrongPullProgressPenalty = Mathf.Max(0f, _wrongPullProgressPenalty);
         _noInputProgressPenalty = Mathf.Max(0f, _noInputProgressPenalty);
+        _rarity1NoInputPenaltyMultiplier = Mathf.Max(0.01f, _rarity1NoInputPenaltyMultiplier);
+        _rarity2NoInputPenaltyMultiplier = Mathf.Max(0.01f, _rarity2NoInputPenaltyMultiplier);
+        _rarity3NoInputPenaltyMultiplier = Mathf.Max(0.01f, _rarity3NoInputPenaltyMultiplier);
         _minimumPullIntensity = Mathf.Clamp01(_minimumPullIntensity);
         _rarity1PullProgressMultiplier = Mathf.Max(0.01f, _rarity1PullProgressMultiplier);
         _rarity2PullProgressMultiplier = Mathf.Max(0.01f, _rarity2PullProgressMultiplier);
@@ -178,7 +186,7 @@ public class FishDirectionPull : MonoBehaviour
         float pullModifier = CurrentIntensity * _currentPullProgressMultiplier * _pullProgressUpgradeMultiplier;
 
         if (!HasPullInput)
-            return -_noInputProgressPenalty * pullModifier;
+            return -_noInputProgressPenalty * pullModifier * _currentNoInputPenaltyMultiplier;
 
         if (IsCorrectPullInput)
             return _correctPullProgressSpeed * pullModifier;
@@ -301,26 +309,31 @@ public class FishDirectionPull : MonoBehaviour
             case 1:
                 _currentPullProgressMultiplier = _rarity1PullProgressMultiplier;
                 _currentDirectionIntervalMultiplier = _rarity1DirectionIntervalMultiplier;
+                _currentNoInputPenaltyMultiplier = _rarity1NoInputPenaltyMultiplier;
                 break;
 
             case 2:
                 _currentPullProgressMultiplier = _rarity2PullProgressMultiplier;
                 _currentDirectionIntervalMultiplier = _rarity2DirectionIntervalMultiplier;
+                _currentNoInputPenaltyMultiplier = _rarity2NoInputPenaltyMultiplier;
                 break;
 
             case 3:
                 _currentPullProgressMultiplier = _rarity3PullProgressMultiplier;
                 _currentDirectionIntervalMultiplier = _rarity3DirectionIntervalMultiplier;
+                _currentNoInputPenaltyMultiplier = _rarity3NoInputPenaltyMultiplier;
                 break;
 
             case 4:
                 _currentPullProgressMultiplier = _rarity3PullProgressMultiplier;
                 _currentDirectionIntervalMultiplier = _rarity3DirectionIntervalMultiplier;
+                _currentNoInputPenaltyMultiplier = _rarity3NoInputPenaltyMultiplier;
                 break;
 
             default:
                 _currentPullProgressMultiplier = _rarity1PullProgressMultiplier;
                 _currentDirectionIntervalMultiplier = _rarity1DirectionIntervalMultiplier;
+                _currentNoInputPenaltyMultiplier = _rarity1NoInputPenaltyMultiplier;
                 break;
         }
 
