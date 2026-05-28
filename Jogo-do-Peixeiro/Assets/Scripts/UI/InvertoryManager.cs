@@ -873,7 +873,7 @@ public class InvertoryManager : MonoBehaviour
             return;
 
         SetDiscardConfirmPanelVisible(true);
-        UISelectionHelper.Select(discardConfirmYesButton, inventoryRoot);
+        UISelectionHelper.Select(GetDiscardConfirmYesButton(), inventoryRoot);
     }
 
     public void OnClickCancelDiscardMode()
@@ -1402,12 +1402,17 @@ public class InvertoryManager : MonoBehaviour
         bool hasFish = shipInventory != null && shipInventory.OwnedFish != null && shipInventory.OwnedFish.Count > 0;
         bool isDiscardFlowActive = isFishTab && isDiscardMode;
         bool showDiscardMode = isDiscardFlowActive && !isDiscardConfirmVisible;
+        bool showDiscardConfirm = isDiscardFlowActive && isDiscardConfirmVisible;
+        bool useConfirmButtonAsYes = UsesConfirmDiscardButtonAsConfirmationYes();
+        bool useCancelButtonAsNo = UsesCancelDiscardButtonAsConfirmationNo();
 
         UpdateTabButtonsState();
         SetButtonVisible(discardModeButton, isFishTab && !isDiscardMode);
-        SetButtonVisible(confirmDiscardButton, showDiscardMode);
-        SetButtonVisible(cancelDiscardButton, showDiscardMode);
-        SetObjectActive(discardModePanel, showDiscardMode);
+        SetButtonVisible(confirmDiscardButton, showDiscardMode || (showDiscardConfirm && useConfirmButtonAsYes));
+        SetButtonVisible(cancelDiscardButton, showDiscardMode || (showDiscardConfirm && useCancelButtonAsNo));
+        SetButtonVisibleIfDistinct(discardConfirmYesButton, confirmDiscardButton, showDiscardConfirm);
+        SetButtonVisibleIfDistinct(discardConfirmNoButton, cancelDiscardButton, showDiscardConfirm);
+        SetObjectActive(discardModePanel, showDiscardMode || (showDiscardConfirm && (useConfirmButtonAsYes || useCancelButtonAsNo)));
 
         if (isFishTab)
         {
@@ -1422,6 +1427,8 @@ public class InvertoryManager : MonoBehaviour
         SetButtonInteractable(discardModeButton, hasFish);
         SetButtonInteractable(confirmDiscardButton, selectedFishIndexes.Count > 0);
         SetButtonInteractable(cancelDiscardButton, true);
+        SetButtonInteractableIfDistinct(discardConfirmYesButton, confirmDiscardButton, selectedFishIndexes.Count > 0);
+        SetButtonInteractableIfDistinct(discardConfirmNoButton, cancelDiscardButton, true);
 
         if (discardConfirmText != null)
             discardConfirmText.text = GetDiscardConfirmText();
@@ -1473,10 +1480,38 @@ public class InvertoryManager : MonoBehaviour
         return _count == 1 ? "peixe" : "peixes";
     }
 
+    private Button GetDiscardConfirmYesButton()
+    {
+        return discardConfirmYesButton != null ? discardConfirmYesButton : confirmDiscardButton;
+    }
+
+    private Button GetDiscardConfirmNoButton()
+    {
+        return discardConfirmNoButton != null ? discardConfirmNoButton : cancelDiscardButton;
+    }
+
+    private bool UsesConfirmDiscardButtonAsConfirmationYes()
+    {
+        return confirmDiscardButton != null && GetDiscardConfirmYesButton() == confirmDiscardButton;
+    }
+
+    private bool UsesCancelDiscardButtonAsConfirmationNo()
+    {
+        return cancelDiscardButton != null && GetDiscardConfirmNoButton() == cancelDiscardButton;
+    }
+
     private void SetButtonVisible(Button _button, bool _visible)
     {
         if (_button != null)
             _button.gameObject.SetActive(_visible);
+    }
+
+    private void SetButtonVisibleIfDistinct(Button _button, Button _sharedButton, bool _visible)
+    {
+        if (_button == null || _button == _sharedButton)
+            return;
+
+        SetButtonVisible(_button, _visible);
     }
 
     private void SetObjectsActive(GameObject[] _targets, bool _active)
@@ -1918,15 +1953,15 @@ public class InvertoryManager : MonoBehaviour
             discardModeButton.onClick.AddListener(OnClickStartDiscardMode);
 
         if (confirmDiscardButton != null)
-            confirmDiscardButton.onClick.AddListener(OnClickConfirmDiscardSelection);
+            confirmDiscardButton.onClick.AddListener(HandleConfirmDiscardButtonClicked);
 
         if (cancelDiscardButton != null)
-            cancelDiscardButton.onClick.AddListener(OnClickCancelDiscardMode);
+            cancelDiscardButton.onClick.AddListener(HandleCancelDiscardButtonClicked);
 
-        if (discardConfirmYesButton != null)
+        if (discardConfirmYesButton != null && discardConfirmYesButton != confirmDiscardButton)
             discardConfirmYesButton.onClick.AddListener(OnClickConfirmDiscard);
 
-        if (discardConfirmNoButton != null)
+        if (discardConfirmNoButton != null && discardConfirmNoButton != cancelDiscardButton)
             discardConfirmNoButton.onClick.AddListener(OnClickCancelDiscardConfirm);
 
         areButtonsBound = true;
@@ -1954,18 +1989,40 @@ public class InvertoryManager : MonoBehaviour
             discardModeButton.onClick.RemoveListener(OnClickStartDiscardMode);
 
         if (confirmDiscardButton != null)
-            confirmDiscardButton.onClick.RemoveListener(OnClickConfirmDiscardSelection);
+            confirmDiscardButton.onClick.RemoveListener(HandleConfirmDiscardButtonClicked);
 
         if (cancelDiscardButton != null)
-            cancelDiscardButton.onClick.RemoveListener(OnClickCancelDiscardMode);
+            cancelDiscardButton.onClick.RemoveListener(HandleCancelDiscardButtonClicked);
 
-        if (discardConfirmYesButton != null)
+        if (discardConfirmYesButton != null && discardConfirmYesButton != confirmDiscardButton)
             discardConfirmYesButton.onClick.RemoveListener(OnClickConfirmDiscard);
 
-        if (discardConfirmNoButton != null)
+        if (discardConfirmNoButton != null && discardConfirmNoButton != cancelDiscardButton)
             discardConfirmNoButton.onClick.RemoveListener(OnClickCancelDiscardConfirm);
 
         areButtonsBound = false;
+    }
+
+    private void HandleConfirmDiscardButtonClicked()
+    {
+        if (isDiscardConfirmVisible)
+        {
+            OnClickConfirmDiscard();
+            return;
+        }
+
+        OnClickConfirmDiscardSelection();
+    }
+
+    private void HandleCancelDiscardButtonClicked()
+    {
+        if (isDiscardConfirmVisible)
+        {
+            OnClickCancelDiscardConfirm();
+            return;
+        }
+
+        OnClickCancelDiscardMode();
     }
 
     private void SetObjectActive(GameObject _target, bool _active)
@@ -1978,6 +2035,14 @@ public class InvertoryManager : MonoBehaviour
     {
         if (_button != null)
             _button.interactable = _interactable;
+    }
+
+    private void SetButtonInteractableIfDistinct(Button _button, Button _sharedButton, bool _interactable)
+    {
+        if (_button == null || _button == _sharedButton)
+            return;
+
+        SetButtonInteractable(_button, _interactable);
     }
 
     private void ConfigureFishSlotNavigation(
@@ -2311,7 +2376,11 @@ public class InvertoryManager : MonoBehaviour
     private Selectable GetFishTabSelectable()
     {
         if (discardConfirmPanel != null && discardConfirmPanel.activeInHierarchy)
-            return UISelectionHelper.IsUsable(discardConfirmYesButton) ? discardConfirmYesButton : discardConfirmNoButton;
+        {
+            Button yesButton = GetDiscardConfirmYesButton();
+            Button noButton = GetDiscardConfirmNoButton();
+            return UISelectionHelper.IsUsable(yesButton) ? yesButton : noButton;
+        }
 
         if (isDiscardMode && discardModePanel != null && discardModePanel.activeInHierarchy)
         {
