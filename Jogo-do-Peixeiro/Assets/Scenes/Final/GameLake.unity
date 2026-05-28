@@ -20,10 +20,10 @@ RenderSettings:
   m_FogDensity: 0.01
   m_LinearFogStart: 0
   m_LinearFogEnd: 300
-  m_AmbientSkyColor: {r: 0.2206301, g: 0.6239698, b: 0.6981132, a: 1}
-  m_AmbientEquatorColor: {r: 0.21635813, g: 0.23371305, b: 0.24528301, a: 1}
+  m_AmbientSkyColor: {r: 0.28475437, g: 0.6735614, b: 0.745283, a: 1}
+  m_AmbientEquatorColor: {r: 0.33673015, g: 0.40339643, b: 0.4433962, a: 1}
   m_AmbientGroundColor: {r: 0.11320752, g: 0.11013703, b: 0.10092557, a: 1}
-  m_AmbientIntensity: 1
+  m_AmbientIntensity: 0.89
   m_AmbientMode: 0
   m_SubtractiveShadowColor: {r: 0, g: 0, b: 0, a: 1}
   m_SkyboxMaterial: {fileID: 2100000, guid: 0e42108a34dc21347867fec79317b225, type: 2}
@@ -93,7 +93,7 @@ LightmapSettings:
     m_ExportTrainingData: 0
     m_TrainingDataDestination: TrainingData
     m_LightProbeSampleCountMultiplier: 4
-  m_LightingDataAsset: {fileID: 112000000, guid: 1abab98a613fe0647b49588d556cbd70, type: 2}
+  m_LightingDataAsset: {fileID: 0}
   m_LightingSettings: {fileID: 4890085278179872738, guid: 928a852dac844d34bb1991a6b9014234, type: 2}
 --- !u!196 &4
 NavMeshSettings:
@@ -975,7 +975,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 11
   m_Type: 1
-  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+  m_Color: {r: 0.7640174, g: 0.83298737, b: 0.9150943, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
@@ -1062,7 +1062,7 @@ Transform:
   m_GameObject: {fileID: 347908996}
   serializedVersion: 2
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalPosition: {x: 300, y: 40, z: 224}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -1122,7 +1122,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 2545378506918787109, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: m_IsActive
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: dayCycle
@@ -1978,6 +1978,8 @@ MonoBehaviour:
     afterDialogCameraYawPitch: {x: 0, y: 18}
     afterDialogCameraBehindPlayerYawOffset: 0
     afterDialogCameraDistance: 0
+  rotatePlayerAfterOpeningDialog: 1
+  openingAfterDialogYawOffset: 0
   moneyLenderDialogPose:
     dialogPoint: {fileID: 115962116}
     afterDialogPoint: {fileID: 1258693041}
@@ -3462,7 +3464,7 @@ PrefabInstance:
     - target: {fileID: 2258002106375864549, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
       propertyPath: boatWaterLoopSfx
       value: 
-      objectReference: {fileID: 8300000, guid: 2e6fe07c29e155f45becd096c4c767f8, type: 3}
+      objectReference: {fileID: 8300000, guid: dedfaadc7a6e79c4ebc2d4a23e0fc272, type: 3}
     - target: {fileID: 7098386901417622287, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.06
@@ -4228,7 +4230,7 @@ Transform:
   m_GameObject: {fileID: 1711858602}
   serializedVersion: 2
   m_LocalRotation: {x: 0.40821788, y: -0.23456968, z: 0.10938163, w: 0.8754261}
-  m_LocalPosition: {x: 0, y: 3, z: 0}
+  m_LocalPosition: {x: -162, y: 181, z: -34}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -4267,7 +4269,7 @@ Light:
   m_Enabled: 1
   serializedVersion: 11
   m_Type: 1
-  m_Color: {r: 1, g: 0.95686275, b: 0.8392157, a: 1}
+  m_Color: {r: 0.8962264, g: 0.7272302, b: 0.26633143, a: 1}
   m_Intensity: 1
   m_Range: 10
   m_SpotAngle: 30
@@ -4744,7 +4746,9 @@ MonoBehaviour:
   sun: {fileID: 1711858605}
   moon: {fileID: 347908997}
   HourText: {fileID: 0}
-  dayDuration: 420
+  moonMaxIntensity: 2
+  nightAmbientMultiplier: 1
+  dayDuration: 30
   currentTime: 0.25
   Clock: 0
   sunIntensity:
@@ -6943,11 +6947,11 @@ PrefabInstance:
       objectReference: {fileID: 3950588725189205458}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915921
+      value: -1.8915923
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.3934274
+      value: 4.393428
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

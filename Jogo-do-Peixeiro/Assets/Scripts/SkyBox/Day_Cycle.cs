@@ -15,6 +15,10 @@ public class DayCycle : MonoBehaviour
     [SerializeField] private Light moon;
     [SerializeField] private TextMeshProUGUI HourText;
 
+    [Header("Moon Lighting")]
+    [SerializeField] private float moonMaxIntensity = 1.2f;
+    [SerializeField] private float nightAmbientMultiplier = 0.6f;
+
     [Header("Tempo")]
     [SerializeField] private float dayDuration = 120f;
     [SerializeField] private float currentTime = 0f;
@@ -46,7 +50,7 @@ public class DayCycle : MonoBehaviour
     [SerializeField, Range(0f, 24f)] private float dayVisualEndHour = 18f;
     [SerializeField] private Color dayPrimaryTextColor = new Color(0.28f, 0.16f, 0.04f, 1f);
     [SerializeField] private Color daySecondaryTextColor = new Color(0.07f, 0.08f, 0.09f, 1f);
-    [SerializeField] private Color nightPrimaryTextColor = new Color(1f, 0.82f, 0.2f, 1f);
+    [SerializeField] private Color nightPrimaryTextColor = new Color(1f, 0.82f, 1f, 1f);
     [SerializeField] private Color nightSecondaryTextColor = Color.white;
 
     [Header("Sono Obrigatório")]
@@ -339,15 +343,28 @@ public class DayCycle : MonoBehaviour
 
         float sunAngle = currentTime * 360f - 180f;
 
-        sun.transform.rotation = Quaternion.Euler(sunAngle, 170f, 0f);
-
         float sunValue = Mathf.Clamp01(sunIntensity.Evaluate(currentTime));
-        sun.intensity = sunValue;
+        bool isDay = sunValue > 0.01f;
+
+        if (sun != null)
+        {
+            sun.transform.rotation = Quaternion.Euler(sunAngle, 170f, 0f);
+            sun.enabled = isDay;
+
+            if (isDay)
+                sun.intensity = sunValue;
+        }
 
         if (moon != null)
         {
             moon.transform.rotation = Quaternion.Euler(sunAngle + 180f, 170f, 0f);
-            moon.intensity = (1f - sunValue) * 0.5f;
+            moon.enabled = !isDay;
+
+            if (!isDay)
+            {
+                float moonValue = 1f - sunValue;
+                moon.intensity = moonValue * moonMaxIntensity;
+            }
         }
     }
 
@@ -361,13 +378,14 @@ public class DayCycle : MonoBehaviour
         Color ground = groundColor.Evaluate(currentTime);
         skyboxMaterial.SetColor("_GroundColor", ground);
 
-        float dynamicExposure = Mathf.Lerp(exposure, 2.0f, 1f - sunIntensity.Evaluate(currentTime));
-        skyboxMaterial.SetFloat("_Exposure", dynamicExposure);
+        float sunValue = Mathf.Clamp01(sunIntensity.Evaluate(currentTime));
+        float dynamicExposure = Mathf.Lerp(exposure, 2.0f, 1f - sunValue);
 
+        skyboxMaterial.SetFloat("_Exposure", dynamicExposure);
         skyboxMaterial.SetFloat("_AtmosphereThickness", atmosphereThickness);
 
         RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-        RenderSettings.ambientLight = sky * 0.3f;
+        RenderSettings.ambientLight = Color.Lerp(sky * nightAmbientMultiplier, sky * 0.3f, sunValue);
 
         DynamicGI.UpdateEnvironment();
     }

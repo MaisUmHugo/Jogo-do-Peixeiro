@@ -794,7 +794,7 @@ PrefabInstance:
     - target: {fileID: 2258002106375864549, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
       propertyPath: boatWaterLoopSfx
       value: 
-      objectReference: {fileID: 8300000, guid: 2e6fe07c29e155f45becd096c4c767f8, type: 3}
+      objectReference: {fileID: 8300000, guid: dedfaadc7a6e79c4ebc2d4a23e0fc272, type: 3}
     - target: {fileID: 7098386901417622287, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 16.470001
@@ -3422,6 +3422,8 @@ MonoBehaviour:
   sun: {fileID: 1711858605}
   moon: {fileID: 0}
   HourText: {fileID: 0}
+  moonMaxIntensity: 1.2
+  nightAmbientMultiplier: 0.6
   dayDuration: 420
   currentTime: 0.25
   Clock: 0
@@ -3662,11 +3664,11 @@ PrefabInstance:
       objectReference: {fileID: 1988757440}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915938
+      value: -1.8915939
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.3934274
+      value: 4.393428
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.z
