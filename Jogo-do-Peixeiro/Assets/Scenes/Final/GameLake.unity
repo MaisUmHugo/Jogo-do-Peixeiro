@@ -3049,10 +3049,6 @@ PrefabInstance:
       propertyPath: fishingManager
       value: 
       objectReference: {fileID: 225710404}
-    - target: {fileID: 1203199045973645864, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
-      propertyPath: m_IsActive
-      value: 0
-      objectReference: {fileID: 0}
     - target: {fileID: 1613492500807038614, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_AnchorMax.x
       value: 0
@@ -3100,10 +3096,6 @@ PrefabInstance:
     - target: {fileID: 3368903250399045688, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_IsActive
       value: 0
-      objectReference: {fileID: 0}
-    - target: {fileID: 3591186820934780782, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
-      propertyPath: m_Color.a
-      value: 0.3019608
       objectReference: {fileID: 0}
     - target: {fileID: 4075240077346285317, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: m_OnClick.m_PersistentCalls.m_Calls.Array.data[0].m_Target
@@ -3398,7 +3390,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 1183211992}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1183212003}
-  m_Enabled: 0
+  m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c84d3fc4a5b2bd94396d3a1406049a1a, type: 3}
   m_Name: 
@@ -7008,11 +7000,11 @@ PrefabInstance:
       objectReference: {fileID: 3950588725189205458}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915921
+      value: -1.8915923
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.3934274
+      value: 4.393428
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
