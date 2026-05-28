@@ -50,7 +50,15 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 69acd70d789997d48a9ffc918cc5ec56, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  _fishDirectionPull: {fileID: 0}
+  _delayWhileDirectionPullActive: 0
   _timingDuration: 2.2
+  _indicatorSpeedMultiplier: 0.65
+  _allowMidSkillCheckDirectionInvert: 1
+  _midSkillCheckDirectionInvertChance: 0.35
+  _midSkillCheckDirectionInvertAt: 0.5
+  _invertedExtraTravelNormalized: 1.05
+  _invertedIndicatorSpeedMultiplier: 1.25
   _maxFails: 3
   _successBonus: 0.18
   _failPenaltyProgress: 0.12
@@ -69,7 +77,9 @@ MonoBehaviour:
   _minPerfectThreshold: 0.08
   _perfectThreshold: 0.15
   _greatThreshold: 0.35
-  _successInputTolerance: 0.05
+  _successZoneSizeMultiplier: 0.45
+  _successHitScale: 0.9
+  _successInputTolerance: 0.03
   _zoneVariationPercent: 0.25
 --- !u!1 &200000
 GameObject:
@@ -326,7 +336,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: b632fe35560e4f3fbfb034cf235558b1, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 87a618b98ba27844e82c56d178220b91, type: 3}
   m_Type: 0
   m_PreserveAspect: 1
   m_FillCenter: 1
@@ -549,7 +559,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: f269a12b54479684c849da29cb95ba05, type: 3}
+  m_Sprite: {fileID: 21300000, guid: 8382ef9a9e810d74eac0bd2219bc47f0, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -761,7 +771,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: 970208adca1d74443a365949aef3847d, type: 3}
+  m_Sprite: {fileID: 21300000, guid: ef9293b87835ce94abb2dbd08081290a, type: 3}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1

@@ -937,6 +937,11 @@ MonoBehaviour:
   slotContent: {fileID: 1669701264856041420}
   slotTemplate: {fileID: 3217165164264043633, guid: d19a0ce804da87f4ba85bdb16791d992, type: 3}
   autoCreateMissingSlots: 1
+  keepSelectionVisibleInScroll: 1
+  fishScrollRect: {fileID: 0}
+  selectionScrollPadding: 24
+  mouseWheelScrollPixels: 140
+  manualScrollSelectionFollowDelay: 0.8
   selectedNameText: {fileID: 203195775444600296}
   selectedPriceText: {fileID: 4891613917496111254}
   selectedWeightText: {fileID: 6580148341544850414}
@@ -4275,6 +4280,7 @@ MonoBehaviour:
   pauseFirstSelected: {fileID: 0}
   confirmFirstSelected: {fileID: 0}
   controlsFirstSelected: {fileID: 0}
+  postResumeFishingInputSuppressTime: 0.15
 --- !u!114 &3881884195701168507
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -4936,9 +4942,17 @@ PrefabInstance:
       value: 0.5
       objectReference: {fileID: 0}
     - target: {fileID: 210003, guid: ec9d4aa4b3f44d7e9e7f56459a15d91b, type: 3}
+      propertyPath: m_Type
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: 210003, guid: ec9d4aa4b3f44d7e9e7f56459a15d91b, type: 3}
       propertyPath: m_Sprite
       value: 
-      objectReference: {fileID: 21300000, guid: cd460b68e1abb3643a3504b5449fac11, type: 3}
+      objectReference: {fileID: 10905, guid: 0000000000000000f000000000000000, type: 0}
+    - target: {fileID: 210003, guid: ec9d4aa4b3f44d7e9e7f56459a15d91b, type: 3}
+      propertyPath: m_PixelsPerUnitMultiplier
+      value: 36
+      objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
     m_AddedGameObjects:
