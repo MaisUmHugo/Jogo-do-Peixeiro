@@ -27,13 +27,16 @@ public class FishMarketController : MonoBehaviour, IInteractable
     [SerializeField] private DialogCameraFocusTarget dialogFocusTarget;
     [SerializeField] private bool autoLoadRoteiroDialogWhenMissing = true;
     [SerializeField] private bool useVolcanoDialogInLavaScene = true;
+    [SerializeField] private bool disableStoryDialogsInEndlessMode = true;
     [SerializeField, Min(0f)] private float dialogCompletionWatchdogDelay = 0.25f;
 
     private bool hasPlayedFirstDialog;
     private bool isWaitingDialogToOpenUi;
     private bool pendingMarkFirstDialogAsPlayed;
+    private bool pendingMarkVolcanoDialogAsPlayed;
     private bool pendingOpenMarketAfterDialog;
     private float dialogWaitStartedAt;
+    private static bool hasPlayedVolcanoDialogThisRun;
     private const string RoteiroDialogLibraryResourcePath = "RoteiroDialogLibrary";
 
     public string PromptText => promptText;
@@ -48,6 +51,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
             dockOwnerUI = FindFirstObjectByType<DockOwnerUI>(FindObjectsInactive.Include);
 
         TryAutoConfigureRoteiroDialog();
+        ApplyRunDialogStateForCurrentScene();
     }
 
     private void Update()
@@ -137,7 +141,11 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
     private bool TryPlayPreOpenDialog()
     {
+        if (ShouldSuppressStoryDialogsForCurrentMode())
+            return false;
+
         TryAutoConfigureRoteiroDialog();
+        ApplyRunDialogStateForCurrentScene();
 
         if (!playDialogBeforeOpeningUi)
             return false;
@@ -160,6 +168,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
         isWaitingDialogToOpenUi = true;
         pendingMarkFirstDialogAsPlayed = shouldMarkFirstDialogAsPlayed;
+        pendingMarkVolcanoDialogAsPlayed = shouldMarkFirstDialogAsPlayed && IsVolcanoDialog(dialog);
         pendingOpenMarketAfterDialog = shouldOpenMarketAfterDialog;
         dialogWaitStartedAt = Time.unscaledTime;
 
@@ -191,14 +200,21 @@ public class FishMarketController : MonoBehaviour, IInteractable
             return;
 
         bool shouldMarkFirstDialogAsPlayed = pendingMarkFirstDialogAsPlayed;
+        bool shouldMarkVolcanoDialogAsPlayed = pendingMarkVolcanoDialogAsPlayed;
         bool shouldOpenMarketAfterDialog = pendingOpenMarketAfterDialog;
 
         isWaitingDialogToOpenUi = false;
         pendingMarkFirstDialogAsPlayed = false;
+        pendingMarkVolcanoDialogAsPlayed = false;
         pendingOpenMarketAfterDialog = false;
 
         if (shouldMarkFirstDialogAsPlayed)
+        {
             hasPlayedFirstDialog = true;
+
+            if (shouldMarkVolcanoDialogAsPlayed)
+                hasPlayedVolcanoDialogThisRun = true;
+        }
 
         if (shouldOpenMarketAfterDialog)
             OpenMarket();
@@ -209,9 +225,13 @@ public class FishMarketController : MonoBehaviour, IInteractable
         if (!autoLoadRoteiroDialogWhenMissing)
             return;
 
+        if (ShouldSuppressStoryDialogsForCurrentMode())
+            return;
+
         if (firstInteractionDialog != null && firstInteractionDialog.HasLines)
         {
             playDialogBeforeOpeningUi = true;
+            ApplyRunDialogStateForCurrentScene();
             return;
         }
 
@@ -220,8 +240,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
         if (library == null)
             return;
 
-        string sceneName = SceneManager.GetActiveScene().name;
-        DialogSequenceAsset dialog = useVolcanoDialogInLavaScene && sceneName.Contains("Lava")
+        DialogSequenceAsset dialog = ShouldUseVolcanoDialogInCurrentScene()
             ? library.DonoDocaVulcao
             : library.DonoDocaPrimeiroEncontro;
 
@@ -236,12 +255,14 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
         firstInteractionDialog = dialog;
         playDialogBeforeOpeningUi = true;
+        ApplyRunDialogStateForCurrentScene();
     }
 
     private DialogSequenceAsset GetDialogToPlay(out bool _shouldMarkFirstDialogAsPlayed, out bool _shouldOpenMarketAfterDialog)
     {
         _shouldMarkFirstDialogAsPlayed = false;
         _shouldOpenMarketAfterDialog = true;
+        ApplyRunDialogStateForCurrentScene();
 
         if (ShouldUseEarlyDockOwnerEdgeDialog())
         {
@@ -269,13 +290,55 @@ public class FishMarketController : MonoBehaviour, IInteractable
         return availableDialogs[Random.Range(0, availableDialogs.Length)];
     }
 
+    public static void ResetRunDialogState()
+    {
+        hasPlayedVolcanoDialogThisRun = false;
+    }
+
+    private void ApplyRunDialogStateForCurrentScene()
+    {
+        if (hasPlayedVolcanoDialogThisRun && IsVolcanoDialog(firstInteractionDialog))
+            hasPlayedFirstDialog = true;
+    }
+
+    private bool ShouldUseVolcanoDialogInCurrentScene()
+    {
+        return useVolcanoDialogInLavaScene &&
+               SceneManager.GetActiveScene().name.Contains("Lava");
+    }
+
+    private bool IsVolcanoDialog(DialogSequenceAsset _dialog)
+    {
+        if (_dialog == null || !ShouldUseVolcanoDialogInCurrentScene())
+            return false;
+
+        RoteiroDialogLibrary library = Resources.Load<RoteiroDialogLibrary>(RoteiroDialogLibraryResourcePath);
+        return library != null && _dialog == library.DonoDocaVulcao;
+    }
+
     private bool ShouldUseEarlyDockOwnerEdgeDialog()
     {
+        if (ShouldSuppressStoryDialogsForCurrentMode())
+            return false;
+
         CampaignQuestGuidanceController guidanceController = CampaignQuestGuidanceController.instance;
 
         return guidanceController != null &&
                guidanceController.isActiveAndEnabled &&
                guidanceController.ShouldUseDockOwnerBeforeIntroEdgeDialog();
+    }
+
+    private bool ShouldSuppressStoryDialogsForCurrentMode()
+    {
+        if (!disableStoryDialogsInEndlessMode)
+            return false;
+
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.Instance;
+
+        if (campaignProgress == null)
+            campaignProgress = FindFirstObjectByType<CampaignProgressSystem>(FindObjectsInactive.Include);
+
+        return campaignProgress != null && campaignProgress.GameMode == GameProgressMode.Endless;
     }
 
     private DialogSequenceAsset GetEarlyDockOwnerEdgeDialog()

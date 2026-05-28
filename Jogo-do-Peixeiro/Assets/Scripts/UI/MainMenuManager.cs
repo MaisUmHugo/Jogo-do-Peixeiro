@@ -427,7 +427,7 @@ public class MainMenuManager : MonoBehaviour
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
 
         if (selectedMode == GameProgressMode.Endless)
-            campaignProgress.StartUnlockedEndlessMode();
+            campaignProgress.StartNewEndlessMode();
         else
             campaignProgress.StartNewCampaign();
 

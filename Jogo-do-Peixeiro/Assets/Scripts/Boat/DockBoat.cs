@@ -211,6 +211,9 @@ public class Dock : MonoBehaviour, IInteractable
         if (!playFirstBoatDialog || hasPlayedFirstBoatDialog)
             return false;
 
+        if (!ShouldPlayFirstBoatDialogForCurrentMode())
+            return false;
+
         if (disableFirstBoatDialogInLavaScene && IsInLavaScene())
             return false;
 
@@ -221,6 +224,18 @@ public class Dock : MonoBehaviour, IInteractable
 
         hasPlayedFirstBoatDialog = true;
         return RoteiroDialogPlayback.TryPlaySequence(new[] { dialog }, () => boat.EnterBoat());
+    }
+
+    private static bool ShouldPlayFirstBoatDialogForCurrentMode()
+    {
+        CampaignProgressSystem campaignProgress = CampaignProgressSystem.Instance;
+
+        if (campaignProgress == null)
+            campaignProgress = FindFirstObjectByType<CampaignProgressSystem>(FindObjectsInactive.Include);
+
+        return campaignProgress == null ||
+               (campaignProgress.GameMode == GameProgressMode.Campaign &&
+                campaignProgress.IsCurrentQuestTutorial);
     }
 
     private static bool IsInLavaScene()

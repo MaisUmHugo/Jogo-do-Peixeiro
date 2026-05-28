@@ -12,7 +12,7 @@ public class ShipInventory : MonoBehaviour
     private float currentFishWeight = 0f;
     private bool wasFullLastUpdate = false;
 
-    public bool IsFull => currentFishWeight >= maxFishCapacity;
+    public bool IsFull => maxFishCapacity > 0f && currentFishWeight >= maxFishCapacity;
 
     public DebugShipInventory debugShipInventory;
 
@@ -61,7 +61,7 @@ public class ShipInventory : MonoBehaviour
         ownedFish.Add(_fish);
         ownedFish = MergeSort(ownedFish.ToArray()).ToList();
         Debug.Log("Added fish: " + _fish.typeOfFish.name + " with price: " + _fish.price);
-        AttFishWeight();
+        AttFishWeight(true);
     }
 
     public bool TryRemoveFish(FishData fish)
@@ -299,18 +299,22 @@ public class ShipInventory : MonoBehaviour
 
     }
 
-    private void AttFishWeight()
+    private void AttFishWeight(bool _showFullWarning = false)
     {
+        bool wasFullBeforeRecalculate = wasFullLastUpdate;
         currentFishWeight = 0f;
 
         foreach (FishData _fish in ownedFish)
         {
+            if (_fish == null)
+                continue;
+
             currentFishWeight += _fish.weight;
         }
 
         bool isFullNow = IsFull;
 
-        if (isFullNow && !wasFullLastUpdate)
+        if (_showFullWarning && isFullNow && !wasFullBeforeRecalculate)
         {
             if (HUDWarningUI.Instance != null)
                 HUDWarningUI.Instance.ShowWarning("Inventário cheio");

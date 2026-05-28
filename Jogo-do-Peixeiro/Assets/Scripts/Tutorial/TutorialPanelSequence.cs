@@ -29,7 +29,16 @@ public class TutorialPanelSequence : MonoBehaviour
     [SerializeField] private bool _advanceWithInteractInput;
     [SerializeField] private bool _advanceWithAnyButton;
     [SerializeField] private string _continueText = "Continuar";
-    [SerializeField] private float _inputDelay = 2f;
+    [SerializeField] private float _inputDelay;
+
+    [Header("Modal")]
+    [SerializeField] private bool _hideHudWhileShowing = true;
+    [SerializeField] private bool _blockPauseWhileShowing = true;
+    [SerializeField] private bool _lockCameraWhileShowing = true;
+    [SerializeField] private bool _lockGameplayWhileShowing = true;
+    [SerializeField] private bool _lockInteractionsWhileShowing = true;
+    [SerializeField] private bool _hideTutorialObjectiveWhileShowing = true;
+    [SerializeField] private bool _keepContinueButtonSelected = true;
 
     private int _currentSlideIndex;
     private int _firstSlideIndex;
@@ -38,6 +47,12 @@ public class TutorialPanelSequence : MonoBehaviour
     private Action _onFinished;
     private bool _isShowing;
     private bool _isContinueButtonVisible;
+    private int _modalToken = UIModalManager.InvalidToken;
+    private GameManager.GameState _previousGameState;
+    private bool _hasGameStateLock;
+    private bool _hasInteractionLock;
+    private TutorialUI[] _hiddenTutorialUis;
+    private bool[] _hiddenTutorialUiWasVisible;
 
     public bool IsShowing => _isShowing;
 
@@ -48,15 +63,21 @@ public class TutorialPanelSequence : MonoBehaviour
 
     private void Awake()
     {
-        ResolveContinueButton();
-        ConfigureContinueButton();
+        EnsureContinueButtonReady();
+        SetContinueButtonVisible(false);
         SetPanelActive(false);
+    }
+
+    private void OnEnable()
+    {
+        EnsureContinueButtonReady();
     }
 
     private void OnDisable()
     {
         UnsubscribeInput();
         SetContinueButtonVisible(false);
+        ReleaseSlideState();
     }
 
     private void Update()
@@ -66,6 +87,8 @@ public class TutorialPanelSequence : MonoBehaviour
 
         if (!_isContinueButtonVisible && Time.unscaledTime >= _canAdvanceTime)
             SetContinueButtonVisible(true);
+
+        KeepContinueButtonSelected();
     }
 
     public void Show(Action _finishedCallback = null)
@@ -75,6 +98,10 @@ public class TutorialPanelSequence : MonoBehaviour
 
     public void ShowRange(int _startIndex, int _count, Action _finishedCallback = null)
     {
+        if (!enabled)
+            enabled = true;
+
+        EnsureContinueButtonReady();
         _onFinished = _finishedCallback;
 
         if (_slides == null || _slides.Length == 0)
@@ -91,8 +118,9 @@ public class TutorialPanelSequence : MonoBehaviour
         _currentSlideIndex = _firstSlideIndex;
         _canAdvanceTime = Time.unscaledTime + _inputDelay;
         SetPanelActive(true);
-        SetContinueButtonVisible(false);
+        PushSlideState();
         RefreshSlide();
+        RefreshContinueButtonAvailability();
         SubscribeInput();
     }
 
@@ -112,8 +140,8 @@ public class TutorialPanelSequence : MonoBehaviour
 
         _currentSlideIndex++;
         _canAdvanceTime = Time.unscaledTime + _inputDelay;
-        SetContinueButtonVisible(false);
         RefreshSlide();
+        RefreshContinueButtonAvailability();
     }
 
     public void Hide()
@@ -123,6 +151,7 @@ public class TutorialPanelSequence : MonoBehaviour
         UnsubscribeInput();
         SetContinueButtonVisible(false);
         SetPanelActive(false);
+        ReleaseSlideState();
     }
 
     private void Finish()
@@ -133,7 +162,113 @@ public class TutorialPanelSequence : MonoBehaviour
         UnsubscribeInput();
         SetContinueButtonVisible(false);
         SetPanelActive(false);
+        ReleaseSlideState();
         callback?.Invoke();
+    }
+
+    private void PushSlideState()
+    {
+        LockGameplayForSlide();
+
+        if (_modalToken == UIModalManager.InvalidToken &&
+            (_hideHudWhileShowing || _blockPauseWhileShowing || _lockCameraWhileShowing))
+        {
+            UIModalRequest request = UIModalRequest.Create(
+                this,
+                false,
+                _hideHudWhileShowing,
+                _blockPauseWhileShowing,
+                _lockCameraWhileShowing);
+
+            _modalToken = UIModalManager.PushModal(request);
+        }
+
+        if (_lockInteractionsWhileShowing && !_hasInteractionLock)
+        {
+            PlayerInteract.PushInteractionLock();
+            _hasInteractionLock = true;
+        }
+
+        HideTutorialObjectivesForSlide();
+    }
+
+    private void ReleaseSlideState()
+    {
+        RestoreTutorialObjectivesAfterSlide();
+
+        if (_hasInteractionLock)
+        {
+            PlayerInteract.PopInteractionLock();
+            _hasInteractionLock = false;
+        }
+
+        if (_modalToken != UIModalManager.InvalidToken)
+            UIModalManager.PopModal(ref _modalToken);
+
+        RestoreGameplayAfterSlide();
+    }
+
+    private void LockGameplayForSlide()
+    {
+        if (!_lockGameplayWhileShowing || _hasGameStateLock || GameManager.instance == null)
+            return;
+
+        _previousGameState = GameManager.instance.currentState;
+        _hasGameStateLock = true;
+        GameManager.instance.SetState(GameManager.GameState.InUI);
+        InputHandler.instance?.ResetGameplayInput();
+    }
+
+    private void RestoreGameplayAfterSlide()
+    {
+        if (!_hasGameStateLock)
+            return;
+
+        InputHandler.instance?.ResetGameplayInput();
+
+        if (GameManager.instance != null && GameManager.instance.currentState == GameManager.GameState.InUI)
+            GameManager.instance.SetState(_previousGameState);
+
+        _hasGameStateLock = false;
+    }
+
+    private void HideTutorialObjectivesForSlide()
+    {
+        if (!_hideTutorialObjectiveWhileShowing || _hiddenTutorialUis != null)
+            return;
+
+        _hiddenTutorialUis = FindObjectsByType<TutorialUI>(FindObjectsInactive.Include, FindObjectsSortMode.None);
+        _hiddenTutorialUiWasVisible = new bool[_hiddenTutorialUis.Length];
+
+        for (int i = 0; i < _hiddenTutorialUis.Length; i++)
+        {
+            TutorialUI tutorialUi = _hiddenTutorialUis[i];
+
+            if (tutorialUi == null)
+                continue;
+
+            _hiddenTutorialUiWasVisible[i] = tutorialUi.IsObjectiveVisible;
+
+            if (_hiddenTutorialUiWasVisible[i])
+                tutorialUi.SetObjectiveVisible(false);
+        }
+    }
+
+    private void RestoreTutorialObjectivesAfterSlide()
+    {
+        if (_hiddenTutorialUis == null || _hiddenTutorialUiWasVisible == null)
+            return;
+
+        int count = Mathf.Min(_hiddenTutorialUis.Length, _hiddenTutorialUiWasVisible.Length);
+
+        for (int i = 0; i < count; i++)
+        {
+            if (_hiddenTutorialUis[i] != null && _hiddenTutorialUiWasVisible[i])
+                _hiddenTutorialUis[i].SetObjectiveVisible(true);
+        }
+
+        _hiddenTutorialUis = null;
+        _hiddenTutorialUiWasVisible = null;
     }
 
     private void RefreshSlide()
@@ -184,12 +319,22 @@ public class TutorialPanelSequence : MonoBehaviour
     private void ResolveContinueButton()
     {
         if (_continueButton != null)
+        {
+            ResolveContinueButtonText();
             return;
+        }
 
         Transform root = _panelRoot != null ? _panelRoot.transform : transform;
         _continueButton = FindContinueButton(root);
+        ResolveContinueButtonText();
+    }
 
-        if (_continueButton != null && _continueButtonText == null)
+    private void ResolveContinueButtonText()
+    {
+        if (_continueButton == null)
+            return;
+
+        if (_continueButtonText == null || !_continueButtonText.transform.IsChildOf(_continueButton.transform))
             _continueButtonText = _continueButton.GetComponentInChildren<TMP_Text>(true);
     }
 
@@ -214,8 +359,10 @@ public class TutorialPanelSequence : MonoBehaviour
         return buttons.Length > 0 ? buttons[0] : null;
     }
 
-    private void ConfigureContinueButton()
+    private void EnsureContinueButtonReady()
     {
+        ResolveContinueButton();
+
         if (_continueButtonText != null)
             _continueButtonText.text = _continueText;
 
@@ -224,7 +371,6 @@ public class TutorialPanelSequence : MonoBehaviour
 
         _continueButton.onClick.RemoveListener(Next);
         _continueButton.onClick.AddListener(Next);
-        SetContinueButtonVisible(false);
     }
 
     private void SetContinueButtonVisible(bool _visible)
@@ -241,6 +387,25 @@ public class TutorialPanelSequence : MonoBehaviour
             _continueButtonText.text = _continueText;
 
         if (_visible)
+            UISelectionHelper.Select(_continueButton, _panelRoot);
+    }
+
+    private void RefreshContinueButtonAvailability()
+    {
+        bool canShowContinueButton = _advanceWithContinueButton && Time.unscaledTime >= _canAdvanceTime;
+        SetContinueButtonVisible(canShowContinueButton);
+    }
+
+    private void KeepContinueButtonSelected()
+    {
+        if (!_keepContinueButtonSelected ||
+            !_isContinueButtonVisible ||
+            !UISelectionHelper.IsUsable(_continueButton))
+        {
+            return;
+        }
+
+        if (UISelectionHelper.CurrentSelectableInScope(_panelRoot) != _continueButton)
             UISelectionHelper.Select(_continueButton, _panelRoot);
     }
 

@@ -14,6 +14,20 @@ public class TutorialUI : MonoBehaviour
 
     private bool isDayCycleSubscribed;
 
+    public bool IsObjectiveVisible
+    {
+        get
+        {
+            if (objectiveRoot != null)
+                return objectiveRoot.activeSelf;
+
+            if (objectiveText != null)
+                return objectiveText.gameObject.activeSelf;
+
+            return false;
+        }
+    }
+
     private void OnEnable()
     {
         ResolveReferences();

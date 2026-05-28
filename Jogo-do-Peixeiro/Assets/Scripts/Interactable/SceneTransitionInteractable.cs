@@ -249,7 +249,7 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
     private GameObject CreateMissingUpgradeConfirmationPanel()
     {
-        if (missingUpgradeConfirmationPanelRoot != null)
+        if (IsUsableCustomMissingUpgradeConfirmationRoot(missingUpgradeConfirmationPanelRoot))
         {
             missingUpgradeConfirmationPanelRoot.SetActive(true);
             missingUpgradeConfirmationUsesScenePanel = true;
@@ -263,7 +263,7 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
             missingUpgradeConfirmationBodyText = null;
         }
 
-        if (missingUpgradeConfirmationPanelPrefab != null)
+        if (IsUsableCustomMissingUpgradeConfirmationPrefab(missingUpgradeConfirmationPanelPrefab))
         {
             GameObject customRoot = Instantiate(missingUpgradeConfirmationPanelPrefab);
 
@@ -276,6 +276,67 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         }
 
         return CreateDefaultMissingUpgradeConfirmationPanel();
+    }
+
+    private bool IsUsableCustomMissingUpgradeConfirmationRoot(GameObject _root)
+    {
+        return _root != null &&
+               IsDedicatedMissingUpgradeConfirmationPanel(_root) &&
+               !LooksLikeGlobalUiRoot(_root);
+    }
+
+    private bool IsUsableCustomMissingUpgradeConfirmationPrefab(GameObject _prefab)
+    {
+        return _prefab != null &&
+               !_prefab.scene.IsValid() &&
+               IsDedicatedMissingUpgradeConfirmationPanel(_prefab) &&
+               !LooksLikeGlobalUiRoot(_prefab);
+    }
+
+    private bool IsDedicatedMissingUpgradeConfirmationPanel(GameObject _root)
+    {
+        if (_root == null)
+            return false;
+
+        string rootName = _root.name;
+
+        return ContainsIgnoreCase(rootName, "Missing") ||
+               ContainsIgnoreCase(rootName, "Fireproof") ||
+               ContainsIgnoreCase(rootName, "Upgrade") ||
+               ContainsIgnoreCase(rootName, "Burn") ||
+               ContainsIgnoreCase(rootName, "Boat") ||
+               ContainsIgnoreCase(rootName, "Barco") ||
+               ContainsIgnoreCase(rootName, "Lava") ||
+               ContainsIgnoreCase(rootName, "Risk") ||
+               ContainsIgnoreCase(rootName, "Risco");
+    }
+
+    private bool LooksLikeGlobalUiRoot(GameObject _root)
+    {
+        if (_root == null)
+            return false;
+
+        return _root.GetComponent<TextCanvaManager>() != null ||
+               _root.GetComponent<PaymentUI>() != null ||
+               _root.GetComponent<InvertoryManager>() != null ||
+               _root.GetComponent<DockOwnerUI>() != null ||
+               _root.GetComponent<UIModalManager>() != null ||
+               NameLooksLikeUnrelatedUiRoot(_root.name);
+    }
+
+    private bool NameLooksLikeUnrelatedUiRoot(string _name)
+    {
+        return ContainsIgnoreCase(_name, "Canvas") ||
+               ContainsIgnoreCase(_name, "Pause") ||
+               ContainsIgnoreCase(_name, "Options") ||
+               ContainsIgnoreCase(_name, "Settings") ||
+               ContainsIgnoreCase(_name, "Config") ||
+               ContainsIgnoreCase(_name, "Controls") ||
+               ContainsIgnoreCase(_name, "Inventory") ||
+               ContainsIgnoreCase(_name, "Payment") ||
+               ContainsIgnoreCase(_name, "Dialog") ||
+               ContainsIgnoreCase(_name, "Tutorial") ||
+               ContainsIgnoreCase(_name, "HUD");
     }
 
     private GameObject CreateDefaultMissingUpgradeConfirmationPanel()
@@ -449,8 +510,7 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
         if (_button == null)
             return;
 
-        _button.onClick.RemoveListener(OnMissingUpgradeConfirmNo);
-        _button.onClick.RemoveListener(OnMissingUpgradeConfirmYes);
+        _button.onClick = new Button.ButtonClickedEvent();
         _button.onClick.AddListener(_onClick);
 
         TMP_Text labelText = _labelTextOverride != null
@@ -646,6 +706,8 @@ public class SceneTransitionInteractable : MonoBehaviour, IInteractable
 
         if (missingUpgradeConfirmationRoot != null)
         {
+            UISelectionHelper.ClearSelection(missingUpgradeConfirmationRoot);
+
             if (missingUpgradeConfirmationUsesScenePanel)
                 missingUpgradeConfirmationRoot.SetActive(false);
             else

@@ -17,6 +17,9 @@ public static class UISelectionHelper
         if (target == null || EventSystem.current == null)
             return;
 
+        if (EventSystem.current.currentSelectedGameObject == target.gameObject)
+            return;
+
         EventSystem.current.SetSelectedGameObject(null);
         EventSystem.current.SetSelectedGameObject(target.gameObject);
     }

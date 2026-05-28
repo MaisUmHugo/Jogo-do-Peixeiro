@@ -847,6 +847,16 @@ public class PaymentUI : MonoBehaviour
         if (tutorialController == null && CampaignQuestGuidanceController.instance != null)
             tutorialController = CampaignQuestGuidanceController.instance;
 
+        if (campaignProgress == null)
+            campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (campaignProgress == null ||
+            campaignProgress.GameMode != GameProgressMode.Campaign ||
+            !campaignProgress.IsCurrentQuestTutorial)
+        {
+            return false;
+        }
+
         return tutorialController != null && tutorialController.ShouldHandleMoneyLenderPayment(moneyLender);
     }
 
@@ -910,7 +920,8 @@ public class PaymentUI : MonoBehaviour
     {
         return campaignProgress != null &&
                !campaignProgress.IsCampaignCompleted &&
-               campaignProgress.CurrentQuestRequiresSpecialDelivery;
+               campaignProgress.CurrentQuestRequiresSpecialDelivery &&
+               campaignProgress.SpecialDeliveryQuantity > 0;
     }
 
     private string GetFishDisplayName(FishScriptableObject _fish)

@@ -206,6 +206,7 @@ public class CampaignProgressSystem : MonoBehaviour
 
     public void StartNewCampaign()
     {
+        CampaignQuestGuidanceController.ClearTutorialProgressFlags();
         gameMode = GameProgressMode.Campaign;
         endlessUnlocked = false;
         hasUnlockedFreePlay = false;
@@ -228,10 +229,26 @@ public class CampaignProgressSystem : MonoBehaviour
         hasFailedCurrentQuest = false;
         isCampaignCompleted = false;
         hasUnlockedFreePlay = true;
-        currentQuestIndex = Mathf.Max(MaxQuestCount + 1, currentQuestIndex);
+        currentQuestIndex = Mathf.Max(1, currentQuestIndex);
         ApplyEndlessQuestDefinition(true);
         NotifyChanged();
         return true;
+    }
+
+    public void StartNewEndlessMode()
+    {
+        endlessUnlocked = true;
+        hasUnlockedFreePlay = true;
+        gameMode = GameProgressMode.Endless;
+        isCampaignCompleted = false;
+        hasFailedCurrentQuest = false;
+        currentQuestIndex = 1;
+        daysElapsedInCurrentQuest = 0;
+        questDebtPaidAmount = 0;
+        endlessDeliveriesWithoutSpecialRequest = 0;
+        ClearSpecialDeliveryInternal();
+        ApplyEndlessQuestDefinition(true);
+        NotifyChanged();
     }
 
     public void StartUnlockedEndlessMode()
@@ -241,7 +258,7 @@ public class CampaignProgressSystem : MonoBehaviour
         gameMode = GameProgressMode.Endless;
         isCampaignCompleted = false;
         hasFailedCurrentQuest = false;
-        currentQuestIndex = Mathf.Max(MaxQuestCount + 1, currentQuestIndex + 1);
+        currentQuestIndex = Mathf.Max(GetFirstEndlessQuestIndex(), currentQuestIndex + 1);
         daysElapsedInCurrentQuest = 0;
         questDebtPaidAmount = 0;
         endlessDeliveriesWithoutSpecialRequest = 0;
@@ -463,6 +480,7 @@ public class CampaignProgressSystem : MonoBehaviour
         endlessDeliveriesWithoutSpecialRequest = _data.endlessDeliveriesWithoutSpecialRequest;
 
         ClampState();
+
         RestoreSpecialDeliveryStateFromSave();
         NotifyChanged();
     }
@@ -699,7 +717,28 @@ public class CampaignProgressSystem : MonoBehaviour
     {
         if (gameMode == GameProgressMode.Endless)
         {
-            isSpecialMoneyLenderDeliveryActive = specialDeliveryFish != null && specialDeliveryQuantity > 0;
+            if (isSpecialMoneyLenderDeliveryActive || specialDeliveryQuantity > 0 || specialDeliveryDebtReduction > 0)
+            {
+                if (specialDeliveryFish == null || specialDeliveryQuantity <= 0)
+                {
+                    SetSpecialDeliveryInternal(
+                        specialDeliveryFish,
+                        Mathf.Max(1, specialDeliveryQuantity),
+                        specialDeliveryRequiredWeight,
+                        0,
+                        specialDeliveryDebtReduction
+                    );
+                }
+                else
+                {
+                    isSpecialMoneyLenderDeliveryActive = true;
+                }
+            }
+            else
+            {
+                ClearSpecialDeliveryInternal();
+            }
+
             return;
         }
 
@@ -941,6 +980,11 @@ public class CampaignProgressSystem : MonoBehaviour
         endlessSpecialDeliveryMinRarity = Mathf.Clamp(endlessSpecialDeliveryMinRarity, 1, 3);
         endlessSpecialDeliveryMaxRarity = Mathf.Clamp(endlessSpecialDeliveryMaxRarity, 1, 3);
         endlessDeliveriesWithoutSpecialRequest = Mathf.Max(0, endlessDeliveriesWithoutSpecialRequest);
+    }
+
+    private int GetFirstEndlessQuestIndex()
+    {
+        return Mathf.Max(1, MaxQuestCount + 1);
     }
 
     private static CampaignQuestDefinition[] CreateDefaultQuestDefinitions()

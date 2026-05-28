@@ -10,6 +10,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     public static CampaignQuestGuidanceController instance;
     private const string TutorialSlidesCompletedKey = "Peixeiro_TutorialSlidesCompleted";
+    private const string TutorialFlowStartedKey = "Peixeiro_TutorialFlowStarted";
 
     public enum TutorialStep
     {
@@ -72,6 +73,14 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     [Header("Opening HUD")]
     [SerializeField] private bool hideNonTutorialHudsUntilMoneyLenderIntro = true;
+
+    [Header("Endless Entry Presentation")]
+    [SerializeField] private bool playFadeInOnEndlessEntry = true;
+    [SerializeField, Min(0f)] private float endlessEntryFadeInDuration = 1.5f;
+    [SerializeField, Min(0f)] private float endlessEntryFadeInDelay = 0.25f;
+    [SerializeField] private bool rotatePlayerOnEndlessEntry = true;
+    [SerializeField] private Vector3 endlessEntryPlayerEulerAngles = new Vector3(0f, -180f, 0f);
+    [SerializeField, Min(0)] private int endlessEntrySettleFrames = 2;
 
     [Header("Mission")]
     [SerializeField] private FishingAreaDefinition tutorialFishingArea;
@@ -142,8 +151,10 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     private bool hasCompletedOpeningIntroFlow;
     private Coroutine tutorialTimelineRoutine;
     private Coroutine pendingOpeningHudHideRoutine;
+    private Coroutine endlessEntryPresentationRoutine;
     private int specialDialogGuidanceHideDepth;
     private bool keepTutorialGuidanceHidden;
+    private bool hasPlayedEndlessEntryPresentation;
 
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
@@ -162,6 +173,16 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     public bool IsTutorialRunning => runTutorial && !IsTutorialFinished && !IsTutorialFailed;
     public bool IsHandlingPayment => IsTutorialRunning && handleMoneyLenderDuringTutorial && hasAcceptedRequest;
 
+    public void PushSpecialDialogGuidanceHide(bool _keepHiddenAfterDialog = false)
+    {
+        BeginSpecialDialogGuidanceHide(_keepHiddenAfterDialog);
+    }
+
+    public void PopSpecialDialogGuidanceHide()
+    {
+        EndSpecialDialogGuidanceHide();
+    }
+
     public void HideTutorialGuidanceForCampaignFinal()
     {
         keepTutorialGuidanceHidden = true;
@@ -173,6 +194,19 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     public static void ClearTutorialSlidesCompletedFlag()
     {
         PlayerPrefs.DeleteKey(TutorialSlidesCompletedKey);
+        PlayerPrefs.Save();
+    }
+
+    public static void ClearTutorialFlowStartedFlag()
+    {
+        PlayerPrefs.DeleteKey(TutorialFlowStartedKey);
+        PlayerPrefs.Save();
+    }
+
+    public static void ClearTutorialProgressFlags()
+    {
+        PlayerPrefs.DeleteKey(TutorialSlidesCompletedKey);
+        PlayerPrefs.DeleteKey(TutorialFlowStartedKey);
         PlayerPrefs.Save();
     }
 
@@ -278,6 +312,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             pendingOpeningHudHideRoutine = null;
         }
 
+        if (endlessEntryPresentationRoutine != null)
+        {
+            StopCoroutine(endlessEntryPresentationRoutine);
+            endlessEntryPresentationRoutine = null;
+        }
+
         TutorialEvents.MoneyLenderInteractionRequested -= HandleMoneyLenderInteraction;
         TutorialEvents.BoatEntryBlockRequested -= ShouldBlockBoatEntry;
         TutorialEvents.BoatEntryRequested -= HandleBoatEntryRequested;
@@ -306,6 +346,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             ClearMarkers();
             SetObjectiveVisible(false);
             ShowNonTutorialHudsAfterMoneyLenderIntro();
+            TryPlayEndlessEntryPresentation();
             return;
         }
 
@@ -313,10 +354,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         {
             DebugDisableTutorial();
             ShowNonTutorialHudsAfterMoneyLenderIntro();
+            TryPlayEndlessEntryPresentation();
             return;
         }
-
-        ClearTutorialSlideCompletionForFreshTutorialQuest();
 
         if (IsCampaignEconomyFlowActive())
         {
@@ -338,6 +378,90 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         if (isShowingEndPanel)
             KeepEndPanelUiReady();
+    }
+
+    #endregion
+
+    #region Endless Entry Presentation
+
+    private void TryPlayEndlessEntryPresentation()
+    {
+        if (!ShouldPlayEndlessEntryPresentation())
+            return;
+
+        hasPlayedEndlessEntryPresentation = true;
+
+        if (endlessEntryPresentationRoutine != null)
+            StopCoroutine(endlessEntryPresentationRoutine);
+
+        endlessEntryPresentationRoutine = StartCoroutine(PlayEndlessEntryPresentationRoutine());
+    }
+
+    private bool ShouldPlayEndlessEntryPresentation()
+    {
+        if (hasPlayedEndlessEntryPresentation)
+            return false;
+
+        if (!playFadeInOnEndlessEntry && !rotatePlayerOnEndlessEntry)
+            return false;
+
+        if (SceneTransitionRequest.TryGetPendingArrivalId(out _))
+            return false;
+
+        if (campaignProgress == null)
+            campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        return campaignProgress != null &&
+               campaignProgress.GameMode == GameProgressMode.Endless;
+    }
+
+    private IEnumerator PlayEndlessEntryPresentationRoutine()
+    {
+        if (playFadeInOnEndlessEntry)
+            SceneTransitionFadeController.SetBlackImmediate();
+
+        int settleFrames = Mathf.Max(0, endlessEntrySettleFrames);
+        for (int i = 0; i < settleFrames; i++)
+            yield return null;
+
+        if (rotatePlayerOnEndlessEntry)
+            ApplyEndlessEntryPlayerRotation();
+
+        if (playFadeInOnEndlessEntry)
+        {
+            yield return SceneTransitionFadeController.FadeInAndWait(
+                endlessEntryFadeInDuration,
+                endlessEntryFadeInDelay);
+        }
+
+        endlessEntryPresentationRoutine = null;
+    }
+
+    private void ApplyEndlessEntryPlayerRotation()
+    {
+        Transform playerTransform = ResolvePlayerTransform();
+
+        if (playerTransform == null)
+            return;
+
+        playerTransform.rotation = Quaternion.Euler(endlessEntryPlayerEulerAngles);
+
+        PlayerMove playerMove = playerTransform.GetComponent<PlayerMove>();
+        if (playerMove != null)
+            playerMove.ResetMovementState();
+
+        InputHandler.instance?.ResetGameplayInput();
+        Physics.SyncTransforms();
+    }
+
+    private Transform ResolvePlayerTransform()
+    {
+        PlayerController playerController = FindFirstObjectByType<PlayerController>(FindObjectsInactive.Include);
+        if (playerController != null)
+            return playerController.transform;
+
+        PlayerMove playerMove = FindFirstObjectByType<PlayerMove>(FindObjectsInactive.Include);
+        return playerMove != null ? playerMove.transform : null;
     }
 
     #endregion
@@ -426,8 +550,11 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             campaignProgress = CampaignProgressSystem.GetOrCreate();
 
         return campaignProgress != null &&
-               campaignProgress.GameMode == GameProgressMode.Campaign &&
-               !campaignProgress.IsCurrentQuestTutorial;
+               (campaignProgress.GameMode != GameProgressMode.Campaign ||
+                !campaignProgress.IsCurrentQuestTutorial ||
+                campaignProgress.CurrentQuestIndex != 1 ||
+                campaignProgress.HasFailedCurrentQuest ||
+                campaignProgress.IsCampaignCompleted);
     }
 
     public void NotifyReachedMoneyLenderCabin()
@@ -1181,13 +1308,7 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
         ShowDialog(firstTalkDialog, () =>
         {
-            ShowQuestReceivedSlides(() =>
-            {
-                ShowBoatAndFishingSlides(() =>
-                {
-                    FinishDeliveryRequestIntro(_moneyLender, _paymentUI, _moneyLenderUI);
-                });
-            });
+            ShowQuestReceivedSlides(() => FinishDeliveryRequestIntro(_moneyLender, _paymentUI, _moneyLenderUI));
         }, GetDialogFocusTarget(_moneyLender));
     }
 
@@ -1426,13 +1547,13 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void ShowIntroSlides(Action _onFinished = null)
     {
-        TutorialPanelSequence sequence = introPanelSequence != null
-            ? introPanelSequence
-            : ShouldUseBasicPanelSequence()
-                ? basicPanelSequence
-                : null;
+        if (introPanelSequence == null && basicPanelSequence == null)
+        {
+            _onFinished?.Invoke();
+            return;
+        }
 
-        ShowTutorialPanelOnce(sequence, ref hasShownIntroSlides, _onFinished, 0, 2);
+        ShowTutorialPanelOnce(introPanelSequence, ref hasShownIntroSlides, _onFinished, 0, 2);
     }
 
     private void ShowQuestReceivedSlides(Action _onFinished = null)
@@ -1442,11 +1563,21 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void ShowBoatAndFishingSlides(Action _onFinished = null)
     {
-        ShowTutorialPanelOnce(boatAndFishingPanelSequence, ref hasShownBoatAndFishingSlides, _onFinished, 4, 1);
+        ShowTutorialPanelOnce(boatAndFishingPanelSequence, ref hasShownBoatAndFishingSlides, () =>
+        {
+            hasShownFishingSlides = true;
+            _onFinished?.Invoke();
+        }, 4, 3);
     }
 
     private void ShowFishingSlides(Action _onFinished = null)
     {
+        if (hasShownFishingSlides)
+        {
+            _onFinished?.Invoke();
+            return;
+        }
+
         ShowTutorialPanelOnce(fishingPanelSequence, ref hasShownFishingSlides, _onFinished, 5, 2);
     }
 
@@ -1508,6 +1639,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         if (!skipTutorialSlidePanelsAfterFirstCompletion)
             return;
 
+        if (HasStartedTutorialFlowBefore())
+            return;
+
         if (campaignProgress == null)
             campaignProgress = CampaignProgressSystem.GetOrCreate();
 
@@ -1532,6 +1666,20 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
 
         PlayerPrefs.SetInt(TutorialSlidesCompletedKey, 1);
+        PlayerPrefs.Save();
+    }
+
+    private static bool HasStartedTutorialFlowBefore()
+    {
+        return PlayerPrefs.GetInt(TutorialFlowStartedKey, 0) == 1;
+    }
+
+    private static void MarkTutorialFlowStarted()
+    {
+        if (HasStartedTutorialFlowBefore())
+            return;
+
+        PlayerPrefs.SetInt(TutorialFlowStartedKey, 1);
         PlayerPrefs.Save();
     }
 

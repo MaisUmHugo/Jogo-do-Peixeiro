@@ -91,6 +91,7 @@ public class CampaignTutorialDialogFlow : MonoBehaviour
     private TutorialDialogPoseContext activeDialogPoseContext = TutorialDialogPoseContext.None;
     private bool hasPlayerAfkIdleLock;
     private bool hasInteractionLock;
+    private bool hasTutorialGuidanceHide;
     private DialogSequencePlayer dialogPlayer;
     private TextCanvaManager textCanvaManager;
 
@@ -743,6 +744,7 @@ public class CampaignTutorialDialogFlow : MonoBehaviour
         ResolveReferences();
         PushPlayerAfkIdleLock();
         PushInteractionLock();
+        PushTutorialGuidanceHide();
         activeCompletion = _onFinished;
         activeFlowStartedAt = Time.unscaledTime;
         activeDialogPoseContext = _poseContext;
@@ -762,6 +764,7 @@ public class CampaignTutorialDialogFlow : MonoBehaviour
         EndScriptedDialogCameraPose(false);
         PopPlayerAfkIdleLock();
         PopInteractionLock();
+        PopTutorialGuidanceHide();
         activeCompletion = null;
         activeDialogPoseContext = TutorialDialogPoseContext.None;
         isActiveFlow = false;
@@ -801,6 +804,26 @@ public class CampaignTutorialDialogFlow : MonoBehaviour
 
         PlayerInteract.PopInteractionLock();
         hasInteractionLock = false;
+    }
+
+    private void PushTutorialGuidanceHide()
+    {
+        if (hasTutorialGuidanceHide || CampaignQuestGuidanceController.instance == null)
+            return;
+
+        CampaignQuestGuidanceController.instance.PushSpecialDialogGuidanceHide(false);
+        hasTutorialGuidanceHide = true;
+    }
+
+    private void PopTutorialGuidanceHide()
+    {
+        if (!hasTutorialGuidanceHide)
+            return;
+
+        if (CampaignQuestGuidanceController.instance != null)
+            CampaignQuestGuidanceController.instance.PopSpecialDialogGuidanceHide();
+
+        hasTutorialGuidanceHide = false;
     }
 
     private void StopDialogPosePlayModePreview(TutorialDialogPoseContext _poseContext)
