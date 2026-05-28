@@ -246,9 +246,16 @@ public class TutorialPanelSequence : MonoBehaviour
 
     private void SetPanelActive(bool _active)
     {
+        if (_active && !gameObject.activeSelf)
+            gameObject.SetActive(true);
+
         if (_panelRoot != null)
+        {
             _panelRoot.SetActive(_active);
-        else
+            return;
+        }
+
+        if (gameObject.activeSelf != _active)
             gameObject.SetActive(_active);
     }
 }

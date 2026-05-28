@@ -38,6 +38,9 @@ public class TutorialUI : MonoBehaviour
 
     public void SetObjectiveVisible(bool _visible)
     {
+        if (_visible && !gameObject.activeSelf)
+            gameObject.SetActive(true);
+
         if (objectiveRoot != null)
             objectiveRoot.SetActive(_visible);
 

@@ -316,6 +316,8 @@ public class CampaignQuestGuidanceController : MonoBehaviour
             return;
         }
 
+        ClearTutorialSlideCompletionForFreshTutorialQuest();
+
         if (IsCampaignEconomyFlowActive())
         {
             PrepareOpeningTutorialRequest();
@@ -1499,6 +1501,29 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     {
         return skipTutorialSlidePanelsAfterFirstCompletion &&
                PlayerPrefs.GetInt(TutorialSlidesCompletedKey, 0) == 1;
+    }
+
+    private void ClearTutorialSlideCompletionForFreshTutorialQuest()
+    {
+        if (!skipTutorialSlidePanelsAfterFirstCompletion)
+            return;
+
+        if (campaignProgress == null)
+            campaignProgress = CampaignProgressSystem.GetOrCreate();
+
+        if (campaignProgress == null ||
+            campaignProgress.GameMode != GameProgressMode.Campaign ||
+            !campaignProgress.IsCurrentQuestTutorial ||
+            campaignProgress.CurrentQuestIndex != 1 ||
+            campaignProgress.DaysElapsedInCurrentQuest > 0 ||
+            campaignProgress.QuestDebtPaidAmount > 0 ||
+            campaignProgress.HasFailedCurrentQuest ||
+            campaignProgress.IsCampaignCompleted)
+        {
+            return;
+        }
+
+        ClearTutorialSlidesCompletedFlag();
     }
 
     private void MarkTutorialSlidesCompleted()
