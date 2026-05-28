@@ -16,8 +16,8 @@ MonoBehaviour:
   maxWeight: 12
   modelPrefab: {fileID: 919132149155446097, guid: a9ca364742bf8594980b621f2a785e89, type: 3}
   modelLocalPosition: {x: 0, y: 0, z: 0}
-  modelLocalEulerAngles: {x: 0, y: -180, z: -192.3}
-  modelLocalScale: {x: 1, y: 1, z: 1}
+  modelLocalEulerAngles: {x: 0, y: -180, z: 0}
+  modelLocalScale: {x: 120, y: 120, z: 190}
   mesh: {fileID: 0}
   material: {fileID: 0}
   texture: {fileID: 2800000, guid: 55036cb0422df6e4faf17abe53934d69, type: 3}
