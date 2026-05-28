@@ -1195,12 +1195,16 @@ PrefabInstance:
       objectReference: {fileID: 145785905}
     - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: useBasicPanelSequence
-      value: 1
+      value: 0
       objectReference: {fileID: 0}
     - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: moneyLenderCabinMarker
       value: 
       objectReference: {fileID: 277382933}
+    - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
+      propertyPath: showTutorialSlidePanels
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 4775038723742840378, guid: d5b08c043e9ca0b4dadcfef2ce79446a, type: 3}
       propertyPath: tutorialFailedFirstSelected
       value: 
@@ -3309,6 +3313,10 @@ PrefabInstance:
       value: 1
       objectReference: {fileID: 0}
     - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
+      propertyPath: m_Enabled
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 9112653362904031962, guid: 35efc5d0806f5074199e4b2f7da03132, type: 3}
       propertyPath: _continueButton
       value: 
       objectReference: {fileID: 1636590919}
@@ -3381,7 +3389,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 1183211992}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1183212003}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: c84d3fc4a5b2bd94396d3a1406049a1a, type: 3}
   m_Name: 
@@ -6929,6 +6937,10 @@ PrefabInstance:
       propertyPath: fishDirectionPull
       value: 
       objectReference: {fileID: 1611839940}
+    - target: {fileID: 4395890249471822043, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
+      propertyPath: deepFishPullVFXWaterYOffset
+      value: -1
+      objectReference: {fileID: 0}
     - target: {fileID: 5390182603683277004, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
       value: -1.34
