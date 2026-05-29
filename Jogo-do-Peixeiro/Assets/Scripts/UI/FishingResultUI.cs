@@ -22,6 +22,14 @@ public class FishingResultUI : MonoBehaviour
             _fishResultUI.ShowCatchResult(_fish);
     }
 
+    public void ShowCatchResult(FishData _fish, bool _isNewFish)
+    {
+        ResolveReferences();
+
+        if (_fishResultUI != null)
+            _fishResultUI.ShowCatchResult(_fish, _isNewFish);
+    }
+
     private void ResolveReferences()
     {
         if (_fishResultUI != null)

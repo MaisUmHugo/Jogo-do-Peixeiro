@@ -1,13 +1,10 @@
 using System.Collections;
-using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
 public class FishResultUI : MonoBehaviour
 {
-    private List<FishScriptableObject> fishList = new List<FishScriptableObject>();
-
     [Header("Result Text")]
     [SerializeField] private GameObject newFishText;
     [SerializeField] private TMP_Text newFishTintText;
@@ -163,6 +160,15 @@ public class FishResultUI : MonoBehaviour
 
     public void SetNewFish(FishData _fish)
     {
+        bool isNewFish = _fish != null &&
+                         _fish.typeOfFish != null &&
+                         !FishCaptureHistory.IsDiscovered(_fish.typeOfFish);
+
+        SetNewFish(_fish, isNewFish);
+    }
+
+    public void SetNewFish(FishData _fish, bool _isNewFish)
+    {
         if (_fish == null || _fish.typeOfFish == null)
             return;
 
@@ -177,21 +183,19 @@ public class FishResultUI : MonoBehaviour
         ShowRarityStars(fishRarity);
         ResetFishRotation();
 
-        if (!fishList.Contains(_fish.typeOfFish))
-        {
-
-            fishList.Add(_fish.typeOfFish);
-
-            SetNewFishTextVisible(true);
-
-        }
-        else
-        {
-            SetNewFishTextVisible(false);
-        }
+        SetNewFishTextVisible(_isNewFish);
     }
 
     public void ShowCatchResult(FishData _fish)
+    {
+        bool isNewFish = _fish != null &&
+                         _fish.typeOfFish != null &&
+                         !FishCaptureHistory.IsDiscovered(_fish.typeOfFish);
+
+        ShowCatchResult(_fish, isNewFish);
+    }
+
+    public void ShowCatchResult(FishData _fish, bool _isNewFish)
     {
         if (_fish == null || _fish.typeOfFish == null)
             return;
@@ -210,7 +214,7 @@ public class FishResultUI : MonoBehaviour
         gameObject.SetActive(true);
         ResolveReferences();
         StoreFishPreviewDefaultPose();
-        SetNewFish(_fish);
+        SetNewFish(_fish, _isNewFish);
         UpdateRotateHintText();
         UpdateCloseHintText();
         SetRotateHintVisible(true);

@@ -759,10 +759,10 @@ public class FishingManager : MonoBehaviour
 
         if (addedSuccessfully)
         {
-            FishCaptureHistory.RegisterCatch(_pendingFish.typeOfFish);
+            bool isNewFish = FishCaptureHistory.RegisterCatch(_pendingFish.typeOfFish);
             Debug.Log($"Peixe capturado: {_pendingFish.typeOfFish.fishName} - {_pendingFish.weight}kg");
 
-            bool showedCatchResult = TryShowCatchResult(_pendingFish);
+            bool showedCatchResult = TryShowCatchResult(_pendingFish, isNewFish);
 
             if (!showedCatchResult && HUDFishInfoUI.Instance != null)
             {
@@ -834,7 +834,7 @@ public class FishingManager : MonoBehaviour
         ClearFishingData();
     }
 
-    private bool TryShowCatchResult(FishData _caughtFish)
+    private bool TryShowCatchResult(FishData _caughtFish, bool _isNewFish)
     {
         if (_caughtFish == null || _caughtFish.typeOfFish == null)
             return false;
@@ -845,7 +845,7 @@ public class FishingManager : MonoBehaviour
         {
             _fishResultUI.Closed -= HandleCatchResultClosed;
             _fishResultUI.Closed += HandleCatchResultClosed;
-            _fishResultUI.ShowCatchResult(_caughtFish);
+            _fishResultUI.ShowCatchResult(_caughtFish, _isNewFish);
 
             _waitForCatchResultClose = _fishResultUI.IsShowing && _fishResultUI.gameObject.activeInHierarchy;
 
