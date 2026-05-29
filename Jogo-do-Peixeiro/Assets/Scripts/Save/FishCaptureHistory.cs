@@ -5,17 +5,31 @@ public static class FishCaptureHistory
 {
     private static readonly Dictionary<string, int> captureCounts = new Dictionary<string, int>();
 
-    public static void RegisterCatch(FishScriptableObject _fish)
+    public static bool RegisterCatch(FishScriptableObject _fish)
+    {
+        string fishId = GetFishId(_fish);
+
+        if (string.IsNullOrEmpty(fishId))
+            return false;
+
+        bool wasNewDiscovery = !captureCounts.ContainsKey(fishId);
+        if (!captureCounts.ContainsKey(fishId))
+            captureCounts[fishId] = 0;
+
+        captureCounts[fishId]++;
+        return wasNewDiscovery;
+    }
+
+    public static void EnsureMinimumCaptureCount(FishScriptableObject _fish, int _minimumCount)
     {
         string fishId = GetFishId(_fish);
 
         if (string.IsNullOrEmpty(fishId))
             return;
 
-        if (!captureCounts.ContainsKey(fishId))
-            captureCounts[fishId] = 0;
-
-        captureCounts[fishId]++;
+        int minimumCount = Mathf.Max(0, _minimumCount);
+        if (!captureCounts.TryGetValue(fishId, out int currentCount) || currentCount < minimumCount)
+            captureCounts[fishId] = minimumCount;
     }
 
     public static void RegisterDiscovery(FishScriptableObject _fish)

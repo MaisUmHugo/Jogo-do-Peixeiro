@@ -330,10 +330,13 @@ public class GameSaveManager : MonoBehaviour
         if (campaignProgress != null && _data.campaign != null)
             campaignProgress.ApplySaveData(_data.campaign);
 
-        if (shipInventory != null)
-            shipInventory.ReplaceFish(RestoreShipFishData(_data.shipFish));
+        List<FishData> restoredShipFish = RestoreShipFishData(_data.shipFish);
 
         FishCaptureHistory.ApplySaveData(_data.fishCaptureHistory);
+        BackfillFishCaptureHistoryFromShipFish(restoredShipFish);
+
+        if (shipInventory != null)
+            shipInventory.ReplaceFish(restoredShipFish);
 
         if (baitInventory != null)
             baitInventory.ReplaceBaits(RestoreBaitData(_data.baits), BaitSaveResolver.FindBaitById(_data.equippedBaitId));
@@ -533,6 +536,28 @@ public class GameSaveManager : MonoBehaviour
         }
 
         return restoredFish;
+    }
+
+    private void BackfillFishCaptureHistoryFromShipFish(List<FishData> _fish)
+    {
+        if (_fish == null || _fish.Count == 0)
+            return;
+
+        Dictionary<FishScriptableObject, int> fishCounts = new Dictionary<FishScriptableObject, int>();
+
+        for (int i = 0; i < _fish.Count; i++)
+        {
+            FishScriptableObject fishType = _fish[i] != null ? _fish[i].typeOfFish : null;
+
+            if (fishType == null)
+                continue;
+
+            fishCounts.TryGetValue(fishType, out int count);
+            fishCounts[fishType] = count + 1;
+        }
+
+        foreach (KeyValuePair<FishScriptableObject, int> entry in fishCounts)
+            FishCaptureHistory.EnsureMinimumCaptureCount(entry.Key, entry.Value);
     }
 
     private List<SavedBaitData> CaptureBaitData(BaitInventory _baitInventory)
