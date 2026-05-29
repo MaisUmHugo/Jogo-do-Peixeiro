@@ -792,10 +792,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: BarcoComMotor
       objectReference: {fileID: 0}
-    - target: {fileID: 2258002106375864549, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
-      propertyPath: boatWaterLoopSfx
-      value: 
-      objectReference: {fileID: 8300000, guid: dedfaadc7a6e79c4ebc2d4a23e0fc272, type: 3}
     - target: {fileID: 7098386901417622287, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 16.470001
@@ -2454,6 +2450,7 @@ MonoBehaviour:
   _resetTutorialSlidesKeyboardBinding: <Keyboard>/f7
   _addAllBaitsKeyboardBinding: <Keyboard>/f8
   _unlockFireproofBoatUpgradeKeyboardBinding: <Keyboard>/f9
+  _resetHudKeyboardBinding: <Keyboard>/f10
   _teleportHeightOffset: 0.05
   _debugArrivalPointId: 
   _cycleFishingAreaGamepadBinding: <Gamepad>/dpad/up

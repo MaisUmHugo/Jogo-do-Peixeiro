@@ -264,14 +264,20 @@ MonoBehaviour:
   anchorWhileFishing: 1
   requireNeutralInputAfterFishing: 1
   neutralInputThreshold: 0.15
-  boatWaterLoopSfx: {fileID: 0}
+  boatWaterLoopSfx: {fileID: 8300000, guid: fe9fccdc5530bed45b8b852ec699bf2d, type: 3}
   boatWaterAudioSource: {fileID: 0}
-  boatWaterMinVolume: 1.5
-  boatWaterMaxVolume: 1.5
+  boatWaterMinVolume: 0.5
+  boatWaterMaxVolume: 0.5
   boatWaterMinPitch: 0.9
   boatWaterMaxPitch: 1.12
   boatWaterSpeedForMaxVolume: 8
+  boatWaterStartSpeedThreshold: 0.35
+  boatWaterStopSpeedThreshold: 0.12
+  boatWaterStartInputThreshold: 0.12
+  boatWaterStopInputThreshold: 0.04
   boatWaterSpatialBlend: 1
+  boatWaterLoopCutTime: 0.4
+  boatWaterLoopStartCutTime: 0.1
 --- !u!114 &1627622844671503687
 MonoBehaviour:
   m_ObjectHideFlags: 0

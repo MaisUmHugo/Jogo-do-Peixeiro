@@ -3671,10 +3671,6 @@ PrefabInstance:
       propertyPath: m_Name
       value: BarcoComMotor
       objectReference: {fileID: 0}
-    - target: {fileID: 2258002106375864549, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
-      propertyPath: boatWaterLoopSfx
-      value: 
-      objectReference: {fileID: 8300000, guid: dedfaadc7a6e79c4ebc2d4a23e0fc272, type: 3}
     - target: {fileID: 7098386901417622287, guid: c35dd37d8555cd047aa9dee86ca704e0, type: 3}
       propertyPath: m_LocalPosition.x
       value: 3.06
@@ -7273,11 +7269,11 @@ PrefabInstance:
       objectReference: {fileID: 3950588725189205458}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915921
+      value: -1.8915923
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.3934274
+      value: 4.393428
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

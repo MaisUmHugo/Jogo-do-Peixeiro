@@ -27,6 +27,8 @@ public class BoatMotor : MonoBehaviour
     [SerializeField, Min(0f)] private float boatWaterStartInputThreshold = 0.12f;
     [SerializeField, Min(0f)] private float boatWaterStopInputThreshold = 0.04f;
     [SerializeField, Range(0f, 1f)] private float boatWaterSpatialBlend = 1f;
+    [SerializeField] private float boatWaterLoopCutTime = 0.2f;
+    [SerializeField] private float boatWaterLoopStartCutTime = 0.15f;
 
     private Rigidbody rb;
     private Vector2 input;
@@ -87,8 +89,6 @@ public class BoatMotor : MonoBehaviour
             return;
         }
 
-        // Só recebe input quando estiver navegando (OnBoat)
-        // Se estiver pescando (Fishing), o input é zerado
         if (GameManager.instance.currentState == GameManager.GameState.OnBoat)
         {
             Vector2 rawInput = InputHandler.instance.moveInput;
@@ -127,7 +127,6 @@ public class BoatMotor : MonoBehaviour
 
         if (WaveManager.instance == null) return;
 
-        // Se não estiver no barco, não faz nada
         if (GameManager.instance.currentState != GameManager.GameState.OnBoat)
             return;
 
@@ -148,16 +147,12 @@ public class BoatMotor : MonoBehaviour
         float speedPercent = Mathf.Clamp01(forwardSpeed / maxSpeed);
 
         if (Mathf.Abs(turnInput) > 0.05f)
-        {
             moveInput += Mathf.Abs(turnInput) * 0.35f;
-        }
 
         moveInput = Mathf.Clamp(moveInput, -1f, 1f);
 
         if (rb.linearVelocity.magnitude < maxSpeed)
-        {
             rb.AddForce(forward * moveInput * engineForce, ForceMode.Acceleration);
-        }
 
         float turnStrength = turnForce * Mathf.Lerp(0.2f, 1f, speedPercent);
 
@@ -181,11 +176,9 @@ public class BoatMotor : MonoBehaviour
 
     private void StopBoat()
     {
-        // Reduz a velocidade linear e angular rapidamente para o barco não ficar "fugindo" enquanto pesca
         rb.linearVelocity = Vector3.Lerp(rb.linearVelocity, Vector3.zero, Time.fixedDeltaTime * 2f);
         rb.angularVelocity = Vector3.Lerp(rb.angularVelocity, Vector3.zero, Time.fixedDeltaTime * 2f);
 
-        // Se a velocidade for muito baixa, mata ela de vez
         if (rb.linearVelocity.magnitude < 0.1f) rb.linearVelocity = Vector3.zero;
         if (rb.angularVelocity.magnitude < 0.1f) rb.angularVelocity = Vector3.zero;
     }
@@ -231,16 +224,14 @@ public class BoatMotor : MonoBehaviour
         boatWaterAudioSource.playOnAwake = false;
         boatWaterAudioSource.loop = true;
         boatWaterAudioSource.spatialBlend = boatWaterSpatialBlend;
+        boatWaterAudioSource.volume = 0f;
         AudioManager.Instance?.ApplySfxOutput(boatWaterAudioSource);
     }
 
     private void UpdateBoatWaterSfx()
     {
         if (boatWaterLoopSfx == null)
-        {
-            StopBoatWaterSfx();
             return;
-        }
 
         if (boatWaterAudioSource == null)
             SetupBoatWaterAudioSource();
@@ -250,25 +241,55 @@ public class BoatMotor : MonoBehaviour
 
         AudioManager.Instance?.ApplySfxOutput(boatWaterAudioSource);
 
-        if (!ShouldPlayBoatWaterSfx())
-        {
-            StopBoatWaterSfx();
-            return;
-        }
-
-        float speed = rb != null ? rb.linearVelocity.magnitude : 0f;
-        float speedPercent = Mathf.Clamp01(speed / Mathf.Max(0.01f, boatWaterSpeedForMaxVolume));
-
         if (boatWaterAudioSource.clip != boatWaterLoopSfx)
             boatWaterAudioSource.clip = boatWaterLoopSfx;
 
-        boatWaterAudioSource.volume = Mathf.Lerp(boatWaterMinVolume, boatWaterMaxVolume, speedPercent);
-        boatWaterAudioSource.pitch = Mathf.Lerp(boatWaterMinPitch, boatWaterMaxPitch, speedPercent);
-        boatWaterAudioSource.spatialBlend = boatWaterSpatialBlend;
-        isBoatWaterSfxActive = true;
-
         if (!boatWaterAudioSource.isPlaying)
             boatWaterAudioSource.Play();
+
+        float targetVolume = 0f;
+        float speedPercent = 0f;
+
+        if (ShouldPlayBoatWaterSfx())
+        {
+            float speed = rb != null ? rb.linearVelocity.magnitude : 0f;
+            speedPercent = Mathf.Clamp01(speed / Mathf.Max(0.01f, boatWaterSpeedForMaxVolume));
+
+            targetVolume = Mathf.Lerp(
+                boatWaterMinVolume,
+                boatWaterMaxVolume,
+                speedPercent
+            );
+
+            isBoatWaterSfxActive = true;
+        }
+        else
+        {
+            isBoatWaterSfxActive = false;
+        }
+
+        boatWaterAudioSource.volume = Mathf.Lerp(
+            boatWaterAudioSource.volume,
+            targetVolume,
+            Time.deltaTime * 6f
+        );
+
+        boatWaterAudioSource.pitch = Mathf.Lerp(
+            boatWaterAudioSource.pitch,
+            Mathf.Lerp(boatWaterMinPitch, boatWaterMaxPitch, speedPercent),
+            Time.deltaTime * 6f
+        );
+
+        boatWaterAudioSource.spatialBlend = boatWaterSpatialBlend;
+
+        if (boatWaterAudioSource.isPlaying &&
+            boatWaterAudioSource.clip != null)
+        {
+            float loopPoint = boatWaterAudioSource.clip.length - boatWaterLoopCutTime;
+
+            if (boatWaterAudioSource.time >= loopPoint)
+                boatWaterAudioSource.time = boatWaterLoopStartCutTime;
+        }
     }
 
     private bool ShouldPlayBoatWaterSfx()
@@ -295,8 +316,8 @@ public class BoatMotor : MonoBehaviour
 
     private void StopBoatWaterSfx()
     {
-        if (boatWaterAudioSource != null && boatWaterAudioSource.isPlaying)
-            boatWaterAudioSource.Stop();
+        if (boatWaterAudioSource != null)
+            boatWaterAudioSource.volume = 0f;
 
         isBoatWaterSfxActive = false;
     }
