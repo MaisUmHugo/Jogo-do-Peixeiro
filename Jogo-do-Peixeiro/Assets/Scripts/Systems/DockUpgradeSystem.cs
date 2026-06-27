@@ -21,6 +21,8 @@ public enum DockUpgradeType
 
 public class DockUpgradeSystem : MonoBehaviour
 {
+    public static event Action AnyUpgradesChanged;
+
     private static readonly List<DockUpgradeSystem> instances = new List<DockUpgradeSystem>();
     private static bool hasSharedUpgradeState;
     private static int sharedCapacityLevel;
@@ -149,7 +151,7 @@ public class DockUpgradeSystem : MonoBehaviour
 
     private void Awake()
     {
-        ResolveReferences();
+        ResolveReferences(false);
         RegisterInstance();
 
         if (hasSharedUpgradeState)
@@ -247,7 +249,7 @@ public class DockUpgradeSystem : MonoBehaviour
 
     public void ApplyUpgrades()
     {
-        ResolveReferences();
+        ResolveReferences(false);
         ApplyCapacityUpgrade();
         ApplyBoatSpeedUpgrade();
         ApplyRodUpgrade();
@@ -277,6 +279,14 @@ public class DockUpgradeSystem : MonoBehaviour
         ApplySharedUpgradeStateToAll(true);
     }
 
+    public static void ReapplySharedUpgradeState(bool _notify)
+    {
+        if (!hasSharedUpgradeState)
+            return;
+
+        ApplySharedUpgradeStateToAll(_notify);
+    }
+
     public static void ResetSharedUpgradeState()
     {
         SetSharedUpgradeState(0, 0, 0, false);
@@ -293,6 +303,7 @@ public class DockUpgradeSystem : MonoBehaviour
 
     private static void ApplySharedUpgradeStateToAll(bool _notify)
     {
+        RegisterSceneInstances();
         DockUpgradeSystem[] snapshot = instances.ToArray();
 
         for (int i = 0; i < snapshot.Length; i++)
@@ -301,6 +312,24 @@ public class DockUpgradeSystem : MonoBehaviour
 
             if (system != null)
                 system.ApplySharedUpgradeState(_notify);
+        }
+
+        if (_notify)
+            AnyUpgradesChanged?.Invoke();
+    }
+
+    private static void RegisterSceneInstances()
+    {
+        DockUpgradeSystem[] sceneSystems = FindObjectsByType<DockUpgradeSystem>(
+            FindObjectsInactive.Include,
+            FindObjectsSortMode.None);
+
+        for (int i = 0; i < sceneSystems.Length; i++)
+        {
+            DockUpgradeSystem system = sceneSystems[i];
+
+            if (system != null && !instances.Contains(system))
+                instances.Add(system);
         }
     }
 
@@ -338,19 +367,46 @@ public class DockUpgradeSystem : MonoBehaviour
             OnUpgradesChanged?.Invoke();
     }
 
-    private void ResolveReferences()
+    private void ResolveReferences(bool _applyResolvedUpgrades = true)
     {
+        bool resolvedUpgradeTarget = false;
+
         if (shipInventory == null)
-            shipInventory = FindFirstObjectByType<ShipInventory>();
+        {
+            shipInventory = FindFirstObjectByType<ShipInventory>(FindObjectsInactive.Include);
+
+            if (shipInventory != null)
+                resolvedUpgradeTarget = true;
+        }
 
         if (playerMoneyManager == null)
-            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>(FindObjectsInactive.Include);
 
         if (boatMotor == null)
-            boatMotor = FindFirstObjectByType<BoatMotor>();
+        {
+            boatMotor = FindFirstObjectByType<BoatMotor>(FindObjectsInactive.Include);
+
+            if (boatMotor != null)
+                resolvedUpgradeTarget = true;
+        }
 
         if (fishSkillCheck == null)
+        {
             fishSkillCheck = FindFirstObjectByType<FishSkillCheck>(FindObjectsInactive.Include);
+
+            if (fishSkillCheck != null)
+                resolvedUpgradeTarget = true;
+        }
+
+        if (_applyResolvedUpgrades && resolvedUpgradeTarget)
+            ApplyResolvedUpgradeTargets();
+    }
+
+    private void ApplyResolvedUpgradeTargets()
+    {
+        ApplyCapacityUpgrade();
+        ApplyBoatSpeedUpgrade();
+        ApplyRodUpgrade();
     }
 
     private void ApplyCapacityUpgrade()

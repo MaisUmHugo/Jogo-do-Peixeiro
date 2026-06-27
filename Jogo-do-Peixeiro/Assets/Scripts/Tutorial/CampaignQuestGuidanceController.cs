@@ -155,6 +155,9 @@ public class CampaignQuestGuidanceController : MonoBehaviour
     private int specialDialogGuidanceHideDepth;
     private bool keepTutorialGuidanceHidden;
     private bool hasPlayedEndlessEntryPresentation;
+    private bool hasStarted;
+    private bool hasAppliedLoadedSaveState;
+    private bool loadedStateWasMigratedFromLegacySave;
 
     public TutorialStep CurrentStep => currentStep;
     public FishScriptableObject RequestedFish => requestedFish;
@@ -338,8 +341,12 @@ public class CampaignQuestGuidanceController : MonoBehaviour
 
     private void Start()
     {
+        hasStarted = true;
         TrySubscribeCampaignProgress();
         tutorialStartDay = dayCycle != null ? dayCycle.ElapsedDays : 1;
+
+        if (TryResumeLoadedSaveState())
+            return;
 
         if (!runTutorial)
         {
@@ -539,6 +546,222 @@ public class CampaignQuestGuidanceController : MonoBehaviour
         HideNonTutorialHudsForOpeningTutorial();
         SetStep(TutorialStep.GoToMoneyLenderCabin);
         return true;
+    }
+
+    public void WriteSaveData(CampaignSaveData _data)
+    {
+        if (_data == null)
+            return;
+
+        _data.tutorialStateSaved = true;
+        _data.tutorialRunTutorial = runTutorial;
+        _data.tutorialStep = (int)currentStep;
+        _data.tutorialFinished = IsTutorialFinished;
+        _data.tutorialFailed = IsTutorialFailed;
+        _data.tutorialHasAcceptedRequest = hasAcceptedRequest;
+        _data.tutorialHasSoldFishToDockOwner = hasSoldFishToDockOwner;
+        _data.tutorialHasPlayedMoneyLenderIntroCutscene = hasPlayedMoneyLenderIntroCutscene;
+        _data.tutorialHasPlayedBoatBeforeIntroEdgeDialog = hasPlayedBoatBeforeIntroEdgeDialog;
+        _data.tutorialHasCompletedOpeningIntroFlow = hasCompletedOpeningIntroFlow;
+        _data.tutorialRequestedFishId = requestedFish != null ? requestedFish.SaveId : string.Empty;
+        _data.tutorialRequestedQuantity = requestedQuantity;
+        _data.tutorialRequestedTotalWeight = requestedTotalWeight;
+        _data.tutorialStartDay = tutorialStartDay;
+
+        FishMarketController dockOwner = FindFirstObjectByType<FishMarketController>(FindObjectsInactive.Include);
+        _data.tutorialDockOwnerFirstDialogPlayed = dockOwner != null && dockOwner.HasPlayedFirstDialog;
+    }
+
+    public void ApplyLoadedSaveData(GameSaveData _saveData)
+    {
+        if (_saveData == null || _saveData.campaign == null)
+            return;
+
+        TrySubscribeCampaignProgress();
+        ApplyLoadedCampaignTutorialState(_saveData);
+        hasAppliedLoadedSaveState = true;
+
+        if (hasStarted)
+            TryResumeLoadedSaveState();
+    }
+
+    private void ApplyLoadedCampaignTutorialState(GameSaveData _saveData)
+    {
+        CampaignSaveData campaignSave = _saveData.campaign;
+
+        if (!campaignSave.tutorialStateSaved)
+        {
+            MigrateLegacyLoadedTutorialState(_saveData);
+            return;
+        }
+
+        loadedStateWasMigratedFromLegacySave = false;
+        runTutorial = campaignSave.tutorialRunTutorial;
+        currentStep = SanitizeTutorialStep(campaignSave.tutorialStep);
+        IsTutorialFinished = campaignSave.tutorialFinished;
+        IsTutorialFailed = campaignSave.tutorialFailed;
+        hasAcceptedRequest = campaignSave.tutorialHasAcceptedRequest;
+        hasSoldFishToDockOwner = campaignSave.tutorialHasSoldFishToDockOwner;
+        hasPlayedMoneyLenderIntroCutscene = campaignSave.tutorialHasPlayedMoneyLenderIntroCutscene;
+        hasPlayedBoatBeforeIntroEdgeDialog = campaignSave.tutorialHasPlayedBoatBeforeIntroEdgeDialog;
+        hasCompletedOpeningIntroFlow = campaignSave.tutorialHasCompletedOpeningIntroFlow;
+        requestedFish = FishSaveResolver.FindFishById(campaignSave.tutorialRequestedFishId);
+        requestedQuantity = Mathf.Max(0, campaignSave.tutorialRequestedQuantity);
+        requestedTotalWeight = Mathf.Max(0, campaignSave.tutorialRequestedTotalWeight);
+        tutorialStartDay = Mathf.Max(1, campaignSave.tutorialStartDay);
+
+        ApplyDockOwnerFirstDialogSaveState(campaignSave.tutorialDockOwnerFirstDialogPlayed);
+    }
+
+    private void MigrateLegacyLoadedTutorialState(GameSaveData _saveData)
+    {
+        CampaignSaveData campaignSave = _saveData.campaign;
+        bool isCampaignSave = campaignSave.gameMode == GameProgressMode.Campaign && _saveData.gameMode == GameProgressMode.Campaign;
+        loadedStateWasMigratedFromLegacySave = true;
+
+        if (!isCampaignSave ||
+            campaignSave.currentQuestIndex != 1 ||
+            campaignSave.isCampaignCompleted ||
+            campaignSave.hasFailedCurrentQuest)
+        {
+            runTutorial = false;
+            IsTutorialFinished = true;
+            IsTutorialFailed = false;
+            currentStep = TutorialStep.Finished;
+            ApplyDockOwnerFirstDialogSaveState(true);
+            return;
+        }
+
+        runTutorial = true;
+        IsTutorialFinished = false;
+        IsTutorialFailed = false;
+        isFinishingDelivery = false;
+        isShowingEndPanel = false;
+        hasAcceptedRequest = true;
+        hasCompletedOpeningIntroFlow = true;
+        hasPlayedMoneyLenderIntroCutscene = true;
+        hasPlayedBoatBeforeIntroEdgeDialog = true;
+        hasShownIntroSlides = true;
+        hasShownQuestReceivedSlides = true;
+        hasShownDebtPaymentSlides = true;
+        requestedFish = null;
+        requestedQuantity = 0;
+        requestedTotalWeight = 0;
+        tutorialStartDay = Mathf.Max(1, campaignSave.daysElapsedInCurrentQuest + 1);
+
+        int remainingPayment = Mathf.Max(0, campaignSave.questDebtPaymentTarget - campaignSave.questDebtPaidAmount);
+        int savedFishValue = GetSavedShipFishValue(_saveData);
+        int savedMoney = Mathf.FloorToInt(Mathf.Max(0f, _saveData.playerMoney));
+
+        hasSoldFishToDockOwner = campaignSave.questDebtPaidAmount > 0 ||
+                                 (remainingPayment > 0 && savedMoney >= remainingPayment);
+
+        if (remainingPayment <= 0 || hasSoldFishToDockOwner)
+            currentStep = TutorialStep.PayDebt;
+        else if (savedFishValue > 0)
+            currentStep = TutorialStep.GoToDockOwner;
+        else
+            currentStep = TutorialStep.TalkToDockOwner;
+
+        bool dockOwnerFirstDialogPlayed = savedFishValue > 0 ||
+                                          savedMoney > 0 ||
+                                          campaignSave.questDebtPaidAmount > 0 ||
+                                          campaignSave.daysElapsedInCurrentQuest > 0;
+
+        ApplyDockOwnerFirstDialogSaveState(dockOwnerFirstDialogPlayed);
+        MarkTutorialFlowStarted();
+    }
+
+    private bool TryResumeLoadedSaveState()
+    {
+        if (!hasAppliedLoadedSaveState)
+            return false;
+
+        TrySubscribeCampaignProgress();
+        ResolveTutorialDialogFlow();
+
+        if (!runTutorial || ShouldDisableTutorialForCurrentCampaignState())
+        {
+            DebugDisableTutorial();
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
+            TryPlayEndlessEntryPresentation();
+            return true;
+        }
+
+        if (IsTutorialFinished || currentStep == TutorialStep.Finished)
+        {
+            DebugDisableTutorial();
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
+            return true;
+        }
+
+        if (IsTutorialFailed || currentStep == TutorialStep.Failed)
+        {
+            SetStep(TutorialStep.Failed);
+            return true;
+        }
+
+        if (loadedStateWasMigratedFromLegacySave)
+        {
+            hasCompletedOpeningIntroFlow = true;
+            hasAcceptedRequest = true;
+            hasPlayedMoneyLenderIntroCutscene = true;
+            MarkTutorialFlowStarted();
+        }
+
+        if (IsCampaignEconomyFlowActive() && hasPlayedMoneyLenderIntroCutscene)
+        {
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
+        }
+        else if (IsCampaignEconomyFlowActive())
+        {
+            HideNonTutorialHudsForOpeningTutorial();
+        }
+        else
+        {
+            ShowNonTutorialHudsAfterMoneyLenderIntro();
+        }
+
+        SetObjectiveVisible(true);
+        UpdateObjectiveText();
+        UpdateMarkers();
+        return true;
+    }
+
+    private TutorialStep SanitizeTutorialStep(int _step)
+    {
+        return Enum.IsDefined(typeof(TutorialStep), _step)
+            ? (TutorialStep)_step
+            : TutorialStep.GoToMoneyLenderCabin;
+    }
+
+    private void ApplyDockOwnerFirstDialogSaveState(bool _played)
+    {
+        FishMarketController dockOwner = FindFirstObjectByType<FishMarketController>(FindObjectsInactive.Include);
+
+        if (dockOwner != null)
+            dockOwner.SetFirstDialogPlayed(_played);
+    }
+
+    private int GetSavedShipFishValue(GameSaveData _saveData)
+    {
+        if (_saveData == null || _saveData.shipFish == null)
+            return 0;
+
+        int value = 0;
+
+        for (int i = 0; i < _saveData.shipFish.Count; i++)
+        {
+            SavedFishData fishData = _saveData.shipFish[i];
+
+            if (fishData == null)
+                continue;
+
+            FishScriptableObject fish = FishSaveResolver.FindFishById(fishData.fishId);
+            value += FishPriceCalculator.CalculatePrice(fish, fishData.weight);
+        }
+
+        return value;
     }
 
     private bool ShouldDisableTutorialForCurrentCampaignState()

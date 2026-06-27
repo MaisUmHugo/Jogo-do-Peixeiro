@@ -64,6 +64,21 @@ public class CampaignSaveData
     public int specialDeliveryRequiredWeight;
     public int specialDeliveryDebtReduction;
     public int endlessDeliveriesWithoutSpecialRequest;
+    public bool tutorialStateSaved;
+    public bool tutorialRunTutorial = true;
+    public int tutorialStep;
+    public bool tutorialFinished;
+    public bool tutorialFailed;
+    public bool tutorialHasAcceptedRequest;
+    public bool tutorialHasSoldFishToDockOwner;
+    public bool tutorialHasPlayedMoneyLenderIntroCutscene;
+    public bool tutorialHasPlayedBoatBeforeIntroEdgeDialog;
+    public bool tutorialHasCompletedOpeningIntroFlow;
+    public bool tutorialDockOwnerFirstDialogPlayed;
+    public string tutorialRequestedFishId;
+    public int tutorialRequestedQuantity;
+    public int tutorialRequestedTotalWeight;
+    public int tutorialStartDay = 1;
 }
 
 [Serializable]

@@ -41,6 +41,7 @@ public class FishMarketController : MonoBehaviour, IInteractable
 
     public string PromptText => promptText;
     public Transform PromptPoint => interactionPoint != null ? interactionPoint : transform;
+    public bool HasPlayedFirstDialog => hasPlayedFirstDialog;
 
     private void Awake()
     {
@@ -94,6 +95,14 @@ public class FishMarketController : MonoBehaviour, IInteractable
         repeatDialogPool = _repeatDialogPool;
         dialogFocusTarget = _dialogFocusTarget != null ? _dialogFocusTarget : dialogFocusTarget;
         playDialogBeforeOpeningUi = _playDialogBeforeOpeningUi && HasAnyConfiguredDialog();
+    }
+
+    public void SetFirstDialogPlayed(bool _played)
+    {
+        hasPlayedFirstDialog = _played;
+
+        if (_played && IsVolcanoDialog(firstInteractionDialog))
+            hasPlayedVolcanoDialogThisRun = true;
     }
 
     public void Interact()

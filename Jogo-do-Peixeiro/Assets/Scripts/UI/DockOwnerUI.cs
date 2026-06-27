@@ -127,6 +127,9 @@ public class DockOwnerUI : MonoBehaviour
 
     private void OnEnable()
     {
+        DockUpgradeSystem.AnyUpgradesChanged -= HandleAnyUpgradesChanged;
+        DockUpgradeSystem.AnyUpgradesChanged += HandleAnyUpgradesChanged;
+
         TryResolveReferences();
         BindButtons();
         SubscribeToReferences();
@@ -136,6 +139,8 @@ public class DockOwnerUI : MonoBehaviour
 
     private void OnDisable()
     {
+        DockUpgradeSystem.AnyUpgradesChanged -= HandleAnyUpgradesChanged;
+
         UnsubscribeFromReferences();
         UnsubscribeInput();
         UnbindButtons();
@@ -164,6 +169,7 @@ public class DockOwnerUI : MonoBehaviour
         TryResolveReferences();
         SubscribeToReferences();
         TrySubscribeInput();
+        DockUpgradeSystem.ReapplySharedUpgradeState(true);
 
         isOpen = true;
         PanelObject.SetActive(true);
@@ -1255,19 +1261,19 @@ public class DockOwnerUI : MonoBehaviour
     private void TryResolveReferences()
     {
         if (fishMarket == null)
-            fishMarket = FindFirstObjectByType<FishMarket>();
+            fishMarket = FindFirstObjectByType<FishMarket>(FindObjectsInactive.Include);
 
         if (dockUpgradeSystem == null)
             dockUpgradeSystem = GetComponent<DockUpgradeSystem>();
 
         if (dockUpgradeSystem == null)
-            dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>();
+            dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>(FindObjectsInactive.Include);
 
         if (baitShop == null)
             baitShop = GetComponent<BaitShop>();
 
         if (baitShop == null)
-            baitShop = FindFirstObjectByType<BaitShop>();
+            baitShop = FindFirstObjectByType<BaitShop>(FindObjectsInactive.Include);
 
         if (fishMarket != null)
         {
@@ -1276,10 +1282,10 @@ public class DockOwnerUI : MonoBehaviour
         }
 
         if (shipInventory == null)
-            shipInventory = FindFirstObjectByType<ShipInventory>();
+            shipInventory = FindFirstObjectByType<ShipInventory>(FindObjectsInactive.Include);
 
         if (playerMoneyManager == null)
-            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>();
+            playerMoneyManager = FindFirstObjectByType<PlayerMoneyManager>(FindObjectsInactive.Include);
 
         if (baitInventory == null && baitShop != null)
             baitInventory = baitShop.BaitInventory;
@@ -1480,6 +1486,12 @@ public class DockOwnerUI : MonoBehaviour
 
     private void HandleUpgradesChanged()
     {
+        Refresh();
+    }
+
+    private void HandleAnyUpgradesChanged()
+    {
+        TryResolveReferences();
         Refresh();
     }
 

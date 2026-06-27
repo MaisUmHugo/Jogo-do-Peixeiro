@@ -275,6 +275,8 @@ public class GameSaveManager : MonoBehaviour
         DockUpgradeSystem dockUpgradeSystem = FindFirstObjectByType<DockUpgradeSystem>(FindObjectsInactive.Include);
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
+        CampaignQuestGuidanceController tutorialGuidance =
+            FindFirstObjectByType<CampaignQuestGuidanceController>(FindObjectsInactive.Include);
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
         BaitInventory baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
 
@@ -287,6 +289,7 @@ public class GameSaveManager : MonoBehaviour
         data.upgrades = CaptureUpgradeData(dockUpgradeSystem);
         data.dayCycle = CaptureDayCycleData(dayCycle);
         data.campaign = campaignProgress != null ? campaignProgress.CaptureSaveData() : new CampaignSaveData();
+        tutorialGuidance?.WriteSaveData(data.campaign);
         data.shipFish = CaptureShipFishData(shipInventory);
         data.fishCaptureHistory = FishCaptureHistory.CaptureSaveData();
         data.equippedBaitId = baitInventory != null && baitInventory.EquippedBait != null ? baitInventory.EquippedBait.SaveId : string.Empty;
@@ -305,6 +308,8 @@ public class GameSaveManager : MonoBehaviour
         MoneyLender moneyLender = FindFirstObjectByType<MoneyLender>();
         DayCycle dayCycle = FindFirstObjectByType<DayCycle>();
         CampaignProgressSystem campaignProgress = CampaignProgressSystem.GetOrCreate();
+        CampaignQuestGuidanceController tutorialGuidance =
+            FindFirstObjectByType<CampaignQuestGuidanceController>(FindObjectsInactive.Include);
         ShipInventory shipInventory = FindFirstObjectByType<ShipInventory>();
         BaitInventory baitInventory = FindFirstObjectByType<BaitInventory>(FindObjectsInactive.Include);
 
@@ -340,6 +345,9 @@ public class GameSaveManager : MonoBehaviour
 
         if (baitInventory != null)
             baitInventory.ReplaceBaits(RestoreBaitData(_data.baits), BaitSaveResolver.FindBaitById(_data.equippedBaitId));
+
+        if (tutorialGuidance != null)
+            tutorialGuidance.ApplyLoadedSaveData(_data);
 
         loadedPlayTimeSeconds = Mathf.Max(0f, _data.playTimeSeconds);
         ResetSessionTimer();
@@ -378,6 +386,12 @@ public class GameSaveManager : MonoBehaviour
         ApplyUpgradeSaveData(_upgrades);
 
         yield return new WaitForSecondsRealtime(0.2f);
+        ApplyUpgradeSaveData(_upgrades);
+
+        yield return new WaitForSecondsRealtime(0.5f);
+        ApplyUpgradeSaveData(_upgrades);
+
+        yield return new WaitForSecondsRealtime(1f);
         ApplyUpgradeSaveData(_upgrades);
 
         pendingUpgradeReapplyRoutine = null;
