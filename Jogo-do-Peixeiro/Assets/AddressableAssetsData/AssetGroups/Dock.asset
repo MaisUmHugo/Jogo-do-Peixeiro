@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Dock
+  m_EditorClassIdentifier: 
+  m_GroupName: Dock
+  m_GUID: f4be0cda9ac211f4ca3a9dbbf6dcff27
+  m_SerializeEntries:
+  - m_GUID: 87f1c7b66413f7642be663b5cfd8060d
+    m_Address: Assets/Prefabs/Boat/Pier.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: ef9109fd4ddf1284e9ea0f7ec81ee59a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: 5d0a1ca8938a48a4bb319f0ce5057bff, type: 2}
+    - {fileID: 11400000, guid: 90b9d6d5cba1faa468c1ffedc32337c2, type: 2}

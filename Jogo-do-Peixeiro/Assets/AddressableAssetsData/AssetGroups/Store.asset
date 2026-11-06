@@ -1,0 +1,28 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: bbb281ee3bf0b054c82ac2347e9e782c, type: 3}
+  m_Name: Store
+  m_EditorClassIdentifier: 
+  m_GroupName: Store
+  m_GUID: 354b39a69d1c6344a81dd3c74475c6d0
+  m_SerializeEntries:
+  - m_GUID: 8150d4fc8c125a34ab6e1ad22009ed76
+    m_Address: Assets/Prefabs/Characters/DockOwner/Loja Barqueiro.prefab
+    m_ReadOnly: 0
+    m_SerializedLabels: []
+    FlaggedDuringContentUpdateRestriction: 0
+  m_ReadOnly: 0
+  m_Settings: {fileID: 11400000, guid: ef9109fd4ddf1284e9ea0f7ec81ee59a, type: 2}
+  m_SchemaSet:
+    m_Schemas:
+    - {fileID: 11400000, guid: ab09aeb404172574a966284928cca12a, type: 2}
+    - {fileID: 11400000, guid: 570e1d58f4ec59e438e09948120805f5, type: 2}

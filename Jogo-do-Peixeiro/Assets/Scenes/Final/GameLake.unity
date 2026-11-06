@@ -243,6 +243,10 @@ PrefabInstance:
       propertyPath: m_Name
       value: FishResultPanel
       objectReference: {fileID: 0}
+    - target: {fileID: 1285437973880355380, guid: 6138123c64981e648bb798ec394b5758, type: 3}
+      propertyPath: m_IsActive
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: 1854100952595845348, guid: 6138123c64981e648bb798ec394b5758, type: 3}
       propertyPath: dayCycle
       value: 
@@ -7269,11 +7273,11 @@ PrefabInstance:
       objectReference: {fileID: 3950588725189205458}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.x
-      value: -1.8915923
+      value: -1.8915921
       objectReference: {fileID: 0}
     - target: {fileID: 9191602861539212775, guid: 16ca96b0c4e63ba4eb6fb4cc284c2a24, type: 3}
       propertyPath: m_LocalPosition.y
-      value: 4.393428
+      value: 4.3934274
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
